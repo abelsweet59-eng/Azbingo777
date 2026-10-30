@@ -91,17 +91,17 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🟢 የተሟሉ የቢንጎ ህጎች ማረጋገጫ (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
+// 5ቱ የቢንጎ ህጎች (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // 1. አግድም (Horizontal - 5 numbers)
+    // 1. አግድም (Horizontal)[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span)[span_7](start_span)[span_7](end_span)
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-    // 2. ቁመት (Vertical - 5 numbers)
+    // 2. ቁመት (Vertical)[span_8](start_span)[span_8](end_span)[span_9](start_span)[span_9](end_span)[span_10](start_span)[span_10](end_span)
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -109,28 +109,27 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
-    // 3. ሰያፍ 1 (Diagonal 1)
+    // 3. ሰያፍ 1 (Diagonal 1)[span_11](start_span)[span_11](end_span)[span_12](start_span)[span_12](end_span)[span_13](start_span)[span_13](end_span)
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
-    // 4. ሰያፍ 2 (Diagonal 2)
+    // 4. ሰያፍ 2 (Diagonal 2)[span_14](start_span)[span_14](end_span)[span_15](start_span)[span_15](end_span)[span_16](start_span)[span_16](end_span)
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
-    // 5. አራቱን ማዕዘኖች (All four corners: Top-Left, Top-Right, Bottom-Left, Bottom-Right)
+    // 5. አራቱን ማዕዘኖች (All four corners)[span_17](start_span)[span_17](end_span)
     let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
     if(corners.every(val => calledNumbers.includes(val))) return true;
 
     return false;
 }
 
-// ቴሌግራም ፖሊንግ
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -227,7 +226,10 @@ let connectedRealPlayers = [];
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
+
+    let currentBotsCount = Math.max(0, 30 - realCount);
+    globalRoom.playersCount = currentBotsCount + realCount; 
+    
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
@@ -269,7 +271,8 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
+        let currentBotsCount = Math.max(0, 30 - realCount);
+        globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
@@ -278,6 +281,10 @@ setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
     let totalPlayers = globalRoom.playersCount;
+
+    // የ 80% ሪል ዩዘር መለኪያ (Real Users Percentage Calculation)
+    let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
+    let isRealDominant = realUserPercentage >= 80; // 80% እና ከዛ በላይ ሪል ዩዘር ሲኖር ቦቶች ማሸነፍ ሙሉ በሙሉ ያቆማሉ[span_18](start_span)[span_18](end_span)
 
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
@@ -299,11 +306,11 @@ setInterval(() => {
 
                 if (globalRoom.calledNumbers.length >= 5) {
                     let winningCardsList = [];
-
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 1. ከ 60 በታች ሲሆን ቦቶቹ እንዲያሸንፉ ማድረግ
-                    if (totalPlayers < 60 && globalRoom.calledNumbers.length >= 8) {
+                    // ሪል ተጫዋቾች ከ 80% በታች ሲሆኑ ብቻ ቦቶቹ ማሸነፍ ይችላሉ፤ 80% እና ከዛ በላይ ከሆኑ ቦቶች አያሸንፉም (Fair Play for Real Users)[span_19](start_span)[span_19](end_span)
+                    let currentBots = Math.max(0, 30 - realCount);
+                    if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
                             if (checkWinningPattern(c, globalRoom.calledNumbers)) {
@@ -317,7 +324,8 @@ setInterval(() => {
                             winningCardsList.push({ username: winningUser, userId: winningUserId, cardNum: winningCard });
                         }
                     } 
-                    else {
+                    
+                    if (winningCardsList.length === 0) {
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
                             for (let cNum of pData.cards) {
@@ -331,7 +339,7 @@ setInterval(() => {
                             }
                         }
 
-                        if (winningCardsList.length === 0 && globalRoom.calledNumbers.length >= 12) {
+                        if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 12) {
                             let candidateCards = [];
                             for (let c = 1; c <= 300; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) {
@@ -350,6 +358,7 @@ setInterval(() => {
                     if (winningCardsList.length > 0) {
                         let totalPot = totalPlayers * 10;
                         let totalPrizePool = Math.floor(totalPot * 0.70);
+                        // ብዙ አሸናፊዎች ሲኖሩ እኩል እኩል እንዲካፈል ማድረግ (Multiple Winners Split)[span_20](start_span)[span_20](end_span)
                         let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
                         globalRoom.gameActive = false;
