@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AZ Bingo 777 - Professional Synchronized Multiplayer</title>
+    <title>AZ Bingo - Professional Synchronized Multiplayer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -22,14 +22,14 @@
 
     <div class="w-full max-w-[430px] h-screen sm:h-[850px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] flex flex-col justify-between shadow-2xl sm:rounded-2xl border border-white/10 overflow-hidden relative">
 
-        <!-- Top Header -->
-        <header class="flex justify-between items-center px-4 py-2.5 bg-black/20 border-b border-white/10 backdrop-blur-md z-20">
-            <div class="text-base font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300">
-                AZ Bingo 777
+        <!-- Top Header: 777 ተወግዶ AZ Bingo ብቻ እንዲታይ ተደርጓል -->
+        <header class="flex justify-between items-center px-3 py-2.5 bg-black/20 border-b border-white/10 backdrop-blur-md z-20">
+            <div class="text-sm sm:text-base font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap">
+                AZ Bingo
             </div>
-            <div class="flex items-center gap-2">
-                <div id="connection-status" class="text-[10px] px-2 py-0.5 rounded-full bg-red-600 font-bold">Connecting...</div>
-                <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2 py-1 rounded-lg border border-red-400/40 font-bold">🛡️ አድሚን</button>
+            <div class="flex items-center gap-1.5">
+                <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
+                <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap">🛡️ አድሚን</button>
             </div>
         </header>
 
@@ -136,7 +136,7 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 px-2 py-1 rounded">ዝጋ</button>
                 </div>
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30">
-                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
+                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ። አድሚን ቦት ላይ አጽድቅ/ሰርዝ የሚለውን ሲጫኑ ተጠቃሚው ጋር በቅጽበት ይስተካከላል።
                 </div>
             </div>
         </div>
@@ -229,7 +229,7 @@
 
         socket.on('connect', () => {
             document.getElementById('connection-status').innerText = 'Connected';
-            document.getElementById('connection-status').className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold';
+            document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold';
         });
 
         socket.on('syncGameState', (room) => {
@@ -247,7 +247,7 @@
 
         socket.on('updatePlayersCount', (count) => {
             document.getElementById('stat-players').innerText = `${count}/300`;
-            document.getElementById('stat-derash', ).innerText = `${Math.floor(count * 10 * 0.70)} ብር`;
+            document.getElementById('stat-derash').innerText = `${Math.floor(count * 10 * 0.70)} ብር`;
         });
 
         socket.on('gameStartedBroadcast', () => {
@@ -267,7 +267,6 @@
             location.reload();
         });
 
-        // 🟢 አሸናፊ ሲኖር ለተጫዋቾቹ በሙሉ ማሳወቂያ አሳይቶ ድሉን ማወጅ
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let totalPlayers = parseInt(document.getElementById('stat-players').innerText.split('/')[0]) || 30;
@@ -276,7 +275,6 @@
             document.getElementById('winner-banner-text').innerHTML = `🎉 አሸናፊ: <b>${winnerName}</b><br>ሽልማት: <span class="text-amber-400 font-bold">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
-            // If local user won, add prize to their wallet
             if (winnerName === userFullName) {
                 walletBalance += prizePool;
                 updateWalletUI();
@@ -288,6 +286,26 @@
             }, 4000);
         });
 
+        socket.on('financialApproved', (data) => {
+            let amt = parseFloat(data.amount);
+            if (data.type === 'deposit') {
+                walletBalance += amt;
+                alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ በአድሚን ጸድቋል! አካውንትዎ ላይ ተጨምሯል።`);
+            } else {
+                if (walletBalance >= amt) {
+                    walletBalance -= amt;
+                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ በአድሚን ጸድቆ ተልኳል!`);
+                } else {
+                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቋል (ግን ቦርሳዎ ውስጥ በቂ ቀሪ ሂሳብ አልነበረም)።`);
+                }
+            }
+            updateWalletUI();
+        });
+
+        socket.on('financialRejected', (data) => {
+            alert(`❌ የእርስዎ የ ${data.amount} ብር የ ${data.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚን ተሰርዟል።`);
+        });
+
         socket.on('requestSubmitted', (res) => {
             alert(res.message);
         });
@@ -297,7 +315,7 @@
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         }
 
-        function openDepositModal() { document.getElementById('deposit-modal').classList.add('hidden'); document.getElementById('deposit-modal').classList.remove('hidden'); }
+        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
         function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
@@ -314,6 +332,11 @@
 
             if (isNaN(amount) || amount < 100) {
                 alert("⚠️ ስህተት! ዝቅተኛው የግብይት መጠን (ዲፖዚትም ሆነ ዊዝድሮዋል) 100 ብር መሆን አለበት።");
+                return;
+            }
+
+            if (type === 'withdraw' && walletBalance < amount) {
+                alert("⚠️ ስህተት! በቦርሳዎ ውስጥ ካለው ሂሳብ በላይ ማውጣት አይችሉም።");
                 return;
             }
 
