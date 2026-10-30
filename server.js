@@ -14,10 +14,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
+let roundDuration = 60000; // 60 ሰከንድ የካርድ ምርጫ ሰአት
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + 60000,
+    gameStartTime: Date.now() + roundDuration,
     playersCount: 30,
     takenCards: []
 };
@@ -149,7 +150,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player disconnected: " + socket.id);
+        console.log("Player connected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -157,7 +158,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ሰዓት ቆጣሪ (Timer & Game Loop)
+// 🟢 የጨዋታ ቆጣሪ እና ቁጥር በየ 3 ሰከንድ የመጥራት ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -168,6 +169,7 @@ setInterval(() => {
         globalRoom.calledNumbers = [];
         io.emit('gameStartedBroadcast');
 
+        // 🟢 ቁጥሮች በየ 3 ሰከንድ (3000 ሚሊሰከንድ) እንዲጠሩ ተደረገ
         let callingInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(callingInterval);
@@ -193,19 +195,19 @@ setInterval(() => {
                     }
 
                     globalRoom.gameActive = false;
-                    globalRoom.gameStartTime = Date.now() + 60000;
+                    globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.takenCards = [];
                     io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
                     clearInterval(callingInterval);
                 }
             } else {
                 globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + 60000;
+                globalRoom.gameStartTime = Date.now() + roundDuration;
                 globalRoom.takenCards = [];
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
-        }, 3500);
+        }, 3000); // 3 ሰከንድ
     }
 }, 1000);
 
