@@ -11,6 +11,7 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// 🟢 የቴሌግራም ቦት ቶከን እና የአድሚን ቻት አይዲ (በቀጥታ የተስተካከሉ)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
@@ -19,14 +20,13 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 30, // 🟢 30 ቦቶች ብቻ እንዲሆኑ ተደረገ
+    playersCount: 30,
     takenCards: [],
     playerRoundCards: {}
 };
 
 let activeGameInterval = null;
 
-// 🟢 የፌክ ቦቶች ስሞች (በትክክል 30 ብቻ)
 const fakeBotNames = [
     "Netsanet", "Av addis", "Solomon", "Taye", "Beke t", "Adane",
     "ተሰማ", "henok", "12 yared b", "abel", "seyum", "somalew", "china",
@@ -56,7 +56,6 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 7000);
 
-// 🟢 ከ 1 እስከ 300 ያሉት ካርዶች ቋሚ (Static) እና ልዩ (Unique) ውቅር እንዲኖራቸው የሚያደርግ ስሌት
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
     let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
@@ -122,24 +121,36 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
+// 🟢 ወደ አድሚን ቴሌግራም ቦት መልዕክት የሚልክ የተስተካከለ ተግባር
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
-    if (!TELEGRAM_BOT_TOKEN) return;
-    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    let message = "🔔 *AZ BINGO - " + reqTypeTitle + "*\n\n👤 ስም: " + (username || 'ተጫዋች') + "\n💰 መጠን: " + amount + " ብር";
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) {
+        console.log("⚠️ Telegram Bot Token or Admin Chat ID is missing!");
+        return;
+    }
+
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጫ)';
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: \`${userId}\`\n💰 መጠን: *${amount} ብር*\n📱 ስልክ/አድራሻ: ${phone || 'አልተሰጠም'}`;
+
+    if (receipt) {
+        message += `\n\n📄 *ደረሰኝ / SMS:*\n${receipt}`;
+    }
 
     try {
-        await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
+        let response = await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: ADMIN_CHAT_ID,
             text: message,
             parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [[
-                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
-                    { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                    { text: "✅ አጽድቅ (Approve)", callback_data: "app_" + requestId },
+                    { text: "❌ ሰርዝ (Reject)", callback_data: "rej_" + requestId }
                 ]]
             }
         });
-    } catch (error) {}
+        console.log("✅ Telegram request sent successfully:", response.data.ok);
+    } catch (error) {
+        console.error("❌ Error sending Telegram request:", error.response ? error.response.data : error.message);
+    }
 }
 
 let connectedRealPlayers = [];
@@ -147,7 +158,6 @@ let connectedRealPlayers = [];
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
-    // 🟢 ከ 30 በታች ትክክለኛ ዩዘሮች ሲኖሩ 30ዎቹ ቦቶች ተደምረው 30 ይሞላሉ፤ ከ 30 በላይ ሲሆኑ ትክክለኞቹ ዩዘሮች ብቻ ይቆጠራሉ።
     globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
@@ -168,6 +178,25 @@ io.on('connection', (socket) => {
         
         socket.emit('cardSelectionSuccess');
         io.emit('updateTakenCards', globalRoom.takenCards);
+    });
+
+    // 🟢 የمالی (Financial Request) ሲመጣ የሚቀበለው ክፍል
+    socket.on('financialRequest', async (data) => {
+        if (!data) return;
+        let { type, amount, username, userId, phone, receipt } = data;
+        
+        if (!amount || amount < 100) {
+            socket.emit('requestSubmitted', { success: false, message: '⚠️ ዝቅተኛው የገንዘብ ገደብ 100 ብር ነው።' });
+            return;
+        }
+
+        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
+        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
+
+        // ቴሌግራም ቦት ላይ መልዕክት መيك
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
+
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ በትክክል ለአድሚን ተልኳል!" });
     });
 
     socket.on('disconnect', () => {
@@ -208,7 +237,6 @@ setInterval(() => {
 
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 🟢 ህግ 1: እውነተኛ ተጫዋቾች ከ 30 በታች ከሆኑ ቦቶቹ ብቻ እንዲያሸንፉ ማድረግ
                     if (realCount < 30 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
@@ -222,7 +250,6 @@ setInterval(() => {
                             winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                         }
                     } 
-                    // 🟢 ህግ 2: እውነተኛ ተጫዋቾች 30 እና ከዚያ በላይ ሲሆኑ ፍትሃዊ (Fair) ጨዋታ በመሆን ማንም እውነተኛ ተጫዋች ማሸነፍ ይችላል
                     else {
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
