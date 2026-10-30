@@ -12,10 +12,10 @@
         .custom-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
         @keyframes pulseGlow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
-            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+            50% { transform: scale(1.08); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
         }
-        .pulse-ball { animation: pulseGlow 1.8s infinite ease-in-out; }
+        .pulse-ball { animation: pulseGlow 1.5s infinite ease-in-out; }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -63,6 +63,7 @@
             <!-- TAB 1: GAME -->
             <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
                 
+                <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
                     <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2.5 rounded-lg border border-purple-500/20">
                         <div>
@@ -90,7 +91,8 @@
                 <!-- Live Game Section -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2">
                     <div class="grid grid-cols-12 gap-2">
-                        <div class="col-span-5 bg-[#180a29] p-1 rounded-xl border border-purple-500/20 overflow-y-auto max-h-[200px] custom-scroll">
+                        <!-- 75 Numbers Vertical Board -->
+                        <div class="col-span-5 bg-[#180a29] p-1 rounded-xl border border-purple-500/20 overflow-y-auto max-h-[170px] custom-scroll">
                             <div class="grid grid-cols-5 gap-1 text-center font-bold text-[10px] sticky top-0 bg-[#180a29] pb-1 z-10">
                                 <div class="bg-blue-600 rounded text-white">B</div>
                                 <div class="bg-indigo-600 rounded text-white">I</div>
@@ -101,18 +103,20 @@
                             <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-mono mt-1" id="vertical-board-75"></div>
                         </div>
 
-                        <div class="col-span-7 flex flex-col justify-between space-y-1">
-                            <div class="bg-[#21103a] rounded-xl p-2 border border-purple-500/30 flex flex-col items-center justify-center min-h-[70px] shadow-inner relative">
-                                <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-base shadow-xl pulse-ball">
-                                    --
-                                </div>
+                        <!-- Called Ball Display -->
+                        <div class="col-span-7 flex flex-col justify-center items-center bg-[#21103a] rounded-xl p-3 border border-purple-500/30 shadow-inner relative">
+                            <div class="text-[10px] text-amber-200/80 uppercase font-bold mb-1">የተጠራ ቁጥር (Called Ball)</div>
+                            <div id="main-called-ball" class="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-3 border-amber-200 flex items-center justify-center text-white font-black text-2xl shadow-2xl pulse-ball">
+                                --
                             </div>
                         </div>
                     </div>
 
-                    <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30 max-h-[220px] overflow-y-auto custom-scroll"></div>
+                    <!-- Dual Cards View -->
+                    <div class="text-xs font-bold text-purple-300 px-1">የእርስዎ የተያዙ ካርዶች (ፊት ለፊት):</div>
+                    <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2.5 rounded-xl border border-purple-500/30 max-h-[220px] overflow-y-auto custom-scroll"></div>
 
-                    <button onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-sm py-3 rounded-xl shadow animate-pulse">🎉 ቢንጎ አሳውቅ!</button>
+                    <button onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed">🎉 ቢንጎ አሳውቅ</button>
                 </div>
             </div>
 
@@ -136,7 +140,7 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 px-2 py-1 rounded">ዝጋ</button>
                 </div>
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30">
-                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ። አድሚን ቦት ላይ አጽድቅ/ሰርዝ የሚለውን ሲጫኑ ተጠቃሚው ጋር በቅጽበት ይስተካከላል።
+                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
                 </div>
             </div>
         </div>
@@ -229,7 +233,6 @@
             startClientTimer();
         });
 
-        // 🟢 የሰዓት ቆጣሪ (Timer Loop) በየሰከንዱ እንዲቀንስ ማድረጊያ
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.floor((gameStartTimeServer - Date.now()) / 1000));
@@ -238,9 +241,6 @@
                 let timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}ሰ`;
                 
                 document.getElementById('stat-timer').innerText = timeStr;
-                if (timeLeft <= 0) {
-                    document.getElementById('reg-status-badge').innerText = "ጨዋታው ሊጀመር ነው...";
-                }
             }, 1000);
         }
 
@@ -262,6 +262,7 @@
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
                 renderVerticalBoard();
+                renderPlayerDualCards();
             }
         });
 
@@ -273,6 +274,7 @@
         socket.on('gameStartedBroadcast', () => {
             document.getElementById('card-selection-section').classList.add('hidden');
             document.getElementById('live-game-section').classList.remove('hidden');
+            renderPlayerDualCards();
         });
 
         socket.on('numberCalledBroadcast', (num) => {
@@ -280,6 +282,7 @@
             document.getElementById('main-called-ball').innerText = num;
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
+            renderPlayerDualCards();
         });
 
         socket.on('gameEndedBroadcast', () => {
@@ -397,6 +400,7 @@
 
             document.getElementById('card-selection-section').classList.add('hidden');
             document.getElementById('live-game-section').classList.remove('hidden');
+            renderPlayerDualCards();
         }
 
         function renderVerticalBoard() {
@@ -411,9 +415,45 @@
             }
         }
 
-        function declareBingo() {
-            socket.emit('declareBingo', { username: userFullName, cards: userSelectedCards });
+        function renderPlayerDualCards() {
+            const container = document.getElementById('player-dual-cards-container');
+            container.innerHTML = '';
+
+            if (userSelectedCards.length === 0) {
+                userSelectedCards = [1];
+            }
+
+            userSelectedCards.forEach((cardNum) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = "bg-[#140826] p-2 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
+                
+                const cardHeader = document.createElement('div');
+                cardHeader.className = "text-[10px] font-bold text-amber-400 text-center border-b border-white/10 pb-1";
+                cardHeader.innerText = `ካርድ #${cardNum}`;
+                cardWrapper.appendChild(cardHeader);
+
+                const miniGrid = document.createElement('div');
+                miniGrid.className = "grid grid-cols-5 gap-1 text-center";
+
+                let seed = cardNum * 17;
+                for(let r = 0; r < 25; r++) {
+                    let cellNum = ((seed + r * 7) % 75) + 1;
+                    const isCalled = calledNumbersList.includes(cellNum);
+                    
+                    const cell = document.createElement('div');
+                    cell.className = isCalled ? "bg-amber-500 text-black font-bold text-[9px] rounded p-1" : "bg-white/5 text-gray-300 text-[9px] rounded p-1";
+                    cell.innerText = (r === 12) ? "★" : cellNum;
+                    if (r === 12) cell.className = "bg-purple-600 text-white font-bold text-[9px] rounded p-1";
+
+                    miniGrid.appendChild(cell);
+                }
+
+                cardWrapper.appendChild(miniGrid);
+                container.appendChild(cardWrapper);
+            });
         }
+
+        function declareBingo() {}
 
         function openAdminPanel() {
             if (!isAdmin) {
