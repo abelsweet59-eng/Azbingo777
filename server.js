@@ -21,18 +21,78 @@ let globalRoom = {
     playersCount: 0
 };
 
-async function sendAdminNotification(message) {
+// 🟢 አድሚን ቦት ላይ "አጽድቅ" እና "ሰርዝ" አዝራሮችን (Inline Keyboard) በመላክ ማሳወቂያ መስጠት
+async function sendAdminFinancialRequest(type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN) return;
+    
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
+    
+    let message = `🔔 *AZ BINGO 777 - አዲስ የ${reqTypeTitle} ጥያቄ*\n\n` +
+                  `👤 ስም: ${username || 'ተጫዋች'}\n` +
+                  `🆔 ID: ${userId || 'N/A'}\n` +
+                  `📱 ስልክ: ${phone || 'ቴሌብር'}\n` +
+                  `💰 መጠን: ${amount} ብር\n` +
+                  (receipt ? `🧾 Receipt ID: ${receipt}\n` : '') +
+                  `\n⚠️ *እባክዎ ከታች ያሉትን አዝራሮች በመጫን ያጽድቁ ወይም ይሰርዙ!*`;
+
     try {
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: ADMIN_CHAT_ID,
             text: message,
-            parse_mode: 'Markdown'
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "✅ አጽድቅ (Approve)", callback_data: `app_${type}_${userId}_${amount}` },
+                        { text: "❌ ሰርዝ (Reject)", callback_data: `rej_${type}_${userId}_${amount}` }
+                    ]
+                ]
+            }
         });
     } catch (error) {
-        console.error("Telegram notification error:", error);
+        console.error("Telegram admin notification error:", error);
     }
 }
+
+// 🟢 አድሚኑ በቴሌግራም ቦት ላይ አዝራሮቹን ሲጫን (Callback Query) የሚሰለፍበት Webhook/Polling endpoint
+app.post(`/telegram-webhook`, async (req, res) => {
+    const update = req.body;
+    if (update && update.callback_query) {
+        const callbackQuery = update.callback_query;
+        const data = callbackQuery.data; // e.g., "app_deposit_371093083_100"
+        const chatId = callbackQuery.message.chat.id;
+
+        if (String(chatId) === String(ADMIN_CHAT_ID)) {
+            const parts = data.split('_');
+            const action = parts[0]; // 'app' or 'rej'
+            const type = parts[1];   // 'deposit' or 'withdraw'
+            const userId = parts[2];
+            const amount = parts[3];
+
+            if (action === 'app') {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `✅ ጥያቄው ተቀባይነት አግኝቷል! የ ${amount} ብር የ ${type} ጥያቄ ጸድቋል።`
+                });
+                // Notify specific user via socket if connected
+                io.emit('financialApproved', { userId, type, amount, message: `🎉 የእርስዎ የ ${amount} ብር የ ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚን ጸድቋል!` });
+            } else {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: chatId,
+                    text: `❌ ጥያቄው ተሰርዟል (Rejected)።`
+                });
+                io.emit('financialRejected', { userId, type, amount, message: `❌ የእርስዎ የ ${amount} ብር የ ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚን ተሰርዟል።` });
+            }
+        }
+        // Answer callback query to stop loading on telegram button
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                callback_query_id: callbackQuery.id
+            });
+        } catch(e) {}
+    }
+    res.sendStatus(200);
+});
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
@@ -41,7 +101,7 @@ io.on('connection', (socket) => {
 
     socket.emit('syncGameState', globalRoom);
 
-    // Financial requests with strict backend validation
+    // 🟢 ከ 100 ብር በታች የሆኑ ጥያቄዎችን አግዶ፣ ለአድሚን ቦት በአዝራር መልክ መላክ
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -51,24 +111,13 @@ io.on('connection', (socket) => {
             return;
         }
 
-        let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
-        
-        let msg = `🔔 *AZ BINGO 777 - አዲስ የ${reqTypeTitle} ጥያቄ*\n\n` +
-                  `👤 ስም: ${username || 'ተጫዋች'}\n` +
-                  `🆔 ID: ${userId || 'N/A'}\n` +
-                  `📱 ስልክ: ${phone || 'ቴሌብር'}\n` +
-                  `💰 መጠን: ${amount} ብር\n` +
-                  (receipt ? `🧾 Receipt ID: ${receipt}\n` : '') +
-                  `\n⚠️ *ማስታወሻ:* አድሚን እስኪያረጋግጥ ይጠብቁ!`;
-
-        await sendAdminNotification(msg);
-        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል!` });
+        await sendAdminFinancialRequest(type, amount, username, userId, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው አካውንትዎ ላይ ይስተካከላል።` });
     });
 
     socket.on('declareBingo', (data) => {
         let username = data && data.username ? data.username : 'ተጫዋች';
-        io.emit('bingoWinner', `🎉 BINGO WINNER! ተጫዋች ${username} አሸንፏል!`);
-        sendAdminNotification(`🏆 *BINGO WINNER ALERT!*\n\nተጫዋች *${username}* ጨዋታውን አሸንፏል!`);
+        io.emit('bingoWinner', { username, message: `🎉 BINGO WINNER! ተጫዋች ${username} ጨዋታውን አሸንፏል!` });
     });
 
     socket.on('disconnect', () => {
