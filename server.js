@@ -27,27 +27,110 @@ let globalRoom = {
 let activeGameInterval = null;
 
 const fakeBotNames = [
-    "Av addis", "Solomon", "Taye", "Beke t", "Adane",
+    "Netsanet", "Av addis", "Solomon", "Taye", "Beke t", "Adane",
     "ተሰማ", "henok", "12 yared b", "abel", "seyum",
     "somalew", "china", "dagi g", "beti i", "jira",
-    "lemma", "fikru", "netsanet", "neysi", "faya",
-    "faysel", "ahme", "dinu t", "mame mame", "baby",
-    "gfrt", "victor", "ga", "mo", "king iv", "djew"
+    "lemma", "fikru", "neysi", "faya", "faysel",
+    "ahme", "dinu t", "mame mame", "baby", "gfrt", "victor"
 ].slice(0, 30);
 
 let pendingRequests = {};
 
+// የካርድ ቁጥሮችን ከሴድ (Seed) የማመንጨት ትክክለኛ ሎጂክ
+function generateCartelaNumbers(cardNum) {
+    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+    let seed = cardNum * 17;
+    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+    let cols = ['B', 'I', 'N', 'G', 'O'];
+
+    cols.forEach(col => {
+        let range = colRanges[col];
+        let count = 0;
+        while(cardNumbersByCol[col].length < 5) {
+            let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
+            if (!cardNumbersByCol[col].includes(generated)) {
+                cardNumbersByCol[col].push(generated);
+            }
+            count++;
+        }
+    });
+
+    let flatList = [];
+    for (let r = 0; r < 5; r++) {
+        cols.forEach(col => {
+            if (r === 2 && col === 'N') {
+                flatList.push("FREE");
+            } else {
+                flatList.push(cardNumbersByCol[col][r]);
+            }
+        });
+    }
+    return flatList;
+}
+
+// 🟢 ትክክለኛ የቢንጎ ማሸነፍ ሁኔታ (አግድም፣ ቁመት እና ሰያፍ / Diagonal) ማረጋገጫ
+function checkWinningPattern(cardNum, calledNumbers) {
+    let numbers = generateCartelaNumbers(cardNum);
+    let matrix = [];
+    for(let i = 0; i < 5; i++) {
+        matrix.push(numbers.slice(i * 5, i * 5 + 5));
+    }
+
+    // 1. አግድም (Rows) ማረጋገጥ
+    for(let r = 0; r < 5; r++) {
+        let win = true;
+        for(let c = 0; c < 5; c++) {
+            let val = matrix[r][c];
+            if(val !== "FREE" && !calledNumbers.includes(val)) {
+                win = false;
+                break;
+            }
+        }
+        if(win) return true;
+    }
+
+    // 2. በቁመት (Cols) ማረጋገጥ
+    for(let c = 0; c < 5; c++) {
+        let win = true;
+        for(let r = 0; r < 5; r++) {
+            let val = matrix[r][c];
+            if(val !== "FREE" && !calledNumbers.includes(val)) {
+                win = false;
+                break;
+            }
+        }
+        if(win) return true;
+    }
+
+    // 3. ሰያፍ 1 (Top-Left to Bottom-Right Diagonal) ማረጋገጥ
+    let diag1Win = true;
+    for(let i = 0; i < 5; i++) {
+        let val = matrix[i][i];
+        if(val !== "FREE" && !calledNumbers.includes(val)) {
+            diag1Win = false;
+            break;
+        }
+    }
+    if(diag1Win) return true;
+
+    // 4. ሰያፍ 2 (Top-Right to Bottom-Left Diagonal) ማረጋገጥ
+    let diag2Win = true;
+    for(let i = 0; i < 5; i++) {
+        let val = matrix[i][4 - i];
+        if(val !== "FREE" && !calledNumbers.includes(val)) {
+            diag2Win = false;
+            break;
+        }
+    }
+    if(diag2Win) return true;
+
+    return false;
+}
+
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN) return;
-    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
-    
-    let message = "🔔 *AZ BINGO - አዲስ የ" + reqTypeTitle + " ጥያቄ*\n\n" +
-                  "👤 ስም: " + (username || 'ተጫዋች') + "\n" +
-                  "🆔 ID: " + (userId || 'N/A') + "\n" +
-                  "📱 ስልክ: " + (phone || 'ቴሌብር') + "\n" +
-                  "💰 መጠን: " + amount + " ብር\n" +
-                  (receipt ? "🧾 Receipt / SMS:\n" + receipt + "\n" : '') +
-                  "\n⚠️ *እባክዎ ከታች ያሉትን አዝራሮች በመጫን ያጽድቁ ወይም ይሰርዙ!*";
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = "🔔 *AZ BINGO - " + reqTypeTitle + "*\n\n👤 ስም: " + (username || 'ተጫዋች') + "\n💰 መጠን: " + amount + " ብር";
 
     try {
         await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
@@ -55,71 +138,19 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
             text: message,
             parse_mode: 'Markdown',
             reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: "✅ አጽድቅ (Approve)", callback_data: "app_" + requestId },
-                        { text: "❌ ሰርዝ (Reject)", callback_data: "rej_" + requestId }
-                    ]
-                ]
+                inline_keyboard: [[
+                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
+                    { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                ]]
             }
         });
-    } catch (error) {
-        console.error("Telegram admin notification error:", error);
-    }
+    } catch (error) {}
 }
-
-let lastUpdateId = 0;
-setInterval(async () => {
-    if (!TELEGRAM_BOT_TOKEN) return;
-    try {
-        let response = await axios.get("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/getUpdates?offset=" + (lastUpdateId + 1) + "&timeout=1");
-        let updates = response.data.result;
-        for (let update of updates) {
-            lastUpdateId = update.update_id;
-            if (update.callback_query) {
-                let cq = update.callback_query;
-                let data = cq.data;
-                let chatId = cq.message.chat.id;
-
-                if (String(chatId) === String(ADMIN_CHAT_ID)) {
-                    let parts = data.split('_');
-                    let action = parts[0];
-                    let reqId = parts[1] + '_' + parts[2];
-
-                    if (pendingRequests[reqId]) {
-                        let req = pendingRequests[reqId];
-                        if (action === 'app') {
-                            await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
-                                chat_id: chatId,
-                                text: "✅ ጥያቄው ጸድቋል! የ " + req.amount + " ብር የ " + req.type + " ጥያቄ ተፈጽሟል።"
-                            });
-                            io.to(req.socketId).emit('financialApproved', { type: req.type, amount: req.amount });
-                        } else {
-                            await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
-                                chat_id: chatId,
-                                text: "❌ ጥያቄው ተሰርዟል (Rejected)።"
-                            });
-                            io.to(req.socketId).emit('financialRejected', { type: req.type, amount: req.amount });
-                        }
-                        delete pendingRequests[reqId];
-                    }
-                }
-                try {
-                    await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/answerCallbackQuery", { callback_query_id: cq.id });
-                } catch(e) {}
-            }
-        }
-    } catch (err) {}
-}, 2000);
 
 let connectedRealPlayers = [];
 
 io.on('connection', (socket) => {
-    console.log("Player connected: " + socket.id);
-    if (!connectedRealPlayers.includes(socket.id)) {
-        connectedRealPlayers.push(socket.id);
-    }
-    
+    connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
     globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
@@ -133,34 +164,17 @@ io.on('connection', (socket) => {
 
         let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
         if (conflict) {
-            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል። እባክዎ ሌላ ይምረጡ።");
+            socket.emit('cardSelectionError', "⚠️ ይህ ካርድ ተይዟል!");
             return;
         }
         globalRoom.takenCards.push(...selectedCards);
-        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId };
+        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId, username: data.username || "ተጫዋች" };
         
         socket.emit('cardSelectionSuccess');
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    socket.on('financialRequest', async (data) => {
-        if (!data) return;
-        let { type, amount, username, userId, phone, receipt } = data;
-        
-        if (!amount || amount < 100) {
-            socket.emit('requestSubmitted', { success: false, message: '⚠️ ከ 100 ብር በታች ማዘዝ ወይም ማስገባት አይቻልም! ዝቅተኛው ገደብ 100 ብር ነው።' });
-            return;
-        }
-
-        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
-        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
-
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "የ " + amount + " ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው በቅጽበት ይስተካከላል።" });
-    });
-
     socket.on('disconnect', () => {
-        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -191,54 +205,67 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
-                    let winningUser = "Netsanet";
-                    let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
-                    let winningCard = 22;
-                    let winnerPrize = 0;
+                // 🟢 የተጠሩት ቁጥሮች በቂ ሲሆኑ ትክክለኛውን ፓተርን (አግድም፣ ቁመት ወይም ሰያፍ) ማረጋገጥ
+                if (globalRoom.calledNumbers.length >= 5) {
+                    let winningSocketId = null;
+                    let winningCard = null;
+                    let winningUser = "";
+                    let winningUserId = "";
 
-                    let totalPot = globalRoom.playersCount * 10;
-                    winnerPrize = Math.floor(totalPot * 0.70);
+                    let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    let activeSocketsWithCards = Object.keys(globalRoom.playerRoundCards);
-                    let shouldUserWin = activeSocketsWithCards.length > 0 && Math.random() < 0.5;
-
-                    if (shouldUserWin) {
-                        let winningSocketId = activeSocketsWithCards[Math.floor(Math.random() * activeSocketsWithCards.length)];
-                        let playerData = globalRoom.playerRoundCards[winningSocketId];
-                        winningUser = "ተጫዋች";
-                        winningUserId = playerData.userId;
-                        let userCards = playerData.cards;
-                        winningCard = userCards[Math.floor(Math.random() * userCards.length)];
-                    } else {
-                        winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        let unselectedCards = [];
-                        for (let c = 1; c <= 300; c++) {
-                            if (!globalRoom.takenCards.includes(c)) {
-                                unselectedCards.push(c);
+                    // 1. መጀመሪያ የተጫዋቾችን ካርዶች እንፈትሻለን
+                    for (let sId of activeSockets) {
+                        let pData = globalRoom.playerRoundCards[sId];
+                        for (let cNum of pData.cards) {
+                            if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
+                                winningSocketId = sId;
+                                winningCard = cNum;
+                                winningUser = pData.username || "ተጫዋች";
+                                winningUserId = pData.userId;
+                                break;
                             }
                         }
-                        if (unselectedCards.length > 0) {
-                            winningCard = unselectedCards[Math.floor(Math.random() * unselectedCards.length)];
+                        if (winningCard) break;
+                    }
+
+                    // 2. ተጫዋቾች ካልወጡ ከነፃ ካርዶች ውስጥ ትክክለኛውን ፓተርን የያዘውን እንፈልጋለን
+                    if (!winningCard && globalRoom.calledNumbers.length >= 8) {
+                        let candidateCards = [];
+                        for (let c = 1; c <= 300; c++) {
+                            if (checkWinningPattern(c, globalRoom.calledNumbers)) {
+                                candidateCards.push(c);
+                            }
+                        }
+                        if (candidateCards.length > 0) {
+                            winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+                            winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                            winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                         }
                     }
 
-                    globalRoom.gameActive = false;
-                    globalRoom.gameStartTime = Date.now() + roundDuration;
-                    globalRoom.takenCards = [];
-                    globalRoom.playerRoundCards = {};
+                    // አሸናፊ ከተገኘ ጨዋታውን በድል እናስተላልፋለን
+                    if (winningCard) {
+                        let totalPot = globalRoom.playersCount * 10;
+                        let winnerPrize = Math.floor(totalPot * 0.70);
 
-                    io.emit('bingoWinner', { 
-                        username: winningUser, 
-                        userId: winningUserId,
-                        cardNum: winningCard,
-                        playersCount: globalRoom.playersCount,
-                        totalPot: totalPot,
-                        prize: winnerPrize, 
-                        message: "🎉 BINGO WINNER!" 
-                    });
+                        globalRoom.gameActive = false;
+                        globalRoom.gameStartTime = Date.now() + roundDuration;
+                        globalRoom.takenCards = [];
+                        globalRoom.playerRoundCards = {};
 
-                    clearInterval(activeGameInterval);
+                        io.emit('bingoWinner', { 
+                            username: winningUser, 
+                            userId: winningUserId,
+                            cardNum: winningCard,
+                            playersCount: globalRoom.playersCount,
+                            totalPot: totalPot,
+                            prize: winnerPrize,
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+
+                        clearInterval(activeGameInterval);
+                    }
                 }
             } else {
                 globalRoom.gameActive = false;
@@ -248,7 +275,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
-        }, 5000);
+        }, 4000);
     }
 }, 1000);
 
