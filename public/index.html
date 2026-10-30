@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">60</div>
+                <div id="stat-players" class="text-[10px] font-bold text-amber-400">30</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -97,6 +97,15 @@
                 <!-- LIVE GAME SECTION -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 pb-4 overflow-y-auto custom-scroll">
                     
+                    <!-- 🟢 Auto & Manual Toggle Selector -->
+                    <div class="flex justify-between items-center bg-[#21103a] px-3 py-1.5 rounded-xl border border-purple-500/30">
+                        <span class="text-xs font-bold text-amber-300" id="mode-label">አውቶማቲክ (Auto Daub)</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-daub-toggle" checked class="sr-only peer" onchange="toggleDaubMode()">
+                            <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                    </div>
+
                     <div class="grid grid-cols-12 gap-1.5 bg-[#180a29] p-2 rounded-xl border border-purple-500/30 shadow-md">
                         
                         <!-- BINGO Vertical Columns Board -->
@@ -113,18 +122,16 @@
 
                         <!-- Right Panel: Recent Called Balls & Main Ball -->
                         <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/40 text-center space-y-1">
-                            <!-- Recent Called Balls History -->
                             <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-center items-center min-h-[24px] bg-black/40 p-1 rounded-lg text-[8px]">
                             </div>
 
-                            <!-- Main Called Ball -->
                             <div>
                                 <div class="text-[8px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
                                 <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-sm shadow-xl pulse-ball mx-auto my-1">
                                     --
                                 </div>
                             </div>
-                            <div class="text-[8px] text-gray-300">በሂደት ላይ...</div>
+                            <div class="text-[8px] text-gray-300" id="mode-instruction-text">ቁጥሮች በራሱ ይሞላሉ</div>
                         </div>
                     </div>
 
@@ -134,7 +141,7 @@
                     </div>
 
                     <div class="space-y-1 pt-1">
-                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች (Auto-Daub):</div>
+                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
                         <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
                     </div>
                 </div>
@@ -298,6 +305,7 @@
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
+        let manualDaubedNumbers = {};
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isAdmin) {
@@ -309,8 +317,6 @@
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b> ${isAdmin ? '(አድሚን)' : ''}`;
             updateWalletUI();
             renderHistoryUI();
-            
-            // 🟢 ገጽ ሲከፈት የ 300 ካርዶች ግሪድ በአስተማማኝ ሁኔታ እንዲጫን ማድረግ
             generate300CardGrid();
             startClientTimer();
 
@@ -407,6 +413,7 @@
                 renderPlayerDualCards();
             } else {
                 calledNumbersList = [];
+                manualDaubedNumbers = {};
                 document.getElementById('main-called-ball').innerText = "--";
                 document.getElementById('stat-called-count').innerText = "0";
                 document.getElementById('card-selection-section').classList.remove('hidden');
@@ -526,7 +533,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 60;
+            let playersCount = data.playersCount || 30;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -541,7 +548,7 @@
 
             document.getElementById('winner-banner-text').innerHTML = `
                 👥 ተጫዋቾች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>
-                👑 የሽልማት መጠን (70%): <span class="text-emerald-400 font-black">${prizePool} ብር</span>
+                👑 የሽልማት መጠን: <span class="text-emerald-400 font-black">${prizePool} ብር</span> (አሸናፊዎች ተካፍለዋል)
             `;
             document.getElementById('winner-modal').classList.remove('hidden');
 
@@ -566,6 +573,41 @@
             }, 1000);
         });
 
+        function getCartelaNumbers(cardNum) {
+            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+            let cols = ['B', 'I', 'N', 'G', 'O'];
+
+            cols.forEach((col, colIdx) => {
+                let range = colRanges[col];
+                let pool = [];
+                for (let n = range[0]; n <= range[1]; n++) {
+                    pool.push(n);
+                }
+
+                let seed = (cardNum * 7919) + (colIdx * 104729);
+                for (let i = pool.length - 1; i > 0; i--) {
+                    seed = (seed * 9301 + 49297) % 233280;
+                    let rnd = seed / 233280;
+                    let j = Math.floor(rnd * (i + 1));
+                    let temp = pool[i];
+                    pool[i] = pool[j];
+                    pool[j] = temp;
+                }
+
+                cardNumbersByCol[col] = pool.slice(0, 5);
+            });
+
+            let flatList = [];
+            for (let r = 0; r < 5; r++) {
+                cols.forEach(col => {
+                    if (r === 2 && col === 'N') flatList.push("FREE");
+                    else flatList.push(cardNumbersByCol[col][r]);
+                });
+            }
+            return flatList;
+        }
+
         function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
             const gridContainer = document.getElementById('winning-cartela-grid');
             gridContainer.innerHTML = '';
@@ -581,34 +623,13 @@
                 gridContainer.appendChild(hCell);
             });
 
-            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-            let seed = cardNum * 17;
-            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-            let cols = ['B', 'I', 'N', 'G', 'O'];
-
-            cols.forEach(col => {
-                let range = colRanges[col];
-                let count = 0;
-                while(cardNumbersByCol[col].length < 5) {
-                    let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
-                    if (!cardNumbersByCol[col].includes(generated)) {
-                        cardNumbersByCol[col].push(generated);
-                    }
-                    count++;
-                }
-            });
-
+            let numbers = getCartelaNumbers(cardNum);
             let matrix = [];
             for(let r = 0; r < 5; r++) {
-                let rowVals = [];
-                cols.forEach(col => {
-                    if(r === 2 && col === 'N') rowVals.push("FREE");
-                    else rowVals.push(cardNumbersByCol[col][r]);
-                });
-                matrix.push(rowVals);
+                matrix.push(numbers.slice(r * 5, r * 5 + 5));
             }
 
-            let winningRow = -1, winningCol = -1, isDiag1 = false, isDiag2 = false;
+            let winningRow = -1, winningCol = -1, isDiag1 = false, isDiag2 = false, isCorners = false;
 
             for(let r = 0; r < 5; r++) {
                 if(matrix[r].every(val => val === "FREE" || calledNums.includes(val))) { winningRow = r; break; }
@@ -638,9 +659,13 @@
                 }
                 if(d2) isDiag2 = true;
             }
+            if(winningRow === -1 && winningCol === -1 && !isDiag1 && !isDiag2) {
+                let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
+                if(corners.every(val => calledNums.includes(val))) isCorners = true;
+            }
 
             for(let r = 0; r < 5; r++) {
-                cols.forEach((col, c) => {
+                for(let c = 0; c < 5; c++) {
                     let cellNum = matrix[r][c];
                     const isFreeCenter = (cellNum === "FREE");
                     
@@ -649,6 +674,7 @@
                     if(winningCol === c) isPartOfWinningPattern = true;
                     if(isDiag1 && r === c) isPartOfWinningPattern = true;
                     if(isDiag2 && r === 4 - c) isPartOfWinningPattern = true;
+                    if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
 
                     const cell = document.createElement('div');
                     let bgClass = "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
@@ -660,7 +686,7 @@
                     cell.className = bgClass;
                     cell.innerText = isFreeCenter ? "★" : cellNum;
                     gridContainer.appendChild(cell);
-                });
+                }
             }
         }
 
@@ -668,6 +694,7 @@
             userSelectedCards = [];
             confirmedCards = [];
             calledNumbersList = [];
+            manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
             document.getElementById('main-called-ball').innerText = "--";
@@ -708,7 +735,7 @@
         }
 
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.add('hidden'); }
 
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
@@ -838,10 +865,27 @@
             }
         }
 
+        function toggleDaubMode() {
+            const autoToggle = document.getElementById('auto-daub-toggle');
+            const modeLabel = document.getElementById('mode-label');
+            const instructionText = document.getElementById('mode-instruction-text');
+            
+            if (autoToggle.checked) {
+                modeLabel.innerText = "አውቶማቲክ (Auto Daub)";
+                instructionText.innerText = "ቁጥሮች በራሱ ይሞላሉ";
+            } else {
+                modeLabel.innerText = "ማኑዋል (Manual Daub)";
+                instructionText.innerText = "እርስዎ ጫኑዋቸው";
+            }
+            renderPlayerDualCards();
+        }
+
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
             const cardsTitle = document.getElementById('player-cards-title');
+            const autoToggle = document.getElementById('auto-daub-toggle');
+            let isAutoMode = autoToggle ? autoToggle.checked : true;
             
             container.innerHTML = '';
 
@@ -857,6 +901,10 @@
             container.classList.remove('hidden');
 
             confirmedCards.forEach((cardNum) => {
+                if (!manualDaubedNumbers[cardNum]) {
+                    manualDaubedNumbers[cardNum] = [];
+                }
+
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
                 
@@ -878,36 +926,46 @@
                 const miniGrid = document.createElement('div');
                 miniGrid.className = "grid grid-cols-5 gap-0.5 text-center";
 
-                let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-                let seed = cardNum * 17;
-                let colRanges = {
-                    B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
-                };
-                let cols = ['B', 'I', 'N', 'G', 'O'];
-
-                cols.forEach(col => {
-                    let range = colRanges[col];
-                    let count = 0;
-                    while(cardNumbersByCol[col].length < 5) {
-                        let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
-                        if (!cardNumbersByCol[col].includes(generated)) {
-                            cardNumbersByCol[col].push(generated);
-                        }
-                        count++;
-                    }
-                });
+                let numbers = getCartelaNumbers(cardNum);
 
                 for(let r = 0; r < 5; r++) {
-                    cols.forEach(col => {
-                        let cellNum = cardNumbersByCol[col][r];
-                        const isFreeCenter = (r === 2 && col === 'N');
+                    for(let c = 0; c < 5; c++) {
+                        let cellNum = numbers[r * 5 + c];
+                        const isFreeCenter = (cellNum === "FREE");
                         const isCalled = calledNumbersList.includes(cellNum);
+                        const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                         const cell = document.createElement('div');
-                        cell.className = isFreeCenter ? "bg-purple-600 text-white font-bold text-[8px] rounded p-1" : isCalled ? "bg-amber-500 text-black font-bold text-[8px] rounded p-1" : "bg-white/5 text-gray-300 text-[8px] rounded p-1";
+                        
+                        let cellClass = "bg-white/5 text-gray-300 text-[8px] rounded p-1 cursor-pointer transition-colors";
+                        if (isFreeCenter) {
+                            cellClass = "bg-purple-600 text-white font-bold text-[8px] rounded p-1";
+                        } else if (isAutoMode && isCalled) {
+                            cellClass = "bg-amber-500 text-black font-bold text-[8px] rounded p-1";
+                        } else if (!isAutoMode && isManuallyDaubed) {
+                            cellClass = "bg-emerald-500 text-black font-bold text-[8px] rounded p-1";
+                        } else if (!isAutoMode && isCalled) {
+                            cellClass = "bg-white/10 text-amber-300 font-bold text-[8px] rounded p-1 border border-amber-400/50 cursor-pointer";
+                        }
+
+                        cell.className = cellClass;
                         cell.innerText = isFreeCenter ? "★" : cellNum;
+
+                        if (!isAutoMode && !isFreeCenter) {
+                            cell.onclick = () => {
+                                if (isCalled) {
+                                    if (!manualDaubedNumbers[cardNum].includes(cellNum)) {
+                                        manualDaubedNumbers[cardNum].push(cellNum);
+                                        renderPlayerDualCards();
+                                    }
+                                } else {
+                                    alert("⚠️ ይህ ቁጥር ገና አልተጠራም!");
+                                }
+                            };
+                        }
+
                         miniGrid.appendChild(cell);
-                    });
+                    }
                 }
 
                 cardWrapper.appendChild(miniGrid);
