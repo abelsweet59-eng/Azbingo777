@@ -24,12 +24,12 @@ let globalRoom = {
 };
 
 const fakeBotNames = [
-    "አበበ አበደ", "ከበደ ", "ለይኩን ታደሰ", "መሳይ አለሙ", "ዳዊት ተሾመ",
+    "አበበ ከበደ", "ከበደ ማሞ", "ለይኩን ታደሰ", "መሳይ አለሙ", "ዳዊት ተሾመ",
     "ሰሎሞን ገብሬ", "ዮናስ መኮንን", "እዮብ ታሪኩ", "ሀብታሙ አየለ", "ፍቅሩ ደስታ",
-    "nahome", "መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ያሬድ አየለ",
-    "መአዛ በላይ", "tija", "ሕይወት ታደሰ", "mamo", "መቅደስ ካሳሁን",
+    "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
+    "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
     "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
-    "ሚካኤል ዘውዴ", "badora t", "abel", "dani", "አክሊሉ ሀብቴ"
+    "ሚካኤል ዘውዴ", "ናትናኤል ታለለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
 ];
 
 let pendingRequests = {};
@@ -43,7 +43,7 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
                   "🆔 ID: " + (userId || 'N/A') + "\n" +
                   "📱 ስልክ: " + (phone || 'ቴሌብር') + "\n" +
                   "💰 መጠን: " + amount + " ብር\n" +
-                  (receipt ? "🧾 Receipt ID: " + receipt + "\n" : '') +
+                  (receipt ? "🧾 Receipt / SMS:\n" + receipt + "\n" : '') +
                   "\n⚠️ *እባክዎ ከታች ያሉትን አዝራሮች በመጫን ያጽድቁ ወይም ይሰርዙ!*";
 
     try {
@@ -111,106 +111,4 @@ setInterval(async () => {
 
 let connectedRealPlayers = [];
 
-io.on('connection', (socket) => {
-    console.log("Player connected: " + socket.id);
-    connectedRealPlayers.push(socket.id);
-    
-    let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
-    io.emit('updatePlayersCount', globalRoom.playersCount);
-
-    socket.emit('syncGameState', globalRoom);
-    socket.emit('updateTakenCards', globalRoom.takenCards);
-
-    socket.on('confirmCards', (selectedCards) => {
-        let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
-        if (conflict) {
-            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል። እባክዎ ሌላ ይምረጡ።");
-            return;
-        }
-        globalRoom.takenCards.push(...selectedCards);
-        socket.emit('cardSelectionSuccess');
-        io.emit('updateTakenCards', globalRoom.takenCards);
-    });
-
-    socket.on('financialRequest', async (data) => {
-        if (!data) return;
-        let { type, amount, username, userId, phone, receipt } = data;
-        
-        if (!amount || amount < 100) {
-            socket.emit('requestSubmitted', { success: false, message: '⚠️ ከ 100 ብር በታች ማዘዝ ወይም ማስገባት አይቻልም! ዝቅተኛው ገደብ 100 ብር ነው።' });
-            return;
-        }
-
-        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
-        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
-
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "የ " + amount + " ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው በቅጽበት ይስተካከላል።" });
-    });
-
-    socket.on('disconnect', () => {
-        console.log("Player disconnected: " + socket.id);
-        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
-        io.emit('updatePlayersCount', globalRoom.playersCount);
-    });
-});
-
-// 🟢 የጨዋታ ቆጣሪ እና ቁጥሮች በየ 5 ሰከንድ በትክክል የሚጠሩበት የሰርቨር ሎጂክ
-setInterval(() => {
-    let now = Date.now();
-    let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
-
-    if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
-        globalRoom.gameActive = true;
-        globalRoom.calledNumbers = [];
-        io.emit('gameStartedBroadcast');
-
-        let callingInterval = setInterval(() => {
-            if (!globalRoom.gameActive) {
-                clearInterval(callingInterval);
-                return;
-            }
-            let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
-            if (available.length > 0) {
-                let num = available[Math.floor(Math.random() * available.length)];
-                globalRoom.calledNumbers.push(num);
-                io.emit('numberCalledBroadcast', num);
-
-                if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
-                    let winningUser = "";
-                    let winnerPrize = 0;
-
-                    if (globalRoom.playersCount < 60) {
-                        winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winnerPrize = 0; 
-                    } else {
-                        winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
-                        let totalPot = globalRoom.playersCount * 10;
-                        winnerPrize = Math.floor(totalPot * 0.70); 
-                    }
-
-                    globalRoom.gameActive = false;
-                    globalRoom.gameStartTime = Date.now() + roundDuration;
-                    globalRoom.takenCards = [];
-                    io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
-                    clearInterval(callingInterval);
-                }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.takenCards = [];
-                io.emit('gameEndedBroadcast');
-                clearInterval(callingInterval);
-            }
-        }, 5000);
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+io.
