@@ -158,7 +158,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ እና ቁጥሮች በየ 5 ሰከንድ (5000ms) የመጥራት ሎጂክ
+// 🟢 የጨዋታ ቆጣሪ እና ቁጥሮች በየ 5 ሰከንድ (5000ms) በትክክል የሚጠሩበት የሰርቨር ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -206,7 +206,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
-        }, 5000); // 👈 በየ 5 ሰከንድ አንድ ቁጥር ይጠራል
+        }, 5000); // 👈 በየ 5 ሰከንድ አንድ ቁጥር በትክክል ይጠራል
     }
 }, 1000);
 
