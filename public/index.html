@@ -294,6 +294,7 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
+        // 🟢 ከሰቨር የሚመጣውን ትክክለኛ የሰአት ሰሌዳ እና የጨዋታ ሁኔታ በግልጽ መቀበል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -309,6 +310,7 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
+                // ጨዋታው ገና አላለጣም/አልጀመረም: የካርድ ምርጫ ገጽ በግልጽ እንዲታይ እና live game እንዲደበቅ ይደረጋል
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
             }
@@ -560,7 +562,6 @@
             
             container.innerHTML = '';
 
-            // ተጠቃሚው ካርድ ካላረጋገጠ (Confirmed Cards ከሌለው) እንደ ተመልካች ብቻ ይቆጠራል
             if (confirmedCards.length === 0) {
                 noticeBox.classList.remove('hidden');
                 cardsTitle.classList.add('hidden');
@@ -569,7 +570,6 @@
                 return;
             }
 
-            // ካርድ ካለው ግን የተያዙትን ካርዶች በስክሪኑ ላይ ያሳየዋል
             noticeBox.classList.add('hidden');
             cardsTitle.classList.remove('hidden');
             container.classList.remove('hidden');
