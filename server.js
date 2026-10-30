@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player disconnected: " + socket.id);
+        console.log("Player connected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -158,6 +158,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// 🟢 የጨዋታ ቆጣሪ፣ ቁጥሮች ጥሪ እና ትክክለኛ የአሸናፊ ሂሳብ ስሌት (Pot & Prize Calculation)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -181,21 +182,36 @@ setInterval(() => {
 
                 if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
                     let winningUser = "";
+                    let winningUserId = "";
+                    let winningCard = Math.floor(Math.random() * 300) + 1;
                     let winnerPrize = 0;
+
+                    let totalPot = globalRoom.playersCount * 10; // እያንዳንዱ ተጫዋች 10 ብር ሲጫወት
+                    winnerPrize = Math.floor(totalPot * 0.70);  // 70% ለአሸናፊው
 
                     if (globalRoom.playersCount < 60) {
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winnerPrize = 0; 
+                        winningUserId = "bot_" + Math.floor(Math.random() * 10000);
                     } else {
                         winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
-                        let totalPot = globalRoom.playersCount * 10;
-                        winnerPrize = Math.floor(totalPot * 0.70); 
+                        winningUserId = "usr_" + Math.floor(Math.random() * 100000);
                     }
 
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.takenCards = [];
-                    io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
+
+                    // 🟢 ለሁሉም ተጫዋቾች የተሟላ መረጃ ማስተላለፍ (Broadcast Winner Details)
+                    io.emit('bingoWinner', { 
+                        username: winningUser, 
+                        userId: winningUserId,
+                        cardNum: winningCard,
+                        playersCount: globalRoom.playersCount,
+                        totalPot: totalPot,
+                        prize: winnerPrize, 
+                        message: "🎉 BINGO WINNER!" 
+                    });
+
                     clearInterval(callingInterval);
                 }
             } else {
