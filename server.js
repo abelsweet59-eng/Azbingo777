@@ -29,7 +29,7 @@ const fakeBotNames = [
     "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
     "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
     "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
-    "ሚካኤል ዘውዴ", "ናትናኤል ታደለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
+    "ሚካኤል ዘውዴ", "ናትናኤል ታለለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
 ];
 
 let pendingRequests = {};
@@ -150,7 +150,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player connected: " + socket.id);
+        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
