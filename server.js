@@ -157,7 +157,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ሰዓት ቆጣሪ እና ሎጂክ
+// 🟢 የጨዋታ ሰዓት ቆጣሪ (Timer & Game Loop)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
