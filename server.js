@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 60000; // 60 ሰከንድ
+let roundDuration = 60000; // 60 ሰከንድ የرجስተሬሽን ሰአት
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
@@ -36,17 +36,15 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// 🟢 የቦቶችን እና የተጫዋቾችን ካርዶች በየጊዜው በዘፈቀደ (Dynamic) ማስተዳደር
+// ቦቶች እና ሌሎች ተጫዋቾች ካርዶችን በቅጽበት በየጊዜው እንዲይዙ እና እንዲለቁ የሚያደርግ ሲስተም
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     
-    // የተወሰኑ ቦቶች ካርዶችን እንዲይዙ ማድረግ (ከ 1 እስከ 300 ካሉት መካከል)
     let available = [];
     for(let i = 1; i <= 300; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
 
-    // በዘፈቀደ ከ 5 እስከ 15 የሚሆኑ ካርዶች በቦቶች እንዲያዙ ማድረግ
     let botPicksCount = Math.floor(Math.random() * 10) + 5;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
@@ -58,7 +56,7 @@ function simulateBotCardSelections() {
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-setInterval(simulateBotCardSelections, 8000);
+setInterval(simulateBotCardSelections, 7000);
 
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -88,6 +86,7 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
+// ትክክለኛውን የቢንጎ ማሸነፍ ህግ (አግድም፣ ቁመት ወይም ሰያፍ) ማረጋገጫ
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
@@ -118,6 +117,70 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = "🔔 *AZ BINGO - " + reqTypeTitle + "*\n\n👤 ስም: " + (username || 'ተጫዋች') + "\n💰 መጠን: " + amount + " ብር";
+
+    try {
+        await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
+            chat_id: ADMIN_CHAT_ID,
+            text: message,
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [[
+                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
+                    { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                ]]
+            }
+        });
+    } catch (error) {}
+}
+
+let lastUpdateId = 0;
+setInterval(async () => {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/getUpdates?offset=" + (lastUpdateId + 1) + "&timeout=1");
+        let updates = response.data.result;
+        for (let update of updates) {
+            lastUpdateId = update.update_id;
+            if (update.callback_query) {
+                let cq = update.callback_query;
+                let data = cq.data;
+                let chatId = cq.message.chat.id;
+
+                if (String(chatId) === String(ADMIN_CHAT_ID)) {
+                    let parts = data.split('_');
+                    let action = parts[0];
+                    let reqId = parts[1] + '_' + parts[2];
+
+                    if (pendingRequests[reqId]) {
+                        let req = pendingRequests[reqId];
+                        if (action === 'app') {
+                            await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
+                                chat_id: chatId,
+                                text: "✅ ጥያቄው ጸድቋል! የ " + req.amount + " ብር ጸድቋል።"
+                            });
+                            io.to(req.socketId).emit('financialApproved', { type: req.type, amount: req.amount });
+                        } else {
+                            await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
+                                chat_id: chatId,
+                                text: "❌ ጥያቄው ተሰርዟል።"
+                            });
+                            io.to(req.socketId).emit('financialRejected', { type: req.type, amount: req.amount });
+                        }
+                        delete pendingRequests[reqId];
+                    }
+                }
+                try {
+                    await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/answerCallbackQuery", { callback_query_id: cq.id });
+                } catch(e) {}
+            }
+        }
+    } catch (err) {}
+}, 2000);
+
 let connectedRealPlayers = [];
 
 io.on('connection', (socket) => {
@@ -135,7 +198,7 @@ io.on('connection', (socket) => {
 
         let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
         if (conflict) {
-            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል።");
+            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ይህ ካርድ በሌላ ተጫዋች ተይዟል!");
             return;
         }
         globalRoom.takenCards.push(...selectedCards);
@@ -143,6 +206,22 @@ io.on('connection', (socket) => {
         
         socket.emit('cardSelectionSuccess');
         io.emit('updateTakenCards', globalRoom.takenCards);
+    });
+
+    socket.on('financialRequest', async (data) => {
+        if (!data) return;
+        let { type, amount, username, userId, phone, receipt } = data;
+        
+        if (!amount || amount < 100) {
+            socket.emit('requestSubmitted', { success: false, message: '⚠️ ዝቅተኛው ገደብ 100 ብር ነው።' });
+            return;
+        }
+
+        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
+        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
+
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "ጥያቄዎ ተልኳል!" });
     });
 
     socket.on('disconnect', () => {
@@ -153,6 +232,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// የጨዋታ ዑደት እና የሰአት ማመሳሰል ሎጅክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
