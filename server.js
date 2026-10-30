@@ -36,7 +36,6 @@ const fakeBotNames = [
 ];
 
 let pendingRequests = {};
-let socketMap = {}; // የዩዘር ሶኬት ማስተሳሰሪያ
 
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
@@ -122,57 +121,73 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
-// 🟢 ቴሌግራም ዌብሁክ (Webhook) ለአድሚን አዝራር ጠቅታዎች
-app.post('/telegram-webhook', async (req, res) => {
-    let update = req.body;
-    if (update && update.callback_query) {
-        let callbackQuery = update.callback_query;
-        let data = callbackQuery.data; // ምሳሌ: app_req_123 ወይም rej_req_123
-        let chatId = callbackQuery.message.chat.id;
-        let messageId = callbackQuery.message.message_id;
+// 🟢 ቴሌግራም ፖሊንግ (Telegram Polling) - ሰርቨሩ በራሱ ከቴሌግራም አዝራር ጠቅታዎችን እንዲቀበል ማድረግ
+let telegramOffset = 0;
+async function pollTelegramUpdates() {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            params: { offset: telegramOffset, timeout: 30 }
+        });
 
-        let parts = data.split('_');
-        let action = parts[0]; // app ወይም rej
-        let requestId = parts.slice(1).join('_'); // req_123
+        if (response.data && response.data.ok) {
+            let updates = response.data.result;
+            for (let update of updates) {
+                telegramOffset = update.update_id + 1;
 
-        let reqData = pendingRequests[requestId];
-        if (reqData) {
-            let targetSocketId = reqData.socketId;
-            let targetSocket = io.sockets.sockets.get(targetSocketId);
+                if (update.callback_query) {
+                    let callbackQuery = update.callback_query;
+                    let data = callbackQuery.data; // ምሳሌ: app_req_123 ወይም rej_req_123
+                    let chatId = callbackQuery.message.chat.id;
+                    let messageId = callbackQuery.message.message_id;
 
-            if (action === 'app') {
-                if (targetSocket) {
-                    targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                    let parts = data.split('_');
+                    let action = parts[0]; // app ወይም rej
+                    let requestId = parts.slice(1).join('_');
+
+                    let reqData = pendingRequests[requestId];
+                    if (reqData) {
+                        let targetSocketId = reqData.socketId;
+                        let targetSocket = io.sockets.sockets.get(targetSocketId);
+
+                        if (action === 'app') {
+                            if (targetSocket) {
+                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                            }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId,
+                                message_id: messageId,
+                                text: `✅ *ጥያቄው ጸድቋል!* (መጠን: ${reqData.amount} ብር)`,
+                                parse_mode: 'Markdown'
+                            });
+                        } else {
+                            if (targetSocket) {
+                                targetSocket.emit('financialRejected', { type: reqData.type });
+                            }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId,
+                                message_id: messageId,
+                                text: `❌ *ጥያቄው ተሰርዟል!*`,
+                                parse_mode: 'Markdown'
+                            });
+                        }
+                        delete pendingRequests[requestId];
+                    }
+
+                    try {
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+                            callback_query_id: callbackQuery.id
+                        });
+                    } catch (e) {}
                 }
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                    chat_id: chatId,
-                    message_id: messageId,
-                    text: `✅ *ጥያቄው ጸድቋል!* (ታክሏል: ${reqData.amount} ብር)`,
-                    parse_mode: 'Markdown'
-                });
-            } else {
-                if (targetSocket) {
-                    targetSocket.emit('financialRejected', { type: reqData.type });
-                }
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                    chat_id: chatId,
-                    message_id: messageId,
-                    text: `❌ *ጥያቄው ተሰርዟል!*`,
-                    parse_mode: 'Markdown'
-                });
             }
-            delete pendingRequests[requestId];
         }
+    } catch (err) {}
+    setTimeout(pollTelegramUpdates, 1000);
+}
 
-        // ለቴሌግራም አዝራር ማረጋገጫ መላክ
-        try {
-            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-                callback_query_id: callbackQuery.id
-            });
-        } catch (e) {}
-    }
-    res.sendStatus(200);
-});
+// ፖሊንግን ማስጀመር
+setTimeout(pollTelegramUpdates, 2000);
 
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
@@ -327,7 +342,7 @@ setInterval(() => {
                         let totalPot = totalPlayers * 10;
                         let winnerPrize = Math.floor(totalPot * 0.70);
 
-                        globalRoom.gameActive, globalRoom.gameActive = false;
+                        globalRoom.gameActive = false;
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
                         globalRoom.playerRoundCards = {};
@@ -336,6 +351,7 @@ setInterval(() => {
                             username: winningUser, 
                             userId: winningUserId,
                             cardNum: winningCard,
+                        
                             playersCount: totalPlayers,
                             totalPot: totalPot,
                             prize: winnerPrize,
