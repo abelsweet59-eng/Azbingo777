@@ -53,7 +53,6 @@
                 <div class="text-[9px] text-gray-400 uppercase">ቤት (Bet)</div>
                 <div id="stat-bet" class="text-xs font-bold text-amber-400">10 ብር</div>
             </div>
-            <!-- 🟢 ደራሽ (አሸናፊው የሚሸለመው 70% ብር ብቻ የሚታይበት) -->
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[10px] text-gray-300">ደራሽ</div>
                 <div id="stat-derash" class="text-xs font-bold text-amber-400">0 ብር</div>
@@ -82,6 +81,7 @@
                         </div>
                     </div>
 
+                    <!-- 🟢 300 Cards Grid with Live Bot Simulation -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -231,6 +231,7 @@
         }
 
         let userSelectedCards = [];
+        let takenCardsByOthers = []; // በሌሎች ተጫዋቾች/ቦቶች የተያዙ ካርዶች
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
 
@@ -245,6 +246,7 @@
             updateWalletUI();
             generate300CardGrid();
             startClientTimer();
+            startBotCardSimulation(); // 🟢 ቦቶቹ በዘፈቀደ ካርዶችን መምረጥና መቀየር የሚጀምሩበት ሲሙሌሽን
         });
 
         function startClientTimer() {
@@ -256,6 +258,22 @@
                 
                 document.getElementById('stat-timer').innerText = timeStr;
             }, 1000);
+        }
+
+        // 🟢 ቦቶቹ በዘፈቀደ ካርዶችን እያዙ የሚለቁበት (ያዝለቅቅ የሚያደርጉበት) ሪል-ታይም ሲሙሌሽን
+        function startBotCardSimulation() {
+            setInterval(() => {
+                // በዘፈቀደ ከ 1 እስከ 300 ካሉ ካርዶች መካከል 5 እስከ 10 የሚሆኑትን በቦቶች ያስይዛል ወይም ያስለቅቃል
+                takenCardsByOthers = [];
+                let simulatedCount = Math.floor(Math.random() * 15) + 10;
+                for (let i = 0; i < simulatedCount; i++) {
+                    let randomCard = Math.floor(Math.random() * 300) + 1;
+                    if (!userSelectedCards.includes(randomCard)) {
+                        takenCardsByOthers.push(randomCard);
+                    }
+                }
+                generate300CardGrid(); // ግሪዱን በአዲስ ሁኔታ ሪፍሬሽ ያደርጋል
+            }, 4000); // በየ 4 ሰኮንዱ ቦቶቹ ምርጫቸውን ይቀያይራሉ
         }
 
         socket.on('connect', () => {
@@ -280,11 +298,10 @@
             }
         });
 
-        // 🟢 ደራሽ ላይ የሚታየው አሸናፊው የሚሸለመው ብር (70% ብቻ) እንዲሆን ተደርጎ ተሰላ
         socket.on('updatePlayersCount', (count) => {
             document.getElementById('stat-players').innerText = count;
-            let totalPot = count * 10; // አጠቃላይ የተሰበሰበው ብር
-            let winnerPrize = Math.floor(totalPot * 0.70); // አሸናፊው የሚሸለመው 70% ብር ብቻ
+            let totalPot = count * 10;
+            let winnerPrize = Math.floor(totalPot * 0.70);
             document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
@@ -416,24 +433,37 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
+        // 🟢 ካርዶችን በግልጽ እና በሌሎች ተጫዋቾች (ቦቶች) መያዛቸውን አሳይቶ የማመንጨት ሎጂክ
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
             for(let i = 1; i <= 300; i++) {
                 const btn = document.createElement('button');
-                btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
-                btn.innerText = i;
-                btn.onclick = () => {
-                    if(userSelectedCards.includes(i)) {
-                        userSelectedCards = userSelectedCards.filter(c => c !== i);
-                        btn.className = "bg-purple-950/60 text-white font-medium text-xs py-2 rounded border border-white/5";
-                    } else {
-                        if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
-                        userSelectedCards.push(i);
-                        btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
-                    }
-                    document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም አልተመረጠም";
-                };
+                
+                let isSelectedByMe = userSelectedCards.includes(i);
+                let isTakenByOther = takenCardsByOthers.includes(i);
+
+                if (isSelectedByMe) {
+                    btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
+                    btn.innerText = `${i} (የእርስዎ)`;
+                } else if (isTakenByOther) {
+                    btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
+                    btn.innerText = `${i} (ተያዟል)`;
+                    btn.disabled = true;
+                } else {
+                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
+                    btn.innerText = i;
+                    btn.onclick = () => {
+                        if(userSelectedCards.includes(i)) {
+                            userSelectedCards = userSelectedCards.filter(c => c !== i);
+                        } else {
+                            if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
+                            userSelectedCards.push(i);
+                        }
+                        document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም አልተመረጠም";
+                        generate300CardGrid();
+                    };
+                }
                 grid.appendChild(btn);
             }
         }
