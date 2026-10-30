@@ -119,6 +119,7 @@ io.on('connection', (socket) => {
     globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
+    // 🟢 አዲስ ተጫዋች ሲገባ አሁን ያለውን የሰአት እና የጨዋታ ሁኔታ በግልጽ እንልክላለን
     socket.emit('syncGameState', globalRoom);
     socket.emit('updateTakenCards', globalRoom.takenCards);
 
@@ -150,7 +151,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player connected: " + socket.id);
+        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -158,7 +159,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ እና ቁጥር በየ 3 ሰከንድ የመጥራት ሎጂክ
+// 🟢 የጨዋታ ቆጣሪ፣ የሰአት ማስተካከያ እና ቁጥሮች በየ 3 ሰከንድ የመጥራት ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -169,7 +170,7 @@ setInterval(() => {
         globalRoom.calledNumbers = [];
         io.emit('gameStartedBroadcast');
 
-        // 🟢 ቁጥሮች በየ 3 ሰከንድ (3000 ሚሊሰከንድ) እንዲጠሩ ተደረገ
+        // 🟢 ቁጥሮች በየ 3 ሰከንድ (3000 ሚሊሰከንድ) እንዲጠሩ ተደርጓል
         let callingInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(callingInterval);
@@ -181,17 +182,18 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
+                // 🟢 ጨዋታው ሲጠናቀቅ የሽልማት ገንዘብ ስሌት (እውነተኛ ተጫዋቾች ከ 60 በላይ ሲሆኑ 70% ሻር ይሰጣቸዋል)
                 if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
                     let winningUser = "";
                     let winnerPrize = 0;
 
                     if (globalRoom.playersCount < 60) {
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winnerPrize = 0; 
+                        winnerPrize = 0; // ለቦቱ ሽልማት የለም (ብሩ ለቤት ይቀራል)
                     } else {
                         winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
                         let totalPot = globalRoom.playersCount * 10;
-                        winnerPrize = Math.floor(totalPot * 0.70); 
+                        winnerPrize = Math.floor(totalPot * 0.70); // 70% ለአሸናፊው እውነተኛ ተጫዋች
                     }
 
                     globalRoom.gameActive = false;
