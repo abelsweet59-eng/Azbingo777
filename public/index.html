@@ -180,17 +180,27 @@
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
-        <!-- 🟢 WINNING MODAL (እንደ ሳምፕሉ ውብ የሆነው የድል አቀራረብ ሞዳል) -->
-        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3">
-            <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-4 w-full max-w-xs space-y-3 shadow-2xl text-center relative">
-                <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-lg">👑</div>
+        <!-- 🟢 WINNING MODAL (እንደ ላከው ሳምፕል ምስል የተስተካከለ አሸናፊ ማሳያ ሞዳል) -->
+        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2">
+            <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-3 w-full max-w-[320px] space-y-2 shadow-2xl text-center relative">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
-                    <h2 class="text-amber-400 font-extrabold text-lg tracking-wider">BINGO!</h2>
-                    <div id="winner-count-badge" class="text-white text-[11px] font-bold mt-1">🎉 1 player won!</div>
-                    <div class="flex flex-wrap gap-1 justify-center my-2" id="winner-names-chips"></div>
+                    <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
+                    <div id="winner-title-badge" class="text-white text-[10px] font-bold mt-0.5">🎉 Netsanet WON!</div>
                     
-                    <div class="text-white text-[10px] mt-2 space-y-1 text-left bg-black/40 p-2.5 rounded-xl border border-white/10" id="winner-banner-text">
+                    <!-- Winning Cartela Container -->
+                    <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
+                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 22</div>
+                        <!-- Mini Cartela Table Grid -->
+                        <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
+                    </div>
+
+                    <div class="text-white text-[9px] mt-2 bg-purple-950/60 p-2 rounded-xl border border-purple-500/30 space-y-0.5 text-left" id="winner-banner-text">
                         አሸናፊው መረጃ እየጠበቀ...
+                    </div>
+                    
+                    <div class="mt-2 text-[9px] text-amber-400 font-bold" id="auto-start-timer-msg">
+                        ⏳ Auto-starting next game in 6s
                     </div>
                 </div>
             </div>
@@ -510,28 +520,26 @@
             resetPlayerSelectionForNewRound();
         });
 
-        // 🟢 አሸናፊ ሲወጣ የሳምፕሉን ዲዛይን የሚመስል ውብ ሞዳል ማሳያ
+        // 🟢 አሸናፊ ሲወጣ ካርቴላውን ከነ ቅጦቹ የሚያሳይ የድል ሞዳል ሎጂክ (እንደ ሳምፕሉ ምስል)
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
-            let cardNum = data.cardNum || 1;
+            let cardNum = data.cardNum || 22;
             let playersCount = data.playersCount || 60;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
 
             let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
+            let displayName = isMeWin ? userFullName : winnerName;
 
-            document.getElementById('winner-count-badge').innerHTML = `🎉 1 player won!`;
-            document.getElementById('winner-names-chips').innerHTML = `
-                <div class="bg-black/50 border border-purple-500/30 px-2 py-0.5 rounded-full text-[9px] text-amber-300">
-                    <b>${isMeWin ? userFullName : winnerName}</b> <span class="text-gray-400">#${winnerId.slice(-4)}</span>
-                </div>
-            `;
+            document.getElementById('winner-title-badge').innerHTML = `🎉 ${displayName} WON!`;
+            document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
+
+            // የድል ካርቴላ ፍርግርግ (Grid) መፍጠር
+            renderWinningCartelaGrid(cardNum);
 
             document.getElementById('winner-banner-text').innerHTML = `
-                🏆 Winning Cartela: <b class="text-amber-400">#${cardNum}</b><br>
-                👥 ተጫዋቾች: <b>${playersCount}</b><br>
-                💰 ጠቅላላ ድስት (Pot): <b>${totalPot} ብር</b><br>
+                👥 ተጫዋቾች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>
                 👑 የሽልማት መጠን (70%): <span class="text-emerald-400 font-black">${prizePool} ብር</span>
             `;
             document.getElementById('winner-modal').classList.remove('hidden');
@@ -542,11 +550,77 @@
                 addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
             }
 
-            setTimeout(() => {
-                document.getElementById('winner-modal').classList.add('hidden');
-                resetPlayerSelectionForNewRound();
-            }, 6000);
+            // 6 ሰከንድ ቆጥሮ መዝጋት
+            let secondsLeft = 6;
+            let timerEl = document.getElementById('auto-start-timer-msg');
+            timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
+
+            let countdownInterval = setInterval(() => {
+                secondsLeft--;
+                timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
+                if (secondsLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('winner-modal').classList.add('hidden');
+                    resetPlayerSelectionForNewRound();
+                }
+            }, 1000);
         });
+
+        // 🟢 ያሸነፈውን ካርድ ቅጥ (Pattern/Grid) አሳይቶ የተጠሩትን ማቅለም
+        function renderWinningCartelaGrid(cardNum) {
+            const gridContainer = document.getElementById('winning-cartela-grid');
+            gridContainer.innerHTML = '';
+
+            // B, I, N, G, O ራሶች
+            ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
+                const hCell = document.createElement('div');
+                hCell.className = idx === 0 ? "bg-blue-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
+                                  idx === 1 ? "bg-indigo-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
+                                  idx === 2 ? "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
+                                  idx === 3 ? "bg-emerald-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
+                                              "bg-amber-600 rounded text-center text-white font-bold text-[8px] py-0.5";
+                hCell.innerText = l;
+                gridContainer.appendChild(hCell);
+            });
+
+            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+            let seed = cardNum * 17;
+            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+            let cols = ['B', 'I', 'N', 'G', 'O'];
+
+            cols.forEach(col => {
+                let range = colRanges[col];
+                let count = 0;
+                while(cardNumbersByCol[col].length < 5) {
+                    let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
+                    if (!cardNumbersByCol[col].includes(generated)) {
+                        cardNumbersByCol[col].push(generated);
+                    }
+                    count++;
+                }
+            });
+
+            for(let r = 0; r < 5; r++) {
+                cols.forEach(col => {
+                    let cellNum = cardNumbersByCol[col][r];
+                    const isFreeCenter = (r === 2 && col === 'N');
+                    const isCalled = calledNumbersList.includes(cellNum) || isFreeCenter;
+
+                    const cell = document.createElement('div');
+                    // እንደ ሳምፕሉ ምስል የተጠሩት በቀለም (ግሪን/ኦሬንጅ) እንዲደምቁ ማድረግ
+                    let bgClass = "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
+                    if (isFreeCenter) {
+                        bgClass = "bg-emerald-600 text-white font-bold text-[8px] rounded py-1 text-center";
+                    } else if (isCalled) {
+                        bgClass = r % 2 === 0 ? "bg-emerald-500 text-black font-bold text-[8px] rounded py-1 text-center" : "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center";
+                    }
+
+                    cell.className = bgClass;
+                    cell.innerText = isFreeCenter ? "★" : cellNum;
+                    gridContainer.appendChild(cell);
+                });
+            }
+        }
 
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
@@ -721,7 +795,6 @@
             }
         }
 
-        // 🟢 የተጠቃሚው ካርድ ላይ የተጠሩት ቁጥሮች በራስሰር (Auto-Daub) እንዲቲክ (እንዲቀቡ) የሚደረግበት ሎጂክ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
@@ -788,7 +861,6 @@
                         const isCalled = calledNumbersList.includes(cellNum);
 
                         const cell = document.createElement('div');
-                        // አውቶማቲክ ዳብ (Auto-Daub): የተጠራ ቁጥር ካርድ ላይ ሲኖር በራሱ በቀለም (Amber/Green) ይደምቃል
                         cell.className = isFreeCenter ? "bg-purple-600 text-white font-bold text-[8px] rounded p-1" : isCalled ? "bg-amber-500 text-black font-bold text-[8px] rounded p-1" : "bg-white/5 text-gray-300 text-[8px] rounded p-1";
                         cell.innerText = isFreeCenter ? "★" : cellNum;
                         miniGrid.appendChild(cell);
