@@ -29,7 +29,7 @@ const fakeBotNames = [
     "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
     "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
     "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
-    "ሚካኤል ዘውዴ", "ናትናኤል ታለለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
+    "ሚካኤል ዘውዴ", "ናትናኤል ታደለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
 ];
 
 let pendingRequests = {};
@@ -119,7 +119,6 @@ io.on('connection', (socket) => {
     globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
-    // 🟢 አዲስ ተጫዋች ሲገናኝ አሁን ያለውን የሰቨር ሰአት (gameStartTime) እና የጨዋታ ሁኔታ በቅጽበት ይልካል
     socket.emit('syncGameState', globalRoom);
     socket.emit('updateTakenCards', globalRoom.takenCards);
 
@@ -159,7 +158,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ እና ቁጥሮች በየ 3 ሰከንድ (3000ms) የመጥራት ሎጂክ
+// 🟢 የጨዋታ ቆጣሪ እና የሰአት ማመሳሰል (Timer Loop)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -168,7 +167,7 @@ setInterval(() => {
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
-        io.emit('gameStartedBroadcast'); // 👈 ሁሉም ስልኮች ላይ በአንድ ጊዜ ቆጠራ (3-2-1) እንዲጀምር ያደርጋል
+        io.emit('gameStartedBroadcast');
 
         let callingInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
@@ -207,7 +206,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
-        }, 3000); // 3 ሰከንድ
+        }, 3000); // በየ 3 ሰከንድ ኳስ ይጠራል
     }
 }, 1000);
 
