@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 የመምረጫው ፔጅ ላይ ቁጥሮቹ ብቻ (ከ 1 እስከ 300) እንዲታዩ የተደረገበት ግሪድ -->
+                    <!-- 🟢 ፊደላት የሌሉባቸው ንጹህ ቁጥሮች ብቻ (ከ 1 እስከ 300) -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -288,6 +288,7 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
+        // 🟢 የሰቨር ግኑኝነት: የጨዋታው ሁኔታ ሲ synchronize ሲደረግ ጨዋታው በትክክለኛው ሰዓት (timer) እንጂ ያለ ሰዓት በራሱ እንዳይጀምር ይደረጋል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -302,6 +303,10 @@
                 document.getElementById('live-game-section').classList.remove('hidden');
                 renderVerticalBoard();
                 renderPlayerDualCards();
+            } else {
+                // ጨዋታው ገና አላለቀም/አልጀመረም: የተጫዋቹ የካርድ ምርጫ ገጽ በግልጽ እንዲታይ ይደረጋል
+                document.getElementById('card-selection-section').classList.remove('hidden');
+                document.getElementById('live-game-section').classList.add('hidden');
             }
         });
 
@@ -312,7 +317,7 @@
 
         socket.on('cardSelectionSuccess', () => {
             confirmedCards = [...userSelectedCards];
-            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
+            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው እስኪጀምር ይጠብቁ...";
             renderPlayerDualCards();
         });
 
@@ -465,7 +470,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 የካርድ ምርጫ ግሪድ (ከ 1 እስከ 300) - ፊደላት ሳይኖሩ ንጹህ ቁጥሮች ብቻ (ለምሳሌ 1, 2, 3...) እንዲታዩ ተደረገ
+        // 🟢 ንጹህ የካርድ ቁጥሮች ብቻ (ከ 1 እስከ 300) የሚታዩበት ግሪድ (ፊደል የሌለው)
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -477,7 +482,7 @@
                 let isConfirmedByOther = takenCardsByOthers.includes(i) || botFixedCards.includes(i);
                 let isBotTemp = botDynamicCards.includes(i) && !isConfirmedByOther;
 
-                let displayLabel = String(i); // ፊደል የሌለው ንጹህ የካርድ ቁጥር ብቻ
+                let displayLabel = String(i);
 
                 if (isConfirmedByMe || isSelectedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
@@ -581,6 +586,7 @@
                 };
                 let cols = ['B', 'I', 'N', 'G', 'O'];
 
+                cols.cols = cols;
                 cols.forEach(col => {
                     let range = colRanges[col];
                     let count = 0;
