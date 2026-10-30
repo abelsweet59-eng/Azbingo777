@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) -->
+                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -264,13 +264,11 @@
             }
         }
 
-        // 🟢 የ 60 ሰከንድ ቆጣሪ በየሰከንዱ በትክክል እንዲቀንስ እና ከዜሮ በታች እንዳይወርድ የሚደረግ አስተማማኝ ሎጂክ
+        // 🟢 60 ሰከንድ ቆጣሪ ድፍን ቁጥር (Integer seconds) ብቻ ሆኖ እንዲታይ ተደርጓል
         function startClientTimer() {
             setInterval(() => {
-                let timeLeft = Math.max(0, Math.floor((gameStartTimeServer - Date.now()) / 1000));
-                let minutes = Math.floor(timeLeft / 60);
-                let seconds = timeLeft % 60;
-                let timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}ሰ`;
+                let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
+                let timeStr = `${timeLeft}ሰ`;
                 
                 document.getElementById('stat-timer').innerText = timeStr;
                 let regBadge = document.getElementById('reg-status-badge');
@@ -299,7 +297,6 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
-        // 🟢 ከሰቨር የሚመጣውን የሰአት ሰሌዳ እና የጨዋታ ሁኔታ በቅጽበት ማመሳሰል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -371,7 +368,6 @@
             }, 1000);
         }
 
-        // 🟢 ቁጥሮች በአንድ ላይ እንዳይከመሩ (Lag እንዳይፈጠር) በትክክል በሰልፍ እንዲመጡ የተደረገ መቀበያ
         socket.on('numberCalledBroadcast', (num) => {
             if (!calledNumbersList.includes(num)) {
                 calledNumbersList.push(num);
@@ -397,7 +393,6 @@
             resetPlayerSelectionForNewRound();
         });
 
-        // 🟢 ጨዋታው ሲጠናቀቅ እና ሽልማቱ ሲሰጥ ሰአቱን ከሰቨር በአዲስ መልክ ተቀብሎ ወደ ምርጫ ሜኑ መመለስ
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let prizePool = data.prize || 0;
@@ -425,7 +420,6 @@
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
             generate300CardGrid();
-            // አዲስ ዙር ሲጀምር የሰአት ቆጣሪውን ዳግም ማስጀመር
             gameStartTimeServer = Date.now() + 60000;
         }
 
@@ -486,7 +480,6 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300)
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -541,7 +534,7 @@
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
             if (walletBalance < totalCost) {
-                alert("በቂ የኪስ ቦርሳ ሂሳብ የለዎትም!");
+                alert("በቂ የኪስ ቦርሳ የለዎትም!");
                 return;
             }
             walletBalance -= totalCost;
@@ -563,7 +556,6 @@
             }
         }
 
-        // 🟢 ተመልካች ማሳወቂያ እና ካርዶች ማሳያ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
