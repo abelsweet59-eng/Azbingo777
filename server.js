@@ -144,6 +144,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// 🟢 ከጀርባ የተሰበሰበውን አጠቃላይ ገንዘብ አስልቶ 70% ለድል አሸናፊ እና 30% ለደራሽ (ቤት) በራስ ሰር የሚከፋፍል ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -173,9 +174,16 @@ setInterval(() => {
                         winningUser = "ተጫዋች_" + Math.floor(Math.random() * 1000);
                     }
 
+                    // ጀርባ ላይ የሚደረግ የ 70% እና 30% ሒሳብ ስሌት
+                    let totalPot = globalRoom.playersCount * 10; // አጠቃላይ የተሰበሰበው ብር
+                    let houseShare = Math.floor(totalPot * 0.30);   // 30% ደራሽ (ለቤት)
+                    let winnerPrize = Math.floor(totalPot * 0.70);  // 70% ለአሸናፊው
+
+                    console.log(`[GAME FINISHED] Total Pot: ${totalPot} ETB | House (30%): ${houseShare} ETB | Winner (70%): ${winnerPrize} ETB`);
+
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + 60000;
-                    io.emit('bingoWinner', { username: winningUser, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
+                    io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
                     clearInterval(callingInterval);
                 }
             } else {
