@@ -81,6 +81,7 @@
                         </div>
                     </div>
 
+                    <!-- 🟢 የመምረጫው ፔጅ ላይ ቁጥሮቹ ብቻ (ከ 1 እስከ 300) እንዲታዩ የተደረገበት ግሪድ -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -94,11 +95,9 @@
                     </div>
                 </div>
 
-                <!-- Live Game Section (የተስተካከለ ሙሉ ቁጥር ቦርድ እና ካርዶች በአንድ ገጽ ላይ) -->
+                <!-- Live Game Section -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 overflow-y-auto custom-scroll">
-                    
                     <div class="grid grid-cols-12 gap-2">
-                        <!-- 75 Numbers Board (ያለ ስክሮል በግልጽ ሙሉው የሚታይበት) -->
                         <div class="col-span-6 bg-[#180a29] p-1.5 rounded-xl border border-purple-500/20">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white">B</div>
@@ -110,7 +109,6 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[8px] font-mono" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- Called Ball & Info Panel -->
                         <div class="col-span-6 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/30 text-center">
                             <div class="text-[9px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
                             <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-base shadow-xl pulse-ball mx-auto my-1">
@@ -120,7 +118,6 @@
                         </div>
                     </div>
 
-                    <!-- Dual Cards View -->
                     <div class="text-[11px] font-bold text-purple-300 px-1">የእርስዎ የተያዙ ካርዶች:</div>
                     <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
 
@@ -232,8 +229,8 @@
 
         let userSelectedCards = [];
         let confirmedCards = []; 
-        let botFixedCards = [];   // 15ቱ ቋሚ ቦቶች (በየዙሩ የሚለዋወጡ)
-        let botDynamicCards = []; // 15ቱ ተለዋዋጭ ቦቶች (ያዝለቅቅ የሚያደርጉ)
+        let botFixedCards = [];
+        let botDynamicCards = [];
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
@@ -253,7 +250,6 @@
             startBotDynamicSimulation();
         });
 
-        // 🟢 15ቱ ቋሚ ቦቶች በየዙሩ አዲስ ካርዶችን የሚይዙበት ሎጂክ
         function initRoundBots() {
             botFixedCards = [];
             while(botFixedCards.length < 15) {
@@ -273,7 +269,6 @@
             }, 1000);
         }
 
-        // 🟢 15ቱ ተለዋዋጭ ቦቶች ያዝለቅቅ እያደረጉ ቁጥር የሚቀያይሩበት ሎጂክ
         function startBotDynamicSimulation() {
             setInterval(() => {
                 botDynamicCards = [];
@@ -318,7 +313,6 @@
         socket.on('cardSelectionSuccess', () => {
             confirmedCards = [...userSelectedCards];
             document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
-            document.querySelectorAll('#card-grid-300 button').forEach(b => b.disabled = true);
             renderPlayerDualCards();
         });
 
@@ -382,15 +376,15 @@
         }
 
         socket.on('gameEndedBroadcast', () => {
-            alert("ጨዋታው ተጠናቋል! አዲስ ዙር ሊጀመር ነው...");
-            location.reload();
+            resetPlayerSelectionForNewRound();
+            alert("ጨዋታው ተጠናቋል! አዲስ ዙር ተጀምሯል፣ እባክዎ አዲስ ካርድ ይምረጡ።");
         });
 
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
-            let prizePool = data.prize || Math.floor((parseInt(document.getElementById('stat-players').innerText) || 60) * 10 * 0.70);
+            let prizePool = data.prize || 0;
 
-            document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300">${winnerName}</b><br>ሽልማት (70%): <span class="text-amber-400 font-bold">${prizePool} ብር</span>`;
+            document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300">${winnerName}</b><br>ሽልማት: <span class="text-amber-400 font-bold">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (winnerName === userFullName) {
@@ -400,29 +394,38 @@
 
             setTimeout(() => {
                 document.getElementById('winner-modal').classList.add('hidden');
+                resetPlayerSelectionForNewRound();
                 initRoundBots();
-                location.reload();
             }, 4500);
         });
+
+        function resetPlayerSelectionForNewRound() {
+            userSelectedCards = [];
+            confirmedCards = [];
+            document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
+            document.getElementById('card-selection-section').classList.remove('hidden');
+            document.getElementById('live-game-section').classList.add('hidden');
+            generate300CardGrid();
+        }
 
         socket.on('financialApproved', (data) => {
             let amt = parseFloat(data.amount);
             if (data.type === 'deposit') {
                 walletBalance += amt;
-                alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ በአድሚን ጸድቋል!`);
+                alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
             } else {
                 if (walletBalance >= amt) {
                     walletBalance -= amt;
-                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
+                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ተልኳል!`);
                 } else {
-                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቋል!`);
+                    alert(`✅ የ ${amt} ብር ጥያቄዎ ጸድቋል!`);
                 }
             }
             updateWalletUI();
         });
 
         socket.on('financialRejected', (data) => {
-            alert(`❌ የእርስዎ የ ${data.amount} ብር ጥያቄ በአድሚን ተሰርዟል።`);
+            alert(`❌ ጥያቄዎ ተሰርዟል።`);
         });
 
         socket.on('requestSubmitted', (res) => {
@@ -450,7 +453,7 @@
             }
 
             if (isNaN(amount) || amount < 100) {
-                alert("⚠️ ዝቅተኛው መጠን 100 ብር መሆን አለበት።");
+                alert("⚠️ ዝቅተኛው መጠን 100 ብር ነው።");
                 return;
             }
 
@@ -462,6 +465,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
+        // 🟢 የካርድ ምርጫ ግሪድ (ከ 1 እስከ 300) - ፊደላት ሳይኖሩ ንጹህ ቁጥሮች ብቻ (ለምሳሌ 1, 2, 3...) እንዲታዩ ተደረገ
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -473,21 +477,20 @@
                 let isConfirmedByOther = takenCardsByOthers.includes(i) || botFixedCards.includes(i);
                 let isBotTemp = botDynamicCards.includes(i) && !isConfirmedByOther;
 
-                let bingoLetter = i <= 60 ? "B" : i <= 120 ? "I" : i <= 180 ? "N" : i <= 240 ? "G" : "O";
-                let displayLabel = `${bingoLetter}-${i}`;
+                let displayLabel = String(i); // ፊደል የሌለው ንጹህ የካርድ ቁጥር ብቻ
 
                 if (isConfirmedByMe || isSelectedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-2 rounded shadow";
+                    btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
                     btn.innerText = displayLabel;
                 } else if (isConfirmedByOther) {
-                    btn.className = "bg-red-950/80 text-red-300 font-medium text-[10px] py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
+                    btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
                     btn.innerText = displayLabel;
                     btn.disabled = true;
                 } else if (isBotTemp) {
-                    btn.className = "bg-purple-800/80 text-amber-200 font-bold text-[10px] py-2 rounded border border-amber-400/30 animate-pulse";
+                    btn.className = "bg-purple-800/80 text-amber-200 font-bold text-xs py-2 rounded border border-amber-400/30 animate-pulse";
                     btn.innerText = displayLabel;
                 } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[10px] py-2 rounded border border-white/5";
+                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
                     btn.innerText = displayLabel;
                 }
 
@@ -526,7 +529,6 @@
             socket.emit('confirmCards', userSelectedCards);
         }
 
-        // 🟢 የ 75 ቁጥሮች ሙሉ ቦርድ ያለ ስክሮል በአንድ ጎን በግልጽ እንዲታይ የተደረገ ዲዛይን
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
