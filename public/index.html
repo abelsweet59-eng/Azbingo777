@@ -93,12 +93,12 @@
                     </div>
                 </div>
 
-                <!-- LIVE GAME SECTION (እንደ ሳምፕሉ በቁመት የተደረደረ የ 75 ቦርድ እና የኳስ ማሳያ) -->
+                <!-- LIVE GAME SECTION -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 pb-4 overflow-y-auto custom-scroll">
                     
                     <div class="grid grid-cols-12 gap-1.5 bg-[#180a29] p-2 rounded-xl border border-purple-500/30 shadow-md">
                         
-                        <!-- 🟢 BINGO Vertical Columns Board (ከሳምፕሉ ጋር ተመሳሳይ የሆነ የቁመት አቀማመጥ) -->
+                        <!-- BINGO Vertical Columns Board -->
                         <div class="col-span-7 flex flex-col bg-black/40 p-1.5 rounded-lg border border-white/5">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -114,7 +114,6 @@
                         <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/40 text-center space-y-1">
                             <!-- Recent Called Balls History -->
                             <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-center items-center min-h-[24px] bg-black/40 p-1 rounded-lg text-[8px]">
-                                <!-- አጫጭር የቅርብ ጊዜ ኳሶች እዚህ ይደረደራሉ -->
                             </div>
 
                             <!-- Main Called Ball -->
@@ -134,11 +133,9 @@
                     </div>
 
                     <div class="space-y-1 pt-1">
-                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
+                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች (Auto-Daub):</div>
                         <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
                     </div>
-
-                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2 rounded-xl shadow opacity-80 cursor-not-allowed w-full mt-1">🎉 ቢንጎ አሳውቅ</button>
                 </div>
             </div>
 
@@ -183,13 +180,16 @@
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
-        <!-- WINNING MODAL -->
-        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div class="bg-[#201138] border border-amber-500/50 rounded-2xl p-5 w-full max-w-xs space-y-3 shadow-2xl text-center relative">
+        <!-- 🟢 WINNING MODAL (እንደ ሳምፕሉ ውብ የሆነው የድል አቀራረብ ሞዳል) -->
+        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-3">
+            <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-4 w-full max-w-xs space-y-3 shadow-2xl text-center relative">
                 <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-lg">👑</div>
                 <div>
-                    <h2 class="text-amber-400 font-extrabold text-lg tracking-wider">BINGO WINNER!</h2>
-                    <div class="text-white text-[11px] mt-2 space-y-1 text-left bg-black/40 p-3 rounded-xl border border-white/10" id="winner-banner-text">
+                    <h2 class="text-amber-400 font-extrabold text-lg tracking-wider">BINGO!</h2>
+                    <div id="winner-count-badge" class="text-white text-[11px] font-bold mt-1">🎉 1 player won!</div>
+                    <div class="flex flex-wrap gap-1 justify-center my-2" id="winner-names-chips"></div>
+                    
+                    <div class="text-white text-[10px] mt-2 space-y-1 text-left bg-black/40 p-2.5 rounded-xl border border-white/10" id="winner-banner-text">
                         አሸናፊው መረጃ እየጠበቀ...
                     </div>
                 </div>
@@ -458,7 +458,27 @@
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
             renderPlayerDualCards();
+            
+            speakCalledNumber(num);
         });
+
+        function speakCalledNumber(num) {
+            let letter = "ቢ";
+            if (num >= 1 && num <= 15) letter = "ቢ";
+            else if (num >= 16 && num <= 30) letter = "አይ";
+            else if (num >= 31 && num <= 45) letter = "ኤን";
+            else if (num >= 46 && num <= 60) letter = "ጂ";
+            else if (num >= 61 && num <= 75) letter = "ኦ";
+
+            let speechText = `${letter} ${num}`;
+            
+            if ('speechSynthesis' in window) {
+                let utterance = new SpeechSynthesisUtterance(speechText);
+                utterance.lang = 'am-ET';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
 
         function displayCalledBall(num) {
             let letter = "B";
@@ -472,12 +492,10 @@
             renderRecentBalls();
         }
 
-        // 🟢 ከላይ በኩል የቅርብ ጊዜ የተጠሩ ኳሶችን በቅደም ተከተል ማሳያ
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
             
-            // የቅርብ ጊዜ ኳሶች (ከኋላ የተጠሩትን የመጨረሻዎቹን 4 ኳሶች ማሳየት)
             let recent = calledNumbersList.slice(-4).reverse();
             recent.forEach(num => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
@@ -492,6 +510,7 @@
             resetPlayerSelectionForNewRound();
         });
 
+        // 🟢 አሸናፊ ሲወጣ የሳምፕሉን ዲዛይን የሚመስል ውብ ሞዳል ማሳያ
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
@@ -502,10 +521,15 @@
 
             let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
 
+            document.getElementById('winner-count-badge').innerHTML = `🎉 1 player won!`;
+            document.getElementById('winner-names-chips').innerHTML = `
+                <div class="bg-black/50 border border-purple-500/30 px-2 py-0.5 rounded-full text-[9px] text-amber-300">
+                    <b>${isMeWin ? userFullName : winnerName}</b> <span class="text-gray-400">#${winnerId.slice(-4)}</span>
+                </div>
+            `;
+
             document.getElementById('winner-banner-text').innerHTML = `
-                👤 ስም: <b class="text-amber-300">${isMeWin ? userFullName : winnerName}</b><br>
-                🆔 ዩዘር ID: <span class="text-purple-300">${winnerId}</span><br>
-                🎫 ያሸነፈበት ካርድ: <span class="text-amber-400 font-bold">#${cardNum}</span><br>
+                🏆 Winning Cartela: <b class="text-amber-400">#${cardNum}</b><br>
                 👥 ተጫዋቾች: <b>${playersCount}</b><br>
                 💰 ጠቅላላ ድስት (Pot): <b>${totalPot} ብር</b><br>
                 👑 የሽልማት መጠን (70%): <span class="text-emerald-400 font-black">${prizePool} ብር</span>
@@ -662,22 +686,19 @@
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId });
         }
 
-        // 🟢 የ 75 ቁጥሮች ሰሌዳ በቁመት (Vertical Columns: B, I, N, G, O) ማሳያ ሎጂክ
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
             
             let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
 
-            // B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75
-            // በቁመት (columns) ለማሳደር 1 እስከ 15 ያሉትን ረድፍ በረድፍ እንሰራለን
             for(let r = 1; r <= 15; r++) {
                 let colsData = [
-                    r,          // B (1-15)
-                    r + 15,     // I (16-30)
-                    r + 30,     // N (31-45)
-                    r + 45,     // G (46-60)
-                    r + 60      // O (61-75)
+                    r,          
+                    r + 15,     
+                    r + 30,     
+                    r + 45,     
+                    r + 60      
                 ];
 
                 colsData.forEach(num => {
@@ -700,11 +721,11 @@
             }
         }
 
+        // 🟢 የተጠቃሚው ካርድ ላይ የተጠሩት ቁጥሮች በራስሰር (Auto-Daub) እንዲቲክ (እንዲቀቡ) የሚደረግበት ሎጂክ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
             const cardsTitle = document.getElementById('player-cards-title');
-            const bingoBtn = document.getElementById('bingo-declare-btn');
             
             container.innerHTML = '';
 
@@ -712,14 +733,12 @@
                 noticeBox.classList.remove('hidden');
                 cardsTitle.classList.add('hidden');
                 container.classList.add('hidden');
-                bingoBtn.classList.add('hidden');
                 return;
             }
 
             noticeBox.classList.add('hidden');
             cardsTitle.classList.remove('hidden');
             container.classList.remove('hidden');
-            bingoBtn.classList.remove('hidden');
 
             confirmedCards.forEach((cardNum) => {
                 const cardWrapper = document.createElement('div');
@@ -769,6 +788,7 @@
                         const isCalled = calledNumbersList.includes(cellNum);
 
                         const cell = document.createElement('div');
+                        // አውቶማቲክ ዳብ (Auto-Daub): የተጠራ ቁጥር ካርድ ላይ ሲኖር በራሱ በቀለም (Amber/Green) ይደምቃል
                         cell.className = isFreeCenter ? "bg-purple-600 text-white font-bold text-[8px] rounded p-1" : isCalled ? "bg-amber-500 text-black font-bold text-[8px] rounded p-1" : "bg-white/5 text-gray-300 text-[8px] rounded p-1";
                         cell.innerText = isFreeCenter ? "★" : cellNum;
                         miniGrid.appendChild(cell);
@@ -779,8 +799,6 @@
                 container.appendChild(cardWrapper);
             });
         }
-
-        function declareBingo() {}
 
         function openAdminPanel() {
             if (!isAdmin) {
