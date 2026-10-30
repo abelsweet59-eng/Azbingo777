@@ -22,11 +22,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
-        @keyframes blinkAnim {
-            0%, 100% { opacity: 1; transform: scale(1); background-color: #f59e0b; color: #000; }
-            50% { opacity: 0.4; transform: scale(0.95); background-color: #d97706; color: #fff; }
-        }
-        .blink-latest { animation: blinkAnim 1s infinite ease-in-out; border: 2px solid #fff; }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -98,40 +93,52 @@
                     </div>
                 </div>
 
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-3 pb-4 overflow-y-auto custom-scroll">
+                <!-- LIVE GAME SECTION (እንደ ሳምፕሉ በቁመት የተደረደረ የ 75 ቦርድ እና የኳስ ማሳያ) -->
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 pb-4 overflow-y-auto custom-scroll">
                     
-                    <div class="grid grid-cols-12 gap-2 bg-[#180a29] p-2.5 rounded-xl border border-purple-500/30 shadow-md">
-                        <div class="col-span-7">
-                            <div class="grid grid-cols-5 gap-1 text-center font-bold text-[10px] mb-1.5">
+                    <div class="grid grid-cols-12 gap-1.5 bg-[#180a29] p-2 rounded-xl border border-purple-500/30 shadow-md">
+                        
+                        <!-- 🟢 BINGO Vertical Columns Board (ከሳምፕሉ ጋር ተመሳሳይ የሆነ የቁመት አቀማመጥ) -->
+                        <div class="col-span-7 flex flex-col bg-black/40 p-1.5 rounded-lg border border-white/5">
+                            <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-indigo-600 rounded text-white py-0.5">I</div>
                                 <div class="bg-purple-600 rounded text-white py-0.5">N</div>
                                 <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
                                 <div class="bg-amber-600 rounded text-white py-0.5">O</div>
                             </div>
-                            <div class="grid grid-cols-5 gap-1 text-center text-[9px] font-mono" id="vertical-board-75"></div>
+                            <div class="grid grid-cols-5 gap-0.5 text-center text-[8px] font-mono" id="vertical-board-75"></div>
                         </div>
 
-                        <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2.5 border border-purple-500/40 text-center">
-                            <div class="text-[9px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
-                            <div id="main-called-ball" class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-lg shadow-xl pulse-ball mx-auto my-1">
-                                --
+                        <!-- Right Panel: Recent Called Balls & Main Ball -->
+                        <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/40 text-center space-y-1">
+                            <!-- Recent Called Balls History -->
+                            <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-center items-center min-h-[24px] bg-black/40 p-1 rounded-lg text-[8px]">
+                                <!-- አጫጭር የቅርብ ጊዜ ኳሶች እዚህ ይደረደራሉ -->
                             </div>
-                            <div class="text-[9px] text-gray-300">በሂደት ላይ...</div>
+
+                            <!-- Main Called Ball -->
+                            <div>
+                                <div class="text-[8px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
+                                <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-sm shadow-xl pulse-ball mx-auto my-1">
+                                    --
+                                </div>
+                            </div>
+                            <div class="text-[8px] text-gray-300">በሂደት ላይ...</div>
                         </div>
                     </div>
 
-                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-3 rounded-xl text-center space-y-1 shadow-lg">
+                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-2.5 rounded-xl text-center space-y-1 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
                         <div class="text-gray-200 text-[10px]">በዚህ ዙር ካርድ አልመረጡም፤ ጨዋታውን እንደ ተመልካች ይከታተላሉ።</div>
                     </div>
 
-                    <div class="space-y-2 pt-1">
-                        <div class="text-[11px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
-                        <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2.5 rounded-xl border border-purple-500/30"></div>
+                    <div class="space-y-1 pt-1">
+                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
+                        <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
                     </div>
 
-                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed w-full mt-2">🎉 ቢንጎ አሳውቅ</button>
+                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2 rounded-xl shadow opacity-80 cursor-not-allowed w-full mt-1">🎉 ቢንጎ አሳውቅ</button>
                 </div>
             </div>
 
@@ -178,16 +185,18 @@
 
         <!-- WINNING MODAL -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-6 w-full max-w-xs space-y-4 shadow-2xl text-center relative">
-                <div class="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-3xl shadow-lg">👑</div>
+            <div class="bg-[#201138] border border-amber-500/50 rounded-2xl p-5 w-full max-w-xs space-y-3 shadow-2xl text-center relative">
+                <div class="w-12 h-12 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-lg">👑</div>
                 <div>
-                    <h2 class="text-amber-400 font-extrabold text-xl tracking-wider">BINGO WINNER!</h2>
-                    <div class="text-white font-medium text-xs mt-3 leading-relaxed" id="winner-banner-text">አሸናፊ ተገኝቷል!</div>
+                    <h2 class="text-amber-400 font-extrabold text-lg tracking-wider">BINGO WINNER!</h2>
+                    <div class="text-white text-[11px] mt-2 space-y-1 text-left bg-black/40 p-3 rounded-xl border border-white/10" id="winner-banner-text">
+                        አሸናፊው መረጃ እየጠበቀ...
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- 🟢 DEPOSIT MODAL (ቁጥሩን ሲነኩ ኮፒ የሚደረግበት እና የላኪ ቁጥር ኢንፑት የጠፋበት) -->
+        <!-- DEPOSIT MODAL -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
                 <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)</h3>
@@ -251,6 +260,7 @@
 
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
+        const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
         
         if (!localStorage.getItem(userLocalStorageKey)) {
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
@@ -266,8 +276,16 @@
 
         let userSelectedCards = [];
         let confirmedCards = []; 
-        let botFixedCards = [];
-        let botDynamicCards = [];
+
+        if (localStorage.getItem(userSavedCardsKey)) {
+            try {
+                confirmedCards = JSON.parse(localStorage.getItem(userSavedCardsKey)) || [];
+                if (confirmedCards.length > 0) {
+                    userSelectedCards = [...confirmedCards];
+                }
+            } catch(e) { confirmedCards = []; }
+        }
+
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
@@ -282,13 +300,19 @@
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b> ${isAdmin ? '(አድሚን)' : ''}`;
             updateWalletUI();
             renderHistoryUI();
-            initRoundBots();
             generate300CardGrid();
             startClientTimer();
-            startBotDynamicSimulation();
+
+            socket.on('connect', () => {
+                document.getElementById('connection-status').innerText = 'Connected';
+                document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
+                
+                if (confirmedCards.length > 0) {
+                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId });
+                }
+            });
         });
 
-        // 🟢 የቴሌብር ቁጥሩን በቅጽበት ኮፒ ለማድረግ የሚረዳ ፌንክሽን
         function copyAdminPhone() {
             let phoneNum = document.getElementById('admin-telebirr-number').innerText;
             navigator.clipboard.writeText(phoneNum).then(() => {
@@ -338,14 +362,6 @@
             });
         }
 
-        function initRoundBots() {
-            botFixedCards = [];
-            while(botFixedCards.length < 15) {
-                let r = Math.floor(Math.random() * 300) + 1;
-                if(!botFixedCards.includes(r)) botFixedCards.push(r);
-            }
-        }
-
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
@@ -358,25 +374,6 @@
                 }
             }, 1000);
         }
-
-        function startBotDynamicSimulation() {
-            setInterval(() => {
-                botDynamicCards = [];
-                let dynCount = Math.floor(Math.random() * 10) + 5;
-                for (let i = 0; i < dynCount; i++) {
-                    let randCard = Math.floor(Math.random() * 300) + 1;
-                    if (!confirmedCards.includes(randCard) && !botFixedCards.includes(randCard) && !botDynamicCards.includes(randCard)) {
-                        botDynamicCards.push(randCard);
-                    }
-                }
-                generate300CardGrid();
-            }, 3000);
-        }
-
-        socket.on('connect', () => {
-            document.getElementById('connection-status').innerText = 'Connected';
-            document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
-        });
 
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
@@ -408,8 +405,8 @@
         });
 
         socket.on('cardSelectionSuccess', () => {
-            confirmedCards = [...userSelectedCards];
             document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀምር ነው።";
+            localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
             renderPlayerDualCards();
         });
 
@@ -472,6 +469,23 @@
             else if (num >= 61 && num <= 75) letter = "O";
 
             document.getElementById('main-called-ball').innerText = `${letter}-${num}`;
+            renderRecentBalls();
+        }
+
+        // 🟢 ከላይ በኩል የቅርብ ጊዜ የተጠሩ ኳሶችን በቅደም ተከተል ማሳያ
+        function renderRecentBalls() {
+            const container = document.getElementById('recent-balls-container');
+            container.innerHTML = '';
+            
+            // የቅርብ ጊዜ ኳሶች (ከኋላ የተጠሩትን የመጨረሻዎቹን 4 ኳሶች ማሳየት)
+            let recent = calledNumbersList.slice(-4).reverse();
+            recent.forEach(num => {
+                let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
+                const pill = document.createElement('div');
+                pill.className = "bg-purple-900/80 border border-amber-400/50 text-amber-300 font-bold px-1.5 py-0.5 rounded-full text-[9px]";
+                pill.innerText = `${letter}-${num}`;
+                container.appendChild(pill);
+            });
         }
 
         socket.on('gameEndedBroadcast', () => {
@@ -480,12 +494,25 @@
 
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
-            let prizePool = data.prize || 0;
+            let winnerId = data.userId || telegramUserId;
+            let cardNum = data.cardNum || 1;
+            let playersCount = data.playersCount || 60;
+            let totalPot = data.totalPot || (playersCount * 10);
+            let prizePool = data.prize || Math.floor(totalPot * 0.70);
 
-            document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300 text-sm">${winnerName}</b><br><br>የተሸለመው የገንዘብ መጠን: <span class="text-amber-400 font-black text-base">${prizePool} ብር</span>`;
+            let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
+
+            document.getElementById('winner-banner-text').innerHTML = `
+                👤 ስም: <b class="text-amber-300">${isMeWin ? userFullName : winnerName}</b><br>
+                🆔 ዩዘር ID: <span class="text-purple-300">${winnerId}</span><br>
+                🎫 ያሸነፈበት ካርድ: <span class="text-amber-400 font-bold">#${cardNum}</span><br>
+                👥 ተጫዋቾች: <b>${playersCount}</b><br>
+                💰 ጠቅላላ ድስት (Pot): <b>${totalPot} ብር</b><br>
+                👑 የሽልማት መጠን (70%): <span class="text-emerald-400 font-black">${prizePool} ብር</span>
+            `;
             document.getElementById('winner-modal').classList.remove('hidden');
 
-            if (winnerName === userFullName && prizePool > 0) {
+            if (isMeWin && prizePool > 0) {
                 walletBalance += prizePool;
                 updateWalletUI();
                 addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
@@ -494,14 +521,14 @@
             setTimeout(() => {
                 document.getElementById('winner-modal').classList.add('hidden');
                 resetPlayerSelectionForNewRound();
-                initRoundBots();
-            }, 4500);
+            }, 6000);
         });
 
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
             confirmedCards = [];
             calledNumbersList = [];
+            localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
             document.getElementById('main-called-ball').innerText = "--";
             document.getElementById('stat-called-count').innerText = "0";
@@ -509,6 +536,7 @@
             document.getElementById('live-game-section').classList.add('hidden');
             generate300CardGrid();
             renderVerticalBoard();
+            renderRecentBalls();
             gameStartTimeServer = Date.now() + 60000;
         }
 
@@ -580,8 +608,7 @@
                 
                 let isSelectedByMe = userSelectedCards.includes(i);
                 let isConfirmedByMe = confirmedCards.includes(i);
-                let isConfirmedByOther = takenCardsByOthers.includes(i) || botFixedCards.includes(i);
-                let isBotTemp = botDynamicCards.includes(i) && !isConfirmedByOther;
+                let isConfirmedByOther = takenCardsByOthers.includes(i);
 
                 let displayLabel = String(i);
 
@@ -592,9 +619,6 @@
                     btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
                     btn.innerText = displayLabel;
                     btn.disabled = true;
-                } else if (isBotTemp) {
-                    btn.className = "bg-purple-800/80 text-amber-200 font-bold text-xs py-2 rounded border border-amber-400/30 animate-pulse";
-                    btn.innerText = displayLabel;
                 } else {
                     btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
                     btn.innerText = displayLabel;
@@ -602,7 +626,7 @@
 
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
-                        if (takenCardsByOthers.includes(i) || botFixedCards.includes(i)) {
+                        if (takenCardsByOthers.includes(i)) {
                             alert("⚠️ ይቅርታ! ይህ ካርድ ተይዟል!");
                             return;
                         }
@@ -632,34 +656,47 @@
             walletBalance -= totalCost;
             updateWalletUI();
 
+            confirmedCards = [...userSelectedCards];
             addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
 
-            socket.emit('confirmCards', userSelectedCards);
+            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId });
         }
 
+        // 🟢 የ 75 ቁጥሮች ሰሌዳ በቁመት (Vertical Columns: B, I, N, G, O) ማሳያ ሎጂክ
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
             
             let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
 
-            for(let i = 1; i <= 75; i++) {
-                let letter = i <= 15 ? "B" : i <= 30 ? "I" : i <= 45 ? "N" : i <= 60 ? "G" : "O";
-                const isCalled = calledNumbersList.includes(i);
-                const isLatest = (i === lastCalledNum);
+            // B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75
+            // በቁመት (columns) ለማሳደር 1 እስከ 15 ያሉትን ረድፍ በረድፍ እንሰራለን
+            for(let r = 1; r <= 15; r++) {
+                let colsData = [
+                    r,          // B (1-15)
+                    r + 15,     // I (16-30)
+                    r + 30,     // N (31-45)
+                    r + 45,     // G (46-60)
+                    r + 60      // O (61-75)
+                ];
 
-                const cell = document.createElement('div');
-                
-                if (isLatest) {
-                    cell.className = 'blink-latest font-extrabold text-[8px] rounded py-0.5';
-                } else if (isCalled) {
-                    cell.className = 'bg-amber-500 text-black font-extrabold text-[8px] rounded py-0.5';
-                } else {
-                    cell.className = 'bg-white/5 text-gray-400 text-[8px] rounded py-0.5';
-                }
+                colsData.forEach(num => {
+                    const isCalled = calledNumbersList.includes(num);
+                    const isLatest = (num === lastCalledNum);
 
-                cell.innerText = `${letter}-${i}`;
-                board.appendChild(cell);
+                    const cell = document.createElement('div');
+                    
+                    if (isLatest) {
+                        cell.className = 'bg-amber-400 text-black font-black text-[9px] rounded py-0.5 border border-white animate-pulse';
+                    } else if (isCalled) {
+                        cell.className = 'bg-amber-600 text-white font-bold text-[9px] rounded py-0.5';
+                    } else {
+                        cell.className = 'bg-white/5 text-gray-400 text-[9px] rounded py-0.5';
+                    }
+
+                    cell.innerText = num;
+                    board.appendChild(cell);
+                });
             }
         }
 
