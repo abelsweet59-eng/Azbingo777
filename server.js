@@ -157,7 +157,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ሎጂክ: ከ 60 በታች ሲሆን ቦቱ ያሸንፋል (ብሩ ሙሉ በሙሉ ለቤት/ለአድሚን ይቀራል)፣ ከ 60 በላይ ሲሆን እውነተኛ ተጫዋች ያሸንፋል
+// 🟢 የጨዋታ ሰዓት ቆጣሪ እና ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -185,11 +185,11 @@ setInterval(() => {
 
                     if (globalRoom.playersCount < 60) {
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winnerPrize = 0; // ለቦቱ ሽልማት የለም (ገንዘቡ ለቤት/ለአድሚን ሆኖ ይቀራል)
+                        winnerPrize = 0; 
                     } else {
                         winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
                         let totalPot = globalRoom.playersCount * 10;
-                        winnerPrize = Math.floor(totalPot * 0.70); // 70% ለአሸናፊው እውነተኛ ተጫዋች
+                        winnerPrize = Math.floor(totalPot * 0.70); 
                     }
 
                     globalRoom.gameActive = false;
