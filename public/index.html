@@ -187,19 +187,19 @@
             </div>
         </div>
 
-        <!-- 🟢 DEPOSIT MODAL (ንጹህ የቴሌብር ቁጥር ብቻ የሚታይበት) -->
+        <!-- 🟢 DEPOSIT MODAL (ቁጥሩን ሲነኩ ኮፒ የሚደረግበት እና የላኪ ቁጥር ኢንፑት የጠፋበት) -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
                 <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)</h3>
                 
-                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1">
-                    <div class="text-[10px] text-gray-300">ገንዘብ የሚላክበት ቁጥር፡</div>
+                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer active:scale-95 transition-transform" onclick="copyAdminPhone()" title="ለመቅዳት ይጫኑ">
+                    <div class="text-[10px] text-gray-300">ገንዘብ የሚላክበት ቁጥር (ለመቅዳት ይጫኑ)፡</div>
                     <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
+                    <div id="copy-status-msg" class="text-[9px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                 </div>
 
-                <input type="text" id="dep-phone-input" placeholder="የእርስዎ ቴሌብር ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100 ብር)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <textarea id="dep-receipt-input" rows="2" placeholder="የቴሌብር ትራንዛክሽን SMS / ሙሉ ደረሰኝ ኮፒ አድርገው ይክተቱ" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
+                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ትራንዛክሽን ደረሰኝ (Receipt / SMS) እዚህ ጋር ኮፒ ፔስት ያድርጉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
                 
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
@@ -287,6 +287,20 @@
             startClientTimer();
             startBotDynamicSimulation();
         });
+
+        // 🟢 የቴሌብር ቁጥሩን በቅጽበት ኮፒ ለማድረግ የሚረዳ ፌንክሽን
+        function copyAdminPhone() {
+            let phoneNum = document.getElementById('admin-telebirr-number').innerText;
+            navigator.clipboard.writeText(phoneNum).then(() => {
+                let msgEl = document.getElementById('copy-status-msg');
+                msgEl.classList.remove('hidden');
+                setTimeout(() => {
+                    msgEl.classList.add('hidden');
+                }, 2000);
+            }).catch(err => {
+                alert("ኮፒ ማድረግ አልተቻለም");
+            });
+        }
 
         function addTransactionHistory(title, amount, type) {
             let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -529,9 +543,8 @@
         function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
-            let amount, phone = "", receipt = "";
+            let amount, phone = "ቴሌብር", receipt = "";
             if (type === 'deposit') {
-                phone = document.getElementById('dep-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
                 document.getElementById('deposit-modal').classList.add('hidden');
@@ -541,7 +554,7 @@
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
 
-            if (!phone) {
+            if (type === 'withdraw' && !phone) {
                 alert("⚠️ እባክዎ ስልክ ቁጥር ያስገቡ!");
                 return;
             }
