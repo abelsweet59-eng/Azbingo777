@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 300 Cards Grid (ቁጥሩ ብቻ የሚታይበት ንጹህ ዲዛይን) -->
+                    <!-- 🟢 300 Cards Grid (አረጋግጥ እስኪባል ድረስ በነፃነት የሚመረጥበት እና ከ B-I-N-G-O ጋር የሚታይበት) -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -231,6 +231,7 @@
         }
 
         let userSelectedCards = [];
+        let confirmedCards = []; // እስካሁን በአድሚን/በኮንፊርም የተያዙ ካርዶች (ሌሎች የማይዙዋቸው)
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
@@ -266,7 +267,7 @@
                 let simulatedCount = Math.floor(Math.random() * 15) + 10;
                 for (let i = 0; i < simulatedCount; i++) {
                     let randomCard = Math.floor(Math.random() * 300) + 1;
-                    if (!userSelectedCards.includes(randomCard)) {
+                    if (!confirmedCards.includes(randomCard) && !takenCardsByOthers.includes(randomCard)) {
                         takenCardsByOthers.push(randomCard);
                     }
                 }
@@ -431,7 +432,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 በካርዶቹ ላይ "ተያዟል" የሚል ጽሑፍ ሳይኖር ንጹህ ቁጥሩ ብቻ የሚታይበት ዲዛይን (በጀርባ ግን የተያዙት ታግደዋል)
+        // 🟢 እስከ ማረጋገጫ ድረስ በነፃነት የሚመረጥበት (ያልተቆለፈ) እና B-I-N-G-O ፊደል ከቁጥሩ ጋር የሚታይበት ዲዛይን
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -439,19 +440,32 @@
                 const btn = document.createElement('button');
                 
                 let isSelectedByMe = userSelectedCards.includes(i);
-                let isTakenByOther = takenCardsByOthers.includes(i);
+                let isConfirmedByMe = confirmedCards.includes(i);
+                let isTakenByOther = takenCardsByOthers.includes(i) || confirmedCards.includes(i);
 
-                if (isSelectedByMe) {
+                let bingoLetter = i <= 60 ? "B" : i <= 120 ? "I" : i <= 180 ? "N" : i <= 240 ? "G" : "O";
+                let displayLabel = `${bingoLetter}-${i}`;
+
+                if (isConfirmedByMe || isSelectedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
-                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
+                    btn.innerText = displayLabel;
                 } else if (isTakenByOther) {
                     btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
-                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
+                    btn.innerText = displayLabel;
                     btn.disabled = true;
                 } else {
                     btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
-                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
+                    btn.innerText = displayLabel;
+                }
+
+                // እስከ ማረጋገጫ ድረስ ካልተያዘ በነፃነት መምረጥ/መቀየር ይቻላል
+                if (!isConfirmedByMe) {
                     btn.onclick = () => {
+                        if (takenCardsByOthers.includes(i)) {
+                            alert("⚠️ ይቅርታ! ይህ ካርድ በሌላ ተጫዋች ተይዟል!");
+                            return;
+                        }
+
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
                         } else {
@@ -462,10 +476,12 @@
                         generate300CardGrid();
                     };
                 }
+
                 grid.appendChild(btn);
             }
         }
 
+        // 🟢 "ካርድ አረጋግጥ" ሲባል ብቻ በይፋ ተይዞ ለሌሎች ይታገዳል
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
@@ -475,9 +491,13 @@
             }
             walletBalance -= totalCost;
             totalCardsCount = userSelectedCards.length;
+            
+            // Confirmed ውስጥ ይገባል (አሁን ለሌሎች ታግዷል)
+            confirmedCards = [...userSelectedCards];
             updateWalletUI();
 
             document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀመር ነው...";
+            generate300CardGrid();
             document.querySelectorAll('#card-grid-300 button').forEach(b => b.disabled = true);
         }
 
@@ -503,12 +523,14 @@
             }
 
             userSelectedCards.forEach((cardNum) => {
+                let bingoLetter = cardNum <= 60 ? "B" : cardNum <= 120 ? "I" : cardNum <= 180 ? "N" : cardNum <= 240 ? "G" : "O";
+
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = "bg-[#140826] p-2 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
                 
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[10px] font-bold text-amber-400 text-center border-b border-white/10 pb-1";
-                cardHeader.innerText = `ካርድ #${cardNum}`;
+                cardHeader.innerText = `ካርድ #${bingoLetter}-${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
                 const miniGrid = document.createElement('div');
