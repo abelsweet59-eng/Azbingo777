@@ -29,7 +29,7 @@
     <div class="w-full max-w-[430px] h-screen sm:h-[850px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] flex flex-col justify-between shadow-2xl sm:rounded-2xl border border-white/10 overflow-hidden relative">
 
         <!-- Top Header -->
-        <header class="flex justify-between items-center px-3 py-2.5 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
+        <header class="flex justify-between items-center px-3 py-2 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
             <div class="text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap">
                 AZ Bingo
             </div>
@@ -40,7 +40,7 @@
         </header>
 
         <!-- Stats Bar -->
-        <section class="grid grid-cols-5 gap-1 px-2 py-1.5 bg-black/40 border-b border-white/5 text-center text-xs">
+        <section class="grid grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ሰዓት</div>
                 <div id="stat-timer" class="text-[10px] font-bold text-amber-400 font-mono">60ሰ</div>
@@ -81,10 +81,10 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ -->
+                    <!-- ንጹህ የካርድ ቁጥሮች ግሪድ -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
-                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
                         <div>
                             <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
                             <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
@@ -95,39 +95,44 @@
                     </div>
                 </div>
 
-                <!-- Live Game Section -->
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 overflow-y-auto custom-scroll">
-                    <div class="grid grid-cols-12 gap-2">
-                        <div class="col-span-6 bg-[#180a29] p-1.5 rounded-xl border border-purple-500/20">
-                            <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
-                                <div class="bg-blue-600 rounded text-white">B</div>
-                                <div class="bg-indigo-600 rounded text-white">I</div>
-                                <div class="bg-purple-600 rounded text-white">N</div>
-                                <div class="bg-emerald-600 rounded text-white">G</div>
-                                <div class="bg-amber-600 rounded text-white">O</div>
+                <!-- Live Game Section (ስፔስ እና ክፍተት የተስተካከለበት) -->
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-3 pb-4 overflow-y-auto custom-scroll">
+                    
+                    <!-- ሰፋ ያለ እና ግልጽ የሆነ የ 75 ኳሶች ቦርድ (Full View) -->
+                    <div class="grid grid-cols-12 gap-2 bg-[#180a29] p-2.5 rounded-xl border border-purple-500/30 shadow-md">
+                        <div class="col-span-7">
+                            <div class="grid grid-cols-5 gap-1 text-center font-bold text-[10px] mb-1.5">
+                                <div class="bg-blue-600 rounded text-white py-0.5">B</div>
+                                <div class="bg-indigo-600 rounded text-white py-0.5">I</div>
+                                <div class="bg-purple-600 rounded text-white py-0.5">N</div>
+                                <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
+                                <div class="bg-amber-600 rounded text-white py-0.5">O</div>
                             </div>
-                            <div class="grid grid-cols-5 gap-0.5 text-center text-[8px] font-mono" id="vertical-board-75"></div>
+                            <div class="grid grid-cols-5 gap-1 text-center text-[9px] font-mono" id="vertical-board-75"></div>
                         </div>
 
-                        <div class="col-span-6 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/30 text-center">
+                        <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2.5 border border-purple-500/40 text-center">
                             <div class="text-[9px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
-                            <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-base shadow-xl pulse-ball mx-auto my-1">
+                            <div id="main-called-ball" class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-lg shadow-xl pulse-ball mx-auto my-1">
                                 --
                             </div>
-                            <div class="text-[9px] text-gray-300">ጨዋታው በሂደት ላይ ነው...</div>
+                            <div class="text-[9px] text-gray-300">በሂደት ላይ...</div>
                         </div>
                     </div>
 
-                    <!-- 🟢 ተመልካች ማሳወቂያ -->
-                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-4 rounded-xl text-center space-y-1.5 shadow-lg">
+                    <!-- ተመልካች ማሳወቂያ -->
+                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-3 rounded-xl text-center space-y-1 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
-                        <div class="text-gray-200 text-[11px]">በዚህ ዙር ካርድ አልመረጡም፤ ስለዚህ ጨዋታውን እንደ ተመልካች ብቻ ይከታተላሉ።</div>
+                        <div class="text-gray-200 text-[10px]">በዚህ ዙር ካርድ አልመረጡም፤ ጨዋታውን እንደ ተመልካች ይከታተላሉ።</div>
                     </div>
 
-                    <div class="text-[11px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
-                    <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
+                    <!-- ከቦርዱ በቂ ክፍተት (Space) ያለው የተጠቃሚ ካርዶች ማሳያ -->
+                    <div class="space-y-2 pt-1">
+                        <div class="text-[11px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
+                        <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2.5 rounded-xl border border-purple-500/30"></div>
+                    </div>
 
-                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed w-full">🎉 ቢንጎ አሳውቅ</button>
+                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed w-full mt-2">🎉 ቢንጎ አሳውቅ</button>
                 </div>
             </div>
 
@@ -148,10 +153,10 @@
             <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
-                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded">ዝጋ</button>
+                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30">
-                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
+                    ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
                 </div>
             </div>
         </div>
@@ -162,13 +167,13 @@
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
-        <!-- WINNING MODAL -->
+        <!-- WINNING MODAL (የአሸናፊ ስም እና የሽልማት መጠን በግልጽ የሚታይበት) -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-6 w-full max-w-xs space-y-4 shadow-2xl text-center relative">
                 <div class="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-3xl shadow-lg">👑</div>
                 <div>
-                    <h2 class="text-amber-400 font-extrabold text-2xl tracking-wider">BINGO WINNER!</h2>
-                    <div class="text-white font-bold text-sm mt-2" id="winner-banner-text">አሸናፊ ተገኝቷል!</div>
+                    <h2 class="text-amber-400 font-extrabold text-xl tracking-wider">BINGO WINNER!</h2>
+                    <div class="text-white font-medium text-xs mt-3 leading-relaxed" id="winner-banner-text">አሸናፊ ተገኝቷል!</div>
                 </div>
             </div>
         </div>
@@ -264,7 +269,6 @@
             }
         }
 
-        // 🟢 60 ሰከንድ ቆጣሪ ድፍን ቁጥር (Integer seconds) ብቻ ሆኖ እንዲታይ ተደርጓል
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
@@ -393,11 +397,12 @@
             resetPlayerSelectionForNewRound();
         });
 
+        // 🟢 አሸናፊ ሲወጣ ስሙ እና የሽልማት መጠኑ (ብር) በግልጽ እንዲጻፍ የተደረገበት ክፍል
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let prizePool = data.prize || 0;
 
-            document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300">${winnerName}</b><br>ሽልማት: <span class="text-amber-400 font-bold">${prizePool} ብር</span>`;
+            document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300 text-sm">${winnerName}</b><br><br>የተሸለመው የገንዘብ መጠን: <span class="text-amber-400 font-black text-base">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (winnerName === userFullName) {
@@ -409,7 +414,7 @@
                 document.getElementById('winner-modal').classList.add('hidden');
                 resetPlayerSelectionForNewRound();
                 initRoundBots();
-            }, 4000);
+            }, 4500);
         });
 
         function resetPlayerSelectionForNewRound() {
@@ -556,6 +561,7 @@
             }
         }
 
+        // 🟢 የካርድ ቁጥር ርዕስ (ከላይ ፊደል ሳይኖር ንጹህ ቁጥር ብቻ እንዲታይ የተደረገበት ክፍል)
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
@@ -578,14 +584,13 @@
             bingoBtn.classList.remove('hidden');
 
             confirmedCards.forEach((cardNum) => {
-                let bingoLetter = cardNum <= 60 ? "B" : cardNum <= 120 ? "I" : cardNum <= 180 ? "N" : cardNum <= 240 ? "G" : "O";
-
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
                 
+                // 🟢 ከካርድ ቁጥር ላይ ፊደል ጠፍቶ ቁጥሩ ብቻ (ለምሳሌ፦ ካርድ #45) እንዲል ተደረገ
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[9px] font-bold text-amber-400 text-center border-b border-white/10 pb-0.5";
-                cardHeader.innerText = `ካርድ #${bingoLetter}-${cardNum}`;
+                cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
                 const headersGrid = document.createElement('div');
