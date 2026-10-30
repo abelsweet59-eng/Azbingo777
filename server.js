@@ -21,7 +21,7 @@ let globalRoom = {
     gameStartTime: Date.now() + roundDuration,
     playersCount: 30,
     takenCards: [],
-    playerRoundCards: {} // እያንዳንዱ ዩዘር የያዛቸውን ካርዶች ለመያዝ
+    playerRoundCards: {}
 };
 
 const fakeBotNames = [
@@ -114,7 +114,9 @@ let connectedRealPlayers = [];
 
 io.on('connection', (socket) => {
     console.log("Player connected: " + socket.id);
-    connectedRealPlayers.push(socket.id);
+    if (!connectedRealPlayers.includes(socket.id)) {
+        connectedRealPlayers.push(socket.id);
+    }
     
     let realCount = connectedRealPlayers.length;
     globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -123,14 +125,18 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     socket.emit('updateTakenCards', globalRoom.takenCards);
 
-    socket.on('confirmCards', (selectedCards) => {
+    socket.on('confirmCards', (data) => {
+        let selectedCards = data.cards || data;
+        let userId = data.userId || socket.id;
+
         let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
         if (conflict) {
             socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል። እባክዎ ሌላ ይምረጡ።");
             return;
         }
         globalRoom.takenCards.push(...selectedCards);
-        globalRoom.playerRoundCards[socket.id] = selectedCards; // የተጠቃሚውን ካርዶች መዝግብ
+        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId };
+        
         socket.emit('cardSelectionSuccess');
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
@@ -154,14 +160,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        delete globalRoom.playerRoundCards[socket.id];
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ እና የቦት/ተጫዋች ትክክለኛ አሸናፊ እና ካርድ ምርጫ ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -192,19 +196,17 @@ setInterval(() => {
                     let totalPot = globalRoom.playersCount * 10;
                     winnerPrize = Math.floor(totalPot * 0.70);
 
-                    // 50 በመቶ ዕድል ለአንደኛው እውነተኛ ተጫዋች (ካርድ የያዘ) ወይም ለቦት
                     let activeSocketsWithCards = Object.keys(globalRoom.playerRoundCards);
                     let shouldUserWin = activeSocketsWithCards.length > 0 && Math.random() < 0.5;
 
                     if (shouldUserWin) {
-                        // እውነተኛ ተጫዋች አሸነፈ
                         let winningSocketId = activeSocketsWithCards[Math.floor(Math.random() * activeSocketsWithCards.length)];
-                        winningUser = "ተጫዋች"; // (በክላይንት በኩል ስሙ በትክክል ይተካል)
-                        winningUserId = "usr_" + Math.floor(Math.random() * 90000 + 10000);
-                        let userCards = globalRoom.playerRoundCards[winningSocketId];
+                        let playerData = globalRoom.playerRoundCards[winningSocketId];
+                        winningUser = "ተጫዋች";
+                        winningUserId = playerData.userId;
+                        let userCards = playerData.cards;
                         winningCard = userCards[Math.floor(Math.random() * userCards.length)];
                     } else {
-                        // ቦት አሸነፈ (ተጫዋቾቹ ካልያዟቸው ባዶ ካርዶች ውስጥ መርጦ ይወስዳል)
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                         winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                         
