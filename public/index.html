@@ -74,7 +74,6 @@
             <!-- TAB 1: GAME -->
             <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
                 
-                <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
                     <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
                         <div>
@@ -99,7 +98,6 @@
                     </div>
                 </div>
 
-                <!-- Live Game Section -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-3 pb-4 overflow-y-auto custom-scroll">
                     
                     <div class="grid grid-cols-12 gap-2 bg-[#180a29] p-2.5 rounded-xl border border-purple-500/30 shadow-md">
@@ -149,7 +147,6 @@
                     </div>
                 </div>
 
-                <!-- 🟢 የሂሳብ እንቅስቃሴ ታሪክ (Transaction History Section) -->
                 <div class="bg-[#180a29] p-3 rounded-2xl border border-purple-500/30 space-y-2">
                     <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
                         <h3 class="text-xs font-bold text-amber-400">📜 የሂሳብ እንቅስቃሴ ታሪክ (History)</h3>
@@ -190,12 +187,20 @@
             </div>
         </div>
 
-        <!-- DEPOSIT MODAL -->
+        <!-- 🟢 DEPOSIT MODAL (ንጹህ የቴሌብር ቁጥር ብቻ የሚታይበት) -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm">💳 ቴሌብር ዲፖዚት (ቢያንስ 100 ብር)</h3>
-                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <input type="text" id="dep-receipt-input" placeholder="የቴሌብር ትራንዛክሽን ID (Receipt)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)</h3>
+                
+                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1">
+                    <div class="text-[10px] text-gray-300">ገንዘብ የሚላክበት ቁጥር፡</div>
+                    <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
+                </div>
+
+                <input type="text" id="dep-phone-input" placeholder="የእርስዎ ቴሌብር ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100 ብር)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <textarea id="dep-receipt-input" rows="2" placeholder="የቴሌብር ትራንዛክሽን SMS / ሙሉ ደረሰኝ ኮፒ አድርገው ይክተቱ" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
+                
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
                     <button onclick="submitFinancialRequest('deposit')" class="flex-1 bg-emerald-600 py-2 rounded-xl font-bold">ጥያቄ ላክ</button>
@@ -206,8 +211,8 @@
         <!-- WITHDRAW MODAL -->
         <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm">🏧 ቴሌብር ዊዝድሮዋል (ቢያንስ 100 ብር)</h3>
-                <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <h3 class="font-bold text-amber-400 text-sm text-center">🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)</h3>
+                <input type="text" id="withdraw-phone-input" placeholder="የሚቀበሉበት ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <input type="number" id="withdraw-amount-input" placeholder="ማውጣት የሚፈልጉት (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('withdraw-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
@@ -286,7 +291,7 @@
         function addTransactionHistory(title, amount, type) {
             let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             transactionHistory.unshift({ title, amount, type, time: timeNow });
-            if (transactionHistory.length > 20) transactionHistory.pop(); // እስከ 20 ሒስትሪ ብቻ መያዝ
+            if (transactionHistory.length > 20) transactionHistory.pop();
             localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
             renderHistoryUI();
         }
@@ -500,15 +505,9 @@
                 alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
                 addTransactionHistory('ቴሌብር ዲፖዚት (Deposit)', amt, 'income');
             } else {
-                if (walletBalance >= amt) {
-                    walletBalance -= amt;
-                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቋል!`);
-                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
-                } else {
-                    walletBalance -= amt;
-                    alert(`✅ የ ${amt} ብር ዊዝድሮዋል ጥያቄዎ ጸድቋል!`);
-                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
-                }
+                walletBalance -= amt;
+                alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ተልኳል!`);
+                addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
             }
             updateWalletUI();
         });
@@ -530,8 +529,9 @@
         function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
-            let amount, phone = "ቴሌብር", receipt = "";
+            let amount, phone = "", receipt = "";
             if (type === 'deposit') {
+                phone = document.getElementById('dep-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
                 document.getElementById('deposit-modal').classList.add('hidden');
@@ -539,6 +539,11 @@
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
                 document.getElementById('withdraw-modal').classList.add('hidden');
+            }
+
+            if (!phone) {
+                alert("⚠️ እባክዎ ስልክ ቁጥር ያስገቡ!");
+                return;
             }
 
             if (isNaN(amount) || amount < 100) {
@@ -614,7 +619,6 @@
             walletBalance -= totalCost;
             updateWalletUI();
 
-            // 🟢 ካርድ ሲገዙ ከሂሳብ የሚቀነሰውን ገንዘብ ወደ ሒስትሪ መመዝገብ
             addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
 
             socket.emit('confirmCards', userSelectedCards);
