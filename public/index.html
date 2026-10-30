@@ -53,6 +53,7 @@
                 <div class="text-[9px] text-gray-400 uppercase">ቤት (Bet)</div>
                 <div id="stat-bet" class="text-xs font-bold text-amber-400">10 ብር</div>
             </div>
+            <!-- 🟢 ደራሽ (አሸናፊው የሚሸለመው 70% ብር ብቻ የሚታይበት) -->
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[10px] text-gray-300">ደራሽ</div>
                 <div id="stat-derash" class="text-xs font-bold text-amber-400">0 ብር</div>
@@ -151,7 +152,7 @@
             </div>
         </div>
 
-        <!-- 🟢 1, 2, 3 COUNTDOWN OVERLAY MODAL -->
+        <!-- COUNTDOWN MODAL -->
         <div id="countdown-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
             <div class="text-amber-400 font-bold text-lg mb-4 tracking-wide">ጨዋታው ሊጀመር ነው...</div>
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
@@ -220,7 +221,7 @@
         const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
-        let totalCardsCount = 1; // 1 ወይም 2 ካርድ ሲመረጥ በዚያው ልክ ይባዛል (ካርድ በ 10 ብር)
+        let totalCardsCount = 1;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         
         if (!localStorage.getItem(userLocalStorageKey)) {
@@ -279,19 +280,18 @@
             }
         });
 
-        // 🟢 የደራሽ ሂሳብ ከአጠቃላይ ተጫዋቾች ብዛት እና ከሚጫወቱት የብር መጠን ጋር ተሰልቶ እንዲወጣ (ከተጫዋች ብዛት x 10 ብር x 30%)
+        // 🟢 ደራሽ ላይ የሚታየው አሸናፊው የሚሸለመው ብር (70% ብቻ) እንዲሆን ተደርጎ ተሰላ
         socket.on('updatePlayersCount', (count) => {
             document.getElementById('stat-players').innerText = count;
-            let totalPot = count * 10; // በአጠቃላይ የተሰበሰበው ገንዘብ (እያንዳንዱ ካርድ 10 ብር)
-            let derashAmount = Math.floor(totalPot * 0.30); // 30% ደራሽ (ለቤት የሚገባው)
-            document.getElementById('stat-derash').innerText = `${derashAmount} ብር`;
+            let totalPot = count * 10; // አጠቃላይ የተሰበሰበው ብር
+            let winnerPrize = Math.floor(totalPot * 0.70); // አሸናፊው የሚሸለመው 70% ብር ብቻ
+            document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
         socket.on('gameStartedBroadcast', () => {
             triggerCountdownAndStart();
         });
 
-        // 🟢 1, 2, 3 ቆጥሮ ወደ ጨዋታው የሚያስገባ አኒሜሽን ሎጂክ
         function triggerCountdownAndStart() {
             const modal = document.getElementById('countdown-modal');
             const numEl = document.getElementById('countdown-number');
@@ -305,7 +305,7 @@
                 if (count > 0) {
                     numEl.innerText = count;
                     numEl.classList.remove('countdown-anim');
-                    void numEl.offsetWidth; // trigger reflow for animation restart
+                    void numEl.offsetWidth;
                     numEl.classList.add('countdown-anim');
                 } else {
                     clearInterval(timer);
@@ -343,8 +343,7 @@
 
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
-            let totalPlayers = parseInt(document.getElementById('stat-players').innerText) || 60;
-            let prizePool = Math.floor(totalPlayers * 10 * 0.70);
+            let prizePool = data.prize || Math.floor((parseInt(document.getElementById('stat-players').innerText) || 60) * 10 * 0.70);
 
             document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300">${winnerName}</b><br>ሽልማት (70%): <span class="text-amber-400 font-bold">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
