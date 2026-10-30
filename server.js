@@ -14,11 +14,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-// Global Game State for all players in Room 101
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + 60000, // Next game countdown
+    gameStartTime: Date.now() + 60000,
     playersCount: 0
 };
 
@@ -40,22 +39,24 @@ io.on('connection', (socket) => {
     globalRoom.playersCount++;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
-    // Send current game state immediately to newly joined user
     socket.emit('syncGameState', globalRoom);
 
-    socket.on('financialRequest', async ({ type, amount, username, userId, phone, receipt }) => {
+    socket.on('financialRequest', async (data) => {
+        if (!data) return;
+        let { type, amount, username, userId, phone, receipt } = data;
         let msg = `🔔 *AZ BINGO 777 - አዲስ የ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ*\n\n` +
-                  `👤 ስም: ${username}\n` +
-                  `🆔 ID: ${userId}\n` +
-                  `📱 ስልክ/ቴሌብር: ${phone}\n` +
-                  `💰 መጠን: ${amount} ብር\n` +
-                  (receipt ? `🧾 receipt ID: ${receipt}` : '');
+                  `👤 ስም: ${username || 'ተጫዋች'}\n` +
+                  `🆔 ID: ${userId || 'N/A'}\n` +
+                  `📱 ስልክ: ${phone || 'ቴሌብር'}\n` +
+                  `💰 መጠን: ${amount || 0} ብር\n` +
+                  (receipt ? `🧾 Receipt: ${receipt}` : '');
 
         await sendAdminNotification(msg);
         socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ተልኳል!` });
     });
 
-    socket.on('declareBingo', ({ username }) => {
+    socket.on('declareBingo', (data) => {
+        let username = data && data.username ? data.username : 'ተጫዋች';
         io.emit('bingoWinner', `🎉 BINGO WINNER! ተጫዋች ${username} አሸንፏል!`);
         sendAdminNotification(`🏆 *BINGO WINNER ALERT!*\n\nተጫዋች *${username}* ጨዋታውን አሸንፏል!`);
     });
@@ -67,7 +68,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// Server-side game loop keeping everyone synchronized
 setInterval(() => {
     let now = Date.now();
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
@@ -75,7 +75,6 @@ setInterval(() => {
         globalRoom.calledNumbers = [];
         io.emit('gameStartedBroadcast');
 
-        // Call numbers every 3.5 seconds
         let callingInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(callingInterval);
@@ -88,7 +87,7 @@ setInterval(() => {
                 io.emit('numberCalledBroadcast', num);
             } else {
                 globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + 60000; // Next round in 60s
+                globalRoom.gameStartTime = Date.now() + 60000;
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
