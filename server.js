@@ -37,6 +37,7 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
+// 1. የ 300 ቋሚ እና የተለዩ (Unique) ካርዶች አሰራር
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     let available = [];
@@ -91,17 +92,17 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 5ቱ የቢንጎ ህጎች ማረጋገጫ
+// 4. 5ቱ የቢንጎ የድል ቅጦች (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // 1. አግድም
+    // አግድም (Horizontal)
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-    // 2. ቁመት
+    // ቁመት (Vertical)
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -109,28 +110,28 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
-    // 3. ሰያፍ 1
+    // ሰያፍ 1 (Diagonal 1)
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
-    // 4. ሰያፍ 2
+    // ሰያፍ 2 (Diagonal 2)
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
-    // 5. አራቱን ማዕዘኖች (Corners)
+    // አራቱን ማዕዘኖች (All four corners)
     let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
     if(corners.every(val => calledNumbers.includes(val))) return true;
 
     return false;
 }
 
-// ቴሌግራም ፖሊንግ (ዲፖዚት እና ዊዝድሮዋል ጥያቄዎችን ከአድሚን አዝራር ለመቀበል)
+// 7. የቴሌግራም ፖሊንግ እና አድሚን አሰራር (ዲፖዚት እና ዊዝድሮዋል ጥያቄዎች)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -151,7 +152,7 @@ async function pollTelegramUpdates() {
                     let messageId = callbackQuery.message.message_id;
 
                     let parts = data.split('_');
-                    let action = parts[0]; // app ወይም rej
+                    let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
 
                     let reqData = pendingRequests[requestId];
@@ -176,7 +177,7 @@ async function pollTelegramUpdates() {
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId,
                                 message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል (ተreject ተደርጓል)!*`,
+                                text: `❌ *ጥያቄው ተሰርዟል!*`,
                                 parse_mode: 'Markdown'
                             });
                         }
@@ -197,7 +198,6 @@ async function pollTelegramUpdates() {
 
 setTimeout(pollTelegramUpdates, 2000);
 
-// 🟢 ለአድሚን የمالی (Financial Request - Deposit & Withdraw) ማሳወቂያ መላኪያ ተግባር
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
 
@@ -220,10 +220,7 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
                 ]]
             }
         });
-        console.log("✅ Admin financial request sent successfully for type:", type);
-    } catch (error) {
-        console.error("❌ Error sending admin financial request:", error.response ? error.response.data : error.message);
-    }
+    } catch (error) {}
 }
 
 let connectedRealPlayers = [];
@@ -232,6 +229,7 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
+    // 2. ተለዋዋጭ የቦቶች ቅነሳ ሉፕ (Dynamic Bot Reduction Loop)
     let currentBotsCount = Math.max(0, 30 - realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     
@@ -256,7 +254,7 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    // 🟢 የዲፖዚት እና ዊዝድሮዋል ጥያቄ መቀበያ እና ለአድሚን መላኪያ
+    // ዲፖዚት እና ዊዝድሮዋል ጥያቄ መቀበያ
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -288,6 +286,7 @@ setInterval(() => {
     let realCount = connectedRealPlayers.length;
     let totalPlayers = globalRoom.playersCount;
 
+    // 3. የ 80% ሪል ዩዘር የድል ገደብ (80% Real User Win Dominance)
     let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
     let isRealDominant = realUserPercentage >= 80;
 
@@ -362,42 +361,10 @@ setInterval(() => {
                     if (winningCardsList.length > 0) {
                         let totalPot = totalPlayers * 10;
                         let totalPrizePool = Math.floor(totalPot * 0.70);
+                        // 6. ብዙ አሸናፊዎች እና እኩል የሽልማት ክፍፍል (Multiple Winners Split)
                         let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
                         globalRoom.gameActive = false;
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
-                        globalRoom.playerRoundCards = {};
-
-                        let primaryWinner = winningCardsList[0];
-
-                        io.emit('bingoWinner', { 
-                            username: primaryWinner.username, 
-                            userId: primaryWinner.userId,
-                            cardNum: primaryWinner.cardNum,
-                            playersCount: totalPlayers,
-                            totalPot: totalPot,
-                            prize: prizePerWinner,
-                            winnersCount: winningCardsList.length,
-                            calledNumbers: globalRoom.calledNumbers
-                        });
-
-                        clearInterval(activeGameInterval);
-                    }
-                }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.takenCards = [];
-                globalRoom.playerRoundCards = {};
-                io.emit('gameEndedBroadcast');
-                clearInterval(activeGameInterval);
-            }
-        }, 4000);
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+                        globalRoom.playerRound
