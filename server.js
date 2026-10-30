@@ -91,17 +91,17 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 5ቱ የቢንጎ ህጎች (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
+// 5ቱ የቢንጎ ህጎች ማረጋገጫ
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // 1. አግድም (Horizontal)[span_5](start_span)[span_5](end_span)[span_6](start_span)[span_6](end_span)[span_7](start_span)[span_7](end_span)
+    // 1. አግድም
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-    // 2. ቁመት (Vertical)[span_8](start_span)[span_8](end_span)[span_9](start_span)[span_9](end_span)[span_10](start_span)[span_10](end_span)
+    // 2. ቁመት
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -109,27 +109,28 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
-    // 3. ሰያፍ 1 (Diagonal 1)[span_11](start_span)[span_11](end_span)[span_12](start_span)[span_12](end_span)[span_13](start_span)[span_13](end_span)
+    // 3. ሰያፍ 1
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
-    // 4. ሰያፍ 2 (Diagonal 2)[span_14](start_span)[span_14](end_span)[span_15](start_span)[span_15](end_span)[span_16](start_span)[span_16](end_span)
+    // 4. ሰያፍ 2
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
-    // 5. አራቱን ማዕዘኖች (All four corners)[span_17](start_span)[span_17](end_span)
+    // 5. አራቱን ማዕዘኖች (Corners)
     let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
     if(corners.every(val => calledNumbers.includes(val))) return true;
 
     return false;
 }
 
+// ቴሌግራም ፖሊንግ (ዲፖዚት እና ዊዝድሮዋል ጥያቄዎችን ከአድሚን አዝራር ለመቀበል)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -150,7 +151,7 @@ async function pollTelegramUpdates() {
                     let messageId = callbackQuery.message.message_id;
 
                     let parts = data.split('_');
-                    let action = parts[0]; 
+                    let action = parts[0]; // app ወይም rej
                     let requestId = parts.slice(1).join('_');
 
                     let reqData = pendingRequests[requestId];
@@ -165,17 +166,17 @@ async function pollTelegramUpdates() {
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId,
                                 message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (መጠን: ${reqData.amount} ብር)`,
+                                text: `✅ *ጥያቄው ጸድቋል!* (አይነት: ${reqData.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'}, መጠን: ${reqData.amount} ብር)`,
                                 parse_mode: 'Markdown'
                             });
                         } else {
                             if (targetSocket) {
-                                targetSocket.emit('financialRejected', { type: reqData.type });
+                                targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
                             }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId,
                                 message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!*`,
+                                text: `❌ *ጥያቄው ተሰርዟል (ተreject ተደርጓል)!*`,
                                 parse_mode: 'Markdown'
                             });
                         }
@@ -196,11 +197,12 @@ async function pollTelegramUpdates() {
 
 setTimeout(pollTelegramUpdates, 2000);
 
+// 🟢 ለአድሚን የمالی (Financial Request - Deposit & Withdraw) ማሳወቂያ መላኪያ ተግባር
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
 
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጫ)';
-    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: \`${userId}\`\n💰 መጠን: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: \`${userId}\`\n💰 መጠን: *${amount} ብር*\n📱 ስልክ/አድራሻ: ${phone || 'አልተሰጠም'}`;
 
     if (receipt) {
         message += `\n\n📄 *ደረሰኝ / SMS:*\n${receipt}`;
@@ -218,7 +220,10 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
                 ]]
             }
         });
-    } catch (error) {}
+        console.log("✅ Admin financial request sent successfully for type:", type);
+    } catch (error) {
+        console.error("❌ Error sending admin financial request:", error.response ? error.response.data : error.message);
+    }
 }
 
 let connectedRealPlayers = [];
@@ -251,6 +256,7 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
+    // 🟢 የዲፖዚት እና ዊዝድሮዋል ጥያቄ መቀበያ እና ለአድሚን መላኪያ
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -282,9 +288,8 @@ setInterval(() => {
     let realCount = connectedRealPlayers.length;
     let totalPlayers = globalRoom.playersCount;
 
-    // የ 80% ሪል ዩዘር መለኪያ (Real Users Percentage Calculation)
     let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
-    let isRealDominant = realUserPercentage >= 80; // 80% እና ከዛ በላይ ሪል ዩዘር ሲኖር ቦቶች ማሸነፍ ሙሉ በሙሉ ያቆማሉ[span_18](start_span)[span_18](end_span)
+    let isRealDominant = realUserPercentage >= 80;
 
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
@@ -308,7 +313,6 @@ setInterval(() => {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // ሪል ተጫዋቾች ከ 80% በታች ሲሆኑ ብቻ ቦቶቹ ማሸነፍ ይችላሉ፤ 80% እና ከዛ በላይ ከሆኑ ቦቶች አያሸንፉም (Fair Play for Real Users)[span_19](start_span)[span_19](end_span)
                     let currentBots = Math.max(0, 30 - realCount);
                     if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
@@ -358,7 +362,6 @@ setInterval(() => {
                     if (winningCardsList.length > 0) {
                         let totalPot = totalPlayers * 10;
                         let totalPrizePool = Math.floor(totalPot * 0.70);
-                        // ብዙ አሸናፊዎች ሲኖሩ እኩል እኩል እንዲካፈል ማድረግ (Multiple Winners Split)[span_20](start_span)[span_20](end_span)
                         let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
                         globalRoom.gameActive = false;
