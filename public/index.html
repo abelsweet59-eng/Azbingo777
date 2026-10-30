@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 300 Cards Grid with Live Bot Simulation -->
+                    <!-- 🟢 300 Cards Grid (ቁጥሩ ብቻ የሚታይበት ንጹህ ዲዛይን) -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -231,7 +231,7 @@
         }
 
         let userSelectedCards = [];
-        let takenCardsByOthers = []; // በሌሎች ተጫዋቾች/ቦቶች የተያዙ ካርዶች
+        let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
 
@@ -246,7 +246,7 @@
             updateWalletUI();
             generate300CardGrid();
             startClientTimer();
-            startBotCardSimulation(); // 🟢 ቦቶቹ በዘፈቀደ ካርዶችን መምረጥና መቀየር የሚጀምሩበት ሲሙሌሽን
+            startBotCardSimulation();
         });
 
         function startClientTimer() {
@@ -260,10 +260,8 @@
             }, 1000);
         }
 
-        // 🟢 ቦቶቹ በዘፈቀደ ካርዶችን እያዙ የሚለቁበት (ያዝለቅቅ የሚያደርጉበት) ሪል-ታይም ሲሙሌሽን
         function startBotCardSimulation() {
             setInterval(() => {
-                // በዘፈቀደ ከ 1 እስከ 300 ካሉ ካርዶች መካከል 5 እስከ 10 የሚሆኑትን በቦቶች ያስይዛል ወይም ያስለቅቃል
                 takenCardsByOthers = [];
                 let simulatedCount = Math.floor(Math.random() * 15) + 10;
                 for (let i = 0; i < simulatedCount; i++) {
@@ -272,8 +270,8 @@
                         takenCardsByOthers.push(randomCard);
                     }
                 }
-                generate300CardGrid(); // ግሪዱን በአዲስ ሁኔታ ሪፍሬሽ ያደርጋል
-            }, 4000); // በየ 4 ሰኮንዱ ቦቶቹ ምርጫቸውን ይቀያይራሉ
+                generate300CardGrid();
+            }, 4000);
         }
 
         socket.on('connect', () => {
@@ -433,7 +431,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 ካርዶችን በግልጽ እና በሌሎች ተጫዋቾች (ቦቶች) መያዛቸውን አሳይቶ የማመንጨት ሎጂክ
+        // 🟢 በካርዶቹ ላይ "ተያዟል" የሚል ጽሑፍ ሳይኖር ንጹህ ቁጥሩ ብቻ የሚታይበት ዲዛይን (በጀርባ ግን የተያዙት ታግደዋል)
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -445,14 +443,14 @@
 
                 if (isSelectedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
-                    btn.innerText = `${i} (የእርስዎ)`;
+                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
                 } else if (isTakenByOther) {
                     btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
-                    btn.innerText = `${i} (ተያዟል)`;
+                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
                     btn.disabled = true;
                 } else {
                     btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
-                    btn.innerText = i;
+                    btn.innerText = i; // ጽሑፍ የለም፣ ቁጥሩ ብቻ
                     btn.onclick = () => {
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
