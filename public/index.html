@@ -81,7 +81,6 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 300 Cards Grid (አረጋግጥ እስኪባል ድረስ በነፃነት የሚመረጥበት እና ከ B-I-N-G-O ጋር የሚታይበት) -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-3 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -221,7 +220,6 @@
         const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
-        let totalCardsCount = 1;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         
         if (!localStorage.getItem(userLocalStorageKey)) {
@@ -231,7 +229,7 @@
         }
 
         let userSelectedCards = [];
-        let confirmedCards = []; // እስካሁን በአድሚን/በኮንፊርም የተያዙ ካርዶች (ሌሎች የማይዙዋቸው)
+        let confirmedCards = []; 
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
@@ -247,7 +245,6 @@
             updateWalletUI();
             generate300CardGrid();
             startClientTimer();
-            startBotCardSimulation();
         });
 
         function startClientTimer() {
@@ -259,20 +256,6 @@
                 
                 document.getElementById('stat-timer').innerText = timeStr;
             }, 1000);
-        }
-
-        function startBotCardSimulation() {
-            setInterval(() => {
-                takenCardsByOthers = [];
-                let simulatedCount = Math.floor(Math.random() * 15) + 10;
-                for (let i = 0; i < simulatedCount; i++) {
-                    let randomCard = Math.floor(Math.random() * 300) + 1;
-                    if (!confirmedCards.includes(randomCard) && !takenCardsByOthers.includes(randomCard)) {
-                        takenCardsByOthers.push(randomCard);
-                    }
-                }
-                generate300CardGrid();
-            }, 4000);
         }
 
         socket.on('connect', () => {
@@ -295,6 +278,22 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             }
+        });
+
+        socket.on('updateTakenCards', (takenList) => {
+            takenCardsByOthers = takenList;
+            generate300CardGrid();
+        });
+
+        socket.on('cardSelectionSuccess', () => {
+            confirmedCards = [...userSelectedCards];
+            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀመር ነው...";
+            document.querySelectorAll('#card-grid-300 button').forEach(b => b.disabled = true);
+            renderPlayerDualCards();
+        });
+
+        socket.on('cardSelectionError', (msg) => {
+            alert(msg);
         });
 
         socket.on('updatePlayersCount', (count) => {
@@ -432,7 +431,6 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 እስከ ማረጋገጫ ድረስ በነፃነት የሚመረጥበት (ያልተቆለፈ) እና B-I-N-G-O ፊደል ከቁጥሩ ጋር የሚታይበት ዲዛይን
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -441,7 +439,7 @@
                 
                 let isSelectedByMe = userSelectedCards.includes(i);
                 let isConfirmedByMe = confirmedCards.includes(i);
-                let isTakenByOther = takenCardsByOthers.includes(i) || confirmedCards.includes(i);
+                let isTakenByOther = takenCardsByOthers.includes(i);
 
                 let bingoLetter = i <= 60 ? "B" : i <= 120 ? "I" : i <= 180 ? "N" : i <= 240 ? "G" : "O";
                 let displayLabel = `${bingoLetter}-${i}`;
@@ -458,7 +456,6 @@
                     btn.innerText = displayLabel;
                 }
 
-                // እስከ ማረጋገጫ ድረስ ካልተያዘ በነፃነት መምረጥ/መቀየር ይቻላል
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
                         if (takenCardsByOthers.includes(i)) {
@@ -481,7 +478,6 @@
             }
         }
 
-        // 🟢 "ካርድ አረጋግጥ" ሲባል ብቻ በይፋ ተይዞ ለሌሎች ይታገዳል
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
@@ -490,15 +486,10 @@
                 return;
             }
             walletBalance -= totalCost;
-            totalCardsCount = userSelectedCards.length;
-            
-            // Confirmed ውስጥ ይገባል (አሁን ለሌሎች ታግዷል)
-            confirmedCards = [...userSelectedCards];
             updateWalletUI();
 
-            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀመር ነው...";
-            generate300CardGrid();
-            document.querySelectorAll('#card-grid-300 button').forEach(b => b.disabled = true);
+            // ሰቨር ላይ መያዙን ማረጋገጥ እና ለሌሎች ማሳወቅ
+            socket.emit('confirmCards', userSelectedCards);
         }
 
         function renderVerticalBoard() {
@@ -514,6 +505,7 @@
             }
         }
 
+        // 🟢 የቢንጎ ካርድ ቁጥሮች በትክክል በ B-I-N-G-O አምዶች (Columns) ተደርድረው የሚታዩበት ትክክለኛ ሎጂክ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             container.innerHTML = '';
@@ -533,20 +525,54 @@
                 cardHeader.innerText = `ካርድ #${bingoLetter}-${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
+                // B-I-N-G-O Headers
+                const headersGrid = document.createElement('div');
+                headersGrid.className = "grid grid-cols-5 gap-1 text-center font-bold text-[9px] text-white";
+                ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
+                    const hCell = document.createElement('div');
+                    hCell.className = idx === 0 ? "bg-blue-600 rounded p-0.5" : idx === 1 ? "bg-indigo-600 rounded p-0.5" : idx === 2 ? "bg-purple-600 rounded p-0.5" : idx === 3 ? "bg-emerald-600 rounded p-0.5" : "bg-amber-600 rounded p-0.5";
+                    hCell.innerText = l;
+                    headersGrid.appendChild(hCell);
+                });
+                cardWrapper.appendChild(headersGrid);
+
                 const miniGrid = document.createElement('div');
-                miniGrid.className = "grid grid-cols-5 gap-1 text-center";
+                miniGrid.className = "grid grid-cols-5 gap-1 text-center mt-1";
 
+                // 25 ቁጥሮችን በ B-I-N-G-O አምዶች መሠረት በትክክል ማስተካከል
+                let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
                 let seed = cardNum * 17;
-                for(let r = 0; r < 25; r++) {
-                    let cellNum = ((seed + r * 7) % 75) + 1;
-                    const isCalled = calledNumbersList.includes(cellNum);
-                    
-                    const cell = document.createElement('div');
-                    cell.className = isCalled ? "bg-amber-500 text-black font-bold text-[9px] rounded p-1" : "bg-white/5 text-gray-300 text-[9px] rounded p-1";
-                    cell.innerText = (r === 12) ? "★" : cellNum;
-                    if (r === 12) cell.className = "bg-purple-600 text-white font-bold text-[9px] rounded p-1";
+                
+                // እያንዳንዱ አምድ የየራሱ የቁጥር ክልል አለው (B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75)
+                let colRanges = {
+                    B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
+                };
+                let cols = ['B', 'I', 'N', 'G', 'O'];
 
-                    miniGrid.appendChild(cell);
+                cols.forEach(col => {
+                    let range = colRanges[col];
+                    let count = 0;
+                    while(cardNumbersByCol[col].length < 5) {
+                        let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
+                        if (!cardNumbersByCol[col].includes(generated)) {
+                            cardNumbersByCol[col].push(generated);
+                        }
+                        count++;
+                    }
+                });
+
+                // በሰንጠረዥ መልክ በረድፍ (Rows) ማሳየት
+                for(let r = 0; r < 5; r++) {
+                    cols.forEach(col => {
+                        let cellNum = cardNumbersByCol[col][r];
+                        const isFreeCenter = (r === 2 && col === 'N');
+                        const isCalled = calledNumbersList.includes(cellNum);
+
+                        const cell = document.createElement('div');
+                        cell.className = isFreeCenter ? "bg-purple-600 text-white font-bold text-[9px] rounded p-1" : isCalled ? "bg-amber-500 text-black font-bold text-[9px] rounded p-1" : "bg-white/5 text-gray-300 text-[9px] rounded p-1";
+                        cell.innerText = isFreeCenter ? "★" : cellNum;
+                        miniGrid.appendChild(cell);
+                    });
                 }
 
                 cardWrapper.appendChild(miniGrid);
