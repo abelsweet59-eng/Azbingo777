@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AZ Bingo - Professional Telegram Mini App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brandBg: '#0f051d',
+                        panelBg: '#1a0b2e',
+                        cardBg: '#24143a',
+                        boardBg: '#1e1135',
+                        activeCell: '#d97706',
+                        calledBall: '#f59e0b',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            background-color: #0b0317;
+        }
+        .custom-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+        @keyframes pulseGlow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+            50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
+        }
+        .pulse-ball { animation: pulseGlow 1.8s infinite ease-in-out; }
+    </style>
+</head>
+<body class="min-h-screen text-white flex justify-center items-center sm:p-2">
+
+    <div class="w-full max-w-[430px] h-screen sm:h-[850px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] flex flex-col justify-between shadow-2xl sm:rounded-2xl border border-white/10 overflow-hidden relative">
+
+        <header class="flex justify-between items-center px-4 py-2.5 bg-black/20 border-b border-white/10 backdrop-blur-md z-20">
+            <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-gray-300 hover:text-white p-1">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div class="text-base font-extrabold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300">
+                AZ Bingo
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="sound-btn" onclick="toggleAudio()" class="text-amber-400 p-1" title="Sound">
+                    <svg id="sound-icon-on" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+                    <svg id="sound-icon-off" class="w-5 h-5 hidden text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+                </button>
+                <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 hover:bg-red-800 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold">🛡️ አድሚን</button>
+            </div>
+        </header>
+
+        <section class="grid grid-cols-5 gap-1 px-2 py-1.5 bg-black/40 border-b border-white/5 text-center text-xs">
+            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
+                <div class="text-[9px] text-gray-400 uppercase">Timer</div>
+                <div id="stat-timer" class="text-[10px] font-bold text-amber-400 font-mono">60ሰ</div>
+            </div>
+            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
+                <div class="text-[10px] text-gray-300">ተጫዋች</div>
+                <div id="stat-players" class="text-xs font-bold text-amber-400">30/300</div>
+            </div>
+            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
+                <div class="text-[9px] text-gray-400 uppercase">ቤት (Bet)</div>
+                <div id="stat-bet" class="text-xs font-bold text-amber-400">10 ብር</div>
+            </div>
+            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
+                <div class="text-[10px] text-gray-300">ዴራሽ</div>
+                <div id="stat-derash" class="text-xs font-bold text-amber-400">0 ብር</div>
+            </div>
+            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
+                <div class="text-[9px] text-gray-400 uppercase">Called</div>
+                <div id="stat-called-count" class="text-xs font-bold text-amber-400">0</div>
+            </div>
+        </section>
+
+        <div id="tab-container" class="flex-1 overflow-hidden relative flex flex-col">
+            <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
+                <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
+                    <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
+                        <div>
+                            <div id="user-welcome-info" class="text-gray-300 font-bold">የካርድ ምርጫ (ከ 1 እስከ 300)</div>
+                            <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር) መምረጥ ይችላሉ</div>
+                        </div>
+                        <div class="text-right">
+                            <div id="reg-status-badge" class="text-xs font-black text-amber-400">ጨዋታ ሊጀመር 60 ሰከንድ ይቀረዋል</div>
+                        </div>
+                    </div>
+
+                    <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
+
+                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                        <div>
+                            <div class="text-gray-400 text-[10px]">የመረጧቸው ካርዶች:</div>
+                            <div id="selected-cards-badge" class="font-bold text-amber-300">ምንም አልተመረጠም</div>
+                        </div>
+                        <button id="btn-confirm-cards" onclick="confirmCardSelection()" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-md">
+                            ካርድ አረጋግጥ
+                        </button>
+                    </div>
+                </div>
+
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2">
+                    <div class="grid grid-cols-12 gap-2">
+                        <div class="col-span-5 bg-[#180a29] p-1 rounded-xl border border-purple-500/20 overflow-y-auto max-h-[200px] custom-scroll">
+                            <div class="grid grid-cols-5 gap-1 text-center font-bold text-[10px] sticky top-0 bg-[#180a29] pb-1 z-10">
+                                <div class="bg-blue-600 py-0.5 rounded text-white">B</div>
+                                <div class="bg-indigo-600 py-0.5 rounded text-white">I</div>
+                                <div class="bg-purple-600 py-0.5 rounded text-white">N</div>
+                                <div class="bg-emerald-600 py-0.5 rounded text-white">G</div>
+                                <div class="bg-amber-600 py-0.5 rounded text-white">O</div>
+                            </div>
+                            <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-mono mt-1" id="vertical-board-75"></div>
+                        </div>
+
+                        <div class="col-span-7 flex flex-col justify-between space-y-1">
+                            <div class="flex gap-1 overflow-x-auto custom-scroll pb-1" id="history-called-pills"></div>
+                            <div class="bg-[#21103a] rounded-xl p-2 border border-purple-500/30 flex flex-col items-center justify-center min-h-[70px] shadow-inner relative">
+                                <div id="main-called-ball" class="w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-sm shadow-xl pulse-ball">
+                                    --
+                                </div>
+                            </div>
+                            <div class="bg-[#1a0c2e] p-1.5 rounded-xl border border-purple-500/20 text-center">
+                                <div id="card-mode-indicator" class="font-bold text-[10px] text-amber-400">ቀጥታ ጨዋታ ላይ ነዎት</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30 max-h-[220px] overflow-y-auto custom-scroll"></div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="returnToSelectionOrWait()" class="bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold text-xs py-2.5 rounded-xl shadow">ውጣ / ቀጥታ ቆይ</button>
+                        <button id="btn-claim-bingo" onclick="claimBingoManually()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow animate-pulse">🎉 ቢንጎ አሳውቅ!</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-wallet" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll">
+                <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
+                    <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
+                    <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">20.00 <span class="text-sm text-white">ብር</span></div>
+                    <div class="flex gap-2 pt-2">
+                        <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
+                        <button onclick="sendWithdrawNotification()" class="flex-1 bg-white/10 py-2 rounded-xl text-xs font-bold border border-white/10 shadow">ገንዘብ አውጣ (Withdraw)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
+                <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                    <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
+                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 px-2 py-1 rounded">ዝጋ</button>
+                </div>
+                <div class="bg-purple-950/40 p-3 rounded-xl border border-purple-500/30 space-y-3 text-xs">
+                    <div class="font-bold text-amber-300">የጨዋታ መቆጣጠሪያዎች</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="adminStartNewGame()" class="bg-emerald-600 text-white font-bold p-2.5 rounded-lg shadow">ጨዋታ ጀምር</button>
+                        <button onclick="adminStopGame()" class="bg-red-600 text-white font-bold p-2.5 rounded-lg shadow">ጨዋታ አቁም</button>
+                    </div>
+                </div>
+                <div class="bg-black/40 p-3 rounded-xl border border-white/10 space-y-2 text-xs">
+                    <div class="font-bold text-gray-300">የዲፖዚት እና ዊዝድሮዋል ጥያቄዎች</div>
+                    <div id="admin-requests-list" class="space-y-2 max-h-40 overflow-y-auto custom-scroll">
+                        <div class="text-gray-400 text-[11px]">ምንም አዲስ ጥያቄ የለም።</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
+            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-5 w-full max-w-xs space-y-4 shadow-2xl text-center relative">
+                <div class="w-12 h-12 rounded-full bg-amber-500/25 flex items-center justify-center mx-auto text-amber-400 text-2xl shadow-lg">👑</div>
+                <div>
+                    <h2 class="text-amber-400 font-extrabold text-xl tracking-wider">BINGO!</h2>
+                    <div class="text-white font-bold text-sm mt-1" id="winner-name-banner">አሸናፊ ተገኝቷል!</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="grid grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-2 px-1 z-20">
+            <button onclick="switchTab('game', this)" class="nav-btn flex flex-col items-center justify-center gap-1 text-purple-400">
+                <span class="text-[11px] font-bold">ጨዋታ</span>
+            </button>
+            <button onclick="switchTab('wallet', this)" class="nav-btn flex flex-col items-center justify-center gap-1 text-gray-400">
+                <span class="text-[11px] font-medium">ቦርሳ</span>
+            </button>
+            <button onclick="openAdminPanel()" id="bottom-admin-btn" class="hidden flex flex-col items-center justify-center gap-1 text-gray-400">
+                <span class="text-[11px] font-medium">አድሚን</span>
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        const socket = io();
+        const TELEGRAM_BOT_TOKEN = "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
+        const ADMIN_TELEGRAM_ID = "371093083"; 
+
+        let telegramUserId = "371093083";
+        let userFullName = "ተጫዋች";
+        
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+            userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name || "ተጫዋች";
+            if (window.Telegram.WebApp.initDataUnsafe.user.last_name) userFullName += " " + window.Telegram.WebApp.initDataUnsafe.user.last_name;
+        }
+
+        const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
+        let walletBalance = parseFloat(localStorage.getItem(`az_wallet_${telegramUserId}`)) || 30.00;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isAdmin) {
+                document.getElementById('admin-nav-btn').classList.remove('hidden');
+                document.getElementById('bottom-admin-btn').classList.remove('hidden');
+            }
+            document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
+            socket.emit('joinGame', { userId: telegramUserId, name: userFullName });
+            generate300CardGrid();
+            render1To75VerticalBoard();
+            updateWalletUI();
+        });
+
+        let audioEnabled = true;
+        let userSelectedCards = [];
+        let cardMatrices = {};
+        let markedCells = {};
+        let calledNumbers = [];
+        let isGameActive = false;
+        let isSpectatorMode = false;
+        let hasConfirmedCards = false;
+        let pendingRequests = [];
+
+        socket.on('timerUpdate', (data) => {
+            if (!isGameActive) {
+                document.getElementById('stat-timer').innerText = data.timer + "ሰ";
+                document.getElementById('reg-status-badge').innerText = `ጨዋታ ሊጀመር ${data.timer} ሰከንድ ይቀረዋል`;
+            }
+        });
+
+        socket.on('playerCountUpdate', (data) => {
+            document.getElementById('stat-players').innerText = `${data.count}/300`;
+            let totalPool = data.count * 10;
+            document.getElementById('stat-derash').innerText = `${Math.floor(totalPool * 0.7)} ብር`;
+        });
+
+        socket.on('gameStarted', () => {
+            isGameActive = true;
+            calledNumbers = [];
+            render1To75VerticalBoard();
+            if (!hasConfirmedCards || userSelectedCards.length === 0) {
+                isSpectatorMode = true;
+                document.getElementById('card-mode-indicator').innerText = "👀 ተመልካች ብቻ (Spectator Mode)";
+                document.getElementById('player-dual-cards-container').innerHTML = `<div class="col-span-2 text-center text-gray-400 text-xs py-8">ካርድ ስላልተመረጠ እንደ ተመልካች ብቻ እየተከታተሉ ነዎት።</div>`;
+            } else {
+                isSpectatorMode = false;
+                document.getElementById('card-mode-indicator').innerText = "የእርስዎ የቢንጎ ካርዶች";
+                renderDualCardsSideBySide();
+            }
+            document.getElementById('card-selection-section').classList.add('hidden');
+            document.getElementById('live-game-section').classList.remove('hidden');
+        });
+
+        socket.on('numberCalled', (data) => {
+            calledNumbers = data.calledNumbers;
+            let num = data.number;
+            let letter = num <= 15 ? 'B' : num <= 30 ? 'I' : num <= 45 ? 'N' : num <= 60 ? 'G' : 'O';
+            let callText = `${letter}-${num}`;
+
+            document.getElementById('main-called-ball').innerText = callText;
+            document.getElementById('stat-called-count').innerText = calledNumbers.length;
+            render1To75VerticalBoard();
+
+            if (hasConfirmedCards && !isSpectatorMode) {
+                userSelectedCards.forEach(cId => {
+                    const matrix = getCardMatrix(cId);
+                    if (!markedCells[cId]) markedCells[cId] = new Set([12]);
+                    for(let r = 0; r < 5; r++) {
+                        for(let c = 0; c < 5; c++) {
+                            if (matrix[r][c] === num) markedCells[cId].add(r * 5 + c);
+                        }
+                    }
+                });
+                renderDualCardsSideBySide();
+                checkUserAutoWin();
+            }
+
+            const pills = document.getElementById('history-called-pills');
+            pills.innerHTML = `<span class="px-2 py-0.5 bg-purple-600 font-bold text-[10px] rounded-full whitespace-nowrap">${callText}</span>` + pills.innerHTML;
+        });
+
+        socket.on('gameWinner', (data) => {
+            isGameActive = false;
+            document.getElementById('winner-name-banner').innerHTML = `🎉 አሸናፊ: <b>${data.winnerName}</b><br>ሽልማት: <span class="text-amber-400 font-bold">${data.payout.toFixed(2)} ብር</span>`;
+            document.getElementById('winner-modal').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('winner-modal').classList.add('hidden');
+                resetGameToSelectionState();
+            }, 4000);
+        });
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('sound-icon-on').classList.toggle('hidden', !audioEnabled);
+            document.getElementById('sound-icon-off').classList.toggle('hidden', audioEnabled);
+        }
+
+        function render1To75VerticalBoard() {
+            const board = document.getElementById('vertical-board-75');
+            board.innerHTML = '';
+            for(let row = 0; row < 15; row++) {
+                let cols = [row+1, row+16, row+31, row+46, row+61];
+                cols.forEach((num) => {
+                    const isCalled = calledNumbers.includes(num);
+                    const cell = document.createElement('div');
+                    cell.className = isCalled ? 'bg-amber-500 text-black font-extrabold py-0.5 rounded text-[9px]' : 'bg-white/5 text-gray-400 py-0.5 rounded text-[9px]';
+                    cell.innerText = num;
+                    board.appendChild(cell);
+                });
+            }
+        }
+
+        function getCardMatrix(cardId) {
+            if (cardMatrices[cardId]) return cardMatrices[cardId];
+            let seed = cardId * 1543;
+            function rnd(min, max) {
+                seed = (seed * 9301 + 49297) % 233280;
+                return Math.floor(min + (seed / 233280) * (max - min + 1));
+            }
+            let cols = (min, max) => {
+                let p = []; for(let i=min; i<=max; i++) p.push(i);
+                let r = []; for(let i=0; i<5; i++) { let idx = rnd(0, p.length-1); r.push(p[idx]); p.splice(idx,1); }
+                return r;
+            };
+            let b = cols(1,15), i = cols(16,30), n = cols(31,45), g = cols(46,60), o = cols(61,75);
+            let matrix = [];
+            for(let r = 0; r < 5; r++) matrix.push([b[r], i[r], (r === 2) ? 'FREE' : n[r], g[r], o[r]]);
+            cardMatrices[cardId] = matrix;
+            return matrix;
+        }
+
+        function generate300CardGrid() {
+            const grid = document.getElementById('card-grid-300');
+            grid.innerHTML = '';
+            for(let i = 1; i <= 300; i++) {
+                const btn = document.createElement('button');
+                const isSelected = userSelectedCards.includes(i);
+                if (isSelected) {
+                    btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
+                    btn.innerText = `#${i}`;
+                } else {
+                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
+                    btn.innerText = i;
+                }
+                btn.onclick = () => toggleCardSelection(i);
+                grid.appendChild(btn);
+            }
+        }
+
+        function toggleCardSelection(cardId) {
+            if (hasConfirmedCards && !isGameActive) return;
+            let idx = userSelectedCards.indexOf(cardId);
+            if (idx > -1) userSelectedCards.splice(idx, 1);
+            else {
+                if (userSelectedCards.length >= 2) { alert("2 ካርድ ብቻ መምረጥ ይችላሉ!"); return; }
+                userSelectedCards.push(cardId);
+            }
+            document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.map(c => `#${c}`).join(', ') : "ምንም አልተመረጠም";
+            generate300CardGrid();
+        }
+
+        function confirmCardSelection() {
+            if (userSelectedCards.length === 0) { alert("ካርድ ይምረጡ!"); return; }
+            let cost = userSelectedCards.length * 10;
+            if (walletBalance < cost) { alert("በቂ ሂሳብ የለዎትም!"); return; }
+            walletBalance -= cost;
+            updateWalletUI();
+            hasConfirmedCards = true;
+            userSelectedCards.forEach(c => { markedCells[c] = new Set([12]); });
+            document.getElementById('card-selection-section').classList.add('hidden');
+            document.getElementById('live-game-section').classList.remove('hidden');
+            renderDualCardsSideBySide();
+        }
+
+        function renderDualCardsSideBySide() {
+            const container = document.getElementById('player-dual-cards-container');
+            container.innerHTML = '';
+            if (isSpectatorMode || !hasConfirmedCards) return;
+
+            userSelectedCards.forEach((cId) => {
+                const cardWrapper = document.createElement('div');
+                cardWrapper.className = "bg-purple-950/80 p-1.5 rounded-lg border border-purple-500/40 flex flex-col";
+                cardWrapper.innerHTML = `<div class="text-[10px] font-bold text-amber-300 text-center mb-1">ካርድ #${cId}</div>`;
+                
+                const gridDiv = document.createElement('div');
+                gridDiv.className = "grid grid-cols-5 gap-1 text-center";
+                ['B', 'I', 'N', 'G', 'O'].forEach((h, hIdx) => {
+                    const bg = ['bg-blue-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-amber-600'][hIdx];
+                    gridDiv.innerHTML += `<div class="${bg} text-white font-extrabold text-[9px] py-0.5 rounded">${h}</div>`;
+                });
+
+                const matrix = getCardMatrix(cId);
+                const marked = markedCells[cId] || new Set();
+                let cellIdx = 0;
+                for(let r = 0; r < 5; r++) {
+                    for(let c = 0; c < 5; c++) {
+                        let val = matrix[r][c];
+                        let idx = cellIdx;
+                        let isMarked = marked.has(idx);
+                        const btn = document.createElement('button');
+                        btn.onclick = () => {
+                            if (!isGameActive || val === 'FREE' || !calledNumbers.includes(val)) return;
+                            toggleManualMark(cId, idx);
+                        };
+                        if (val === 'FREE') btn.className = "bg-amber-500 text-black font-extrabold py-1 rounded text-[9px]";
+                        else if (isMarked) btn.className = "bg-orange-600 text-white font-black py-1 rounded text-[9px]";
+                        else btn.className = "bg-white/5 text-white font-bold py-1 rounded text-[9px]";
+                        btn.innerText = val === 'FREE' ? '★' : val;
+                        gridDiv.appendChild(btn);
+                        cellIdx++;
+                    }
+                }
+                cardWrapper.appendChild(gridDiv);
+                container.appendChild(cardWrapper);
+            });
+        }
+
+        function toggleManualMark(cardId, idx) {
+            if (idx === 12) return;
+            if (markedCells[cardId].has(idx)) markedCells[cardId].delete(idx);
+            else markedCells[cardId].add(idx);
+            renderDualCardsSideBySide();
+            checkUserAutoWin();
+        }
+
+        function checkBingoPattern(cardId) {
+            const marked = markedCells[cardId] || new Set();
+            const chk = (arr) => arr.every(i => marked.has(i));
+            for(let r = 0; r < 5; r++) if (chk([r*5, r*5+1, r*5+2, r*5+3, r*5+4])) return true;
+            for(let c = 0; c < 5; c++) if (chk([c, c+5, c+10, c+15, c+20])) return true;
+            if (chk([0, 6, 12, 18, 24]) || chk([4, 8, 12, 16, 20])) return true;
+            return false;
+        }
+
+        function checkUserAutoWin() {
+            if (!isGameActive || isSpectatorMode || !hasConfirmedCards) return;
+            for(let cId of userSelectedCards) {
+                if (checkBingoPattern(cId)) {
+                    isGameActive = false;
+                    let payout = 300 * 10 * 0.7;
+                    walletBalance += payout;
+                    updateWalletUI();
+                    document.getElementById('winner-name-banner').innerHTML = `🎉 <b>${userFullName}</b> አሸንፈዋል!<br>ሽልማት: <span class="text-amber-400 font-bold">${payout} ብር</span>`;
+                    document.getElementById('winner-modal').classList.remove('hidden');
+                    return;
+                }
+            }
+        }
+
+        function claimBingoManually() {
+            if (!isGameActive || isSpectatorMode) return;
+            let won = userSelectedCards.some(cId => checkBingoPattern(cId));
+            if (won) alert("እንኳን ደስ አለዎት! አሸንፈዋል።");
+            else alert("እስካሁን ቢንጎ አልሞሉም!");
+        }
+
+        function resetGameToSelectionState() {
+            isGameActive = false;
+            isSpectatorMode = false;
+            hasConfirmedCards = false;
+            userSelectedCards = [];
+            markedCells = {};
+            document.getElementById('card-selection-section').classList.remove('hidden');
+            document.getElementById('live-game-section').classList.add('hidden');
+            generate300CardGrid();
+        }
+
+        function updateWalletUI() {
+            document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
+            localStorage.setItem(`az_wallet_${telegramUserId}`, walletBalance.toString());
+        }
+
+        function openAdminPanel() {
+            if (!isAdmin) { alert("ፈቃድ የለዎትም!"); return; }
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-admin-panel').classList.remove('hidden');
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
