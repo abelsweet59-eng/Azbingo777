@@ -1,7 +1,7 @@
 {
-  "name": "az-bingo-777",
+  "name": "az-bingo",
   "version": "1.0.0",
-  "description": "AZ Bingo Multiplayer Telegram Mini App",
+  "description": "AZ Bingo Multiplayer",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
