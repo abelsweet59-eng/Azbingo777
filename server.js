@@ -18,7 +18,8 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
-    playersCount: 30
+    playersCount: 30,
+    takenCards: [] // በጨዋታው ውስጥ የተያዙ ካርዶች ዝርዝር
 };
 
 const fakeBotNames = [
@@ -119,6 +120,20 @@ io.on('connection', (socket) => {
 
     socket.emit('syncGameState', globalRoom);
 
+    // 🟢 ተጠቃሚው ካርድ ሲመርጥ እና ሲያረጋግጥ የሚደረግ ማጣሪያ
+    socket.emit('updateTakenCards', globalRoom.takenCards);
+
+    socket.on('confirmCards', (selectedCards) => {
+        let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
+        if (conflict) {
+            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል። እባክዎ ሌላ ይምረጡ።");
+            return;
+        }
+        globalRoom.takenCards.push(...selectedCards);
+        socket.emit('cardSelectionSuccess');
+        io.emit('updateTakenCards', globalRoom.takenCards);
+    });
+
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -144,7 +159,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 ከጀርባ የተሰበሰበውን አጠቃላይ ገንዘብ አስልቶ 70% ለድል አሸናፊ እና 30% ለደራሽ (ቤት) በራስ ሰር የሚከፋፍል ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -174,21 +188,19 @@ setInterval(() => {
                         winningUser = "ተጫዋች_" + Math.floor(Math.random() * 1000);
                     }
 
-                    // ጀርባ ላይ የሚደረግ የ 70% እና 30% ሒሳብ ስሌት
-                    let totalPot = globalRoom.playersCount * 10; // አጠቃላይ የተሰበሰበው ብር
-                    let houseShare = Math.floor(totalPot * 0.30);   // 30% ደራሽ (ለቤት)
-                    let winnerPrize = Math.floor(totalPot * 0.70);  // 70% ለአሸናፊው
-
-                    console.log(`[GAME FINISHED] Total Pot: ${totalPot} ETB | House (30%): ${houseShare} ETB | Winner (70%): ${winnerPrize} ETB`);
+                    let totalPot = globalRoom.playersCount * 10;
+                    let winnerPrize = Math.floor(totalPot * 0.70);
 
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + 60000;
+                    globalRoom.takenCards = []; // አዲስ ዙር ሲጀምር ካርዶቹ ይለቀቃሉ
                     io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
                     clearInterval(callingInterval);
                 }
             } else {
                 globalRoom.gameActive = false;
                 globalRoom.gameStartTime = Date.now() + 60000;
+                globalRoom.takenCards = [];
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
