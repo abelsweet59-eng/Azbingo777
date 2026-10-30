@@ -21,8 +21,10 @@ let globalRoom = {
     playersCount: 0
 };
 
-// 🟢 አድሚን ቦት ላይ "አጽድቅ" እና "ሰርዝ" አዝራሮችን (Inline Keyboard) በመላክ ማሳወቂያ መስጠት
-async function sendAdminFinancialRequest(type, amount, username, userId, phone, receipt) {
+// Pending financial requests map: requestId -> { userId, type, amount, socketId }
+let pendingRequests = {};
+
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN) return;
     
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
@@ -43,8 +45,8 @@ async function sendAdminFinancialRequest(type, amount, username, userId, phone, 
             reply_markup: {
                 inline_keyboard: [
                     [
-                        { text: "✅ አጽድቅ (Approve)", callback_data: `app_${type}_${userId}_${amount}` },
-                        { text: "❌ ሰርዝ (Reject)", callback_data: `rej_${type}_${userId}_${amount}` }
+                        { text: "✅ አጽድቅ (Approve)", callback_data: `app_${requestId}` },
+                        { text: "❌ ሰርዝ (Reject)", callback_data: `rej_${requestId}` }
                     ]
                 ]
             }
@@ -54,45 +56,52 @@ async function sendAdminFinancialRequest(type, amount, username, userId, phone, 
     }
 }
 
-// 🟢 አድሚኑ በቴሌግራም ቦት ላይ አዝራሮቹን ሲጫን (Callback Query) የሚሰለፍበት Webhook/Polling endpoint
-app.post(`/telegram-webhook`, async (req, res) => {
-    const update = req.body;
-    if (update && update.callback_query) {
-        const callbackQuery = update.callback_query;
-        const data = callbackQuery.data; // e.g., "app_deposit_371093083_100"
-        const chatId = callbackQuery.message.chat.id;
+// 🟢 Telegram Bot Polling to listen for Admin button clicks (Approve/Reject) without needing Webhook setup
+let lastUpdateId = 0;
+setInterval(async () => {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=1`);
+        let updates = response.data.result;
+        for (let update of updates) {
+            lastUpdateId = update.update_id;
+            if (update.callback_query) {
+                let cq = update.callback_query;
+                let data = cq.data; // e.g., "app_req_12345"
+                let chatId = cq.message.chat.id;
 
-        if (String(chatId) === String(ADMIN_CHAT_ID)) {
-            const parts = data.split('_');
-            const action = parts[0]; // 'app' or 'rej'
-            const type = parts[1];   // 'deposit' or 'withdraw'
-            const userId = parts[2];
-            const amount = parts[3];
+                if (String(chatId) === String(ADMIN_CHAT_ID)) {
+                    let parts = data.split('_');
+                    let action = parts[0]; // 'app' or 'rej'
+                    let reqId = parts[1] + '_' + parts[2]; // requestId
 
-            if (action === 'app') {
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `✅ ጥያቄው ተቀባይነት አግኝቷል! የ ${amount} ብር የ ${type} ጥያቄ ጸድቋል።`
-                });
-                // Notify specific user via socket if connected
-                io.emit('financialApproved', { userId, type, amount, message: `🎉 የእርስዎ የ ${amount} ብር የ ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚን ጸድቋል!` });
-            } else {
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                    chat_id: chatId,
-                    text: `❌ ጥያቄው ተሰርዟል (Rejected)።`
-                });
-                io.emit('financialRejected', { userId, type, amount, message: `❌ የእርስዎ የ ${amount} ብር የ ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚን ተሰርዟል።` });
+                    if (pendingRequests[reqId]) {
+                        let req = pendingRequests[reqId];
+                        if (action === 'app') {
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `✅ ጥያቄው ጸድቋል! የ ${req.amount} ብር የ ${req.type} ጥያቄ ተፈጽሟል።`
+                            });
+                            io.to(req.socketId).emit('financialApproved', { type: req.type, amount: req.amount });
+                        } else {
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId,
+                                text: `❌ ጥያቄው ተሰርዟል (Rejected)።`
+                            });
+                            io.to(req.socketId).emit('financialRejected', { type: req.type, amount: req.amount });
+                        }
+                        delete pendingRequests[reqId];
+                    }
+                }
+                try {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: cq.id });
+                } catch(e) {}
             }
         }
-        // Answer callback query to stop loading on telegram button
-        try {
-            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
-                callback_query_id: callbackQuery.id
-            });
-        } catch(e) {}
+    } catch (err) {
+        // Ignore polling network blips
     }
-    res.sendStatus(200);
-});
+}, 2000);
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
@@ -101,7 +110,6 @@ io.on('connection', (socket) => {
 
     socket.emit('syncGameState', globalRoom);
 
-    // 🟢 ከ 100 ብር በታች የሆኑ ጥያቄዎችን አግዶ፣ ለአድሚን ቦት በአዝራር መልክ መላክ
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -111,8 +119,11 @@ io.on('connection', (socket) => {
             return;
         }
 
-        await sendAdminFinancialRequest(type, amount, username, userId, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው አካውንትዎ ላይ ይስተካከላል።` });
+        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
+        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
+
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው በቅጽበት ይስተካከላል።` });
     });
 
     socket.on('declareBingo', (data) => {
