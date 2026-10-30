@@ -123,7 +123,15 @@
                                     --
                                 </div>
                             </div>
-                            <div class="text-[8px] text-gray-300">በሂደት ላይ...</div>
+                            
+                            <!-- 🟢 አውቶማቲክ እና ማኑዋል መምረጫ ስዊች (Toggle Switch) -->
+                            <div class="flex items-center justify-between bg-black/50 px-2 py-1 rounded-lg border border-white/10 text-[9px]">
+                                <span id="mode-label" class="text-amber-300 font-bold">Auto</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="mode-toggle" class="sr-only peer" checked onchange="toggleGameMode()">
+                                    <div class="w-7 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -133,7 +141,10 @@
                     </div>
 
                     <div class="space-y-1 pt-1">
-                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች (Auto-Daub):</div>
+                        <div class="text-[10px] font-bold text-purple-300 px-1 flex justify-between items-center">
+                            <span id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</span>
+                            <span id="current-mode-badge" class="text-[8px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded border border-amber-400/30">አውቶማቲክ</span>
+                        </div>
                         <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
                     </div>
                 </div>
@@ -180,7 +191,7 @@
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
-        <!-- 🟢 WINNING MODAL (እንደ ላከው ሳምፕል ምስል የተስተካከለ አሸናፊ ማሳያ ሞዳል) -->
+        <!-- WINNING MODAL -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2">
             <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-3 w-full max-w-[320px] space-y-2 shadow-2xl text-center relative">
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
@@ -188,10 +199,8 @@
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
                     <div id="winner-title-badge" class="text-white text-[10px] font-bold mt-0.5">🎉 Netsanet WON!</div>
                     
-                    <!-- Winning Cartela Container -->
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
                         <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 22</div>
-                        <!-- Mini Cartela Table Grid -->
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
@@ -267,6 +276,8 @@
 
         let walletBalance = 30.00;
         let transactionHistory = [];
+        let isAutomaticMode = true; // 🟢 በነባሪ አውቶማቲክ ሁነታ
+        let manualDaubedNumbers = {}; // የሰዎች ማኑዋል ቲክ የተደረጉ ቁጥሮች በእያንዳንዱ ካርድ
 
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
@@ -318,10 +329,24 @@
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
                 if (confirmedCards.length > 0) {
-                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId });
+                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
                 }
             });
+
+            socket.on('updateTakenCards', (takenList) => {
+                takenCardsByOthers = takenList;
+                generate300CardGrid();
+            });
         });
+
+        // 🟢 የጨዋታ ሁነታ (Auto / Manual) መቀየሪያ
+        function toggleGameMode() {
+            let toggleEl = document.getElementById('mode-toggle');
+            isAutomaticMode = toggleEl.checked;
+            document.getElementById('mode-label').innerText = isAutomaticMode ? "Auto" : "Manual";
+            document.getElementById('current-mode-badge').innerText = isAutomaticMode ? "አውቶማቲክ" : "ማኑዋል (በእጅ)";
+            renderPlayerDualCards();
+        }
 
         function copyAdminPhone() {
             let phoneNum = document.getElementById('admin-telebirr-number').innerText;
@@ -400,500 +425,4 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
-                calledNumbersList = [];
-                document.getElementById('main-called-ball').innerText = "--";
-                document.getElementById('stat-called-count').innerText = "0";
-                document.getElementById('card-selection-section').classList.remove('hidden');
-                document.getElementById('live-game-section').classList.add('hidden');
-                renderVerticalBoard();
-            }
-        });
-
-        socket.on('updateTakenCards', (takenList) => {
-            takenCardsByOthers = takenList;
-            generate300CardGrid();
-        });
-
-        socket.on('cardSelectionSuccess', () => {
-            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀምር ነው።";
-            localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
-            renderPlayerDualCards();
-        });
-
-        socket.on('cardSelectionError', (msg) => {
-            alert(msg);
-        });
-
-        socket.on('updatePlayersCount', (count) => {
-            document.getElementById('stat-players').innerText = count;
-            let totalPot = count * 10;
-            let winnerPrize = Math.floor(totalPot * 0.70);
-            document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
-        });
-
-        socket.on('gameStartedBroadcast', () => {
-            triggerCountdownAndStart();
-        });
-
-        function triggerCountdownAndStart() {
-            const modal = document.getElementById('countdown-modal');
-            const numEl = document.getElementById('countdown-number');
-            modal.classList.remove('hidden');
-
-            let count = 3;
-            numEl.innerText = count;
-
-            let timer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    numEl.innerText = count;
-                    numEl.classList.remove('countdown-anim');
-                    void numEl.offsetWidth;
-                    numEl.classList.add('countdown-anim');
-                } else {
-                    clearInterval(timer);
-                    modal.classList.add('hidden');
-                    document.getElementById('card-selection-section').classList.add('hidden');
-                    document.getElementById('live-game-section').classList.remove('hidden');
-                    renderPlayerDualCards();
-                }
-            }, 1000);
-        }
-
-        socket.on('numberCalledBroadcast', (num) => {
-            if (!calledNumbersList.includes(num)) {
-                calledNumbersList.push(num);
-            }
-            displayCalledBall(num);
-            document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-            renderVerticalBoard();
-            renderPlayerDualCards();
-            
-            speakCalledNumber(num);
-        });
-
-        function speakCalledNumber(num) {
-            let letter = "ቢ";
-            if (num >= 1 && num <= 15) letter = "ቢ";
-            else if (num >= 16 && num <= 30) letter = "አይ";
-            else if (num >= 31 && num <= 45) letter = "ኤን";
-            else if (num >= 46 && num <= 60) letter = "ጂ";
-            else if (num >= 61 && num <= 75) letter = "ኦ";
-
-            let speechText = `${letter} ${num}`;
-            
-            if ('speechSynthesis' in window) {
-                let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET';
-                utterance.rate = 0.9;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function displayCalledBall(num) {
-            let letter = "B";
-            if (num >= 1 && num <= 15) letter = "B";
-            else if (num >= 16 && num <= 30) letter = "I";
-            else if (num >= 31 && num <= 45) letter = "N";
-            else if (num >= 46 && num <= 60) letter = "G";
-            else if (num >= 61 && num <= 75) letter = "O";
-
-            document.getElementById('main-called-ball').innerText = `${letter}-${num}`;
-            renderRecentBalls();
-        }
-
-        function renderRecentBalls() {
-            const container = document.getElementById('recent-balls-container');
-            container.innerHTML = '';
-            
-            let recent = calledNumbersList.slice(-4).reverse();
-            recent.forEach(num => {
-                let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
-                const pill = document.createElement('div');
-                pill.className = "bg-purple-900/80 border border-amber-400/50 text-amber-300 font-bold px-1.5 py-0.5 rounded-full text-[9px]";
-                pill.innerText = `${letter}-${num}`;
-                container.appendChild(pill);
-            });
-        }
-
-        socket.on('gameEndedBroadcast', () => {
-            resetPlayerSelectionForNewRound();
-        });
-
-        // 🟢 አሸናፊ ሲወጣ ካርቴላውን ከነ ቅጦቹ የሚያሳይ የድል ሞዳል ሎጂክ (እንደ ሳምፕሉ ምስል)
-        socket.on('bingoWinner', (data) => {
-            let winnerName = data.username;
-            let winnerId = data.userId || telegramUserId;
-            let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 60;
-            let totalPot = data.totalPot || (playersCount * 10);
-            let prizePool = data.prize || Math.floor(totalPot * 0.70);
-
-            let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
-            let displayName = isMeWin ? userFullName : winnerName;
-
-            document.getElementById('winner-title-badge').innerHTML = `🎉 ${displayName} WON!`;
-            document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
-
-            // የድል ካርቴላ ፍርግርግ (Grid) መፍጠር
-            renderWinningCartelaGrid(cardNum);
-
-            document.getElementById('winner-banner-text').innerHTML = `
-                👥 ተጫዋቾች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>
-                👑 የሽልማት መጠን (70%): <span class="text-emerald-400 font-black">${prizePool} ብር</span>
-            `;
-            document.getElementById('winner-modal').classList.remove('hidden');
-
-            if (isMeWin && prizePool > 0) {
-                walletBalance += prizePool;
-                updateWalletUI();
-                addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
-            }
-
-            // 6 ሰከንድ ቆጥሮ መዝጋት
-            let secondsLeft = 6;
-            let timerEl = document.getElementById('auto-start-timer-msg');
-            timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
-
-            let countdownInterval = setInterval(() => {
-                secondsLeft--;
-                timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
-                if (secondsLeft <= 0) {
-                    clearInterval(countdownInterval);
-                    document.getElementById('winner-modal').classList.add('hidden');
-                    resetPlayerSelectionForNewRound();
-                }
-            }, 1000);
-        });
-
-        // 🟢 ያሸነፈውን ካርድ ቅጥ (Pattern/Grid) አሳይቶ የተጠሩትን ማቅለም
-        function renderWinningCartelaGrid(cardNum) {
-            const gridContainer = document.getElementById('winning-cartela-grid');
-            gridContainer.innerHTML = '';
-
-            // B, I, N, G, O ራሶች
-            ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
-                const hCell = document.createElement('div');
-                hCell.className = idx === 0 ? "bg-blue-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 1 ? "bg-indigo-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 2 ? "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 3 ? "bg-emerald-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                              "bg-amber-600 rounded text-center text-white font-bold text-[8px] py-0.5";
-                hCell.innerText = l;
-                gridContainer.appendChild(hCell);
-            });
-
-            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-            let seed = cardNum * 17;
-            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-            let cols = ['B', 'I', 'N', 'G', 'O'];
-
-            cols.forEach(col => {
-                let range = colRanges[col];
-                let count = 0;
-                while(cardNumbersByCol[col].length < 5) {
-                    let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
-                    if (!cardNumbersByCol[col].includes(generated)) {
-                        cardNumbersByCol[col].push(generated);
-                    }
-                    count++;
-                }
-            });
-
-            for(let r = 0; r < 5; r++) {
-                cols.forEach(col => {
-                    let cellNum = cardNumbersByCol[col][r];
-                    const isFreeCenter = (r === 2 && col === 'N');
-                    const isCalled = calledNumbersList.includes(cellNum) || isFreeCenter;
-
-                    const cell = document.createElement('div');
-                    // እንደ ሳምፕሉ ምስል የተጠሩት በቀለም (ግሪን/ኦሬንጅ) እንዲደምቁ ማድረግ
-                    let bgClass = "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
-                    if (isFreeCenter) {
-                        bgClass = "bg-emerald-600 text-white font-bold text-[8px] rounded py-1 text-center";
-                    } else if (isCalled) {
-                        bgClass = r % 2 === 0 ? "bg-emerald-500 text-black font-bold text-[8px] rounded py-1 text-center" : "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center";
-                    }
-
-                    cell.className = bgClass;
-                    cell.innerText = isFreeCenter ? "★" : cellNum;
-                    gridContainer.appendChild(cell);
-                });
-            }
-        }
-
-        function resetPlayerSelectionForNewRound() {
-            userSelectedCards = [];
-            confirmedCards = [];
-            calledNumbersList = [];
-            localStorage.removeItem(userSavedCardsKey);
-            document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-            document.getElementById('main-called-ball').innerText = "--";
-            document.getElementById('stat-called-count').innerText = "0";
-            document.getElementById('card-selection-section').classList.remove('hidden');
-            document.getElementById('live-game-section').classList.add('hidden');
-            generate300CardGrid();
-            renderVerticalBoard();
-            renderRecentBalls();
-            gameStartTimeServer = Date.now() + 60000;
-        }
-
-        socket.on('financialApproved', (data) => {
-            let amt = parseFloat(data.amount);
-            if (data.type === 'deposit') {
-                walletBalance += amt;
-                alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
-                addTransactionHistory('ቴሌብር ዲፖዚት (Deposit)', amt, 'income');
-            } else {
-                walletBalance -= amt;
-                alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ተልኳል!`);
-                addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
-            }
-            updateWalletUI();
-        });
-
-        socket.on('financialRejected', (data) => {
-            alert(`❌ ጥያቄዎ ተሰርዟል።`);
-        });
-
-        socket.on('requestSubmitted', (res) => {
-            alert(res.message);
-        });
-
-        function updateWalletUI() {
-            document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
-            localStorage.setItem(userLocalStorageKey, walletBalance.toString());
-        }
-
-        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
-
-        function submitFinancialRequest(type) {
-            let amount, phone = "ቴሌብር", receipt = "";
-            if (type === 'deposit') {
-                amount = parseFloat(document.getElementById('dep-amount-input').value);
-                receipt = document.getElementById('dep-receipt-input').value.trim();
-                document.getElementById('deposit-modal').classList.add('hidden');
-            } else {
-                phone = document.getElementById('withdraw-phone-input').value.trim();
-                amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-                document.getElementById('withdraw-modal').classList.add('hidden');
-            }
-
-            if (type === 'withdraw' && !phone) {
-                alert("⚠️ እባክዎ ስልክ ቁጥር ያስገቡ!");
-                return;
-            }
-
-            if (isNaN(amount) || amount < 100) {
-                alert("⚠️ ዝቅተኛው መጠን 100 ብር ነው።");
-                return;
-            }
-
-            if (type === 'withdraw' && walletBalance < amount) {
-                alert("⚠️ በቂ ሂሳብ የለዎትም!");
-                return;
-            }
-
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
-        }
-
-        function generate300CardGrid() {
-            const grid = document.getElementById('card-grid-300');
-            grid.innerHTML = '';
-            for(let i = 1; i <= 300; i++) {
-                const btn = document.createElement('button');
-                
-                let isSelectedByMe = userSelectedCards.includes(i);
-                let isConfirmedByMe = confirmedCards.includes(i);
-                let isConfirmedByOther = takenCardsByOthers.includes(i);
-
-                let displayLabel = String(i);
-
-                if (isConfirmedByMe || isSelectedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
-                    btn.innerText = displayLabel;
-                } else if (isConfirmedByOther) {
-                    btn.className = "bg-red-950/80 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-60 cursor-not-allowed";
-                    btn.innerText = displayLabel;
-                    btn.disabled = true;
-                } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
-                    btn.innerText = displayLabel;
-                }
-
-                if (!isConfirmedByMe) {
-                    btn.onclick = () => {
-                        if (takenCardsByOthers.includes(i)) {
-                            alert("⚠️ ይቅርታ! ይህ ካርድ ተይዟል!");
-                            return;
-                        }
-
-                        if(userSelectedCards.includes(i)) {
-                            userSelectedCards = userSelectedCards.filter(c => c !== i);
-                        } else {
-                            if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
-                            userSelectedCards.push(i);
-                        }
-                        document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
-                        generate300CardGrid();
-                    };
-                }
-
-                grid.appendChild(btn);
-            }
-        }
-
-        function confirmCardSelection() {
-            if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
-            let totalCost = userSelectedCards.length * 10;
-            if (walletBalance < totalCost) {
-                alert("በቂ የኪስ ቦርሳ የለዎትም!");
-                return;
-            }
-            walletBalance -= totalCost;
-            updateWalletUI();
-
-            confirmedCards = [...userSelectedCards];
-            addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
-
-            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId });
-        }
-
-        function renderVerticalBoard() {
-            const board = document.getElementById('vertical-board-75');
-            board.innerHTML = '';
-            
-            let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
-
-            for(let r = 1; r <= 15; r++) {
-                let colsData = [
-                    r,          
-                    r + 15,     
-                    r + 30,     
-                    r + 45,     
-                    r + 60      
-                ];
-
-                colsData.forEach(num => {
-                    const isCalled = calledNumbersList.includes(num);
-                    const isLatest = (num === lastCalledNum);
-
-                    const cell = document.createElement('div');
-                    
-                    if (isLatest) {
-                        cell.className = 'bg-amber-400 text-black font-black text-[9px] rounded py-0.5 border border-white animate-pulse';
-                    } else if (isCalled) {
-                        cell.className = 'bg-amber-600 text-white font-bold text-[9px] rounded py-0.5';
-                    } else {
-                        cell.className = 'bg-white/5 text-gray-400 text-[9px] rounded py-0.5';
-                    }
-
-                    cell.innerText = num;
-                    board.appendChild(cell);
-                });
-            }
-        }
-
-        function renderPlayerDualCards() {
-            const container = document.getElementById('player-dual-cards-container');
-            const noticeBox = document.getElementById('spectator-notice');
-            const cardsTitle = document.getElementById('player-cards-title');
-            
-            container.innerHTML = '';
-
-            if (confirmedCards.length === 0) {
-                noticeBox.classList.remove('hidden');
-                cardsTitle.classList.add('hidden');
-                container.classList.add('hidden');
-                return;
-            }
-
-            noticeBox.classList.add('hidden');
-            cardsTitle.classList.remove('hidden');
-            container.classList.remove('hidden');
-
-            confirmedCards.forEach((cardNum) => {
-                const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
-                
-                const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center border-b border-white/10 pb-0.5";
-                cardHeader.innerText = `ካርድ #${cardNum}`;
-                cardWrapper.appendChild(cardHeader);
-
-                const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[8px] text-white";
-                ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
-                    const hCell = document.createElement('div');
-                    hCell.className = idx === 0 ? "bg-blue-600 rounded p-0.5" : idx === 1 ? "bg-indigo-600 rounded p-0.5" : idx === 2 ? "bg-purple-600 rounded p-0.5" : idx === 3 ? "bg-emerald-600 rounded p-0.5" : "bg-amber-600 rounded p-0.5";
-                    hCell.innerText = l;
-                    headersGrid.appendChild(hCell);
-                });
-                cardWrapper.appendChild(headersGrid);
-
-                const miniGrid = document.createElement('div');
-                miniGrid.className = "grid grid-cols-5 gap-0.5 text-center";
-
-                let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-                let seed = cardNum * 17;
-                let colRanges = {
-                    B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
-                };
-                let cols = ['B', 'I', 'N', 'G', 'O'];
-
-                cols.forEach(col => {
-                    let range = colRanges[col];
-                    let count = 0;
-                    while(cardNumbersByCol[col].length < 5) {
-                        let generated = ((seed + count * 13 + col.charCodeAt(0)) % (range[1] - range[0] + 1)) + range[0];
-                        if (!cardNumbersByCol[col].includes(generated)) {
-                            cardNumbersByCol[col].push(generated);
-                        }
-                        count++;
-                    }
-                });
-
-                for(let r = 0; r < 5; r++) {
-                    cols.forEach(col => {
-                        let cellNum = cardNumbersByCol[col][r];
-                        const isFreeCenter = (r === 2 && col === 'N');
-                        const isCalled = calledNumbersList.includes(cellNum);
-
-                        const cell = document.createElement('div');
-                        cell.className = isFreeCenter ? "bg-purple-600 text-white font-bold text-[8px] rounded p-1" : isCalled ? "bg-amber-500 text-black font-bold text-[8px] rounded p-1" : "bg-white/5 text-gray-300 text-[8px] rounded p-1";
-                        cell.innerText = isFreeCenter ? "★" : cellNum;
-                        miniGrid.appendChild(cell);
-                    });
-                }
-
-                cardWrapper.appendChild(miniGrid);
-                container.appendChild(cardWrapper);
-            });
-        }
-
-        function openAdminPanel() {
-            if (!isAdmin) {
-                alert("⚠️ ፈቃድ የለዎትም!");
-                return;
-            }
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-admin-panel').classList.remove('hidden');
-        }
-
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
-                b.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
-            });
-            if(btn) {
-                btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
-                btn.classList.add('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
-            }
-        }
-    </script>
-</body>
-</html>
+                calledNumbers
