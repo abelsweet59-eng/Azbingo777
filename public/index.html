@@ -118,7 +118,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲያዩ የሚደረግ ማሳወቂያ -->
+                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲታዩ የሚደረግ ማሳወቂያ -->
                     <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-4 rounded-xl text-center space-y-1.5 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
                         <div class="text-gray-200 text-[11px]">በዚህ ዙር ካርድ አልመረጡም፤ ስለዚህ ጨዋታውን እንደ ተመልካች ብቻ ይከታተላሉ።</div>
@@ -300,7 +300,7 @@
                 gameStartTimeServer = room.gameStartTime;
             }
             if (room.gameActive) {
-                calledNumbersList = room.calledNumbers;
+                calledNumbersList = room.calledNumbers || [];
                 if (calledNumbersList.length > 0) {
                     displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
                     document.getElementById('stat-called-count').innerText = calledNumbersList.length;
@@ -310,7 +310,6 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
-                // ጨዋታው ገና አላለጣም/አልጀመረም: የካርድ ምርጫ ገጽ በግልጽ እንዲታይ እና live game እንዲደበቅ ይደረጋል
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
             }
@@ -338,6 +337,7 @@
             document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
+        // 🟢 ጨዋታው ሲጀመር (Countdown 3-2-1) በሁሉም ስልኮች ላይ በአንድ ጊዜ እንዲሰራጭ
         socket.on('gameStartedBroadcast', () => {
             triggerCountdownAndStart();
         });
