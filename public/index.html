@@ -103,10 +103,10 @@
                             <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-mono mt-1" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- Called Ball Display -->
+                        <!-- 🟢 Called Ball Display (ከነ ፊደሉ B, I, N, G, O የሚታይበት) -->
                         <div class="col-span-7 flex flex-col justify-center items-center bg-[#21103a] rounded-xl p-3 border border-purple-500/30 shadow-inner relative">
                             <div class="text-[10px] text-amber-200/80 uppercase font-bold mb-1">የተጠራ ቁጥር (Called Ball)</div>
-                            <div id="main-called-ball" class="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-3 border-amber-200 flex items-center justify-center text-white font-black text-2xl shadow-2xl pulse-ball">
+                            <div id="main-called-ball" class="px-4 py-2 rounded-2xl bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball tracking-wider">
                                 --
                             </div>
                         </div>
@@ -256,7 +256,7 @@
             if (room.gameActive) {
                 calledNumbersList = room.calledNumbers;
                 if (calledNumbersList.length > 0) {
-                    document.getElementById('main-called-ball').innerText = calledNumbersList[calledNumbersList.length - 1];
+                    displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
                     document.getElementById('stat-called-count').innerText = calledNumbersList.length;
                 }
                 document.getElementById('card-selection-section').classList.add('hidden');
@@ -279,11 +279,23 @@
 
         socket.on('numberCalledBroadcast', (num) => {
             calledNumbersList.push(num);
-            document.getElementById('main-called-ball').innerText = num;
+            displayCalledBall(num);
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
             renderPlayerDualCards();
         });
+
+        // 🟢 የቢንጎ ፊደል (B, I, N, G, O) ከቁጥሩ ጋር በኳሱ ላይ እንዲታይ የሚያደርግ ሎጂክ
+        function displayCalledBall(num) {
+            let letter = "B";
+            if (num >= 1 && num <= 15) letter = "B";
+            else if (num >= 16 && num <= 30) letter = "I";
+            else if (num >= 31 && num <= 45) letter = "N";
+            else if (num >= 46 && num <= 60) letter = "G";
+            else if (num >= 61 && num <= 75) letter = "O";
+
+            document.getElementById('main-called-ball').innerText = `${letter}-${num}`;
+        }
 
         socket.on('gameEndedBroadcast', () => {
             alert("ጨዋታው ተጠናቋል! አዲስ ዙር ሊጀመር ነው...");
@@ -407,10 +419,11 @@
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
             for(let i = 1; i <= 75; i++) {
+                let letter = i <= 15 ? "B" : i <= 30 ? "I" : i <= 45 ? "N" : i <= 60 ? "G" : "O";
                 const isCalled = calledNumbersList.includes(i);
                 const cell = document.createElement('div');
                 cell.className = isCalled ? 'bg-amber-500 text-black font-extrabold text-[9px] rounded' : 'bg-white/5 text-gray-500 text-[9px] rounded';
-                cell.innerText = i;
+                cell.innerText = `${letter}-${i}`;
                 board.appendChild(cell);
             }
         }
