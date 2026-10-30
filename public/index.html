@@ -16,6 +16,12 @@
             50% { transform: scale(1.08); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.5s infinite ease-in-out; }
+        @keyframes countdownPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -48,8 +54,8 @@
                 <div id="stat-bet" class="text-xs font-bold text-amber-400">10 ብር</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[10px] text-gray-300">ዴራሽ (30%)</div>
-                <div id="stat-derash" class="text-xs font-bold text-amber-400">180 ብር</div>
+                <div class="text-[10px] text-gray-300">ደራሽ</div>
+                <div id="stat-derash" class="text-xs font-bold text-amber-400">0 ብር</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[9px] text-gray-400 uppercase">Called</div>
@@ -103,7 +109,7 @@
                             <div class="grid grid-cols-5 gap-1 text-center text-[10px] font-mono mt-1" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- 🟢 Called Ball Display (ከነ ፊደሉ B, I, N, G, O የሚታይበት) -->
+                        <!-- Called Ball Display -->
                         <div class="col-span-7 flex flex-col justify-center items-center bg-[#21103a] rounded-xl p-3 border border-purple-500/30 shadow-inner relative">
                             <div class="text-[10px] text-amber-200/80 uppercase font-bold mb-1">የተጠራ ቁጥር (Called Ball)</div>
                             <div id="main-called-ball" class="px-4 py-2 rounded-2xl bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball tracking-wider">
@@ -143,6 +149,12 @@
                     ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
                 </div>
             </div>
+        </div>
+
+        <!-- 🟢 1, 2, 3 COUNTDOWN OVERLAY MODAL -->
+        <div id="countdown-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
+            <div class="text-amber-400 font-bold text-lg mb-4 tracking-wide">ጨዋታው ሊጀመር ነው...</div>
+            <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
         <!-- WINNING MODAL -->
@@ -208,6 +220,7 @@
         const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
+        let totalCardsCount = 1; // 1 ወይም 2 ካርድ ሲመረጥ በዚያው ልክ ይባዛል (ካርድ በ 10 ብር)
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         
         if (!localStorage.getItem(userLocalStorageKey)) {
@@ -266,16 +279,43 @@
             }
         });
 
+        // 🟢 የደራሽ ሂሳብ ከአጠቃላይ ተጫዋቾች ብዛት እና ከሚጫወቱት የብር መጠን ጋር ተሰልቶ እንዲወጣ (ከተጫዋች ብዛት x 10 ብር x 30%)
         socket.on('updatePlayersCount', (count) => {
             document.getElementById('stat-players').innerText = count;
-            document.getElementById('stat-derash').innerText = `${Math.floor(count * 10 * 0.30)} ብር`;
+            let totalPot = count * 10; // በአጠቃላይ የተሰበሰበው ገንዘብ (እያንዳንዱ ካርድ 10 ብር)
+            let derashAmount = Math.floor(totalPot * 0.30); // 30% ደራሽ (ለቤት የሚገባው)
+            document.getElementById('stat-derash').innerText = `${derashAmount} ብር`;
         });
 
         socket.on('gameStartedBroadcast', () => {
-            document.getElementById('card-selection-section').classList.add('hidden');
-            document.getElementById('live-game-section').classList.remove('hidden');
-            renderPlayerDualCards();
+            triggerCountdownAndStart();
         });
+
+        // 🟢 1, 2, 3 ቆጥሮ ወደ ጨዋታው የሚያስገባ አኒሜሽን ሎጂክ
+        function triggerCountdownAndStart() {
+            const modal = document.getElementById('countdown-modal');
+            const numEl = document.getElementById('countdown-number');
+            modal.classList.remove('hidden');
+
+            let count = 3;
+            numEl.innerText = count;
+
+            let timer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    numEl.innerText = count;
+                    numEl.classList.remove('countdown-anim');
+                    void numEl.offsetWidth; // trigger reflow for animation restart
+                    numEl.classList.add('countdown-anim');
+                } else {
+                    clearInterval(timer);
+                    modal.classList.add('hidden');
+                    document.getElementById('card-selection-section').classList.add('hidden');
+                    document.getElementById('live-game-section').classList.remove('hidden');
+                    renderPlayerDualCards();
+                }
+            }, 1000);
+        }
 
         socket.on('numberCalledBroadcast', (num) => {
             calledNumbersList.push(num);
@@ -285,7 +325,6 @@
             renderPlayerDualCards();
         });
 
-        // 🟢 የቢንጎ ፊደል (B, I, N, G, O) ከቁጥሩ ጋር በኳሱ ላይ እንዲታይ የሚያደርግ ሎጂክ
         function displayCalledBall(num) {
             let letter = "B";
             if (num >= 1 && num <= 15) letter = "B";
@@ -408,11 +447,11 @@
                 return;
             }
             walletBalance -= totalCost;
+            totalCardsCount = userSelectedCards.length;
             updateWalletUI();
 
-            document.getElementById('card-selection-section').classList.add('hidden');
-            document.getElementById('live-game-section').classList.remove('hidden');
-            renderPlayerDualCards();
+            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀመር ነው...";
+            document.querySelectorAll('#card-grid-300 button').forEach(b => b.disabled = true);
         }
 
         function renderVerticalBoard() {
