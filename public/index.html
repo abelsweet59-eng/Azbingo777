@@ -81,7 +81,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ፊደል የሌላቸው ንጹህ ቁጥሮች ብቻ (ከ 1 እስከ 300) -->
+                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) - ምንም ፊደል የሌለበት -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -118,10 +118,16 @@
                         </div>
                     </div>
 
-                    <div class="text-[11px] font-bold text-purple-300 px-1">የእርስዎ የተያዙ ካርዶች:</div>
+                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲያዩ የሚደረግ ማሳወቂያ -->
+                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-4 rounded-xl text-center space-y-1.5 shadow-lg">
+                        <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
+                        <div class="text-gray-200 text-[11px]">በዚህ ዙር ካርድ አልመረጡም፤ ስለዚህ ጨዋታውን እንደ ተመልካች ብቻ ይከታተላሉ።</div>
+                    </div>
+
+                    <div class="text-[11px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
                     <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
 
-                    <button onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed w-full">🎉 ቢንጎ አሳውቅ</button>
+                    <button id="bingo-declare-btn" onclick="declareBingo()" class="bg-gradient-to-r from-amber-500 to-orange-500 text-black font-extrabold text-xs py-2.5 rounded-xl shadow opacity-80 cursor-not-allowed w-full">🎉 ቢንጎ አሳውቅ</button>
                 </div>
             </div>
 
@@ -288,7 +294,6 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
-        // 🟢 ጨዋታው ገና በሂደት ላይ ካልሆነ (gameActive: false) ተጠቃሚው ካርድ እንዲመርጥ የካርድ ምርጫው ገጽ ክፍት ይደረጋል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -469,7 +474,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 ንጹህ የካርድ ቁጥሮች ብቻ (ከ 1 እስከ 300) - ምንም ዓይነት ፊደል (B, I, N...) የሌለበት ግሪድ
+        // 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) - ምንም ፊደል የሌለበት
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -546,15 +551,31 @@
             }
         }
 
+        // 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲታዩ እና የካርድ ቦታው በኖቲፊኬሽን እንዲተካ የሚያደርግ ሎጂክ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
+            const noticeBox = document.getElementById('spectator-notice');
+            const cardsTitle = document.getElementById('player-cards-title');
+            const bingoBtn = document.getElementById('bingo-declare-btn');
+            
             container.innerHTML = '';
 
-            if (userSelectedCards.length === 0) {
-                userSelectedCards = [1];
+            // ተጠቃሚው ካርድ ካላረጋገጠ (Confirmed Cards ከሌለው) እንደ ተመልካች ብቻ ይቆጠራል
+            if (confirmedCards.length === 0) {
+                noticeBox.classList.remove('hidden');
+                cardsTitle.classList.add('hidden');
+                container.classList.add('hidden');
+                bingoBtn.classList.add('hidden');
+                return;
             }
 
-            userSelectedCards.forEach((cardNum) => {
+            // ካርድ ካለው ግን የተያዙትን ካርዶች በስክሪኑ ላይ ያሳየዋል
+            noticeBox.classList.add('hidden');
+            cardsTitle.classList.remove('hidden');
+            container.classList.remove('hidden');
+            bingoBtn.classList.remove('hidden');
+
+            confirmedCards.forEach((cardNum) => {
                 let bingoLetter = cardNum <= 60 ? "B" : cardNum <= 120 ? "I" : cardNum <= 180 ? "N" : cardNum <= 240 ? "G" : "O";
 
                 const cardWrapper = document.createElement('div');
