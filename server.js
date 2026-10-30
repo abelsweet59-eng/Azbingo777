@@ -36,7 +36,30 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// የካርድ ቁጥሮችን ከሴድ (Seed) የማመንጨት ትክክለኛ ሎጂክ
+// 🟢 የቦቶችን እና የተጫዋቾችን ካርዶች በየጊዜው በዘፈቀደ (Dynamic) ማስተዳደር
+function simulateBotCardSelections() {
+    if (globalRoom.gameActive) return;
+    
+    // የተወሰኑ ቦቶች ካርዶችን እንዲይዙ ማድረግ (ከ 1 እስከ 300 ካሉት መካከል)
+    let available = [];
+    for(let i = 1; i <= 300; i++) {
+        if(!globalRoom.takenCards.includes(i)) available.push(i);
+    }
+
+    // በዘፈቀደ ከ 5 እስከ 15 የሚሆኑ ካርዶች በቦቶች እንዲያዙ ማድረግ
+    let botPicksCount = Math.floor(Math.random() * 10) + 5;
+    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
+        let randIdx = Math.floor(Math.random() * available.length);
+        let cardToTake = available.splice(randIdx, 1)[0];
+        if(!globalRoom.takenCards.includes(cardToTake)) {
+            globalRoom.takenCards.push(cardToTake);
+        }
+    }
+    io.emit('updateTakenCards', globalRoom.takenCards);
+}
+
+setInterval(simulateBotCardSelections, 8000);
+
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
     let seed = cardNum * 17;
@@ -58,93 +81,41 @@ function generateCartelaNumbers(cardNum) {
     let flatList = [];
     for (let r = 0; r < 5; r++) {
         cols.forEach(col => {
-            if (r === 2 && col === 'N') {
-                flatList.push("FREE");
-            } else {
-                flatList.push(cardNumbersByCol[col][r]);
-            }
+            if (r === 2 && col === 'N') flatList.push("FREE");
+            else flatList.push(cardNumbersByCol[col][r]);
         });
     }
     return flatList;
 }
 
-// 🟢 ትክክለኛ የቢንጎ ማሸነፍ ሁኔታ (አግድም፣ ቁመት እና ሰያፍ / Diagonal) ማረጋገጫ
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
-    for(let i = 0; i < 5; i++) {
-        matrix.push(numbers.slice(i * 5, i * 5 + 5));
-    }
+    for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // 1. አግድም (Rows) ማረጋገጥ
     for(let r = 0; r < 5; r++) {
-        let win = true;
-        for(let c = 0; c < 5; c++) {
-            let val = matrix[r][c];
-            if(val !== "FREE" && !calledNumbers.includes(val)) {
-                win = false;
-                break;
-            }
-        }
-        if(win) return true;
+        if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-
-    // 2. በቁመት (Cols) ማረጋገጥ
     for(let c = 0; c < 5; c++) {
-        let win = true;
+        let cMatch = true;
         for(let r = 0; r < 5; r++) {
-            let val = matrix[r][c];
-            if(val !== "FREE" && !calledNumbers.includes(val)) {
-                win = false;
-                break;
-            }
+            if(matrix[r][c] !== "FREE" && !calledNumbers.includes(matrix[r][c])) { cMatch = false; break; }
         }
-        if(win) return true;
+        if(cMatch) return true;
     }
-
-    // 3. ሰያፍ 1 (Top-Left to Bottom-Right Diagonal) ማረጋገጥ
-    let diag1Win = true;
+    let d1 = true;
     for(let i = 0; i < 5; i++) {
-        let val = matrix[i][i];
-        if(val !== "FREE" && !calledNumbers.includes(val)) {
-            diag1Win = false;
-            break;
-        }
+        if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
-    if(diag1Win) return true;
+    if(d1) return true;
 
-    // 4. ሰያፍ 2 (Top-Right to Bottom-Left Diagonal) ማረጋገጥ
-    let diag2Win = true;
+    let d2 = true;
     for(let i = 0; i < 5; i++) {
-        let val = matrix[i][4 - i];
-        if(val !== "FREE" && !calledNumbers.includes(val)) {
-            diag2Win = false;
-            break;
-        }
+        if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
-    if(diag2Win) return true;
+    if(d2) return true;
 
     return false;
-}
-
-async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
-    if (!TELEGRAM_BOT_TOKEN) return;
-    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    let message = "🔔 *AZ BINGO - " + reqTypeTitle + "*\n\n👤 ስም: " + (username || 'ተጫዋች') + "\n💰 መጠን: " + amount + " ብር";
-
-    try {
-        await axios.post("https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage", {
-            chat_id: ADMIN_CHAT_ID,
-            text: message,
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [[
-                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
-                    { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
-                ]]
-            }
-        });
-    } catch (error) {}
 }
 
 let connectedRealPlayers = [];
@@ -164,7 +135,7 @@ io.on('connection', (socket) => {
 
         let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
         if (conflict) {
-            socket.emit('cardSelectionError', "⚠️ ይህ ካርድ ተይዟል!");
+            socket.emit('cardSelectionError', "⚠️ ይቅርታ! ከመረጧቸው ካርዶች መካከል አንዱን ሌላ ተጠቃሚ ቀድሞ ይዞታል።");
             return;
         }
         globalRoom.takenCards.push(...selectedCards);
@@ -205,21 +176,16 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                // 🟢 የተጠሩት ቁጥሮች በቂ ሲሆኑ ትክክለኛውን ፓተርን (አግድም፣ ቁመት ወይም ሰያፍ) ማረጋገጥ
                 if (globalRoom.calledNumbers.length >= 5) {
-                    let winningSocketId = null;
                     let winningCard = null;
                     let winningUser = "";
                     let winningUserId = "";
 
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
-
-                    // 1. መጀመሪያ የተጫዋቾችን ካርዶች እንፈትሻለን
                     for (let sId of activeSockets) {
                         let pData = globalRoom.playerRoundCards[sId];
                         for (let cNum of pData.cards) {
                             if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                winningSocketId = sId;
                                 winningCard = cNum;
                                 winningUser = pData.username || "ተጫዋች";
                                 winningUserId = pData.userId;
@@ -229,7 +195,6 @@ setInterval(() => {
                         if (winningCard) break;
                     }
 
-                    // 2. ተጫዋቾች ካልወጡ ከነፃ ካርዶች ውስጥ ትክክለኛውን ፓተርን የያዘውን እንፈልጋለን
                     if (!winningCard && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
@@ -244,7 +209,6 @@ setInterval(() => {
                         }
                     }
 
-                    // አሸናፊ ከተገኘ ጨዋታውን በድል እናስተላልፋለን
                     if (winningCard) {
                         let totalPot = globalRoom.playersCount * 10;
                         let winnerPrize = Math.floor(totalPot * 0.70);
