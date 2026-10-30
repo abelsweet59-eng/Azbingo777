@@ -19,22 +19,20 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 100,
+    playersCount: 30, // 🟢 30 ቦቶች ብቻ እንዲሆኑ ተደረገ
     takenCards: [],
     playerRoundCards: {}
 };
 
 let activeGameInterval = null;
 
+// 🟢 የፌክ ቦቶች ስሞች (በትክክል 30 ብቻ)
 const fakeBotNames = [
     "Netsanet", "Av addis", "Solomon", "Taye", "Beke t", "Adane",
     "ተሰማ", "henok", "12 yared b", "abel", "seyum", "somalew", "china",
     "dagi g", "beti i", "jira", "lemma", "fikru", "neysi", "faya",
     "faysel", "ahme", "dinu t", "mame mame", "baby", "gfrt", "victor",
-    "kidus", "samuel", "nati", "biruk", "miki", "kofi", "yoni",
-    "meron", "helen", "hawi", "rachel", "bethel", "saron", "dan",
-    "ebru", "reda", "alem", "tigist", "meseret", "ebise", "mulu",
-    "kebede", "bekele", "derese", "girma", "tesfaye", "mengesha", "alemu"
+    "kidus", "samuel"
 ];
 
 let pendingRequests = {};
@@ -45,7 +43,7 @@ function simulateBotCardSelections() {
     for(let i = 1; i <= 300; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 15) + 5;
+    let botPicksCount = Math.floor(Math.random() * 10) + 5;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
@@ -58,7 +56,7 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 7000);
 
-// 🟢 ከ 1 እስከ 300 ያሉት ካርዶች ሁልጊዜ ቋሚ (Static) እና ልዩ (Unique) ውቅር እንዲኖራቸው የሚያደርግ ስሌት
+// 🟢 ከ 1 እስከ 300 ያሉት ካርዶች ቋሚ (Static) እና ልዩ (Unique) ውቅር እንዲኖራቸው የሚያደርግ ስሌት
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
     let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
@@ -149,7 +147,8 @@ let connectedRealPlayers = [];
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = realCount < 30 ? 100 + realCount : realCount;
+    // 🟢 ከ 30 በታች ትክክለኛ ዩዘሮች ሲኖሩ 30ዎቹ ቦቶች ተደምረው 30 ይሞላሉ፤ ከ 30 በላይ ሲሆኑ ትክክለኞቹ ዩዘሮች ብቻ ይቆጠራሉ።
+    globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
@@ -174,7 +173,7 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = realCount < 30 ? 100 + realCount : realCount;
+        globalRoom.playersCount = realCount < 30 ? 30 + realCount : realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
@@ -209,6 +208,7 @@ setInterval(() => {
 
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
+                    // 🟢 ህግ 1: እውነተኛ ተጫዋቾች ከ 30 በታች ከሆኑ ቦቶቹ ብቻ እንዲያሸንፉ ማድረግ
                     if (realCount < 30 && globalRoom.calledNumbers.length >= 8) {
                         let candidateCards = [];
                         for (let c = 1; c <= 300; c++) {
@@ -222,6 +222,7 @@ setInterval(() => {
                             winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                         }
                     } 
+                    // 🟢 ህግ 2: እውነተኛ ተጫዋቾች 30 እና ከዚያ በላይ ሲሆኑ ፍትሃዊ (Fair) ጨዋታ በመሆን ማንም እውነተኛ ተጫዋች ማሸነፍ ይችላል
                     else {
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
