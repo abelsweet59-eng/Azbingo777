@@ -160,7 +160,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player connected: " + socket.id);
+        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -192,9 +192,9 @@ setInterval(() => {
                 io.emit('numberCalledBroadcast', num);
 
                 if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
-                    let winningUser = "";
-                    let winningUserId = "";
-                    let winningCard = 1;
+                    let winningUser = "Netsanet";
+                    let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
+                    let winningCard = 22;
                     let winnerPrize = 0;
 
                     let totalPot = globalRoom.playersCount * 10;
@@ -212,8 +212,6 @@ setInterval(() => {
                         winningCard = userCards[Math.floor(Math.random() * userCards.length)];
                     } else {
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
-                        
                         let unselectedCards = [];
                         for (let c = 1; c <= 300; c++) {
                             if (!globalRoom.takenCards.includes(c)) {
@@ -222,8 +220,6 @@ setInterval(() => {
                         }
                         if (unselectedCards.length > 0) {
                             winningCard = unselectedCards[Math.floor(Math.random() * unselectedCards.length)];
-                        } else {
-                            winningCard = Math.floor(Math.random() * 300) + 1;
                         }
                     }
 
