@@ -23,14 +23,15 @@ let globalRoom = {
     takenCards: []
 };
 
+// 🟢 ያዘዝካቸውን አዳዲስ ስሞች ጨምሮ በትክክል 30 የሙሉት የቦት ስሞች ዝርዝር
 const fakeBotNames = [
-    "አበበ ከበደ", "ከበደ ማሞ", "ለይኩን ታደሰ", "መሳይ አለሙ", "ዳዊት ተሾመ",
-    "ሰሎሞን ገብሬ", "ዮናስ መኮንን", "እዮብ ታሪኩ", "ሀብታሙ አየለ", "ፍቅሩ ደስታ",
-    "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
-    "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
-    "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
-    "ሚካኤል ዘውዴ", "ናትናኤል ታለለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
-];
+    "Av addis", "Solomon", "Taye", "Beke t", "Adane",
+    "ተሰማ", "henok", "12 yared b", "abel", "seyum",
+    "somalew", "china", "dagi g", "beti i", "jira",
+    "lemma", "fikru", "netsanet", "neysi", "faya",
+    "faysel", "ahme", "dinu t", "mame mame", "baby",
+    "gfrt", "victor", "ga", "mo", "king iv", "djew"
+].slice(0, 30); // 30 ብቻ እንዲሆኑ መቁረጥ
 
 let pendingRequests = {};
 
@@ -158,7 +159,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ፣ ቁጥሮች ጥሪ እና ትክክለኛ የአሸናፊ ሂሳብ ስሌት (Pot & Prize Calculation)
+// 🟢 የጨዋታ ቆጣሪ፣ ቁጥሮች ጥሪ እና የቦት/ተጫዋች አሸናፊ መረጃ ከውሸት ID እና ካርድ ቁጥር ጋር
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -186,22 +187,22 @@ setInterval(() => {
                     let winningCard = Math.floor(Math.random() * 300) + 1;
                     let winnerPrize = 0;
 
-                    let totalPot = globalRoom.playersCount * 10; // እያንዳንዱ ተጫዋች 10 ብር ሲጫወት
-                    winnerPrize = Math.floor(totalPot * 0.70);  // 70% ለአሸናፊው
+                    let totalPot = globalRoom.playersCount * 10;
+                    winnerPrize = Math.floor(totalPot * 0.70);
 
                     if (globalRoom.playersCount < 60) {
+                        // ቦት ሲያሸንፍ ከሰጠሃቸው ስሞች ውስጥ መርጦ የውሸት ID ይሰጠዋል
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winningUserId = "bot_" + Math.floor(Math.random() * 10000);
+                        winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
                     } else {
                         winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
-                        winningUserId = "usr_" + Math.floor(Math.random() * 100000);
+                        winningUserId = "usr_" + Math.floor(Math.random() * 90000 + 10000);
                     }
 
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.takenCards = [];
 
-                    // 🟢 ለሁሉም ተጫዋቾች የተሟላ መረጃ ማስተላለፍ (Broadcast Winner Details)
                     io.emit('bingoWinner', { 
                         username: winningUser, 
                         userId: winningUserId,
