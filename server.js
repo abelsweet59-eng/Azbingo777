@@ -149,7 +149,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player connected: " + socket.id);
+        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
@@ -157,6 +157,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// 🟢 የጨዋታ ሎጂክ: ከ 60 በታች ሲሆን ቦቱ ያሸንፋል (ብሩ ሙሉ በሙሉ ለቤት/ለአድሚን ይቀራል)፣ ከ 60 በላይ ሲሆን እውነተኛ ተጫዋች ያሸንፋል
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -173,4 +174,42 @@ setInterval(() => {
                 return;
             }
             let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
-            if (available.length > 
+            if (available.length > 0) {
+                let num = available[Math.floor(Math.random() * available.length)];
+                globalRoom.calledNumbers.push(num);
+                io.emit('numberCalledBroadcast', num);
+
+                if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
+                    let winningUser = "";
+                    let winnerPrize = 0;
+
+                    if (globalRoom.playersCount < 60) {
+                        winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                        winnerPrize = 0; // ለቦቱ ሽልማት የለም (ገንዘቡ ለቤት/ለአድሚን ሆኖ ይቀራል)
+                    } else {
+                        winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
+                        let totalPot = globalRoom.playersCount * 10;
+                        winnerPrize = Math.floor(totalPot * 0.70); // 70% ለአሸናፊው እውነተኛ ተጫዋች
+                    }
+
+                    globalRoom.gameActive = false;
+                    globalRoom.gameStartTime = Date.now() + 60000;
+                    globalRoom.takenCards = [];
+                    io.emit('bingoWinner', { username: winningUser, prize: winnerPrize, message: "🎉 BINGO WINNER! ተጫዋች " + winningUser + " አሸንፏል!" });
+                    clearInterval(callingInterval);
+                }
+            } else {
+                globalRoom.gameActive = false;
+                globalRoom.gameStartTime = Date.now() + 60000;
+                globalRoom.takenCards = [];
+                io.emit('gameEndedBroadcast');
+                clearInterval(callingInterval);
+            }
+        }, 3500);
+    }
+}, 1000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
