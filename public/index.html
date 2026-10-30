@@ -3,131 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AZ Bingo - Live Realtime Game Platform</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>AZ Bingo 777 - Pro Multiplayer</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        .bingo-cell {
+        body {
+            background-color: #0b0f19;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            max-width: 400px;
+            background: #131b2e;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+        .title { font-size: 18px; font-weight: bold; color: #f39c12; }
+        #connection-status { font-size: 11px; padding: 4px 8px; border-radius: 20px; background: #e74c3c; }
+        .connected { background: #2ecc71 !important; }
+
+        .wallet-box {
+            width: 100%;
+            max-width: 400px;
+            background: #131b2e;
+            padding: 10px 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .status-box {
+            width: 100%;
+            max-width: 400px;
+            background: #131b2e;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .called-number { font-size: 32px; font-weight: bold; color: #f39c12; margin-top: 2px; }
+
+        /* Split Grids for Dual Cards */
+        .cards-container {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .card-section {
+            background: #131b2e;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .card-title { font-size: 13px; font-weight: bold; color: #f39c12; margin-bottom: 5px; text-align: center; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+        .cell {
+            background: #1a233a;
             aspect-ratio: 1;
             display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-size: 15px;
             font-weight: bold;
-            font-size: 1.25rem;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            user-select: none;
+            border: 1px solid #2a3b5e;
         }
-        .bingo-cell.marked {
-            background-color: #f59e0b !important;
-            color: #0f172a !important;
-            transform: scale(0.95);
-            box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+        .cell.marked { background: #f39c12; color: #0b0f19; }
+
+        .bingo-btn {
+            width: 100%;
+            max-width: 400px;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #0b0f19;
+            border: none;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+            margin-bottom: 10px;
+        }
+        
+        #overlay-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 15, 25, 0.9); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 999; text-align: center; padding: 20px;
         }
     </style>
 </head>
-<body class="bg-slate-950 text-white min-h-screen flex flex-col items-center justify-between p-4">
+<body>
 
-    <!-- Header Section -->
-    <header class="w-full max-w-md bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl flex justify-between items-center">
+    <div id="overlay-modal">
+        <h2 style="color: #f39c12;">AZ BINGO 777</h2>
+        <p id="modal-text">Waiting for players to join... Game starts in <span id="countdown-timer">60</span>s</p>
+        <button onclick="startGameAdmin()" style="background:#2ecc71; border:none; padding:10px 20px; border-radius:8px; color:#fff; font-weight:bold; cursor:pointer; margin-top:10px;">Start Game Now (Admin)</button>
+    </div>
+
+    <div class="header">
         <div>
-            <h1 class="text-xl font-black text-amber-400 tracking-wider">AZ BINGO 🎲</h1>
-            <p class="text-xs text-slate-400" id="room-info">Room: #101 | Realtime Multiplayer</p>
+            <div class="title">AZ BINGO 777 🎲</div>
+            <div style="font-size: 10px; color: #888;">Multiplayer Pro Room</div>
         </div>
-        <div id="user-info" class="text-xs bg-slate-800 px-3 py-1.5 rounded-full text-amber-300 font-medium border border-slate-700">
-            Connecting...
+        <div id="connection-status">Connecting...</div>
+    </div>
+
+    <div class="wallet-box">
+        <div>Balance: <span id="user-balance" style="color: #2ecc71; font-weight: bold;">100 ETB</span></div>
+        <div>
+            <button onclick="requestAction('deposit')" style="background:#2ecc71; border:none; padding:5px 10px; border-radius:6px; color:#fff; cursor:pointer; font-weight:bold; font-size:11px;">Deposit</button>
+            <button onclick="requestAction('withdraw')" style="background:#e74c3c; border:none; padding:5px 10px; border-radius:6px; color:#fff; cursor:pointer; font-weight:bold; font-size:11px;">Withdraw</button>
         </div>
-    </header>
+    </div>
 
-    <!-- Main Game Container -->
-    <main class="w-full max-w-md flex flex-col gap-4 my-auto py-2">
-        
-        <!-- Game Status & Timer Banner -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center shadow-lg relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 to-yellow-300"></div>
-            <p id="game-status" class="text-base font-bold text-amber-300 uppercase tracking-wide">Waiting for players...</p>
-            <div id="timer" class="text-3xl font-black text-white mt-1 tracking-widest">--:--</div>
+    <div class="status-box">
+        <div style="font-size: 12px; color: #aaa;">CURRENT CALLED NUMBER</div>
+        <div class="called-number" id="current-number">--</div>
+    </div>
+
+    <!-- Dual Split Bingo Cards -->
+    <div class="cards-container">
+        <div class="card-section">
+            <div class="card-title">CARD 1</div>
+            <div class="grid" id="grid-1"></div>
         </div>
-
-        <!-- Current Called Number Display -->
-        <div class="bg-gradient-to-br from-slate-900 to-slate-900 border border-slate-800 p-6 rounded-2xl text-center shadow-xl flex flex-col items-center justify-center">
-            <span class="text-xs text-slate-400 uppercase tracking-widest font-semibold">Current Called Number</span>
-            <div id="current-number" class="text-7xl font-black text-amber-400 mt-2 drop-shadow-[0_0_15px_rgba(245,158,11,0.3)]">-</div>
+        <div class="card-section">
+            <div class="card-title">CARD 2</div>
+            <div class="grid" id="grid-2"></div>
         </div>
+    </div>
 
-        <!-- Bingo Card Grid Section -->
-        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
-            <!-- Table Header (B-I-N-G-O) -->
-            <div class="grid grid-cols-5 gap-2 text-center font-black text-amber-400 text-lg mb-2 pb-2 border-b border-slate-800">
-                <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
-            </div>
-            <!-- Dynamic 5x5 Card Grid -->
-            <div class="grid grid-cols-5 gap-2 text-center" id="bingo-card">
-                <!-- Javascript will inject 25 cells here -->
-            </div>
-        </div>
+    <button class="bingo-btn" onclick="declareBingo()">BINGO! 🎉</button>
 
-        <!-- Action / Claim Bingo Button -->
-        <button id="bingo-btn" onclick="claimBingo()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-600 hover:to-yellow-500 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-amber-500/20 transition-all duration-200 uppercase tracking-wider text-lg active:scale-95">
-            BINGO! 🎉
-        </button>
-    </main>
-
-    <!-- Footer Information -->
-    <footer class="w-full max-w-md text-center text-xs text-slate-600 pt-2">
-        <p>AZ Bingo Secure Gaming Platform &copy; 2026</p>
-    </footer>
-
-    <!-- Game Logic Script -->
     <script>
         const socket = io();
+        const statusEl = document.getElementById('connection-status');
+        const currentNumEl = document.getElementById('current-number');
+        const modalEl = document.getElementById('overlay-modal');
+        const modalText = document.getElementById('modal-text');
         
-        // Telegram WebApp Integration
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.expand();
-            const user = tg.initDataUnsafe?.user;
-            if (user) {
-                document.getElementById('user-info').innerText = `@${user.username || user.first_name}`;
-                socket.emit('set-user', { id: user.id, username: user.username, name: user.first_name });
-            }
-        }
+        let username = "Player_" + Math.floor(Math.random() * 1000);
+        let phone = "+251900000000";
+        let balance = 100;
 
-        // Generate 5x5 Bingo Card Locally with Random Range Logic
-        function generateCard() {
-            const cardContainer = document.getElementById('bingo-card');
-            cardContainer.innerHTML = '';
-            
-            for (let i = 0; i < 25; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'bingo-cell bg-slate-800 border border-slate-700/60 rounded-xl text-white';
-                
-                if (i === 12) {
-                    cell.innerText = 'FREE';
-                    cell.classList.add('marked', 'font-bold', 'text-amber-300');
-                } else {
-                    cell.innerText = Math.floor(Math.random() * 75) + 1;
-                    cell.onclick = () => {
-                        cell.classList.toggle('marked');
-                    };
-                }
-                cardContainer.appendChild(cell);
-            }
-        }
-
-        // Initialize Card on Load
-        generateCard();
-
-        // Socket Event Listeners for Real-time Game Sync
-        socket.on('game-update', (data) => {
-            if(data.status) document.getElementById('game-status').innerText = data.status;
-            if(data.currentNumber) document.getElementById('current-number').innerText = data.currentNumber;
-            if(data.timer) document.getElementById('timer').innerText = data.timer;
+        socket.on('connect', () => {
+            statusEl.innerText = 'Connected';
+            statusEl.classList.add('connected');
+            socket.emit('joinRoom', { roomId: '101', username, phone });
         });
 
-        function claimBingo() {
-            socket.emit('claim-bingo', { userId: tg?.initDataUnsafe?.user?.id });
-            alert('Bingo claim submitted! Verifying card...');
+        socket.on('disconnect', () => {
+            statusEl.innerText = 'Disconnected';
+            statusEl.classList.remove('connected');
+        });
+
+        socket.on('countdownUpdate', (time) => {
+            document.getElementById('countdown-timer').innerText = time;
+        });
+
+        socket.on('gameStartingSequence', () => {
+            let count = 3;
+            modalText.style.fontSize = "28px";
+            modalText.style.color = "#f39c12";
+            let seq = setInterval(() => {
+                if (count > 0) {
+                    modalText.innerText = count;
+                    count--;
+                } else if (count === 0) {
+                    modalText.innerText = "GO! 🚀";
+                    count--;
+                } else {
+                    clearInterval(seq);
+                    modalEl.style.display = 'none';
+                }
+            }, 1000);
+        });
+
+        socket.on('numberCalled', (num) => {
+            currentNumEl.innerText = num;
+        });
+
+        socket.on('bingoWinner', (msg) => {
+            alert(msg);
+            modalEl.style.display = 'flex';
+            modalText.innerText = msg;
+        });
+
+        function startGameAdmin() {
+            socket.emit('startCountdown', '101');
+        }
+
+        function requestAction(type) {
+            let amount = prompt(`Enter amount to ${type} (ETB):`, "50");
+            if (amount) {
+                socket.emit('financialRequest', { type, amount, username, phone });
+                alert(`${type} request sent to Admin Telegram Bot!`);
+            }
+        }
+
+        // Generate Dual Bingo Grids
+        function generateGrid(gridId, numbers) {
+            const gridEl = document.getElementById(gridId);
+            numbers.forEach((val) => {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.innerText = val;
+                if (val === 'FREE') {
+                    cell.classList.add('marked');
+                } else {
+                    cell.addEventListener('click', () => {
+                        cell.classList.toggle('marked');
+                    });
+                }
+                gridEl.appendChild(cell);
+            });
+        }
+
+        generateGrid('grid-1', [12, 24, 33, 41, 55, 7, 18, 29, 45, 60, 3, 15, 'FREE', 51, 68, 9, 22, 37, 49, 72, 11, 28, 40, 58, 74]);
+        generateGrid('grid-2', [5, 19, 31, 44, 61, 14, 21, 38, 48, 65, 2, 16, 'FREE', 53, 70, 8, 25, 39, 52, 73, 10, 27, 42, 59, 75]);
+
+        function declareBingo() {
+            socket.emit('declareBingo', { roomId: '101', username });
         }
     </script>
 </body>
