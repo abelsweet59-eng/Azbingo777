@@ -22,6 +22,13 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
+
+        /* 🟢 የመጨረሻው የተጠራ ቁጥር ብሊንክ (Blink) እንዲያደርግ የሚረዳ አኒሜሽን */
+        @keyframes blinkAnim {
+            0%, 100% { opacity: 1; transform: scale(1); background-color: #f59e0b; color: #000; }
+            50% { opacity: 0.4; transform: scale(0.95); background-color: #d97706; color: #fff; }
+        }
+        .blink-latest { animation: blinkAnim 1s infinite ease-in-out; border: 2px solid #fff; }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -95,10 +102,9 @@
                     </div>
                 </div>
 
-                <!-- Live Game Section (ስፔስ እና ክፍተት የተስተካከለበት) -->
+                <!-- Live Game Section -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-3 pb-4 overflow-y-auto custom-scroll">
                     
-                    <!-- ሰፋ ያለ እና ግልጽ የሆነ የ 75 ኳሶች ቦርድ (Full View) -->
                     <div class="grid grid-cols-12 gap-2 bg-[#180a29] p-2.5 rounded-xl border border-purple-500/30 shadow-md">
                         <div class="col-span-7">
                             <div class="grid grid-cols-5 gap-1 text-center font-bold text-[10px] mb-1.5">
@@ -108,6 +114,7 @@
                                 <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
                                 <div class="bg-amber-600 rounded text-white py-0.5">O</div>
                             </div>
+                            <!-- 75 ኳሶች ቦርድ -->
                             <div class="grid grid-cols-5 gap-1 text-center text-[9px] font-mono" id="vertical-board-75"></div>
                         </div>
 
@@ -120,13 +127,11 @@
                         </div>
                     </div>
 
-                    <!-- ተመልካች ማሳወቂያ -->
                     <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-3 rounded-xl text-center space-y-1 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
                         <div class="text-gray-200 text-[10px]">በዚህ ዙር ካርድ አልመረጡም፤ ጨዋታውን እንደ ተመልካች ይከታተላሉ።</div>
                     </div>
 
-                    <!-- ከቦርዱ በቂ ክፍተት (Space) ያለው የተጠቃሚ ካርዶች ማሳያ -->
                     <div class="space-y-2 pt-1">
                         <div class="text-[11px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
                         <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2.5 rounded-xl border border-purple-500/30"></div>
@@ -167,7 +172,7 @@
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
         </div>
 
-        <!-- WINNING MODAL (የአሸናፊ ስም እና የሽልማት መጠን በግልጽ የሚታይበት) -->
+        <!-- WINNING MODAL -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-6 w-full max-w-xs space-y-4 shadow-2xl text-center relative">
                 <div class="w-14 h-14 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-3xl shadow-lg">👑</div>
@@ -397,7 +402,6 @@
             resetPlayerSelectionForNewRound();
         });
 
-        // 🟢 አሸናፊ ሲወጣ ስሙ እና የሽልማት መጠኑ (ብር) በግልጽ እንዲጻፍ የተደረገበት ክፍል
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let prizePool = data.prize || 0;
@@ -548,20 +552,36 @@
             socket.emit('confirmCards', userSelectedCards);
         }
 
+        // 🟢 75 ቦርድ ላይ የቅርብ ጊዜው (መጨረሻ የተጠራው) ቁጥር ብሊንክ (Blink) እንዲያደርግ የተደረገበት ክፍል
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
+            
+            let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
+
             for(let i = 1; i <= 75; i++) {
                 let letter = i <= 15 ? "B" : i <= 30 ? "I" : i <= 45 ? "N" : i <= 60 ? "G" : "O";
                 const isCalled = calledNumbersList.includes(i);
+                const isLatest = (i === lastCalledNum);
+
                 const cell = document.createElement('div');
-                cell.className = isCalled ? 'bg-amber-500 text-black font-extrabold text-[8px] rounded py-0.5' : 'bg-white/5 text-gray-400 text-[8px] rounded py-0.5';
+                
+                if (isLatest) {
+                    // 🟢 አሁን በመጨረሻ የተጠራው ቁጥር (ብሊንክ የሚያደርግ)
+                    cell.className = 'blink-latest font-extrabold text-[8px] rounded py-0.5';
+                } else if (isCalled) {
+                    // ቀድሞ የተጠሩ ሌሎች ቁጥሮች
+                    cell.className = 'bg-amber-500 text-black font-extrabold text-[8px] rounded py-0.5';
+                } else {
+                    // ያልተጠሩ ቁጥሮች
+                    cell.className = 'bg-white/5 text-gray-400 text-[8px] rounded py-0.5';
+                }
+
                 cell.innerText = `${letter}-${i}`;
                 board.appendChild(cell);
             }
         }
 
-        // 🟢 የካርድ ቁጥር ርዕስ (ከላይ ፊደል ሳይኖር ንጹህ ቁጥር ብቻ እንዲታይ የተደረገበት ክፍል)
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
@@ -587,7 +607,6 @@
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
                 
-                // 🟢 ከካርድ ቁጥር ላይ ፊደል ጠፍቶ ቁጥሩ ብቻ (ለምሳሌ፦ ካርድ #45) እንዲል ተደረገ
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[9px] font-bold text-amber-400 text-center border-b border-white/10 pb-0.5";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
