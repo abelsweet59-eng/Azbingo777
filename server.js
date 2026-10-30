@@ -367,4 +367,37 @@ setInterval(() => {
                         globalRoom.gameActive = false;
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
-                        globalRoom.playerRound
+                        globalRoom.playerRoundCards = {};
+
+                        let primaryWinner = winningCardsList[0];
+
+                        io.emit('bingoWinner', { 
+                            username: primaryWinner.username, 
+                            userId: primaryWinner.userId,
+                            cardNum: primaryWinner.cardNum,
+                            playersCount: totalPlayers,
+                            totalPot: totalPot,
+                            prize: prizePerWinner,
+                            winnersCount: winningCardsList.length,
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+
+                        clearInterval(activeGameInterval);
+                    }
+                }
+            } else {
+                globalRoom.gameActive = false;
+                globalRoom.gameStartTime = Date.now() + roundDuration;
+                globalRoom.takenCards = [];
+                globalRoom.playerRoundCards = {};
+                io.emit('gameEndedBroadcast');
+                clearInterval(activeGameInterval);
+            }
+        }, 4000);
+    }
+}, 1000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
