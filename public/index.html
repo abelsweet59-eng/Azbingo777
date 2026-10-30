@@ -77,12 +77,11 @@
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
-                            <!-- 🟢 የ 60 ሰከንድ ካውንት ዳውን በግልጽ የሚታይበት ባጅ -->
                             <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">60 ሰከንድ ይቀረዋል</div>
                         </div>
                     </div>
 
-                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) - ምንም ፊደል የሌለበት -->
+                    <!-- 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -119,7 +118,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲያዩ የሚደረግ ማሳወቂያ -->
+                    <!-- 🟢 ተመልካች ማሳወቂያ -->
                     <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-4 rounded-xl text-center space-y-1.5 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
                         <div class="text-gray-200 text-[11px]">በዚህ ዙር ካርድ አልመረጡም፤ ስለዚህ ጨዋታውን እንደ ተመልካች ብቻ ይከታተላሉ።</div>
@@ -149,7 +148,7 @@
             <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
-                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 px-2 py-1 rounded">ዝጋ</button>
+                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded">ዝጋ</button>
                 </div>
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30">
                     ✅ እንደ አድሚን ገብተዋል! የዲፖዚት እና የዊዝድሮዋል ጥያቄዎች (ከ 100 ብር በላይ) ወደ ቴሌግራም ቦትዎ በቅጽበት ይደርሳሉ።
@@ -157,7 +156,7 @@
             </div>
         </div>
 
-        <!-- COUNTDOWN MODAL (1 እስከ 3 አኒሜሽን ቆጣሪ) -->
+        <!-- COUNTDOWN MODAL -->
         <div id="countdown-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
             <div class="text-amber-400 font-bold text-lg mb-4 tracking-wide">ጨዋታው ሊጀመር ነው...</div>
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
@@ -265,7 +264,7 @@
             }
         }
 
-        // 🟢 የ 60 ሰከንድ ካውንት ዳውን በሰአት ባር እና በምርጫው ሰክሽን ላይ በቅጽበት ማሳየት
+        // 🟢 የ 60 ሰከንድ ቆጣሪ በየሰከንዱ በትክክል እንዲቀንስ እና ከዜሮ በታች እንዳይወርድ የሚደረግ አስተማማኝ ሎጂክ
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.floor((gameStartTimeServer - Date.now()) / 1000));
@@ -300,6 +299,7 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
+        // 🟢 ከሰቨር የሚመጣውን የሰአት ሰሌዳ እና የጨዋታ ሁኔታ በቅጽበት ማመሳሰል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -342,7 +342,6 @@
             document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
-        // 🟢 60 ሰከንድ አልቆ ሰቨሩ ሲጀምር (3-2-1) አኒሜሽን በሁሉም ስልኮች ላይ በጋራ መታየት
         socket.on('gameStartedBroadcast', () => {
             triggerCountdownAndStart();
         });
@@ -372,8 +371,11 @@
             }, 1000);
         }
 
+        // 🟢 ቁጥሮች በአንድ ላይ እንዳይከመሩ (Lag እንዳይፈጠር) በትክክል በሰልፍ እንዲመጡ የተደረገ መቀበያ
         socket.on('numberCalledBroadcast', (num) => {
-            calledNumbersList.push(num);
+            if (!calledNumbersList.includes(num)) {
+                calledNumbersList.push(num);
+            }
             displayCalledBall(num);
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
@@ -393,9 +395,9 @@
 
         socket.on('gameEndedBroadcast', () => {
             resetPlayerSelectionForNewRound();
-            alert("ጨዋታው ተጠናቋል! አዲስ ዙር ተጀምሯል፣ እባክዎ አዲስ ካርድ ይምረጡ።");
         });
 
+        // 🟢 ጨዋታው ሲጠናቀቅ እና ሽልማቱ ሲሰጥ ሰአቱን ከሰቨር በአዲስ መልክ ተቀብሎ ወደ ምርጫ ሜኑ መመለስ
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let prizePool = data.prize || 0;
@@ -412,16 +414,19 @@
                 document.getElementById('winner-modal').classList.add('hidden');
                 resetPlayerSelectionForNewRound();
                 initRoundBots();
-            }, 4500);
+            }, 4000);
         });
 
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
             confirmedCards = [];
+            calledNumbersList = [];
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
             generate300CardGrid();
+            // አዲስ ዙር ሲጀምር የሰአት ቆጣሪውን ዳግም ማስጀመር
+            gameStartTimeServer = Date.now() + 60000;
         }
 
         socket.on('financialApproved', (data) => {
@@ -481,7 +486,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
         }
 
-        // 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300) - ምንም ፊደል የሌለበት
+        // 🟢 ንጹህ የካርድ ቁጥሮች ግሪድ (ከ 1 እስከ 300)
         function generate300CardGrid() {
             const grid = document.getElementById('card-grid-300');
             grid.innerHTML = '';
@@ -558,7 +563,7 @@
             }
         }
 
-        // 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲታዩ እና የካርድ ቦታው በኖቲፊኬሽን እንዲተካ የሚያደርግ ሎጂክ
+        // 🟢 ተመልካች ማሳወቂያ እና ካርዶች ማሳያ
         function renderPlayerDualCards() {
             const container = document.getElementById('player-dual-cards-container');
             const noticeBox = document.getElementById('spectator-notice');
