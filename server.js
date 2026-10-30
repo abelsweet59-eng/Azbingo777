@@ -14,7 +14,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 60000; // 60 ሰከንድ የካርድ ምርጫ ሰአት
+let roundDuration = 60000; // 60 ሰከንድ
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
@@ -29,7 +29,7 @@ const fakeBotNames = [
     "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
     "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
     "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
-    "ሚካኤል ዘውዴ", "ናትናኤል ታደለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
+    "ሚካኤል ዘውዴ", "ናትናኤል ታለለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
 ];
 
 let pendingRequests = {};
@@ -119,7 +119,7 @@ io.on('connection', (socket) => {
     globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
-    // 🟢 አዲስ ተጫዋች ሲገባ አሁን ያለውን የሰአት እና የጨዋታ ሁኔታ በግልጽ እንልክላለን
+    // 🟢 አዲስ ተጫዋች ሲገናኝ አሁን ያለውን የሰቨር ሰአት (gameStartTime) እና የጨዋታ ሁኔታ በቅጽበት ይልካል
     socket.emit('syncGameState', globalRoom);
     socket.emit('updateTakenCards', globalRoom.takenCards);
 
@@ -159,7 +159,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ፣ የሰአት ማስተካከያ እና ቁጥሮች በየ 3 ሰከንድ የመጥራት ሎጂክ
+// 🟢 የጨዋታ ቆጣሪ እና ቁጥሮች በየ 3 ሰከንድ (3000ms) የመጥራት ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -168,9 +168,8 @@ setInterval(() => {
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
-        io.emit('gameStartedBroadcast');
+        io.emit('gameStartedBroadcast'); // 👈 ሁሉም ስልኮች ላይ በአንድ ጊዜ ቆጠራ (3-2-1) እንዲጀምር ያደርጋል
 
-        // 🟢 ቁጥሮች በየ 3 ሰከንድ (3000 ሚሊሰከንድ) እንዲጠሩ ተደርጓል
         let callingInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(callingInterval);
@@ -182,18 +181,17 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                // 🟢 ጨዋታው ሲጠናቀቅ የሽልማት ገንዘብ ስሌት (እውነተኛ ተጫዋቾች ከ 60 በላይ ሲሆኑ 70% ሻር ይሰጣቸዋል)
                 if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
                     let winningUser = "";
                     let winnerPrize = 0;
 
                     if (globalRoom.playersCount < 60) {
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winnerPrize = 0; // ለቦቱ ሽልማት የለም (ብሩ ለቤት ይቀራል)
+                        winnerPrize = 0; 
                     } else {
                         winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
                         let totalPot = globalRoom.playersCount * 10;
-                        winnerPrize = Math.floor(totalPot * 0.70); // 70% ለአሸናፊው እውነተኛ ተጫዋች
+                        winnerPrize = Math.floor(totalPot * 0.70); 
                     }
 
                     globalRoom.gameActive = false;
