@@ -24,6 +24,8 @@ let globalRoom = {
     playerRoundCards: {}
 };
 
+let activeGameInterval = null;
+
 const fakeBotNames = [
     "Av addis", "Solomon", "Taye", "Beke t", "Adane",
     "ተሰማ", "henok", "12 yared b", "abel", "seyum",
@@ -166,6 +168,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// 🟢 የተስተካከለ የሰርቨር ቆጣሪ እና የኳስ ጥሪ ሎጂክ (ግሊች እንዳይኖር የተደረገ)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -176,9 +179,11 @@ setInterval(() => {
         globalRoom.calledNumbers = [];
         io.emit('gameStartedBroadcast');
 
-        let callingInterval = setInterval(() => {
+        if (activeGameInterval) clearInterval(activeGameInterval);
+
+        activeGameInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
-                clearInterval(callingInterval);
+                clearInterval(activeGameInterval);
                 return;
             }
             let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
@@ -231,28 +236,4 @@ setInterval(() => {
                     io.emit('bingoWinner', { 
                         username: winningUser, 
                         userId: winningUserId,
-                        cardNum: winningCard,
-                        playersCount: globalRoom.playersCount,
-                        totalPot: totalPot,
-                        prize: winnerPrize, 
-                        message: "🎉 BINGO WINNER!" 
-                    });
-
-                    clearInterval(callingInterval);
-                }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.takenCards = [];
-                globalRoom.playerRoundCards = {};
-                io.emit('gameEndedBroadcast');
-                clearInterval(callingInterval);
-            }
-        }, 5000);
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+                        cardNum
