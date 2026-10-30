@@ -77,6 +77,7 @@
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
+                            <!-- 🟢 የ 60 ሰከንድ ካውንት ዳውን በግልጽ የሚታይበት ባጅ -->
                             <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">60 ሰከንድ ይቀረዋል</div>
                         </div>
                     </div>
@@ -118,7 +119,7 @@
                         </div>
                     </div>
 
-                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲታዩ የሚደረግ ማሳወቂያ -->
+                    <!-- 🟢 ካርድ ሳይዙ የገቡ ተጠቃሚዎች እንደ ተመልካች ብቻ እንዲያዩ የሚደረግ ማሳወቂያ -->
                     <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-4 rounded-xl text-center space-y-1.5 shadow-lg">
                         <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
                         <div class="text-gray-200 text-[11px]">በዚህ ዙር ካርድ አልመረጡም፤ ስለዚህ ጨዋታውን እንደ ተመልካች ብቻ ይከታተላሉ።</div>
@@ -156,7 +157,7 @@
             </div>
         </div>
 
-        <!-- COUNTDOWN MODAL -->
+        <!-- COUNTDOWN MODAL (1 እስከ 3 አኒሜሽን ቆጣሪ) -->
         <div id="countdown-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
             <div class="text-amber-400 font-bold text-lg mb-4 tracking-wide">ጨዋታው ሊጀመር ነው...</div>
             <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
@@ -264,6 +265,7 @@
             }
         }
 
+        // 🟢 የ 60 ሰከንድ ካውንት ዳውን በሰአት ባር እና በምርጫው ሰክሽን ላይ በቅጽበት ማሳየት
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.floor((gameStartTimeServer - Date.now()) / 1000));
@@ -272,6 +274,10 @@
                 let timeStr = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}ሰ`;
                 
                 document.getElementById('stat-timer').innerText = timeStr;
+                let regBadge = document.getElementById('reg-status-badge');
+                if (regBadge && !confirmedCards.length) {
+                    regBadge.innerText = `${timeLeft} ሰከንድ ይቀረዋል`;
+                }
             }, 1000);
         }
 
@@ -294,7 +300,6 @@
             document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
         });
 
-        // 🟢 ከሰቨር የሚመጣውን ትክክለኛ የሰአት ሰሌዳ እና የጨዋታ ሁኔታ በግልጽ መቀበል
         socket.on('syncGameState', (room) => {
             if (room.gameStartTime) {
                 gameStartTimeServer = room.gameStartTime;
@@ -337,7 +342,7 @@
             document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
-        // 🟢 ጨዋታው ሲጀመር (Countdown 3-2-1) በሁሉም ስልኮች ላይ በአንድ ጊዜ እንዲሰራጭ
+        // 🟢 60 ሰከንድ አልቆ ሰቨሩ ሲጀምር (3-2-1) አኒሜሽን በሁሉም ስልኮች ላይ በጋራ መታየት
         socket.on('gameStartedBroadcast', () => {
             triggerCountdownAndStart();
         });
