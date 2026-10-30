@@ -22,8 +22,6 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
-
-        /* 🟢 የመጨረሻው የተጠራ ቁጥር ብሊንክ (Blink) እንዲያደርግ የሚረዳ አኒሜሽን */
         @keyframes blinkAnim {
             0%, 100% { opacity: 1; transform: scale(1); background-color: #f59e0b; color: #000; }
             50% { opacity: 0.4; transform: scale(0.95); background-color: #d97706; color: #fff; }
@@ -88,7 +86,6 @@
                         </div>
                     </div>
 
-                    <!-- ንጹህ የካርድ ቁጥሮች ግሪድ -->
                     <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
 
                     <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
@@ -114,7 +111,6 @@
                                 <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
                                 <div class="bg-amber-600 rounded text-white py-0.5">O</div>
                             </div>
-                            <!-- 75 ኳሶች ቦርድ -->
                             <div class="grid grid-cols-5 gap-1 text-center text-[9px] font-mono" id="vertical-board-75"></div>
                         </div>
 
@@ -141,7 +137,7 @@
                 </div>
             </div>
 
-            <!-- TAB 2: WALLET -->
+            <!-- TAB 2: WALLET & HISTORY -->
             <div id="tab-wallet" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll">
                 <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
                     <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
@@ -150,6 +146,17 @@
                     <div class="flex gap-2.5 pt-2">
                         <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2.5 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
                         <button onclick="openWithdrawModal()" class="flex-1 bg-white/10 py-2.5 rounded-xl text-xs font-bold border border-white/10 shadow">ገንዘብ አውጣ (Withdraw)</button>
+                    </div>
+                </div>
+
+                <!-- 🟢 የሂሳብ እንቅስቃሴ ታሪክ (Transaction History Section) -->
+                <div class="bg-[#180a29] p-3 rounded-2xl border border-purple-500/30 space-y-2">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
+                        <h3 class="text-xs font-bold text-amber-400">📜 የሂሳብ እንቅስቃሴ ታሪክ (History)</h3>
+                        <span class="text-[9px] text-gray-400">ገቢ / ወጪ</span>
+                    </div>
+                    <div id="transaction-history-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-[10px]">
+                        <div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>
                     </div>
                 </div>
             </div>
@@ -235,12 +242,21 @@
         const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
+        let transactionHistory = [];
+
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
+        const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         
         if (!localStorage.getItem(userLocalStorageKey)) {
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         } else {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 30.00;
+        }
+
+        if (localStorage.getItem(userHistoryKey)) {
+            try {
+                transactionHistory = JSON.parse(localStorage.getItem(userHistoryKey)) || [];
+            } catch(e) { transactionHistory = []; }
         }
 
         let userSelectedCards = [];
@@ -260,11 +276,48 @@
 
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b> ${isAdmin ? '(አድሚን)' : ''}`;
             updateWalletUI();
+            renderHistoryUI();
             initRoundBots();
             generate300CardGrid();
             startClientTimer();
             startBotDynamicSimulation();
         });
+
+        function addTransactionHistory(title, amount, type) {
+            let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            transactionHistory.unshift({ title, amount, type, time: timeNow });
+            if (transactionHistory.length > 20) transactionHistory.pop(); // እስከ 20 ሒስትሪ ብቻ መያዝ
+            localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
+            renderHistoryUI();
+        }
+
+        function renderHistoryUI() {
+            const listEl = document.getElementById('transaction-history-list');
+            if (!listEl) return;
+
+            if (transactionHistory.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>`;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            transactionHistory.forEach(tx => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-black/40 p-2 rounded border border-white/5";
+                
+                let amtColor = tx.type === 'income' ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
+                let sign = tx.type === 'income' ? '+' : '-';
+
+                item.innerHTML = `
+                    <div>
+                        <div class="text-white font-medium">${tx.title}</div>
+                        <div class="text-[8px] text-gray-400">${tx.time}</div>
+                    </div>
+                    <div class="${amtColor}">${sign}${tx.amount} ብር</div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
 
         function initRoundBots() {
             botFixedCards = [];
@@ -321,8 +374,12 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
+                calledNumbersList = [];
+                document.getElementById('main-called-ball').innerText = "--";
+                document.getElementById('stat-called-count').innerText = "0";
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
+                renderVerticalBoard();
             }
         });
 
@@ -409,9 +466,10 @@
             document.getElementById('winner-banner-text').innerHTML = `አሸናፊ: <b class="text-amber-300 text-sm">${winnerName}</b><br><br>የተሸለመው የገንዘብ መጠን: <span class="text-amber-400 font-black text-base">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
-            if (winnerName === userFullName) {
+            if (winnerName === userFullName && prizePool > 0) {
                 walletBalance += prizePool;
                 updateWalletUI();
+                addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
             }
 
             setTimeout(() => {
@@ -426,9 +484,12 @@
             confirmedCards = [];
             calledNumbersList = [];
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
+            document.getElementById('main-called-ball').innerText = "--";
+            document.getElementById('stat-called-count').innerText = "0";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
             generate300CardGrid();
+            renderVerticalBoard();
             gameStartTimeServer = Date.now() + 60000;
         }
 
@@ -437,12 +498,16 @@
             if (data.type === 'deposit') {
                 walletBalance += amt;
                 alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                addTransactionHistory('ቴሌብር ዲፖዚት (Deposit)', amt, 'income');
             } else {
                 if (walletBalance >= amt) {
                     walletBalance -= amt;
-                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ተልኳል!`);
+                    alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቋል!`);
+                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
                 } else {
-                    alert(`✅ የ ${amt} ብር ጥያቄዎ ጸድቋል!`);
+                    walletBalance -= amt;
+                    alert(`✅ የ ${amt} ብር ዊዝድሮዋል ጥያቄዎ ጸድቋል!`);
+                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
                 }
             }
             updateWalletUI();
@@ -549,10 +614,12 @@
             walletBalance -= totalCost;
             updateWalletUI();
 
+            // 🟢 ካርድ ሲገዙ ከሂሳብ የሚቀነሰውን ገንዘብ ወደ ሒስትሪ መመዝገብ
+            addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
+
             socket.emit('confirmCards', userSelectedCards);
         }
 
-        // 🟢 75 ቦርድ ላይ የቅርብ ጊዜው (መጨረሻ የተጠራው) ቁጥር ብሊንክ (Blink) እንዲያደርግ የተደረገበት ክፍል
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
@@ -567,13 +634,10 @@
                 const cell = document.createElement('div');
                 
                 if (isLatest) {
-                    // 🟢 አሁን በመጨረሻ የተጠራው ቁጥር (ብሊንክ የሚያደርግ)
                     cell.className = 'blink-latest font-extrabold text-[8px] rounded py-0.5';
                 } else if (isCalled) {
-                    // ቀድሞ የተጠሩ ሌሎች ቁጥሮች
                     cell.className = 'bg-amber-500 text-black font-extrabold text-[8px] rounded py-0.5';
                 } else {
-                    // ያልተጠሩ ቁጥሮች
                     cell.className = 'bg-white/5 text-gray-400 text-[8px] rounded py-0.5';
                 }
 
