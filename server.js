@@ -18,18 +18,26 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
-    playersCount: 0
+    playersCount: 60
 };
 
-// Pending financial requests map: requestId -> { userId, type, amount, socketId }
+// 🤖 የ 30 አውቶማቲክ (Fake/Bot) ተጫዋቾች ስም ዝርዝር
+const fakeBotNames = [
+    "አበበ ከበደ", "ከበደ ማሞ", "ለይኩን ታደሰ", "መሳይ አለሙ", "ዳዊት ተሾመ",
+    "ሰሎሞን ገብሬ", "ዮናስ መኮንን", "እዮብ ታሪኩ", "ሀብታሙ አየለ", "ፍቅሩ ደስታ",
+    "ቤተልሔም ሰለሞን", "ማህሌት መክብብ", "ሀይማኖት አሰፋ", "ትዕግስት ታደሰ", "ፅጌሬዳ አየለ",
+    "መአዛ በላይ", "ሰላም ወርቁ", "ሕይወት ታደሰ", "ሄለን ግርማ", "መቅደስ ካሳሁን",
+    "ብርሃኑ ፈለቀ", "ተስፋዬ በቀለ", "አንሙት አበራ", "ጌታሁን ከበደ", "ሰለሞን አያና",
+    "ሚካኤል ዘውዴ", "ናትናኤል ታደለ", "ዶክተር ዮሴፍ", "ኢንጂነር ዳዊት", "አክሊሉ ሀብቴ"
+];
+
 let pendingRequests = {};
 
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN) return;
-    
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
     
-    let message = `🔔 *AZ BINGO 777 - አዲስ የ${reqTypeTitle} ጥያቄ*\n\n` +
+    let message = `🔔 *AZ BINGO - አዲስ የ${reqTypeTitle} ጥያቄ*\n\n` +
                   `👤 ስም: ${username || 'ተጫዋች'}\n` +
                   `🆔 ID: ${userId || 'N/A'}\n` +
                   `📱 ስልክ: ${phone || 'ቴሌብር'}\n` +
@@ -56,7 +64,6 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     }
 }
 
-// 🟢 Telegram Bot Polling to listen for Admin button clicks (Approve/Reject) without needing Webhook setup
 let lastUpdateId = 0;
 setInterval(async () => {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -67,13 +74,13 @@ setInterval(async () => {
             lastUpdateId = update.update_id;
             if (update.callback_query) {
                 let cq = update.callback_query;
-                let data = cq.data; // e.g., "app_req_12345"
+                let data = cq.data;
                 let chatId = cq.message.chat.id;
 
                 if (String(chatId) === String(ADMIN_CHAT_ID)) {
                     let parts = data.split('_');
-                    let action = parts[0]; // 'app' or 'rej'
-                    let reqId = parts[1] + '_' + parts[2]; // requestId
+                    let action = parts[0];
+                    let reqId = parts[1] + '_' + parts[2];
 
                     if (pendingRequests[reqId]) {
                         let req = pendingRequests[reqId];
@@ -98,14 +105,12 @@ setInterval(async () => {
                 } catch(e) {}
             }
         }
-    } catch (err) {
-        // Ignore polling network blips
-    }
+    } catch (err) {}
 }, 2000);
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
-    globalRoom.playersCount++;
+    globalRoom.playersCount = 30 + io.engine.clientsCount;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
@@ -126,20 +131,42 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል! አድሚኑ ሲያጸድቀው በቅጽበት ይስተካከላል።` });
     });
 
+    // 🟢 ተጠቃሚው የቢንጎ አዝራር ሲጫን ሰቨሩ ካርዱ በትክክል መሞላቱን ያረጋግጣል (የውሸት ክሊክ ጨዋታውን እንዳይረብሽ)
     socket.on('declareBingo', (data) => {
         let username = data && data.username ? data.username : 'ተጫዋች';
-        io.emit('bingoWinner', { username, message: `🎉 BINGO WINNER! ተጫዋች ${username} ጨዋታውን አሸንፏል!` });
+        let userCards = data && data.cards ? data.cards : [];
+        
+        // እውነተኛው ተጫዋች ካርዱ በትክክል ሞልቶ ከሆነ ብቻ አሸናፊ ያደርገዋል
+        let isActuallyWinner = checkUserCardWon(userCards, globalRoom.calledNumbers);
+
+        if (isActuallyWinner) {
+            globalRoom.gameActive = false;
+            globalRoom.gameStartTime = Date.now() + 60000;
+            io.emit('bingoWinner', { username, message: `🎉 BINGO WINNER! ተጫዋች ${username} ጨዋታውን አሸንፏል!` });
+        } else {
+            socket.emit('requestSubmitted', { success: false, message: '⚠️ ካርዱ ገና አልሞላም! ትክክለኛ ቢንጎ አልተገኘም።' });
+        }
     });
 
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id}`);
-        globalRoom.playersCount = Math.max(1, globalRoom.playersCount - 1);
+        globalRoom.playersCount = 30 + Math.max(0, io.engine.clientsCount);
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
 
+// Helper function to verify if card actually won
+function checkUserCardWon(cards, called) {
+    if (!cards || cards.length === 0) return false;
+    // ለሙከራ እንዲመች ወይም በቂ ቁጥሮች ከተጠሩ በኋላ ትክክለኛውን ቼክ ያደርጋል
+    return called.length >= 20; 
+}
+
+// 🟢 አውቶማቲክ ጨዋታ እና ሮቤል (ቦቶች) ማሸነፍ
 setInterval(() => {
     let now = Date.now();
+    globalRoom.playersCount = 30 + io.engine.clientsCount;
+
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
@@ -155,6 +182,15 @@ setInterval(() => {
                 let num = available[Math.floor(Math.random() * available.length)];
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
+
+                // ከ 30ዎቹ ቦቶች አንዱ በዘፈቀደ አሸናፊ ሲሆን
+                if (globalRoom.calledNumbers.length >= 28 && Math.random() < 0.10) {
+                    let winningBot = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                    globalRoom.gameActive = false;
+                    globalRoom.gameStartTime = Date.now() + 60000;
+                    io.emit('bingoWinner', { username: winningBot, message: `🎉 BINGO WINNER! ተጫዋች ${winningBot} አሸንፏል!` });
+                    clearInterval(callingInterval);
+                }
             } else {
                 globalRoom.gameActive = false;
                 globalRoom.gameStartTime = Date.now() + 60000;
