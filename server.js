@@ -14,10 +14,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
+// Centralized Global Game State for ALL players
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + 60000,
+    gameStartTime: Date.now() + 60000, // 60 seconds countdown for next round
     playersCount: 0
 };
 
@@ -39,20 +40,25 @@ io.on('connection', (socket) => {
     globalRoom.playersCount++;
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
+    // Send exact game state immediately when any player connects/opens bot
     socket.emit('syncGameState', globalRoom);
 
+    // Financial Deposit & Withdrawal requests -> Sent to Admin Telegram Bot ONLY
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
-        let msg = `🔔 *AZ BINGO 777 - አዲስ የ${type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ*\n\n` +
+        let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)';
+        
+        let msg = `🔔 *AZ BINGO 777 - አዲስ የ${reqTypeTitle} ጥያቄ*\n\n` +
                   `👤 ስም: ${username || 'ተጫዋች'}\n` +
                   `🆔 ID: ${userId || 'N/A'}\n` +
                   `📱 ስልክ: ${phone || 'ቴሌብር'}\n` +
                   `💰 መጠን: ${amount || 0} ብር\n` +
-                  (receipt ? `🧾 Receipt: ${receipt}` : '');
+                  (receipt ? `🧾 የግብይት ቁጥር (Receipt): ${receipt}\n` : '') +
+                  `\n⚠️ *ማስታወሻ:* ይህ ገንዘብ በአድሚን እስኪጸድቅ ድረስ አካውንት ላይ አይጨመርም!`;
 
         await sendAdminNotification(msg);
-        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ተልኳል!` });
+        socket.emit('requestSubmitted', { success: true, message: `የ ${amount} ብር ጥያቄዎ ለአድሚን ቴሌግራም ተልኳል!` });
     });
 
     socket.on('declareBingo', (data) => {
@@ -68,6 +74,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// Centralized timer and number calling loop for all players simultaneously
 setInterval(() => {
     let now = Date.now();
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
