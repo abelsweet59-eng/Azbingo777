@@ -20,10 +20,10 @@ let globalRoom = {
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
     playersCount: 30,
-    takenCards: []
+    takenCards: [],
+    playerRoundCards: {} // እያንዳንዱ ዩዘር የያዛቸውን ካርዶች ለመያዝ
 };
 
-// 🟢 ያዘዝካቸውን አዳዲስ ስሞች ጨምሮ በትክክል 30 የሙሉት የቦት ስሞች ዝርዝር
 const fakeBotNames = [
     "Av addis", "Solomon", "Taye", "Beke t", "Adane",
     "ተሰማ", "henok", "12 yared b", "abel", "seyum",
@@ -31,7 +31,7 @@ const fakeBotNames = [
     "lemma", "fikru", "netsanet", "neysi", "faya",
     "faysel", "ahme", "dinu t", "mame mame", "baby",
     "gfrt", "victor", "ga", "mo", "king iv", "djew"
-].slice(0, 30); // 30 ብቻ እንዲሆኑ መቁረጥ
+].slice(0, 30);
 
 let pendingRequests = {};
 
@@ -130,6 +130,7 @@ io.on('connection', (socket) => {
             return;
         }
         globalRoom.takenCards.push(...selectedCards);
+        globalRoom.playerRoundCards[socket.id] = selectedCards; // የተጠቃሚውን ካርዶች መዝግብ
         socket.emit('cardSelectionSuccess');
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
@@ -151,15 +152,16 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        console.log("Player connected: " + socket.id);
+        console.log("Player disconnected: " + socket.id);
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        delete globalRoom.playerRoundCards[socket.id];
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = realCount < 60 ? 30 + realCount : realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
 
-// 🟢 የጨዋታ ቆጣሪ፣ ቁጥሮች ጥሪ እና የቦት/ተጫዋች አሸናፊ መረጃ ከውሸት ID እና ካርድ ቁጥር ጋር
+// 🟢 የጨዋታ ቆጣሪ እና የቦት/ተጫዋች ትክክለኛ አሸናፊ እና ካርድ ምርጫ ሎጂክ
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -184,24 +186,45 @@ setInterval(() => {
                 if (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.15) {
                     let winningUser = "";
                     let winningUserId = "";
-                    let winningCard = Math.floor(Math.random() * 300) + 1;
+                    let winningCard = 1;
                     let winnerPrize = 0;
 
                     let totalPot = globalRoom.playersCount * 10;
                     winnerPrize = Math.floor(totalPot * 0.70);
 
-                    if (globalRoom.playersCount < 60) {
-                        // ቦት ሲያሸንፍ ከሰጠሃቸው ስሞች ውስጥ መርጦ የውሸት ID ይሰጠዋል
+                    // 50 በመቶ ዕድል ለአንደኛው እውነተኛ ተጫዋች (ካርድ የያዘ) ወይም ለቦት
+                    let activeSocketsWithCards = Object.keys(globalRoom.playerRoundCards);
+                    let shouldUserWin = activeSocketsWithCards.length > 0 && Math.random() < 0.5;
+
+                    if (shouldUserWin) {
+                        // እውነተኛ ተጫዋች አሸነፈ
+                        let winningSocketId = activeSocketsWithCards[Math.floor(Math.random() * activeSocketsWithCards.length)];
+                        winningUser = "ተጫዋች"; // (በክላይንት በኩል ስሙ በትክክል ይተካል)
+                        winningUserId = "usr_" + Math.floor(Math.random() * 90000 + 10000);
+                        let userCards = globalRoom.playerRoundCards[winningSocketId];
+                        winningCard = userCards[Math.floor(Math.random() * userCards.length)];
+                    } else {
+                        // ቦት አሸነፈ (ተጫዋቾቹ ካልያዟቸው ባዶ ካርዶች ውስጥ መርጦ ይወስዳል)
                         winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                         winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
-                    } else {
-                        winningUser = connectedRealPlayers.length > 0 ? "ተጫዋች_" + Math.floor(Math.random() * 1000) : fakeBotNames[0];
-                        winningUserId = "usr_" + Math.floor(Math.random() * 90000 + 10000);
+                        
+                        let unselectedCards = [];
+                        for (let c = 1; c <= 300; c++) {
+                            if (!globalRoom.takenCards.includes(c)) {
+                                unselectedCards.push(c);
+                            }
+                        }
+                        if (unselectedCards.length > 0) {
+                            winningCard = unselectedCards[Math.floor(Math.random() * unselectedCards.length)];
+                        } else {
+                            winningCard = Math.floor(Math.random() * 300) + 1;
+                        }
                     }
 
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.takenCards = [];
+                    globalRoom.playerRoundCards = {};
 
                     io.emit('bingoWinner', { 
                         username: winningUser, 
@@ -219,6 +242,7 @@ setInterval(() => {
                 globalRoom.gameActive = false;
                 globalRoom.gameStartTime = Date.now() + roundDuration;
                 globalRoom.takenCards = [];
+                globalRoom.playerRoundCards = {};
                 io.emit('gameEndedBroadcast');
                 clearInterval(callingInterval);
             }
