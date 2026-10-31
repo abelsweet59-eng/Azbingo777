@@ -178,39 +178,23 @@ async function pollTelegramUpdates() {
                     let parts = data.split('_');
                     let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
-
-                    // 🟢 የቴሌግራም አድሚን አዝራሮች ቁጥጥር (ዕርምጃዎች)
-                    if (action === 'winbot') {
-                        forcedNextWinner = "bot";
-                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                            chat_id: chatId, message_id: messageId,
-                            text: `👑 *ቀጣዩ አሸናፊ ቦት እንዲሆን ተደርጓል!*`, parse_mode: 'Markdown'
-                        });
-                    } else if (action === 'winrand') {
-                        forcedNextWinner = "random_real";
-                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                            chat_id: chatId, message_id: messageId,
-                            text: `🎲 *ቀጣዩ አሸናፊ ራንደም ሪል ዩዘር እንዲሆን ተደርጓል!*`, parse_mode: 'Markdown'
-                        });
-                    } else {
-                        let reqData = pendingRequests[requestId];
-                        if (reqData) {
-                            let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                            if (action === 'app') {
-                                if (targetSocket) targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
-                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                    chat_id: chatId, message_id: messageId,
-                                    text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር)`, parse_mode: 'Markdown'
-                                });
-                            } else {
-                                if (targetSocket) targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
-                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                    chat_id: chatId, message_id: messageId,
-                                    text: `❌ *ጥያቄው ተሰርዟል!*`, parse_mode: 'Markdown'
-                                });
-                            }
-                            delete pendingRequests[requestId];
+                    let reqData = pendingRequests[requestId];
+                    if (reqData) {
+                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                        if (action === 'app') {
+                            if (targetSocket) targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር)`, parse_mode: 'Markdown'
+                            });
+                        } else {
+                            if (targetSocket) targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `❌ *ጥያቄው ተሰርዟል!*`, parse_mode: 'Markdown'
+                            });
                         }
+                        delete pendingRequests[requestId];
                     }
                     try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
                 }
@@ -232,25 +216,6 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
             reply_markup: { inline_keyboard: [[{ text: "✅ አጽድቅ", callback_data: "app_" + requestId }, { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }]] }
         });
     } catch (error) {}
-}
-
-// 🟢 ጨዋታው ሲጀመር ለአድሚን በቴሌግራም ቻቱ ላይ የድል መቆጣጠሪያ አዝራሮችን መላኪያ
-async function sendAdminGameControlPanel(playersCount) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
-    let message = `🎮 *አዲስ የቢንጎ ጨዋታ ተጀምሯል!*\n👥 ተጫዋቾች: *${playersCount}*\n\nየቀጣዩን ጨዋታ አሸናፊ ከዚህ በታች ይምረጡ፡`;
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [
-                    [
-                        { text: "🤖 ቦት ያሸንፍ", callback_data: "winbot_panel" },
-                        { text: "🎲 ራንደም ሪል ዩዘር ያሸንፍ", callback_data: "winrand_panel" }
-                    ]
-                ]
-            }
-        });
-    } catch (e) {}
 }
 
 let connectedRealPlayers = [];
@@ -295,8 +260,13 @@ io.on('connection', (socket) => {
         refreshTakenCardsList();
     });
 
+    // 🟢 ከአድሚን ፓነል (ዌብ ፓነል) የሚመጡ የአሸናፊ ትዕዛዞች
     socket.on('adminSetNextWinner', (data) => {
-        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        if (data && data.winnerType) {
+            forcedNextWinner = String(data.winnerType).trim(); // 'bot', 'random_real', ወይም የዩዘር ID
+        } else {
+            forcedNextWinner = null;
+        }
         socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
     });
 
@@ -359,7 +329,6 @@ setInterval(() => {
         }
 
         io.emit('gameStartedBroadcast');
-        sendAdminGameControlPanel(totalPlayers); // 🟢 ጨዋታው ሲጀመር ለአድሚን በቴሌግራም አዝራሮችን ይልካል
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
