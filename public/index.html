@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">200</div>
+                <div id="stat-players" class="text-[10px] font-bold text-amber-400">150</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -185,7 +185,7 @@
                     <div class="pt-2 border-t border-white/10 space-y-1">
                         <div class="text-[10px] text-gray-300">ወይም የተወሰነ የሪል ዩዘር ID ያስገቡ፡</div>
                         <div class="flex gap-1">
-                            <input type="text" id="admin-target-userid" placeholder="የተጫዋች ዩዘር ID (ለምሳሌ: user_12345)" class="flex-1 bg-black/60 border border-white/20 rounded p-1.5 text-xs text-white">
+                            <input type="text" id="admin-target-userid" placeholder="የተጫዋች ዩዘር ID" class="flex-1 bg-black/60 border border-white/20 rounded p-1.5 text-xs text-white">
                             <button onclick="adminSetUserIdWinner()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded text-xs">ላክ</button>
                         </div>
                     </div>
@@ -338,6 +338,8 @@
                 
                 if (confirmedCards.length > 0) {
                     socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
+                } else if (userSelectedCards.length > 0) {
+                    socket.emit('tempSelectCards', userSelectedCards);
                 }
             });
 
@@ -373,12 +375,8 @@
             navigator.clipboard.writeText(phoneNum).then(() => {
                 let msgEl = document.getElementById('copy-status-msg');
                 msgEl.classList.remove('hidden');
-                setTimeout(() => {
-                    msgEl.classList.add('hidden');
-                }, 2000);
-            }).catch(err => {
-                alert("ኮፒ ማድረግ አልተቻለም");
-            });
+                setTimeout(() => msgEl.classList.add('hidden'), 2000);
+            }).catch(err => { alert("ኮፒ ማድረግ አልተቻለም"); });
         }
 
         function addTransactionHistory(title, amount, type) {
@@ -392,27 +390,17 @@
         function renderHistoryUI() {
             const listEl = document.getElementById('transaction-history-list');
             if (!listEl) return;
-
             if (transactionHistory.length === 0) {
                 listEl.innerHTML = `<div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>`;
                 return;
             }
-
             listEl.innerHTML = '';
             transactionHistory.forEach(tx => {
                 const item = document.createElement('div');
                 item.className = "flex justify-between items-center bg-black/40 p-2 rounded border border-white/5";
-                
                 let amtColor = tx.type === 'income' ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
                 let sign = tx.type === 'income' ? '+' : '-';
-
-                item.innerHTML = `
-                    <div>
-                        <div class="text-white font-medium">${tx.title}</div>
-                        <div class="text-[8px] text-gray-400">${tx.time}</div>
-                    </div>
-                    <div class="${amtColor}">${sign}${tx.amount} ብር</div>
-                `;
+                item.innerHTML = `<div><div class="text-white font-medium">${tx.title}</div><div class="text-[8px] text-gray-400">${tx.time}</div></div><div class="${amtColor}">${sign}${tx.amount} ብር</div>`;
                 listEl.appendChild(item);
             });
         }
@@ -421,7 +409,6 @@
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
                 let timeStr = `${timeLeft}ሰ`;
-                
                 document.getElementById('stat-timer').innerText = timeStr;
                 let regBadge = document.getElementById('reg-status-badge');
                 if (regBadge && !confirmedCards.length) {
@@ -431,9 +418,7 @@
         }
 
         socket.on('syncGameState', (room) => {
-            if (room.gameStartTime) {
-                gameStartTimeServer = room.gameStartTime;
-            }
+            if (room.gameStartTime) gameStartTimeServer = room.gameStartTime;
             if (room.gameActive) {
                 calledNumbersList = room.calledNumbers || [];
                 if (calledNumbersList.length > 0) {
@@ -462,9 +447,7 @@
             renderPlayerDualCards();
         });
 
-        socket.on('cardSelectionError', (msg) => {
-            alert(msg);
-        });
+        socket.on('cardSelectionError', (msg) => { alert(msg); });
 
         socket.on('updatePlayersCount', (count) => {
             document.getElementById('stat-players').innerText = count;
@@ -473,18 +456,14 @@
             document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
         });
 
-        socket.on('gameStartedBroadcast', () => {
-            triggerCountdownAndStart();
-        });
+        socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
 
         function triggerCountdownAndStart() {
             const modal = document.getElementById('countdown-modal');
             const numEl = document.getElementById('countdown-number');
             modal.classList.remove('hidden');
-
             let count = 3;
             numEl.innerText = count;
-
             let timer = setInterval(() => {
                 count--;
                 if (count > 0) {
@@ -503,14 +482,11 @@
         }
 
         socket.on('numberCalledBroadcast', (num) => {
-            if (!calledNumbersList.includes(num)) {
-                calledNumbersList.push(num);
-            }
+            if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
             displayCalledBall(num);
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
             renderPlayerDualCards();
-            
             speakCalledNumber(num);
         });
 
@@ -521,25 +497,16 @@
             else if (num >= 31 && num <= 45) letter = "ኤን";
             else if (num >= 46 && num <= 60) letter = "ጂ";
             else if (num >= 61 && num <= 75) letter = "ኦ";
-
             let speechText = `${letter} ${num}`;
-            
             if ('speechSynthesis' in window) {
                 let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET';
-                utterance.rate = 0.9;
+                utterance.lang = 'am-ET'; utterance.rate = 0.9;
                 window.speechSynthesis.speak(utterance);
             }
         }
 
         function displayCalledBall(num) {
-            let letter = "B";
-            if (num >= 1 && num <= 15) letter = "B";
-            else if (num >= 16 && num <= 30) letter = "I";
-            else if (num >= 31 && num <= 45) letter = "N";
-            else if (num >= 46 && num <= 60) letter = "G";
-            else if (num >= 61 && num <= 75) letter = "O";
-
+            let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             document.getElementById('main-called-ball').innerText = `${letter}-${num}`;
             renderRecentBalls();
         }
@@ -547,7 +514,6 @@
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
-            
             let recent = calledNumbersList.slice(-4).reverse();
             recent.forEach(num => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
@@ -558,15 +524,13 @@
             });
         }
 
-        socket.on('gameEndedBroadcast', () => {
-            resetPlayerSelectionForNewRound();
-        });
+        socket.on('gameEndedBroadcast', () => { resetPlayerSelectionForNewRound(); });
 
         socket.on('bingoWinner', (data) => {
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 200;
+            let playersCount = data.playersCount || 150;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -576,13 +540,9 @@
 
             document.getElementById('winner-title-badge').innerHTML = `🎉 ${displayName} WON!`;
             document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
-
             renderWinningCartelaGridWithExactPattern(cardNum, calledNums);
 
-            document.getElementById('winner-banner-text').innerHTML = `
-                👥 ተጫዋች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>
-                👑 ሽልማት: <span class="text-emerald-400 font-black">${prizePool} ብር</span> (አሸናፊዎች ተካፍለዋል)
-            `;
+            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>👑 ሽልማት: <span class="text-emerald-400 font-black">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (isMeWin && prizePool > 0) {
@@ -614,20 +574,15 @@
             cols.forEach((col, colIdx) => {
                 let range = colRanges[col];
                 let pool = [];
-                for (let n = range[0]; n <= range[1]; n++) {
-                    pool.push(n);
-                }
+                for (let n = range[0]; n <= range[1]; n++) pool.push(n);
 
                 let seed = (cardNum * 7919) + (colIdx * 104729);
                 for (let i = pool.length - 1; i > 0; i--) {
                     seed = (seed * 9301 + 49297) % 233280;
                     let rnd = seed / 233280;
                     let j = Math.floor(rnd * (i + 1));
-                    let temp = pool[i];
-                    pool[i] = pool[j];
-                    pool[j] = temp;
+                    let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
                 }
-
                 cardNumbersByCol[col] = pool.slice(0, 5);
             });
 
@@ -644,26 +599,18 @@
         function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
             const gridContainer = document.getElementById('winning-cartela-grid');
             gridContainer.innerHTML = '';
-
             ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
                 const hCell = document.createElement('div');
-                hCell.className = idx === 0 ? "bg-blue-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 1 ? "bg-indigo-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 2 ? "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                  idx === 3 ? "bg-emerald-600 rounded text-center text-white font-bold text-[8px] py-0.5" : 
-                                              "bg-amber-600 rounded text-center text-white font-bold text-[8px] py-0.5";
+                hCell.className = idx === 0 ? "bg-blue-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 1 ? "bg-indigo-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 2 ? "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 3 ? "bg-emerald-600 rounded text-center text-white font-bold text-[8px] py-0.5" : "bg-amber-600 rounded text-center text-white font-bold text-[8px] py-0.5";
                 hCell.innerText = l;
                 gridContainer.appendChild(hCell);
             });
 
             let numbers = getCartelaNumbers(cardNum);
             let matrix = [];
-            for(let r = 0; r < 5; r++) {
-                matrix.push(numbers.slice(r * 5, r * 5 + 5));
-            }
+            for(let r = 0; r < 5; r++) matrix.push(numbers.slice(r * 5, r * 5 + 5));
 
             let winningRow = -1, winningCol = -1, isDiag1 = false, isDiag2 = false, isCorners = false;
-
             for(let r = 0; r < 5; r++) {
                 if(matrix[r].every(val => val === "FREE" || calledNums.includes(val))) { winningRow = r; break; }
             }
@@ -701,7 +648,6 @@
                 for(let c = 0; c < 5; c++) {
                     let cellNum = matrix[r][c];
                     const isFreeCenter = (cellNum === "FREE");
-                    
                     let isPartOfWinningPattern = false;
                     if(winningRow === r) isPartOfWinningPattern = true;
                     if(winningCol === c) isPartOfWinningPattern = true;
@@ -710,12 +656,7 @@
                     if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
 
                     const cell = document.createElement('div');
-                    let bgClass = "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
-                    
-                    if(isFreeCenter || isPartOfWinningPattern) {
-                        bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow";
-                    }
-
+                    let bgClass = (isFreeCenter || isPartOfWinningPattern) ? "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow" : "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
                     cell.className = bgClass;
                     cell.innerText = isFreeCenter ? "★" : cellNum;
                     gridContainer.appendChild(cell);
@@ -744,23 +685,18 @@
             let amt = parseFloat(data.amount);
             if (data.type === 'deposit') {
                 walletBalance += amt;
-                alert(`✅ የ ${amt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                alert(`✅ የ ${amt} ብር ዲፖዚት ጸድቋል!`);
                 addTransactionHistory('ቴሌብር ዲፖዚት (Deposit)', amt, 'income');
             } else {
                 walletBalance -= amt;
-                alert(`✅ የ ${amt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
+                alert(`✅ የ ${amt} ብር ዊዝድሮዋል ተልኳል!`);
                 addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
             }
             updateWalletUI();
         });
 
-        socket.on('financialRejected', (data) => {
-            alert(`❌ የ ${data.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄዎ በአድሚን ተሰርዟል።`);
-        });
-
-        socket.on('requestSubmitted', (res) => {
-            alert(res.message);
-        });
+        socket.on('financialRejected', (data) => { alert(`❌ ጥያቄዎ ተሰርዟል።`); });
+        socket.on('requestSubmitted', (res) => { alert(res.message); });
 
         function updateWalletUI() {
             document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
@@ -770,78 +706,44 @@
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
         function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
-        // 🟢 የፋይናንስ ጥያቄ መላኪያ (ባዶ እንዳይላክ እና የተሟላ መረጃ እንዲይዝ የተደረገ)
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
-                
-                if (isNaN(amount) || amount < 100) {
-                    alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 100 ብር ነው።");
-                    return;
-                }
-                if (!receipt || receipt.length < 3) {
-                    alert("⚠️ እባክዎ የቴሌብር ትራንዛክሽን ደረሰኝ (Receipt / SMS) በትክክል ያስገቡ! ባዶ መላክ አይቻልም።");
-                    return;
-                }
+                if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
+                if (!receipt || receipt.length < 3) { alert("⚠️ የቴሌብር ደረሰኝ ያስገቡ!"); return; }
                 document.getElementById('deposit-modal').classList.add('hidden');
             } else {
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-
-                if (!phone) {
-                    alert("⚠️ እባክዎ የሚቀበሉበትን ስልክ ቁጥር ያስገቡ!");
-                    return;
-                }
-                if (isNaN(amount) || amount < 100) {
-                    alert("⚠️ ዝቅተኛው የዊዝድሮዋል መጠን 100 ብር ነው።");
-                    return;
-                }
-                if (walletBalance < amount) {
-                    alert("⚠️ በቂ ሂሳብ የለዎትም!");
-                    return;
-                }
+                if (!phone) { alert("⚠️ ስልክ ቁጥር ያስገቡ!"); return; }
+                if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
+                if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
-
-            // ዩዘር ID፣ ስም፣ አሁን ያለው ቀሪ ሂሳብ (walletBalance) እና የጥያቄ መጠኑ ወደ ሰርቨር ይላካል
-            socket.emit('financialRequest', { 
-                type, 
-                amount, 
-                username: userFullName, 
-                userId: telegramUserId, 
-                currentBalance: walletBalance,
-                phone, 
-                receipt 
-            });
+            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
         }
 
-        // 🟢 የ 500 ካርዶች ግሪድ (Grid for 500 Cards)
         function generate500CardGrid() {
             const grid = document.getElementById('card-grid-500');
             if (!grid) return;
             grid.innerHTML = '';
             for(let i = 1; i <= 500; i++) {
                 const btn = document.createElement('button');
-                
                 let isSelectedByMe = userSelectedCards.includes(i);
                 let isConfirmedByMe = confirmedCards.includes(i);
                 let isConfirmedByOther = takenCardsByOthers.includes(i);
 
-                let displayLabel = String(i);
-
                 if (isConfirmedByMe || isSelectedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded shadow";
-                    btn.innerText = displayLabel;
                 } else if (isConfirmedByOther) {
                     btn.className = "bg-red-950/70 text-red-300 font-medium text-[10px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
-                    btn.innerText = displayLabel;
                     btn.disabled = true;
                 } else {
                     btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[10px] py-1.5 rounded border border-white/5";
-                    btn.innerText = displayLabel;
                 }
+                btn.innerText = String(i);
 
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
@@ -849,7 +751,6 @@
                             alert("⚠️ ይቅርታ! ይህ ካርድ በሌላ ተጫዋች ተይዟል!");
                             return;
                         }
-
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
                         } else {
@@ -857,10 +758,12 @@
                             userSelectedCards.push(i);
                         }
                         document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
+                        
+                        // 🟢 ጊዜያዊ ካርድ መምረጫ ሲግናል (Temporary Selection Lock)
+                        socket.emit('tempSelectCards', userSelectedCards);
                         generate500CardGrid();
                     };
                 }
-
                 grid.appendChild(btn);
             }
         }
@@ -868,48 +771,26 @@
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
-            if (walletBalance < totalCost) {
-                alert("በቂ የኪስ ቦርሳ የለዎትም!");
-                return;
-            }
+            if (walletBalance < totalCost) { alert("በቂ የኪስ ቦርሳ የለዎትም!"); return; }
             walletBalance -= totalCost;
             updateWalletUI();
 
             confirmedCards = [...userSelectedCards];
             addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
-
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
-            
             let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
-
             for(let r = 1; r <= 15; r++) {
-                let colsData = [
-                    r,          
-                    r + 15,     
-                    r + 30,     
-                    r + 45,     
-                    r + 60      
-                ];
-
+                let colsData = [r, r + 15, r + 30, r + 45, r + 60];
                 colsData.forEach(num => {
                     const isCalled = calledNumbersList.includes(num);
                     const isLatest = (num === lastCalledNum);
-
                     const cell = document.createElement('div');
-                    
-                    if (isLatest) {
-                        cell.className = 'bg-amber-400 text-black font-black text-[9px] rounded py-0.5 border border-white animate-pulse';
-                    } else if (isCalled) {
-                        cell.className = 'bg-amber-600 text-white font-bold text-[9px] rounded py-0.5';
-                    } else {
-                        cell.className = 'bg-white/5 text-gray-400 text-[9px] rounded py-0.5';
-                    }
-
+                    cell.className = isLatest ? 'bg-amber-400 text-black font-black text-[9px] rounded py-0.5 border border-white animate-pulse' : isCalled ? 'bg-amber-600 text-white font-bold text-[9px] rounded py-0.5' : 'bg-white/5 text-gray-400 text-[9px] rounded py-0.5';
                     cell.innerText = num;
                     board.appendChild(cell);
                 });
@@ -918,16 +799,8 @@
 
         function toggleDaubMode() {
             const autoToggle = document.getElementById('auto-daub-toggle');
-            const modeLabel = document.getElementById('mode-label');
-            const instructionText = document.getElementById('mode-instruction-text');
-            
-            if (autoToggle.checked) {
-                modeLabel.innerText = "አውቶማቲክ (Auto Daub)";
-                instructionText.innerText = "ቁጥሮች በራሱ ይሞላሉ";
-            } else {
-                modeLabel.innerText = "ማኑዋል (Manual Daub)";
-                instructionText.innerText = "እርስዎ ጫኑዋቸው";
-            }
+            document.getElementById('mode-label').innerText = autoToggle.checked ? "አውቶማቲክ (Auto Daub)" : "ማኑዋል (Manual Daub)";
+            document.getElementById('mode-instruction-text').innerText = autoToggle.checked ? "ቁጥሮች በራሱ ይሞላሉ" : "እርስዎ ጫኑዋቸው";
             renderPlayerDualCards();
         }
 
@@ -937,7 +810,6 @@
             const cardsTitle = document.getElementById('player-cards-title');
             const autoToggle = document.getElementById('auto-daub-toggle');
             let isAutoMode = autoToggle ? autoToggle.checked : true;
-            
             container.innerHTML = '';
 
             if (confirmedCards.length === 0) {
@@ -952,10 +824,7 @@
             container.classList.remove('hidden');
 
             confirmedCards.forEach((cardNum) => {
-                if (!manualDaubedNumbers[cardNum]) {
-                    manualDaubedNumbers[cardNum] = [];
-                }
-
+                if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
                 cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
                 
@@ -976,7 +845,6 @@
 
                 const miniGrid = document.createElement('div');
                 miniGrid.className = "grid grid-cols-5 gap-0.5 text-center";
-
                 let numbers = getCartelaNumbers(cardNum);
 
                 for(let r = 0; r < 5; r++) {
@@ -987,48 +855,33 @@
                         const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                         const cell = document.createElement('div');
-                        
                         let cellClass = "bg-white/5 text-gray-300 text-[8px] rounded p-1 cursor-pointer transition-colors";
-                        if (isFreeCenter) {
-                            cellClass = "bg-purple-600 text-white font-bold text-[8px] rounded p-1";
-                        } else if (isAutoMode && isCalled) {
-                            cellClass = "bg-amber-500 text-black font-bold text-[8px] rounded p-1";
-                        } else if (!isAutoMode && isManuallyDaubed) {
-                            cellClass = "bg-emerald-500 text-black font-bold text-[8px] rounded p-1";
-                        } else if (!isAutoMode && isCalled) {
-                            cellClass = "bg-white/10 text-amber-300 font-bold text-[8px] rounded p-1 border border-amber-400/50 cursor-pointer";
-                        }
+                        if (isFreeCenter) cellClass = "bg-purple-600 text-white font-bold text-[8px] rounded p-1";
+                        else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-bold text-[8px] rounded p-1";
+                        else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-bold text-[8px] rounded p-1";
+                        else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[8px] rounded p-1 border border-amber-400/50 cursor-pointer";
 
                         cell.className = cellClass;
                         cell.innerText = isFreeCenter ? "★" : cellNum;
 
                         if (!isAutoMode && !isFreeCenter) {
                             cell.onclick = () => {
-                                if (isCalled) {
-                                    if (!manualDaubedNumbers[cardNum].includes(cellNum)) {
-                                        manualDaubedNumbers[cardNum].push(cellNum);
-                                        renderPlayerDualCards();
-                                    }
-                                } else {
-                                    alert("⚠️ ይህ ቁጥር ገና አልተጠራም!");
+                                if (isCalled && !manualDaubedNumbers[cardNum].includes(cellNum)) {
+                                    manualDaubedNumbers[cardNum].push(cellNum);
+                                    renderPlayerDualCards();
                                 }
                             };
                         }
-
                         miniGrid.appendChild(cell);
                     }
                 }
-
                 cardWrapper.appendChild(miniGrid);
                 container.appendChild(cardWrapper);
             });
         }
 
         function openAdminPanel() {
-            if (!isAdmin) {
-                alert("⚠️ ፈቃድ የለዎትም!");
-                return;
-            }
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
         }
@@ -1036,7 +889,6 @@
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            
             document.querySelectorAll('.nav-btn').forEach(b => {
                 b.classList.remove('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
                 b.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
