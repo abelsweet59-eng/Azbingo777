@@ -12,10 +12,10 @@
         .custom-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.4); border-radius: 3px; }
         @keyframes pulseGlow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
-            50% { transform: scale(1.06); box-shadow: 0 0 40px rgba(245, 158, 11, 1); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(245, 158, 11, 0.95); }
+            50% { transform: scale(1.08); box-shadow: 0 0 50px rgba(245, 158, 11, 1); }
         }
-        .pulse-ball { animation: pulseGlow 1.5s infinite ease-in-out; }
+        .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
         @keyframes countdownPop {
             0% { transform: scale(0.5); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
@@ -34,7 +34,7 @@
                 AZ Bingo
             </div>
             <div class="flex items-center gap-2">
-                <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap">Connected</div>
+                <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2 py-0.5 rounded-lg border border-red-400/40 font-bold whitespace-nowrap">🛡️ አድሚን</button>
             </div>
         </header>
@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[9px] font-bold text-amber-400">200</div>
+                <div id="stat-players" class="text-[9px] font-bold text-amber-400">203</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -55,11 +55,11 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">1400</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">1421</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
-                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">11</div>
+                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">9</div>
             </div>
         </section>
 
@@ -95,11 +95,11 @@
                 </div>
 
                 <!-- LIVE GAME SECTION -->
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1 pb-1 overflow-y-auto custom-scroll">
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1.5 pb-1 overflow-y-auto custom-scroll">
                     
                     <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <!-- ግራ ቦርድ (75 ቁጥሮች - ልክ እንደ ፎቶ 6 የ BINGO ከለሮች የተስተካከሉበት) -->
+                        <!-- ግራ ቦርድ (75 ቁጥሮች - ቁጥሮቹ ኖርማል ሆነው ራስጌው ብቻ የ BINGO ከለር ያለው) -->
                         <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -111,17 +111,17 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (Called Ball & Watching Only / Cards) -->
-                        <div class="col-span-7 flex flex-col space-y-1.5">
+                        <!-- ቀኝ በኩል (ጎላ ያለ እና የተዘረጋ መጥሪያ ፓነል + የተጫዋች ካርዶች) -->
+                        <div class="col-span-7 flex flex-col space-y-2">
                             
-                            <!-- የቢንጎ መቁጠሪያ እና የቅርብ ጊዜ ኳሶች (የተጣጣሙ የ B I N G O ከለሮች) -->
-                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/30 text-center space-y-1.5">
+                            <!-- የቢንጎ መቁጠሪያ ፓነል (የተዘረጋ እና ትኩረት የሚስብ ኢፌክት ያለው) -->
+                            <div class="bg-[#180a29] rounded-xl p-2.5 border border-purple-500/40 text-center space-y-2 shadow-lg">
                                 <div class="flex justify-between items-center">
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center text-[8px]"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
 
-                                <div id="main-called-ball" class="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-base shadow-xl pulse-ball mx-auto my-1">
+                                <div id="main-called-ball" class="w-18 h-18 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-lg shadow-2xl pulse-ball mx-auto my-1.5">
                                     --
                                 </div>
                                 
@@ -197,12 +197,12 @@
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won[span_2](start_span)[span_2](end_span)!</div>
+                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won[span_0](start_span)[span_0](end_span)!</div>
                     
                     <div id="multi-winners-badges-container" class="flex flex-wrap gap-1.5 justify-center my-2"></div>
 
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
-                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12[span_3](start_span)[span_3](end_span)</div>
+                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12[span_1](start_span)[span_1](end_span)</div>
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
@@ -211,7 +211,7 @@
                     </div>
                     
                     <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ Auto-starting next game in 4s[span_4](start_span)[span_4](end_span)
+                        ⏳ Auto-starting next game in 4s[span_2](start_span)[span_2](end_span)
                     </div>
                 </div>
             </div>
@@ -309,15 +309,6 @@
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
-
-        // የ BINGO አምዶች ከለር ማከፋፈያ (እንደ ፎቶ 6)
-        function getBingoColorClass(num) {
-            if (num <= 15) return "bg-blue-600 text-white font-bold";     // B (1-15)
-            if (num <= 30) return "bg-purple-600 text-white font-bold";    // I (16-30)
-            if (num <= 45) return "bg-pink-600 text-white font-bold";      // N (31-45)
-            if (num <= 60) return "bg-emerald-600 text-white font-bold";   // G (46-60)
-            return "bg-amber-600 text-white font-bold";                    // O (61-75)
-        }
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isAdmin) {
@@ -494,7 +485,7 @@
             renderRecentBalls();
         }
 
-        // 🟢 የቅርብ ጊዜ የተጠሩ ኳሶች ፓጅ (እንደ ፎቶ 6 ከለሮች የተስተካከሉበት)
+        // 🟢 የቅርብ ጊዜ የተጠሩ ኳሶች ፓጅ (ከቀለማት ጋር)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
@@ -515,7 +506,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 200;
+            let playersCount = data.playersCount || 203;
             let totalPot = playersCount * 10;
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -731,6 +722,7 @@
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
+        // 🟢 የ 75ቱ ቦርድ ቁጥሮች ኖርማል (ንጹህ) እንዲሆኑ የተደረገበት ክፍል
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
@@ -742,14 +734,12 @@
                     const isLatest = (num === lastCalledNum);
                     const cell = document.createElement('div');
                     
-                    let baseColorClass = num <= 15 ? "bg-blue-600/30 text-blue-200" : num <= 30 ? "bg-purple-600/30 text-purple-200" : num <= 45 ? "bg-pink-600/30 text-pink-200" : num <= 60 ? "bg-emerald-600/30 text-emerald-200" : "bg-amber-600/30 text-amber-200";
-                    
                     if (isLatest) {
                         cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-1 border border-white animate-pulse shadow-lg';
                     } else if (isCalled) {
-                        cell.className = `${num <= 15 ? 'bg-blue-600' : num <= 30 ? 'bg-purple-600' : num <= 45 ? 'bg-pink-600' : num <= 60 ? 'bg-emerald-600' : 'bg-amber-600'} text-white font-bold text-[10px] rounded py-1 shadow`;
+                        cell.className = 'bg-amber-600 text-white font-bold text-[10px] rounded py-1 shadow';
                     } else {
-                        cell.className = `${baseColorClass} text-[10px] rounded py-1 font-medium`;
+                        cell.className = 'bg-white/5 text-gray-300 text-[10px] rounded py-1 font-medium';
                     }
                     cell.innerText = num;
                     board.appendChild(cell);
@@ -763,7 +753,7 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 የተጫዋች ካርዶች ከ BINGO ከለሮች ጋር የተስተካከሉበት
+        // 🟢 የተጫዋች ካርዶች ከ BINGO ከለሮች ጋር (ቁጥሮቹ ኖርማል ሆነው)
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -786,7 +776,7 @@
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1 rounded-lg border border-purple-500/40 flex flex-col space-y-0.5 w-full shadow-md";
+                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/40 flex flex-col space-y-1 w-full shadow-md";
                 
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
