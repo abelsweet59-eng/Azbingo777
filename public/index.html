@@ -176,21 +176,15 @@
                 
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
                     <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ (Manual Winner Rigging)</div>
-                    <div class="text-[10px] text-gray-400">ቀጣዩ ጨዋታ ማሸነፍ ያለበትን አካል ከዚህ በታች ይምረጡ፡</div>
+                    <div class="text-[10px] text-gray-400">ቀጣዩ ጨዋታ ማሸነፍ ያለበትን አካል ከዚህ በታች በባተን ይምረጡ[span_0](start_span)[span_0](end_span):</div>
                     
-                    <div class="flex gap-2 pt-1">
-                        <button onclick="adminSetWinner('bot')" class="flex-1 bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
-                        <button onclick="adminSetWinner('random_real')" class="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር</button>
+                    <div class="grid grid-cols-1 gap-2 pt-1">
+                        <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ (Single Bot)</button>
+                        <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ (Single Real User)</button>
+                        <button onclick="adminSetWinner('multi_real_3')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 ሶስት ሪል ዩዘሮች በአንድ ላይ ይብሉ (3 Real Users)</button>
                     </div>
 
-                    <div class="pt-2 border-t border-white/10 space-y-1">
-                        <div class="text-[10px] text-gray-300">ወይም የተወሰነ የሪል ዩዘር ID ያስገቡ፡</div>
-                        <div class="flex gap-1">
-                            <input type="text" id="admin-target-userid" placeholder="የተጫዋች ዩዘር ID" class="flex-1 bg-black/60 border border-white/20 rounded p-1.5 text-xs text-white">
-                            <button onclick="adminSetUserIdWinner()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-3 py-1.5 rounded text-xs">ላክ</button>
-                        </div>
-                    </div>
-                    <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1">✅ አሸናፊው ተስተካክሏል!</div>
+                    <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
                 </div>
             </div>
         </div>
@@ -207,19 +201,19 @@
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-white text-[10px] font-bold mt-0.5">🎉 Netsanet WON!</div>
+                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 Netsanet WON!</div>
                     
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
                         <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 22</div>
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
-                    <div class="text-white text-[9px] mt-2 bg-purple-950/60 p-2 rounded-xl border border-purple-500/30 space-y-0.5 text-left" id="winner-banner-text">
+                    <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2.5 rounded-xl border border-purple-500/40 space-y-1 text-center" id="winner-banner-text">
                         አሸናፊው መረጃ እየጠበቀ...
                     </div>
                     
-                    <div class="mt-2 text-[9px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ Auto-starting next game in 6s
+                    <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
+                        ⏳ Auto-starting next game in 5s
                     </div>
                 </div>
             </div>
@@ -353,20 +347,10 @@
         function adminSetWinner(type) {
             socket.emit('adminSetNextWinner', { winnerType: type });
             let msgEl = document.getElementById('admin-winner-status-msg');
-            msgEl.innerText = type === 'random_real' ? "✅ ራንደም ሪል ዩዘር እንዲያሸንፍ ተስተካክሏል!" : "✅ ቀጣዩ አሸናፊ ቦት እንዲሆን ተደርጓል!";
-            msgEl.classList.remove('hidden');
-            setTimeout(() => msgEl.classList.add('hidden'), 3000);
-        }
-
-        function adminSetUserIdWinner() {
-            let uId = document.getElementById('admin-target-userid').value.trim();
-            if (!uId) {
-                alert("⚠️ እባክዎ የዩዘር ID ያስገቡ!");
-                return;
-            }
-            socket.emit('adminSetNextWinner', { winnerType: uId });
-            let msgEl = document.getElementById('admin-winner-status-msg');
-            msgEl.innerText = `✅ አሸናፊው ዩዘር ID (${uId}) ሆኖ ተስተካክሏል!`;
+            if (type === 'bot') msgEl.innerText = "✅ ቀጣዩ አሸናፊ ቦት እንዲሆን ተደርጓል!";
+            else if (type === 'random_real') msgEl.innerText = "✅ ራንደም ሪል ዩዘር እንዲያሸንፍ ተስተካክሏል!";
+            else if (type === 'multi_real_3') msgEl.innerText = "✅ 3 እውነተኛ ዩዘሮች በአንድ ላይ እንዲያሸንፉ ተስተካክሏል!";
+            
             msgEl.classList.remove('hidden');
             setTimeout(() => msgEl.classList.add('hidden'), 3000);
         }
@@ -454,7 +438,7 @@
             document.getElementById('stat-players').innerText = count;
             let totalPot = count * 10;
             let winnerPrize = Math.floor(totalPot * 0.70);
-            document.getElementById('stat-derash').innerText = `${winnerPrize} ብር`;
+            document.getElementById('stat-derash', {}).innerText = `${winnerPrize} ብር`;
         });
 
         socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
@@ -532,18 +516,18 @@
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
             let playersCount = data.playersCount || 140;
-            let totalPot = data.totalPot || (playersCount * 10);
+            let totalPot = playersCount * 10;
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
 
             let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
             let displayName = isMeWin ? userFullName : winnerName;
 
-            document.getElementById('winner-title-badge').innerHTML = `🎉 ${displayName} WON!`;
+            document.getElementById('winner-title-badge').innerHTML = `🎉 <span class="text-amber-300 font-black text-base underline">${displayName}</span> WON!`;
             document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
             renderWinningCartelaGridWithExactPattern(cardNum, calledNums);
 
-            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 Pot: <b>${totalPot} ብር</b><br>👑 ሽልማት: <span class="text-emerald-400 font-black">${prizePool} ብር</span>`;
+            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 ጠቅላላ ፖት (Pot): <b>${totalPot} ብር</b><br>👑 የተበላው ንጹህ ሽልማት: <span class="text-emerald-400 font-black text-sm">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (isMeWin && prizePool > 0) {
@@ -552,7 +536,7 @@
                 addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
             }
 
-            let secondsLeft = 6;
+            let secondsLeft = 5;
             let timerEl = document.getElementById('auto-start-timer-msg');
             timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
 
@@ -597,7 +581,6 @@
             return flatList;
         }
 
-        // 🟢 ትክክለኛው የዊኒንግ ንድፍ ማሳያ ሎጂክ (Strict Winning Line + Other Called Numbers Highlight)
         function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
             const gridContainer = document.getElementById('winning-cartela-grid');
             gridContainer.innerHTML = '';
@@ -612,24 +595,27 @@
             let matrix = [];
             for(let r = 0; r < 5; r++) matrix.push(numbers.slice(r * 5, r * 5 + 5));
 
-            let winningRow = -1, winningCol = -1, isDiag1 = false, isDiag2 = false, isCorners = false;
-            
-            // 1. የረድፍ (Row) ድል ማረጋገጫ
+            let winningRows = [];
+            let winningCols = [];
+            let isDiag1 = false, isDiag2 = false, isCorners = false;
+
             for(let r = 0; r < 5; r++) {
-                if(matrix[r].every(val => val === "FREE" || calledNums.includes(val))) { winningRow = r; break; }
+                if(matrix[r].every(val => val === "FREE" || calledNums.includes(val))) {
+                    winningRows.push(r);
+                }
             }
-            // 2. የአምድ (Column) ድል ማረጋገጫ
-            if(winningRow === -1) {
+
+            if(winningRows.length === 0) {
                 for(let c = 0; c < 5; c++) {
                     let cMatch = true;
                     for(let r = 0; r < 5; r++) {
                         if(matrix[r][c] !== "FREE" && !calledNums.includes(matrix[r][c])) { cMatch = false; break; }
                     }
-                    if(cMatch) { winningCol = c; break; }
+                    if(cMatch) winningCols.push(c);
                 }
             }
-            // 3. Diagonal 1 (ከላይ በግራ ወደ ታች በቀኝ)
-            if(winningRow === -1 && winningCol === -1) {
+
+            if(winningRows.length === 0 && winningCols.length === 0) {
                 let d1 = true;
                 for(let i = 0; i < 5; i++) {
                     let val = matrix[i][i];
@@ -637,8 +623,8 @@
                 }
                 if(d1) isDiag1 = true;
             }
-            // 4. Diagonal 2 (ከላይ በቀኝ ወደ ታች በግራ)
-            if(winningRow === -1 && winningCol === -1 && !isDiag1) {
+
+            if(winningRows.length === 0 && winningCols.length === 0 && !isDiag1) {
                 let d2 = true;
                 for(let i = 0; i < 5; i++) {
                     let val = matrix[i][4 - i];
@@ -646,8 +632,8 @@
                 }
                 if(d2) isDiag2 = true;
             }
-            // 5. Corners (ማዕዘኖች)
-            if(winningRow === -1 && winningCol === -1 && !isDiag1 && !isDiag2) {
+
+            if(winningRows.length === 0 && winningCols.length === 0 && !isDiag1 && !isDiag2) {
                 let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
                 if(corners.every(val => calledNums.includes(val))) isCorners = true;
             }
@@ -659,19 +645,19 @@
                     const isCalled = (cellNum === "FREE" || calledNums.includes(cellNum));
 
                     let isPartOfWinningPattern = false;
-                    if(winningRow !== -1 && winningRow === r) isPartOfWinningPattern = true;
-                    if(winningCol !== -1 && winningCol === c) isPartOfWinningPattern = true;
+                    if(winningRows.includes(r)) isPartOfWinningPattern = true;
+                    if(winningCols.includes(c)) isPartOfWinningPattern = true;
                     if(isDiag1 && r === c) isPartOfWinningPattern = true;
                     if(isDiag2 && r === 4 - c) isPartOfWinningPattern = true;
                     if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
 
                     const cell = document.createElement('div');
-                    let bgClass = "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center"; // ⚪ ያልተጠሩ ቁጥሮች (ባዶ / ደብዘዝ ያለ)
+                    let bgClass = "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center";
                     
                     if (isFreeCenter || isPartOfWinningPattern) {
-                        bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow"; // 🟢 ያሸነፈበት ትክክለኛው መስመር (አረንጓዴ)
+                        bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow";
                     } else if (isCalled) {
-                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center"; // 🟡 ሌሎች የተጠሩ ቁጥሮች (ጣለ ጣለ ባለ መልኩ ቢጫ)
+                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center";
                     }
 
                     cell.className = bgClass;
