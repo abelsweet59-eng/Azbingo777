@@ -28,8 +28,9 @@ let globalRoom = {
 
 let forcedNextWinner = null; 
 let activeGameInterval = null;
+let gameRoundCounter = 0; // 🟢 የጨዋታዎችን ብዛት ለመቁጠር (Multi-winner በየ 3-4 ጨዋታ አንዴ እንዲከሰት)
 
-// 🟢 እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች የተዋሃዱባቸው - 'd' ቁጥር የሌላቸው)
+// 🟢 እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች የተዋሃዱባቸው)
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
     "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
@@ -312,6 +313,7 @@ setInterval(() => {
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
+        gameRoundCounter++; // የጨዋታ ሉፕ ቆጠራ
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
@@ -359,15 +361,26 @@ setInterval(() => {
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = getRealisticBotsCount(realCount);
+                        
+                        // 🟢 በየ 3 ወይም 4 ጨዋታዎች አንዴ (Multi-winner 2 ወይም 3 የተለያዩ ቦቶች በአንድ ላይ እንዲያሸንፉ ማድረግ)
+                        let allowMultiBotWinners = (gameRoundCounter % 3 === 0);
+
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
-                                let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                                let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                                winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
+                                // 2 ወይም 3 የተለያዩ ቦቶች እንዲወጡ ማድረግ
+                                let winnersCountToPick = allowMultiBotWinners ? (Math.random() < 0.5 ? 2 : 3) : 1;
+                                let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
+                                
+                                for(let b = 0; b < winnersCountToPick && candidateCards.length > 0; b++) {
+                                    let randCardIdx = Math.floor(Math.random() * candidateCards.length);
+                                    let winningCard = candidateCards.splice(randCardIdx, 1)[0];
+                                    let winningUser = shuffledNames[b % shuffledNames.length];
+                                    winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
+                                }
                             }
                         } 
                         
@@ -411,28 +424,4 @@ setInterval(() => {
                         io.emit('bingoWinner', { 
                             username: primaryWinner.username, userId: primaryWinner.userId,
                             cardNum: primaryWinner.cardNum, playersCount: totalPlayers,
-                            totalPot: totalPot, prize: prizePerWinner, winnersCount: winningCardsList.length,
-                            calledNumbers: globalRoom.calledNumbers
-                        });
-
-                        clearInterval(activeGameInterval);
-                    }
-                }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.playerRoundCards = {};
-                globalRoom.playerTemporaryCards = {};
-                refreshTakenCardsList();
-                forcedNextWinner = null;
-                io.emit('gameEndedBroadcast');
-                clearInterval(activeGameInterval);
-            }
-        }, 3500); 
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+                            totalPot: totalPot, prize: prizePerWinner, winnersCount: winningCardsList
