@@ -318,6 +318,7 @@ setInterval(() => {
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
+        // 🟢 የጥሪ ፍጥነት በየ 5 ሰከንድ (5000ms) እንዲሆን ተስተካክሏል
         activeGameInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(activeGameInterval);
@@ -329,7 +330,10 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                if (globalRoom.calledNumbers.length >= 10) {
+                // 🟢 ሉፕ ስታቲስቲክስ፡ ከ 17 እስከ 22 ጥሪዎች (አንዳንዴም እስከ 14 በዘፈቀደ) እንዲያልቅ የተደረገበት መስፈርት
+                let targetMinCalls = (Math.random() < 0.2) ? 14 : Math.floor(Math.random() * 6) + 17; // 17 እስከ 22 (ወይም 14)
+
+                if (globalRoom.calledNumbers.length >= targetMinCalls) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
@@ -363,7 +367,7 @@ setInterval(() => {
                         let currentBots = getRealisticBotsCount(realCount);
                         let allowMultiBotWinners = (gameRoundCounter % 3 === 0);
 
-                        if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
+                        if (!isRealDominant && currentBots > 0) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
@@ -391,7 +395,7 @@ setInterval(() => {
                                 }
                             }
 
-                            if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 20) {
+                            if (winningCardsList.length === 0 && !isRealDominant) {
                                 let candidateCards = [];
                                 for (let c = 1; c <= 500; c++) {
                                     if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
@@ -438,7 +442,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
-        }, 3500); 
+        }, 5000); // 🟢 የቲም ኢንተርቫል ወደ 5000 ሚሊሰከንድ (5 ሰከንድ) ተስተካክሏል
     }
 }, 1000);
 
