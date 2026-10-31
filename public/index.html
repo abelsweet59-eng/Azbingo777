@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">150</div>
+                <div id="stat-players" class="text-[10px] font-bold text-amber-400">120</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -530,7 +530,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 150;
+            let playersCount = data.playersCount || 120;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -759,7 +759,7 @@
                         }
                         document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
                         
-                        // 🟢 ጊዜያዊ ካርድ መምረጫ ሲግናል (Temporary Selection Lock)
+                        // 🟢 ተጠቃሚው ካርድ ሲነካ ወዲያውኑ ወደ ሰርቨር ሎክ እንዲደረግ ይላካል
                         socket.emit('tempSelectCards', userSelectedCards);
                         generate500CardGrid();
                     };
