@@ -31,8 +31,7 @@ let activeGameInterval = null;
 let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
 
-// 🟢 ቀጣዩ የብዙ አሸናፊዎች ዙር በራንደም እንዲመረጥ (Random Multi-winner Target Round)
-let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; // ከ 4 እስከ 6 ባለው ዙር ይጀምራል
+let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; 
 
 let currentRoundWinnerInfo = {
     username: "",
@@ -361,7 +360,7 @@ setInterval(() => {
         let activeSockets = Object.keys(globalRoom.playerRoundCards);
         let chosenWinnersList = [];
 
-        if (forcedNextWinner === "bot" || forcedNextWinner === "random_real" || (forcedNextWinner && forcedNextWinner.length > 0)) {
+        if (forcedNextWinner === "bot" || forcedNextWinner === "random_real" || forcedNextWinner === "multi_real_3" || (forcedNextWinner && forcedNextWinner.length > 0)) {
             if (forcedNextWinner === "bot") {
                 let winningCard = Math.floor(Math.random() * 500) + 1;
                 let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
@@ -387,25 +386,30 @@ setInterval(() => {
                     let patternNums = getWinningPatternNumbers(winningCard);
                     chosenWinnersList.push({ username: winningUser, userId: "bot_fallback", cardNum: winningCard, winningNumbersNeeded: patternNums });
                 }
-            } else {
-                for (let sId of activeSockets) {
+            } else if (forcedNextWinner === "multi_real_3") {
+                let realPlayerSockets = activeSockets.filter(sId => {
                     let pData = globalRoom.playerRoundCards[sId];
-                    if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
-                        if (pData.cards && pData.cards.length > 0) {
-                            let cNum = pData.cards[0];
-                            let patternNums = getWinningPatternNumbers(cNum);
-                            chosenWinnersList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums });
-                        }
-                    }
+                    return pData && !String(pData.userId).startsWith("bot") && pData.cards && pData.cards.length > 0;
+                });
+                
+                let addedCount = 0;
+                for (let sId of realPlayerSockets) {
+                    if (addedCount >= 3) break;
+                    let pData = globalRoom.playerRoundCards[sId];
+                    let cNum = pData.cards[0];
+                    let patternNums = getWinningPatternNumbers(cNum);
+                    chosenWinnersList.push({ username: pData.username, userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums });
+                    addedCount++;
                 }
-                if (chosenWinnersList.length === 0) {
-                    let winningCard = 22;
+
+                while (chosenWinnersList.length < 3) {
+                    let winningCard = Math.floor(Math.random() * 500) + 1;
+                    let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                     let patternNums = getWinningPatternNumbers(winningCard);
-                    chosenWinnersList.push({ username: "ተጫዋች", userId: forcedNextWinner, cardNum: winningCard, winningNumbersNeeded: patternNums });
+                    chosenWinnersList.push({ username: winningUser, userId: "bot_multi_" + Math.floor(Math.random() * 90000), cardNum: winningCard, winningNumbersNeeded: patternNums });
                 }
             }
         } else {
-            // 🟢 በዘፈቀደ (Randomly Rotating) በየተወሰነ ዙር ባለብዙ አሸናፊ (Multi-winner) ዙር እንዲፈጠር እናደርጋለን
             let isMultiWinnerRound = (gameRoundCounter === nextMultiWinnerRound);
             let winnersCount = isMultiWinnerRound ? 2 : 1;
 
@@ -417,7 +421,6 @@ setInterval(() => {
                 chosenWinnersList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard, winningNumbersNeeded: patternNums });
             }
 
-            // አንዴ ባለብዙ አሸናፊ ዙር ካለፈ በኋላ፣ ቀጣዩን ዙር በራንደም (ከ 4 እስከ 8 ጨዋታዎች በኋላ) ሌላ ባለብዙ አሸናፊ ዙር እንዲመጣ እናስቀምጣለን
             if (isMultiWinnerRound) {
                 nextMultiWinnerRound = gameRoundCounter + Math.floor(Math.random() * 5) + 4;
             }
