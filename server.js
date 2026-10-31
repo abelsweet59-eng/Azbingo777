@@ -23,26 +23,32 @@ let globalRoom = {
     playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
-    playerTemporaryCards: {},
-    botPermanentCards: [], // 🟢 90% ቋሚ የሆኑ የቦት ካርዶች
-    botDynamicCards: []    // 🟢 10% ያዝ ለቀቅ የሚሉ የቦት ካርዶች
+    playerTemporaryCards: {}
 };
 
 let forcedNextWinner = null; 
 let activeGameInterval = null;
 
+// 🟢 እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች የተዋሃዱባቸው - 'd' ቁጥር የሌላቸው)
 const fakeBotNames = [
-    "Habesha_King", "Ethio_Winner", "Selam_21", "Abebe_G", "Mesfin_T", "Tigist_B", "Bethel_M", "Dawit_K", "Nati_B", "Eyu_99",
-    "Sam_Ethio", "Kidist_L", "Biruk_M", "Miki_A", "Hana_P", "Yordanos_K", "Solomon_X", "Redwan_Z", "Meron_D", "Henok_V",
-    "Abdi_J", "Fasika_C", "Bini_H", "Kidus_G", "Robel_S", "Marta_W", "Fitsum_N", "Brook_T", "Naod_L", "Senait_M",
-    "Addis_Boy", "Liyu_Girl", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", "Habesha_Style", "Nuru_M", "Bereket_K", "Ermias_S",
-    "Daniel_T", "Eyob_M", "Tedi_A", "Ali_Bira", "Yohana_F", "Zelalem_P", "Girma_W", "Kebede_N", "Aster_G", "Almaz_H",
-    "Lemlem_D", "Tsehay_S", "Mulugeta_K", "Getachew_B", "Dagnachew_M", "Asnake_T", "Wondwossen_R", "Mekdes_L", "Rahel_Y", "Yemisrach_V",
-    "Bruk_Z", "Natnael_C", "Henok_B", "Samuel_D", "Michael_F", "Daniel_G", "Ephrem_H", "Yared_J", "Kaleb_K", "Yohannes_L"
+    "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
+    "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
+    "Yohannes_Lemma", "Fikadu_Mekonnen", "Tesfaye_Negash", "Bekele_Worku", "Assefa_Seifu", 
+    "Girum_Teshome", "Surafel_Umer", "Nahom_Getachew", "Abenezer_Wondwossen", "Gedion_Yilma", 
+    "Muluken_Zewdu", "Teferi_Alemu", "Shifera_Chala", "Tadesse_Fikru", "Gizachew_Girma", 
+    "Zewdu_Moges", "Teshome_Demissie", "Tolosa_Gurmessa", "Abebech_Tsehay", "Almaz_Tadesse", 
+    "Habtamu_Reta", "Esubalew_Kassa", "Mubarek_Nuru", "Bilal_Ahmed", "Siraj_Kedir", 
+    "Redwan_Zemedkun", "Henok_Wondimu", "Daniel_Tesfaye", "Eyob_Mekonnen", "Teddy_Afro", 
+    "Ali_Bira", "Yohana_Negash", "Zelalem_Worku", "Kebede_Bante", "Mulugeta_Assefa", 
+    "Getachew_Bekele", "Dagnachew_Molla", "Asnake_Tadesse", "Wondwossen_Reta", "Mekdes_Lemma", 
+    "Bruk_Zenebe", "Natnael_Chala", "Samuel_Dagne", "Michael_Fikru", "Ephrem_Haile", 
+    "Addis_Boy", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", 
+    "Habesha_Style", "Nuru_Mohammed", "Bereket_Kassa", "Daniel_Tadesse", "Eyob_Lemma"
 ];
 
 let pendingRequests = {};
 
+// 🟢 የሰዓት እና የሉፕ ራንደም ትራፊክ (Time-based & Loop Random Traffic Fluctuation)
 let currentRandomBaseBots = 135;
 function getRealisticBotsCount(realCount) {
     let nowHours = new Date().getHours();
@@ -50,7 +56,7 @@ function getRealisticBotsCount(realCount) {
     let poolIndex = nowHours % timePools.length;
     currentRandomBaseBots = timePools[poolIndex];
 
-    let smallDelta = Math.floor(Math.random() * 5) - 2; 
+    let smallDelta = Math.floor(Math.random() * 9) - 4; 
     let calculated = currentRandomBaseBots + smallDelta;
     
     if (calculated < 90) calculated = 95;
@@ -59,7 +65,6 @@ function getRealisticBotsCount(realCount) {
     return calculated;
 }
 
-// 🟢 የተዘመነ የካርድ ማቀናበሪያ (90% ቋሚ እና 10% ያዝ ለቀቅ)
 function refreshTakenCardsList() {
     let allTaken = [];
     Object.values(globalRoom.playerRoundCards).forEach(p => {
@@ -68,65 +73,28 @@ function refreshTakenCardsList() {
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
         if (cards) allTaken.push(...cards);
     });
-    if (globalRoom.botPermanentCards) allTaken.push(...globalRoom.botPermanentCards);
-    if (globalRoom.botDynamicCards) allTaken.push(...globalRoom.botDynamicCards);
-
     globalRoom.takenCards = Array.from(new Set(allTaken));
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-// የመጀመሪያ ሲጀመር የ 90% ቋሚ ቦት ካርዶችን መምረጥ
-function initBotCards() {
-    let allCards = [];
-    for(let i = 1; i <= 500; i++) allCards.push(i);
-    // ራንደም አቀማመጥ
-    allCards.sort(() => Math.random() - 0.5);
-
-    // 120 ያህል ካርዶች ለቦቶች እንሰጣለን
-    let totalBotCardsCount = 120;
-    let permCount = Math.floor(totalBotCardsCount * 0.90); // 90% ቋሚ (108 ካርዶች)
-    
-    globalRoom.botPermanentCards = allCards.slice(0, permCount);
-    let remainingPool = allCards.slice(permCount);
-    
-    // 10%  динамик (ያዝ ለቀቅ የሚሉ)
-    let dynCount = Math.floor(totalBotCardsCount * 0.10); // 12 ካርዶች
-    globalRoom.botDynamicCards = remainingPool.slice(0, dynCount);
-}
-
-initBotCards();
-
-// በየጥቂቱ ያዝ ለቀቅ የሚሉት 10% ብቻ እንዲቀያየሩ ማድረግ
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
-    
     let available = [];
     for(let i = 1; i <= 500; i++) {
-        let isPlayerTaken = false;
-        Object.values(globalRoom.playerRoundCards).forEach(p => { if (p.cards.includes(i)) isPlayerTaken = true; });
-        Object.values(globalRoom.playerTemporaryCards).forEach(cList => { if (cList.includes(i)) isPlayerTaken = true; });
-        if (globalRoom.botPermanentCards.includes(i)) isPlayerTaken = true;
-
-        if (!isPlayerTaken) available.push(i);
+        if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-
-    // ከ 10% ዲናሚክ ካርዶች ውስጥ ከፊሎቹን ለቀቅ አድርጎ ሌላ ራንደም ይይዛል
-    if (globalRoom.botDynamicCards.length > 0 && available.length > 5) {
-        let changeCount = Math.floor(Math.random() * 3) + 1; // በየጊዜው 1 ወይም 2 ካርዶች ብቻ ይለዋወጣሉ
-        for (let i = 0; i < changeCount; i++) {
-            let dropIdx = Math.floor(Math.random() * globalRoom.botDynamicCards.length);
-            globalRoom.botDynamicCards.splice(dropIdx, 1);
-
-            let newCardIdx = Math.floor(Math.random() * available.length);
-            let newCard = available.splice(newCardIdx, 1)[0];
-            if (newCard) globalRoom.botDynamicCards.push(newCard);
+    let botPicksCount = Math.floor(Math.random() * 15) + 10;
+    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
+        let randIdx = Math.floor(Math.random() * available.length);
+        let cardToTake = available.splice(randIdx, 1)[0];
+        if(!globalRoom.takenCards.includes(cardToTake)) {
+            globalRoom.takenCards.push(cardToTake);
         }
     }
-
-    refreshTakenCardsList();
+    io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-setInterval(simulateBotCardSelections, 8000);
+setInterval(simulateBotCardSelections, 6000);
 
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -259,7 +227,6 @@ io.on('connection', (socket) => {
     let currentBotsCount = getRealisticBotsCount(realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     io.emit('updatePlayersCount', globalRoom.playersCount);
-    io.emit('updateRealPlayersCount', realCount); // 🟢 ለሪል ተጫዋች ብዛት ማሳወቂያ
 
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
@@ -278,9 +245,7 @@ io.on('connection', (socket) => {
         let conflict = selectedCards.some(card => {
             let inOtherTemp = Object.entries(globalRoom.playerTemporaryCards).some(([sId, cList]) => sId !== socket.id && cList.includes(card));
             let inOtherConfirmed = Object.entries(globalRoom.playerRoundCards).some(([sId, p]) => sId !== socket.id && p.cards.includes(card));
-            let inBotPerm = globalRoom.botPermanentCards.includes(card);
-            let inBotDyn = globalRoom.botDynamicCards.includes(card);
-            return inOtherTemp || inOtherConfirmed || inBotPerm || inBotDyn;
+            return inOtherTemp || inOtherConfirmed;
         });
 
         if (conflict) {
@@ -327,7 +292,6 @@ io.on('connection', (socket) => {
         let currentBotsCount = getRealisticBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
-        io.emit('updateRealPlayersCount', realCount);
     });
 });
 
@@ -440,7 +404,6 @@ setInterval(() => {
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.playerRoundCards = {};
                         globalRoom.playerTemporaryCards = {};
-                        initBotCards(); // አዲስ ዙር ሲጀመር ቦት ካርዶቹን ዳግም ማዋቀር
                         refreshTakenCardsList();
                         forcedNextWinner = null;
 
@@ -460,7 +423,6 @@ setInterval(() => {
                 globalRoom.gameStartTime = Date.now() + roundDuration;
                 globalRoom.playerRoundCards = {};
                 globalRoom.playerTemporaryCards = {};
-                initBotCards();
                 refreshTakenCardsList();
                 forcedNextWinner = null;
                 io.emit('gameEndedBroadcast');
