@@ -31,12 +31,17 @@ let activeGameInterval = null;
 let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
 
+// 🟢 ቀጣዩ የብዙ አሸናፊዎች ዙር በራንደም እንዲመረጥ (Random Multi-winner Target Round)
+let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; // ከ 4 እስከ 6 ባለው ዙር ይጀምራል
+
 let currentRoundWinnerInfo = {
     username: "",
     userId: "",
     cardNum: 0,
     winningNumbersNeeded: []
 };
+
+let currentRoundWinnersList = [];
 
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
@@ -354,14 +359,14 @@ setInterval(() => {
         gameRoundCounter++;
 
         let activeSockets = Object.keys(globalRoom.playerRoundCards);
-        let chosenWinner = null;
+        let chosenWinnersList = [];
 
         if (forcedNextWinner === "bot" || forcedNextWinner === "random_real" || (forcedNextWinner && forcedNextWinner.length > 0)) {
             if (forcedNextWinner === "bot") {
                 let winningCard = Math.floor(Math.random() * 500) + 1;
                 let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                 let patternNums = getWinningPatternNumbers(winningCard);
-                chosenWinner = { username: winningUser, userId: "bot_forced", cardNum: winningCard, winningNumbersNeeded: patternNums };
+                chosenWinnersList.push({ username: winningUser, userId: "bot_forced", cardNum: winningCard, winningNumbersNeeded: patternNums });
             } else if (forcedNextWinner === "random_real") {
                 let realPlayerSockets = activeSockets.filter(sId => {
                     let pData = globalRoom.playerRoundCards[sId];
@@ -373,14 +378,14 @@ setInterval(() => {
                     if (pData.cards && pData.cards.length > 0) {
                         let cNum = pData.cards[0];
                         let patternNums = getWinningPatternNumbers(cNum);
-                        chosenWinner = { username: pData.username, userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums };
+                        chosenWinnersList.push({ username: pData.username, userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums });
                     }
                 }
-                if (!chosenWinner) {
+                if (chosenWinnersList.length === 0) {
                     let winningCard = Math.floor(Math.random() * 500) + 1;
                     let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
                     let patternNums = getWinningPatternNumbers(winningCard);
-                    chosenWinner = { username: winningUser, userId: "bot_fallback", cardNum: winningCard, winningNumbersNeeded: patternNums };
+                    chosenWinnersList.push({ username: winningUser, userId: "bot_fallback", cardNum: winningCard, winningNumbersNeeded: patternNums });
                 }
             } else {
                 for (let sId of activeSockets) {
@@ -389,55 +394,57 @@ setInterval(() => {
                         if (pData.cards && pData.cards.length > 0) {
                             let cNum = pData.cards[0];
                             let patternNums = getWinningPatternNumbers(cNum);
-                            chosenWinner = { username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums };
+                            chosenWinnersList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums });
                         }
                     }
                 }
-                if (!chosenWinner) {
+                if (chosenWinnersList.length === 0) {
                     let winningCard = 22;
                     let patternNums = getWinningPatternNumbers(winningCard);
-                    chosenWinner = { username: "ተጫዋች", userId: forcedNextWinner, cardNum: winningCard, winningNumbersNeeded: patternNums };
+                    chosenWinnersList.push({ username: "ተጫዋች", userId: forcedNextWinner, cardNum: winningCard, winningNumbersNeeded: patternNums });
                 }
             }
         } else {
-            let winningCard = Math.floor(Math.random() * 500) + 1;
-            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-            let patternNums = getWinningPatternNumbers(winningCard);
-            chosenWinner = { username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard, winningNumbersNeeded: patternNums };
+            // 🟢 በዘፈቀደ (Randomly Rotating) በየተወሰነ ዙር ባለብዙ አሸናፊ (Multi-winner) ዙር እንዲፈጠር እናደርጋለን
+            let isMultiWinnerRound = (gameRoundCounter === nextMultiWinnerRound);
+            let winnersCount = isMultiWinnerRound ? 2 : 1;
+
+            let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
+            for (let i = 0; i < winnersCount; i++) {
+                let winningCard = Math.floor(Math.random() * 500) + 1;
+                let winningUser = shuffledNames[i % shuffledNames.length];
+                let patternNums = getWinningPatternNumbers(winningCard);
+                chosenWinnersList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard, winningNumbersNeeded: patternNums });
+            }
+
+            // አንዴ ባለብዙ አሸናፊ ዙር ካለፈ በኋላ፣ ቀጣዩን ዙር በራንደም (ከ 4 እስከ 8 ጨዋታዎች በኋላ) ሌላ ባለብዙ አሸናፊ ዙር እንዲመጣ እናስቀምጣለን
+            if (isMultiWinnerRound) {
+                nextMultiWinnerRound = gameRoundCounter + Math.floor(Math.random() * 5) + 4;
+            }
         }
 
-        currentRoundWinnerInfo = chosenWinner;
-        let winningPatternNums = currentRoundWinnerInfo.winningNumbersNeeded;
+        currentRoundWinnersList = chosenWinnersList;
+        let primaryWinner = currentRoundWinnersList[0];
+        let winningPatternNums = primaryWinner.winningNumbersNeeded;
 
-        // 🟢 በየ 15 ጨዋታዎች ሉፕ (Every 15 Games Loop) እና ፐርሰንት ስርጭት (Probability Distribution)
         if (realCount > 0) {
-            let randProb = Math.random() * 100; // ከ 0 እስከ 100
-            
+            let randProb = Math.random() * 100;
             if (randProb < 80) {
-                // 80% አቬሬጅ (Average): ከ 10 እስከ 17 ጥሪዎች (በተለይ 17፣ 18፣ 19 አካባቢ)
                 let avgRanges = [10, 11, 12, 13, 14, 15, 16, 17, 17, 18, 18, 19, 19];
                 currentRoundTargetCalls = avgRanges[Math.floor(Math.random() * avgRanges.length)];
             } else if (randProb < 90) {
-                // 10% ፈጣን (Fast): ከ 10 እስከ 16 ጥሪዎች (ከ 10 በታች በፍጹም አይወርድም)
                 let fastRanges = [10, 11, 12, 13, 14, 15, 16];
                 currentRoundTargetCalls = fastRanges[Math.floor(Math.random() * fastRanges.length)];
             } else {
-                // 10% ሬር / ዘግያ (Rare): ከ 19 እስከ 25 ጥሪዎች
                 let rareRanges = [19, 20, 21, 22, 23, 24, 25];
                 currentRoundTargetCalls = rareRanges[Math.floor(Math.random() * rareRanges.length)];
             }
         } else {
-            // ሰው ሳይኖር ሲቀር (ጥቂት ተጫዋቾች / ቦቶች ብቻ)
             let slowRanges = [20, 21, 22, 23, 24, 25, 26, 27, 28];
             if (Math.random() < 0.15) {
                 slowRanges = [29, 30, 31, 32, 33];
             }
             currentRoundTargetCalls = slowRanges[Math.floor(Math.random() * slowRanges.length)];
-        }
-
-        // በየ 15 ጨዋታዎች ሉፕ ቆጣሪውን ማስተካከል
-        if (gameRoundCounter >= 15) {
-            gameRoundCounter = 0;
         }
 
         io.emit('gameStartedBroadcast');
@@ -465,7 +472,7 @@ setInterval(() => {
                 }
                 io.emit('numberCalledBroadcast', num);
 
-                let isWinnerReady = checkWinningPattern(currentRoundWinnerInfo.cardNum, globalRoom.calledNumbers);
+                let isWinnerReady = checkWinningPattern(primaryWinner.cardNum, globalRoom.calledNumbers);
 
                 let minCallsNeeded = realCount > 0 ? 8 : 15;
                 let isTargetReached = globalRoom.calledNumbers.length >= currentRoundTargetCalls;
@@ -480,14 +487,15 @@ setInterval(() => {
 
                     let totalPot = totalPlayers * 10;
                     let netPrizePool = Math.floor(totalPot * 0.70);
+                    let prizePerWinner = Math.floor(netPrizePool / currentRoundWinnersList.length);
 
                     io.emit('bingoWinner', { 
-                        username: currentRoundWinnerInfo.username, 
-                        userId: currentRoundWinnerInfo.userId,
-                        cardNum: currentRoundWinnerInfo.cardNum, 
+                        username: primaryWinner.username, 
+                        userId: primaryWinner.userId,
+                        cardNum: primaryWinner.cardNum, 
                         playersCount: totalPlayers,
-                        prize: netPrizePool, 
-                        winnersCount: 1,
+                        prize: prizePerWinner, 
+                        winnersCount: currentRoundWinnersList.length,
                         calledNumbers: globalRoom.calledNumbers
                     });
 
