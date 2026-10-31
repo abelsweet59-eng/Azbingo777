@@ -20,10 +20,10 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 150,
+    playersCount: 120, // የተረጋጋ መነሻ
     takenCards: [],
     playerRoundCards: {},
-    playerTemporaryCards: {} // 🟢 ጊዜያዊ የተያዙ ካርዶች መቆጣጠሪያ
+    playerTemporaryCards: {}
 };
 
 let forcedNextWinner = null; 
@@ -36,38 +36,29 @@ const fakeBotNames = [
     "Addis_Boy", "Liyu_Girl", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", "Habesha_Style", "Nuru_M", "Bereket_K", "Ermias_S",
     "Daniel_T", "Eyob_M", "Tedi_A", "Ali_Bira", "Yohana_F", "Zelalem_P", "Girma_W", "Kebede_N", "Aster_G", "Almaz_H",
     "Lemlem_D", "Tsehay_S", "Mulugeta_K", "Getachew_B", "Dagnachew_M", "Asnake_T", "Wondwossen_R", "Mekdes_L", "Rahel_Y", "Yemisrach_V",
-    "Bruk_Z", "Natnael_C", "Henok_B", "Samuel_D", "Michael_F", "Daniel_G", "Ephrem_H", "Yared_J", "Kaleb_K", "Yohannes_L",
-    "Fikadu_M", "Tesfaye_N", "Bekele_P", "Worku_Q", "Negash_R", "Assefa_S", "Girum_T", "Surafel_U", "Nahom_V", "Abenezer_W",
-    "Ermias_X", "Gedion_Y", "Muluken_Z", "Teferi_A", "Molla_B", "Shifera_C", "Alemu_D", "Kebede_E", "Tadesse_F", "Gizachew_G",
-    "Zewdu_H", "Moges_I", "Getahun_J", "Teshome_K", "Demissie_L", "Chala_M", "Tolosa_N", "Gurmessa_P", "Bekelech_Q", "Abebech_R",
-    "Tsehay_S", "Almaz_T", "Meseret_U", "Tirunesh_V", "Genet_W", "Askale_X", "Letay_Y", "Zenebech_Z", "Worknesh_A", "Ayenalem_B",
-    "Mirt_C", "Banchi_D", "Etenesh_E", "Aster_F", "Meskerm_G", "Hirut_H", "Belaynesh_I", "Mahlet_J", "Saba_K", "Rahel_L",
-    "Tigist_M", "Mekides_N", "Bethelhem_P", "Ruth_Q", "Esther_R", "Hannah_S", "Sara_T", "Miriam_U", "Deborah_V", "Priscilla_W",
-    "Naomi_X", "Rachel_Y", "Leah_Z", "Abigail_A", "Elizabeth_B", "Martha_C", "Mary_D", "Salome_E", "Judith_F", "Lydia_G",
-    "Eunice_H", "Lois_I", "Chaltu_J", "Fantu_K", "Aman_L", "Diribe_M", "Bontu_N", "Gakkee_P", "Ifaa_Q", "Tokkee_R",
-    "Bilisum_S", "Caffee_T", "Oromia_1", "Amhara_2", "Tigray_3", "Sidama_4", "Gurage_5", "Somali_6", "Afar_7", "Harari_8",
-    "Gambella_9", "Benshangul_0", "Addis_Ababa", "Dire_Dawa", "Hawassa_VIP", "Bahirdar_Pro", "Mekelle_Star", "Adama_King", "Gojjam_Boy", "Gondar_Star"
+    "Bruk_Z", "Natnael_C", "Henok_B", "Samuel_D", "Michael_F", "Daniel_G", "Ephrem_H", "Yared_J", "Kaleb_K", "Yohannes_L"
 ];
 
 let pendingRequests = {};
 
-let simulatedBaseBots = 140; 
-function updateSmoothBotsCount(realCount) {
-    let changeStep = Math.floor(Math.random() * 7) - 3;
-    simulatedBaseBots += changeStep;
-    if (simulatedBaseBots < 80) simulatedBaseBots = 90;
-    if (simulatedBaseBots > 220) simulatedBaseBots = 210;
-    return simulatedBaseBots;
+// 🟢 እጅግ የተረጋጋ እና የማይዋዥቅ (Very Smooth & Stable) የተጫዋቾች ቁጥር አስተካካይ
+let stableBotCount = 110;
+function getStableBotsCount(realCount) {
+    // በሰከንድ በሰከንድ ሳይሆን አልፎ አልፎ ብቻ በ 1 ወይም በ 2 ይለወጣል
+    if (Math.random() < 0.3) {
+        let step = Math.random() < 0.5 ? 1 : -1;
+        stableBotCount += step;
+        if (stableBotCount < 90) stableBotCount = 95;
+        if (stableBotCount > 150) stableBotCount = 145;
+    }
+    return stableBotCount;
 }
 
-// 🟢 የካርድ መያዣ እና መልቀቂያ (Card Lock & Release Management)
 function refreshTakenCardsList() {
     let allTaken = [];
-    // የተረጋገጡ ካርዶች
     Object.values(globalRoom.playerRoundCards).forEach(p => {
         if (p.cards) allTaken.push(...p.cards);
     });
-    // ጊዜያዊ የተያዙ ካርዶች
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
         if (cards) allTaken.push(...cards);
     });
@@ -75,13 +66,14 @@ function refreshTakenCardsList() {
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
+// ቦቶች ካርዶችን ሲመርጡ ከነሱ ጋር የተስተካከለ ቁጥር እንዲይዙ
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     let available = [];
     for(let i = 1; i <= 500; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 12) + 8;
+    let botPicksCount = Math.floor(Math.random() * 8) + 5;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
@@ -92,7 +84,7 @@ function simulateBotCardSelections() {
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-setInterval(simulateBotCardSelections, 7000);
+setInterval(simulateBotCardSelections, 10000);
 
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -222,14 +214,14 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
-    let currentBotsCount = updateSmoothBotsCount(realCount);
+    let currentBotsCount = getStableBotsCount(realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-    // 🟢 ጊዜያዊ ካርድ መያዣ (Temporary Select / Lock)
+    // 🟢 ተጠቃሚው ካርድ ሲነካ ወዲያውኑ ሎክ እንዲደረግ (Temporary Lock)
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
             globalRoom.playerTemporaryCards[socket.id] = cards;
@@ -252,7 +244,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // ከጊዜያዊ ዝርዝር አውጥተን ወደ ቋሚ እንመዝገበዋለን
         delete globalRoom.playerTemporaryCards[socket.id];
         globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId, username: data.username || "ተጫዋች" };
         
@@ -282,7 +273,6 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🟢 ዲስኮኔክት ሲያደርግ ካርዶቹ በሙሉ እንዲለቀቁ (Release Cards on Disconnect)
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         delete globalRoom.playerRoundCards[socket.id];
@@ -290,7 +280,7 @@ io.on('connection', (socket) => {
         refreshTakenCardsList();
 
         let realCount = connectedRealPlayers.length;
-        let currentBotsCount = updateSmoothBotsCount(realCount);
+        let currentBotsCount = getStableBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
@@ -301,7 +291,7 @@ setInterval(() => {
     let realCount = connectedRealPlayers.length;
 
     if (!globalRoom.gameActive) {
-        let currentBotsCount = updateSmoothBotsCount(realCount);
+        let currentBotsCount = getStableBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     }
@@ -333,7 +323,7 @@ setInterval(() => {
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
                     if (forcedNextWinner === "bot") {
-                        let currentBots = updateSmoothBotsCount(realCount);
+                        let currentBots = getStableBotsCount(realCount);
                         if (currentBots > 0) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
@@ -359,7 +349,7 @@ setInterval(() => {
                     }
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
-                        let currentBots = updateSmoothBotsCount(realCount);
+                        let currentBots = getStableBotsCount(realCount);
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
@@ -401,7 +391,6 @@ setInterval(() => {
                         let totalPrizePool = Math.floor(totalPot * 0.70);
                         let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
-                        // 🟢 ዙሩ ሲጠናቀቅ የሁሉንም ተጫዋቾች ካርዶች በሙሉ መልቀቅ (Release All Cards for Next Round)
                         globalRoom.gameActive = false;
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.playerRoundCards = {};
