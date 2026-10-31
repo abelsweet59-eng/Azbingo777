@@ -31,6 +31,14 @@ let activeGameInterval = null;
 let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
 
+// 🟢 የዚህ ዙር አስቀድሞ የተመረጠ አሸናፊ መዋቅር (Pre-determined Round Winner)
+let currentRoundWinnerInfo = {
+    username: "",
+    userId: "",
+    cardNum: 0,
+    winningNumbersNeeded: []
+};
+
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
     "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
@@ -124,6 +132,46 @@ function generateCartelaNumbers(cardNum) {
         });
     }
     return flatList;
+}
+
+// 🟢 የትኛውን መስመር እንደሰራ የሚለይ እና የሚመለከተውን ቁጥር የሚመልስ ፋንክሽን
+function getWinningPatternNumbers(cardNum) {
+    let numbers = generateCartelaNumbers(cardNum);
+    let matrix = [];
+    for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
+
+    let possiblePatterns = [];
+
+    // Rows
+    for(let r = 0; r < 5; r++) {
+        let rowNums = matrix[r].filter(v => v !== "FREE");
+        possiblePatterns.push(rowNums);
+    }
+    // Cols
+    for(let c = 0; c < 5; c++) {
+        let colNums = [];
+        for(let r = 0; r < 5; r++) {
+            if(matrix[r][c] !== "FREE") colNums.push(matrix[r][c]);
+        }
+        possiblePatterns.push(colNums);
+    }
+    // Diagonal 1
+    let d1Nums = [];
+    for(let i = 0; i < 5; i++) {
+        if(matrix[i][i] !== "FREE") d1Nums.push(matrix[i][i]);
+    }
+    possiblePatterns.push(d1Nums);
+
+    // Diagonal 2
+    let d2Nums = [];
+    for(let i = 0; i < 5; i++) {
+        if(matrix[i][4 - i] !== "FREE") d2Nums.push(matrix[i][4 - i]);
+    }
+    possiblePatterns.push(d2Nums);
+
+    // Random ከሚገኙት ትክክለኛ ፓተርኖች አንዱን እንመርጣለን
+    let chosenPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+    return chosenPattern;
 }
 
 function checkWinningPattern(cardNum, calledNumbers) {
@@ -306,22 +354,83 @@ setInterval(() => {
     }
 
     let totalPlayers = globalRoom.playersCount;
-    let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
-    let isRealDominant = realUserPercentage >= 80;
 
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
         gameRoundCounter++;
-        
-        let randDist = Math.random();
-        if (randDist < 0.25) {
-            currentRoundTargetCalls = Math.floor(Math.random() * 5) + 12; 
-        } else if (randDist < 0.70) {
-            currentRoundTargetCalls = Math.floor(Math.random() * 11) + 17; 
+
+        // 🟢 1. ጨዋታው ሲጀመር (Round ሲገባ) አስቀድሞ የትኛው ካርድ እንደሚያሸንፍ እንወስናለን!
+        let activeSockets = Object.keys(globalRoom.playerRoundCards);
+        let chosenWinner = null;
+
+        if (forcedNextWinner === "bot") {
+            let winningCard = Math.floor(Math.random() * 500) + 1;
+            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+            let patternNums = getWinningPatternNumbers(winningCard);
+            chosenWinner = { username: winningUser, userId: "bot_forced", cardNum: winningCard, winningNumbersNeeded: patternNums };
+        } else if (forcedNextWinner === "random_real") {
+            let realPlayerSockets = activeSockets.filter(sId => {
+                let pData = globalRoom.playerRoundCards[sId];
+                return pData && !String(pData.userId).startsWith("bot");
+            });
+            if (realPlayerSockets.length > 0) {
+                let randSocket = realPlayerSockets[Math.floor(Math.random() * realPlayerSockets.length)];
+                let pData = globalRoom.playerRoundCards[randSocket];
+                if (pData.cards && pData.cards.length > 0) {
+                    let cNum = pData.cards[0];
+                    let patternNums = getWinningPatternNumbers(cNum);
+                    chosenWinner = { username: pData.username, userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums };
+                }
+            }
+            if (!chosenWinner) {
+                let winningCard = Math.floor(Math.random() * 500) + 1;
+                let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                let patternNums = getWinningPatternNumbers(winningCard);
+                chosenWinner = { username: winningUser, userId: "bot_fallback", cardNum: winningCard, winningNumbersNeeded: patternNums };
+            }
+        } else if (forcedNextWinner && forcedNextWinner.length > 0) {
+            for (let sId of activeSockets) {
+                let pData = globalRoom.playerRoundCards[sId];
+                if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
+                    if (pData.cards && pData.cards.length > 0) {
+                        let cNum = pData.cards[0];
+                        let patternNums = getWinningPatternNumbers(cNum);
+                        chosenWinner = { username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums };
+                    }
+                }
+            }
+            if (!chosenWinner) {
+                let winningCard = 22;
+                let patternNums = getWinningPatternNumbers(winningCard);
+                chosenWinner = { username: "ተጫዋች", userId: forcedNextWinner, cardNum: winningCard, winningNumbersNeeded: patternNums };
+            }
         } else {
-            currentRoundTargetCalls = Math.floor(Math.random() * 16) + 28; 
+            // መደበኛ ዙር: ሪል ተጫዋች ካርድ ይዞ ከሆነ እሱን ወይም ቦት እናስቀድማለን
+            let realPlayerSockets = activeSockets.filter(sId => {
+                let pData = globalRoom.playerRoundCards[sId];
+                return pData && !String(pData.userId).startsWith("bot") && pData.cards && pData.cards.length > 0;
+            });
+
+            if (realPlayerSockets.length > 0 && Math.random() < 0.40) { // 40% ዕድል ለሪል ተጫዋች ድል
+                let randSocket = realPlayerSockets[Math.floor(Math.random() * realPlayerSockets.length)];
+                let pData = globalRoom.playerRoundCards[randSocket];
+                let cNum = pData.cards[0];
+                let patternNums = getWinningPatternNumbers(cNum);
+                chosenWinner = { username: pData.username, userId: pData.userId, cardNum: cNum, winningNumbersNeeded: patternNums };
+            } else {
+                let winningCard = Math.floor(Math.random() * 500) + 1;
+                let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                let patternNums = getWinningPatternNumbers(winningCard);
+                chosenWinner = { username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard, winningNumbersNeeded: patternNums };
+            }
         }
+
+        currentRoundWinnerInfo = chosenWinner;
+
+        // ያሸናፊውን ፓተርን ቁጥሮች በመጀመሪያ እንዲጠሩ (ወይም ቅድሚያ እንዲያገኙ) እናደርጋለን
+        let winningPatternNums = currentRoundWinnerInfo.winningNumbersNeeded;
+        currentRoundTargetCalls = winningPatternNums.length + Math.floor(Math.random() * 5) + 5;
 
         io.emit('gameStartedBroadcast');
 
@@ -332,124 +441,27 @@ setInterval(() => {
                 clearInterval(activeGameInterval);
                 return;
             }
+
             let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
             if (available.length > 0) {
-                let num = available[Math.floor(Math.random() * available.length)];
-                globalRoom.calledNumbers.push(num);
+                let num;
+                // 🟢 2. አስቀድሞ የተመረጠው አሸናፊ የሚፈልጋቸውን ቁጥሮች በሂደት እንመግባለን
+                let neededUncalled = winningPatternNums.filter(n => !globalRoom.calledNumbers.includes(n));
+                if (neededUncalled.length > 0 && Math.random() < 0.65 && globalRoom.calledNumbers.length < currentRoundTargetCalls - 2) {
+                    num = neededUncalled[Math.floor(Math.random() * neededUncalled.length)];
+                } else {
+                    num = available[Math.floor(Math.random() * available.length)];
+                }
+
+                if (!globalRoom.calledNumbers.includes(num)) {
+                    globalRoom.calledNumbers.push(num);
+                }
                 io.emit('numberCalledBroadcast', num);
 
-                // 🟢 እዚህ ጋር ትክክለኛውን የድል መስመር (Winning Pattern Validation) እናረጋግጣለን
-                let hasValidWinner = false;
-                let winningCardsList = [];
-                let activeSockets = Object.keys(globalRoom.playerRoundCards);
+                // 🟢 3. አሸናፊው ካርድ በእርግጠነት መስመር ሰርቶ ሲገኝ ብቻ ጨዋታውን እንጨርሳለን
+                let isWinnerReady = checkWinningPattern(currentRoundWinnerInfo.cardNum, globalRoom.calledNumbers);
 
-                // 1. የ forced / አድሚን አሸናፊ ምርጫ
-                if (forcedNextWinner === "bot") {
-                    let candidateCards = [];
-                    for (let c = 1; c <= 500; c++) {
-                        if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
-                    }
-                    if (candidateCards.length > 0) {
-                        let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                        let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                        winningCardsList.push({ username: winningUser, userId: "bot_forced", cardNum: winningCard });
-                        hasValidWinner = true;
-                    }
-                } else if (forcedNextWinner === "random_real") {
-                    let realPlayerSockets = activeSockets.filter(sId => {
-                        let pData = globalRoom.playerRoundCards[sId];
-                        return pData && !String(pData.userId).startsWith("bot");
-                    });
-                    for (let sId of realPlayerSockets) {
-                        let pData = globalRoom.playerRoundCards[sId];
-                        if (pData.cards) {
-                            for (let cNum of pData.cards) {
-                                if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                    winningCardsList.push({ username: pData.username, userId: pData.userId, cardNum: cNum });
-                                    hasValidWinner = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (hasValidWinner) break;
-                    }
-                    if (!hasValidWinner) {
-                        let candidateCards = [];
-                        for (let c = 1; c <= 500; c++) {
-                            if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
-                        }
-                        if (candidateCards.length > 0) {
-                            let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                            winningCardsList.push({ username: winningUser, userId: "bot_fallback", cardNum: winningCard });
-                            hasValidWinner = true;
-                        }
-                    }
-                } else if (forcedNextWinner && forcedNextWinner.length > 0) {
-                    for (let sId of activeSockets) {
-                        let pData = globalRoom.playerRoundCards[sId];
-                        if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
-                            if (pData.cards) {
-                                for (let cNum of pData.cards) {
-                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                        winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum });
-                                        hasValidWinner = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // ካርዱ መስመር ካልሰራ ግን አድሚን በኃይል ካስገደደው (forced)፣ ቼኩን አልፈን ትክክለኛውን ካርድ እንወስዳለን
-                    if (!hasValidWinner) {
-                        for (let sId of activeSockets) {
-                            let pData = globalRoom.playerRoundCards[sId];
-                            if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
-                                if (pData.cards && pData.cards.length > 0) {
-                                    winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: pData.cards[0] });
-                                    hasValidWinner = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 2. የተለመደው መደበኛ የጨዋታ አሸናፊ ማረጋገጫ (ከተጠሩት ቁጥሮች ውስጥ በእርግጥ መስመር የሰራ ካርድ ካለ ብቻ)
-                if (!hasValidWinner && (globalRoom.calledNumbers.length >= currentRoundTargetCalls || forcedNextWinner !== null)) {
-                    // በመጀመሪያ የተያዙ የሪል ተጫዋቾች ካርዶች መስመር ሰርተው እንደሆነ እንፈትሻለን
-                    for (let sId of activeSockets) {
-                        let pData = globalRoom.playerRoundCards[sId];
-                        if (pData && pData.cards) {
-                            for (let cNum of pData.cards) {
-                                if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                    winningCardsList.push({ username: pData.username, userId: pData.userId, cardNum: cNum });
-                                    hasValidWinner = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // ሪል ተጫዋቾች ካልሠሩ, መስመር የሰራ ቦት ካርድ እንፈልጋለን
-                    if (!hasValidWinner) {
-                        let candidateCards = [];
-                        for (let c = 1; c <= 500; c++) {
-                            if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
-                        }
-                        if (candidateCards.length > 0) {
-                            let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                            winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
-                            hasValidWinner = true;
-                        }
-                    }
-                }
-
-                if (hasValidWinner && winningCardsList.length > 0) {
-                    let totalPot = totalPlayers * 10;
-                    let totalPrizePool = Math.floor(totalPot * 0.70);
-                    let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
-
+                if (isWinnerReady || globalRoom.calledNumbers.length >= 75) {
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.playerRoundCards = {};
@@ -457,11 +469,16 @@ setInterval(() => {
                     refreshTakenCardsList();
                     forcedNextWinner = null;
 
-                    let primaryWinner = winningCardsList[0];
+                    let totalPot = totalPlayers * 10;
+                    let totalPrizePool = Math.floor(totalPot * 0.70);
+
                     io.emit('bingoWinner', { 
-                        username: primaryWinner.username, userId: primaryWinner.userId,
-                        cardNum: primaryWinner.cardNum, playersCount: totalPlayers,
-                        prize: prizePerWinner, winnersCount: winningCardsList.length,
+                        username: currentRoundWinnerInfo.username, 
+                        userId: currentRoundWinnerInfo.userId,
+                        cardNum: currentRoundWinnerInfo.cardNum, 
+                        playersCount: totalPlayers,
+                        prize: totalPrizePool, 
+                        winnersCount: 1,
                         calledNumbers: globalRoom.calledNumbers
                     });
 
