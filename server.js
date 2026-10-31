@@ -170,6 +170,33 @@ async function pollTelegramUpdates() {
             let updates = response.data.result;
             for (let update of updates) {
                 telegramOffset = update.update_id + 1;
+                
+                // 🟢 ቴሌግራም ቻት / መሴጅ እና አዝራሮች ቁጥጥር
+                if (update.message && update.message.text) {
+                    let msgText = update.message.text.trim();
+                    let chatId = update.message.chat.id;
+                    
+                    if (String(chatId) === String(ADMIN_CHAT_ID)) {
+                        if (msgText.startsWith('/win ')) {
+                            let targetUserId = msgText.split(' ')[1];
+                            forcedNextWinner = targetUserId;
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId, text: `✅ *ተሳክቷል!* ዩዘር ID \`${targetUserId}\` ቀጣዩ ጨዋታ አሸናፊ እንዲሆን ተደረገ።`, parse_mode: 'Markdown'
+                            });
+                        } else if (msgText === '/winbot') {
+                            forcedNextWinner = "bot";
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId, text: `✅ *ተሳክቷል!* ቀጣዩ አሸናፊ ቦት እንዲሆን ተደረገ።`, parse_mode: 'Markdown'
+                            });
+                        } else if (msgText === '/winrand') {
+                            forcedNextWinner = "random_real";
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: chatId, text: `✅ *ተሳክቷል!* ቀጣዩ አሸናፊ ራንደም ሪል ዩዘር እንዲሆን ተደረገ።`, parse_mode: 'Markdown'
+                            });
+                        }
+                    }
+                }
+
                 if (update.callback_query) {
                     let callbackQuery = update.callback_query;
                     let data = callbackQuery.data; 
@@ -260,13 +287,8 @@ io.on('connection', (socket) => {
         refreshTakenCardsList();
     });
 
-    // 🟢 ከአድሚን ፓነል (ዌብ ፓነል) የሚመጡ የአሸናፊ ትዕዛዞች
     socket.on('adminSetNextWinner', (data) => {
-        if (data && data.winnerType) {
-            forcedNextWinner = String(data.winnerType).trim(); // 'bot', 'random_real', ወይም የዩዘር ID
-        } else {
-            forcedNextWinner = null;
-        }
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
         socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
     });
 
@@ -377,15 +399,17 @@ setInterval(() => {
                             winningCardsList.push({ username: winningUser, userId: "bot_fallback", cardNum: 22 });
                         }
                     } else if (forcedNextWinner && forcedNextWinner.length > 0) {
+                        let matchedUserFound = false;
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
-                            if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
+                            if (String(pData.userId) === String(forcedNextWinner) || sId === forcedNextWinner) {
                                 if (pData.cards && pData.cards.length > 0) {
                                     winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: pData.cards[0] });
+                                    matchedUserFound = true;
                                 }
                             }
                         }
-                        if (winningCardsList.length === 0) {
+                        if (!matchedUserFound) {
                             winningCardsList.push({ username: "ተጫዋች", userId: forcedNextWinner, cardNum: 22 });
                         }
                     }
