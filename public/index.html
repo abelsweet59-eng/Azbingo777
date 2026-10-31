@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">120</div>
+                <div id="stat-players" class="text-[10px] font-bold text-amber-400">140</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -530,7 +530,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 120;
+            let playersCount = data.playersCount || 140;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -725,6 +725,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
         }
 
+        // 🟢 የካርድ ግሪድ ሪንደሪንግ (ተጠቃሚው አረጋግጥ እስካይል ድረስ በነፃነት እንዲቀያይር የተደረገ)
         function generate500CardGrid() {
             const grid = document.getElementById('card-grid-500');
             if (!grid) return;
@@ -735,8 +736,11 @@
                 let isConfirmedByMe = confirmedCards.includes(i);
                 let isConfirmedByOther = takenCardsByOthers.includes(i);
 
-                if (isConfirmedByMe || isSelectedByMe) {
+                if (isConfirmedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded shadow";
+                    btn.disabled = true; // በይፋ የተረጋገጠ ካርድ መቀየር አይቻልም
+                } else if (isSelectedByMe) {
+                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[10px] py-1.5 rounded border border-amber-300 shadow"; // እስካሁን አረጋግጥ ስላልተባለ መቀየር ይቻላል
                 } else if (isConfirmedByOther) {
                     btn.className = "bg-red-950/70 text-red-300 font-medium text-[10px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
@@ -747,9 +751,9 @@
 
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
-                        if (takenCardsByOthers.includes(i)) {
-                            alert("⚠️ ይቅርታ! ይህ ካርድ በሌላ ተጫዋች ተይዟል!");
-                            return;
+                        // ሌላ ሰው የያዘውን ካርድ ሲነካ ምንም ማስጠንቀቂያ ሳይሰጥ ዝም እንዲል
+                        if (takenCardsByOthers.includes(i) && !userSelectedCards.includes(i)) {
+                            return; 
                         }
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
@@ -759,7 +763,6 @@
                         }
                         document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
                         
-                        // 🟢 ተጠቃሚው ካርድ ሲነካ ወዲያውኑ ወደ ሰርቨር ሎክ እንዲደረግ ይላካል
                         socket.emit('tempSelectCards', userSelectedCards);
                         generate500CardGrid();
                     };
