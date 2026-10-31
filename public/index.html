@@ -42,24 +42,24 @@
         <!-- Stats Bar -->
         <section class="grid grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[8px] text-gray-400 uppercase">ሰዓት</div>
-                <div id="stat-timer" class="text-[10px] font-bold text-amber-400 font-mono">60ሰ</div>
+                <div class="text-[7px] text-gray-400 uppercase">Game ID</div>
+                <div id="stat-gameid" class="text-[9px] font-bold text-amber-400 font-mono truncate">BBO6YYIW</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">140</div>
+                <div class="text-[7px] text-gray-300">Players</div>
+                <div id="stat-players" class="text-[9px] font-bold text-amber-400">140</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
-                <div id="stat-bet" class="text-[10px] font-bold text-amber-400">10 ብር</div>
+                <div class="text-[7px] text-gray-400 uppercase">Bet</div>
+                <div id="stat-bet" class="text-[9px] font-bold text-amber-400">10</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[8px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[10px] font-bold text-amber-400">0 ብር</div>
+                <div class="text-[7px] text-gray-300">Derash</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">0</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[8px] text-gray-400 uppercase">Called</div>
-                <div id="stat-called-count" class="text-[10px] font-bold text-amber-400">0</div>
+                <div class="text-[7px] text-gray-400 uppercase">Called</div>
+                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">0</div>
             </div>
         </section>
 
@@ -95,19 +95,12 @@
                 </div>
 
                 <!-- LIVE GAME SECTION -->
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 pb-4 overflow-y-auto custom-scroll">
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-2 pb-2 overflow-y-auto custom-scroll">
                     
-                    <div class="flex justify-between items-center bg-[#21103a] px-3 py-1.5 rounded-xl border border-purple-500/30">
-                        <span class="text-xs font-bold text-amber-300" id="mode-label">አውቶማቲክ (Auto Daub)</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="auto-daub-toggle" checked class="sr-only peer" onchange="toggleDaubMode()">
-                            <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-                        </label>
-                    </div>
-
-                    <div class="grid grid-cols-12 gap-1.5 bg-[#180a29] p-2 rounded-xl border border-purple-500/30 shadow-md">
+                    <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <div class="col-span-7 flex flex-col bg-black/40 p-1.5 rounded-lg border border-white/5">
+                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
+                        <div class="col-span-6 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-indigo-600 rounded text-white py-0.5">I</div>
@@ -115,31 +108,42 @@
                                 <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
                                 <div class="bg-amber-600 rounded text-white py-0.5">O</div>
                             </div>
-                            <div class="grid grid-cols-5 gap-0.5 text-center text-[8px] font-mono" id="vertical-board-75"></div>
+                            <div class="grid grid-cols-5 gap-0.5 text-center text-[8px] font-mono h-56 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <div class="col-span-5 flex flex-col justify-between bg-[#21103a] rounded-xl p-2 border border-purple-500/40 text-center space-y-1">
-                            <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-center items-center min-h-[24px] bg-black/40 p-1 rounded-lg text-[8px]">
-                            </div>
+                        <!-- ቀኝ በኩል (Called Ball & Watching Only / Cards) -->
+                        <div class="col-span-6 flex flex-col space-y-2">
+                            
+                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/30 text-center space-y-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center text-[8px]"></div>
+                                    <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
+                                </div>
 
-                            <div>
-                                <div class="text-[8px] text-amber-200 uppercase font-bold">የተጠራ ኳስ</div>
-                                <div id="main-called-ball" class="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-sm shadow-xl pulse-ball mx-auto my-1">
+                                <div id="main-called-ball" class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-sm shadow-xl pulse-ball mx-auto my-1">
                                     --
                                 </div>
+                                
+                                <div class="flex justify-between items-center bg-black/40 px-2 py-1 rounded-lg border border-white/5">
+                                    <span class="text-[9px] text-gray-300" id="mode-label">Automatic</span>
+                                    <label class="relative inline-flex items-center cursor-pointer scale-75">
+                                        <input type="checkbox" id="auto-daub-toggle" checked class="sr-only peer" onchange="toggleDaubMode()">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                                    </label>
+                                </div>
                             </div>
-                            <div class="text-[8px] text-gray-300" id="mode-instruction-text">ቁጥሮች በራሱ ይሞላሉ</div>
+
+                            <!-- Watching Only / Player Cards Area -->
+                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-2 border border-purple-500/30 flex flex-col justify-center items-center text-center overflow-y-auto custom-scroll min-h-[150px]">
+                            </div>
+
                         </div>
                     </div>
 
-                    <div id="spectator-notice" class="hidden bg-purple-950/90 border border-amber-400/50 p-2.5 rounded-xl text-center space-y-1 shadow-lg">
-                        <div class="text-amber-400 font-extrabold text-xs">👀 የሰፔክተተር ሁኔታ (Spectator Mode)</div>
-                        <div class="text-gray-200 text-[10px]">በዚህ ዙር ካርድ አልመረጡም፤ ጨዋታውን እንደ ተመልካች ይከታተላሉ።</div>
-                    </div>
-
-                    <div class="space-y-1 pt-1">
-                        <div class="text-[10px] font-bold text-purple-300 px-1" id="player-cards-title">የእርስዎ የተያዙ ካርዶች:</div>
-                        <div id="player-dual-cards-container" class="grid grid-cols-2 gap-2 bg-[#1c0d35] p-2 rounded-xl border border-purple-500/30"></div>
+                    <!-- Leave & Refresh buttons -->
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="location.reload()" class="bg-gradient-to-r from-red-600 to-red-700 py-2 rounded-xl text-xs font-bold shadow text-white">Leave</button>
+                        <button onclick="resetPlayerSelectionForNewRound()" class="bg-white/10 py-2 rounded-xl text-xs font-bold border border-white/10 shadow text-gray-200">Refresh</button>
                     </div>
                 </div>
             </div>
@@ -175,15 +179,12 @@
                 </div>
                 
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
-                    <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ (Manual Winner Rigging)</div>
-                    <div class="text-[10px] text-gray-400">ቀጣዩ ጨዋታ ማሸነፍ ያለበትን አካል ከዚህ በታች ይምረጡ:</div>
-                    
+                    <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ</div>
                     <div class="grid grid-cols-1 gap-2 pt-1">
-                        <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ (Single Bot)</button>
-                        <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ (Single Real User)</button>
-                        <button onclick="adminSetWinner('multi_real_3')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 ሶስት ሪል ዩዘሮች በአንድ ላይ ይብሉ (3 Real Users)</button>
+                        <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
+                        <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ</button>
+                        <button onclick="adminSetWinner('multi_real_3')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 3 ሪል ዩዘሮች በአንድ ላይ ይብሉ</button>
                     </div>
-
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
                 </div>
             </div>
@@ -201,19 +202,21 @@
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 Netsanet WON!</div>
+                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won[span_4](start_span)[span_4](end_span)!</div>
                     
+                    <div id="multi-winners-badges-container" class="flex flex-wrap gap-1.5 justify-center my-2"></div>
+
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
-                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 22</div>
+                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12[span_5](start_span)[span_5](end_span)</div>
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
-                    <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2.5 rounded-xl border border-purple-500/40 space-y-1 text-center" id="winner-banner-text">
+                    <div class="text-white text-[9px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center" id="winner-banner-text">
                         አሸናፊው መረጃ እየጠበቀ...
                     </div>
                     
                     <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ Auto-starting next game in 5s
+                        ⏳ Auto-starting next game in 4s[span_6](start_span)[span_6](end_span)
                     </div>
                 </div>
             </div>
@@ -222,17 +225,14 @@
         <!-- DEPOSIT MODAL -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)</h3>
-                
-                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer active:scale-95 transition-transform" onclick="copyAdminPhone()" title="ለመቅዳት ይጫኑ">
-                    <div class="text-[10px] text-gray-300">ገንዘብ የሚላክበት ቁጥር (ለመቅዳት ይጫኑ)፡</div>
+                <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት</h3>
+                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer" onclick="copyAdminPhone()">
+                    <div class="text-[10px] text-gray-300">ቁጥር (ለመቅዳት ይጫኑ)፡</div>
                     <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
                     <div id="copy-status-msg" class="text-[9px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                 </div>
-
-                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100 ብር)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ትራንዛክሽን ደረሰኝ (Receipt / SMS) እዚህ ጋር ኮፒ ፔስት ያድርጉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
-                
+                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
                     <button onclick="submitFinancialRequest('deposit')" class="flex-1 bg-emerald-600 py-2 rounded-xl font-bold">ጥያቄ ላክ</button>
@@ -243,9 +243,9 @@
         <!-- WITHDRAW MODAL -->
         <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm text-center">🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጣት)</h3>
-                <input type="text" id="withdraw-phone-input" placeholder="የሚቀበሉበት ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <input type="number" id="withdraw-amount-input" placeholder="ማውጣት የሚፈልጉት (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <h3 class="font-bold text-amber-400 text-sm text-center">🏧 ቴሌብር ዊዝድሮዋል</h3>
+                <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <input type="number" id="withdraw-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('withdraw-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
                     <button onclick="submitFinancialRequest('withdraw')" class="flex-1 bg-red-600 py-2 rounded-xl font-bold">ማውጫ ላክ</button>
@@ -313,6 +313,7 @@
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
+        let isAudioMuted = false;
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isAdmin) {
@@ -321,11 +322,12 @@
                 document.getElementById('admin-nav-btn').classList.add('hidden');
             }
 
-            document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b> ${isAdmin ? '(አድሚን)' : ''}`;
+            document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
             renderHistoryUI();
             generate500CardGrid();
             startClientTimer();
+            renderPlayerDualCards();
 
             socket.on('connect', () => {
                 document.getElementById('connection-status').innerText = 'Connected';
@@ -347,10 +349,7 @@
         function adminSetWinner(type) {
             socket.emit('adminSetNextWinner', { winnerType: type });
             let msgEl = document.getElementById('admin-winner-status-msg');
-            if (type === 'bot') msgEl.innerText = "✅ ቀጣዩ አሸናፊ ቦት እንዲሆን ተደርጓል!";
-            else if (type === 'random_real') msgEl.innerText = "✅ ራንደም ሪል ዩዘር እንዲያሸንፍ ተስተካክሏል!";
-            else if (type === 'multi_real_3') msgEl.innerText = "✅ 3 እውነተኛ ዩዘሮች በአንድ ላይ እንዲያሸንፉ ተስተካክሏል!";
-            
+            msgEl.innerText = "✅ አሸናፊው ተስተካክሏል!";
             msgEl.classList.remove('hidden');
             setTimeout(() => msgEl.classList.add('hidden'), 3000);
         }
@@ -361,7 +360,12 @@
                 let msgEl = document.getElementById('copy-status-msg');
                 msgEl.classList.remove('hidden');
                 setTimeout(() => msgEl.classList.add('hidden'), 2000);
-            }).catch(err => { alert("ኮፒ ማድረግ አልተቻለም"); });
+            });
+        }
+
+        function toggleAudioMute() {
+            isAudioMuted = !isAudioMuted;
+            alert(isAudioMuted ? "ድምፅ ጠፍቷል (Muted)" : "ድምፅ በርቷል");
         }
 
         function addTransactionHistory(title, amount, type) {
@@ -393,8 +397,7 @@
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
-                let timeStr = `${timeLeft}ሰ`;
-                document.getElementById('stat-timer').innerText = timeStr;
+                document.getElementById('stat-timer').innerText = `${timeLeft}ሰ`;
                 let regBadge = document.getElementById('reg-status-badge');
                 if (regBadge && !confirmedCards.length) {
                     regBadge.innerText = `${timeLeft} ሰከንድ ይቀረዋል`;
@@ -427,7 +430,7 @@
         });
 
         socket.on('cardSelectionSuccess', () => {
-            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! ጨዋታው ሊጀምር ነው።";
+            document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
             renderPlayerDualCards();
         });
@@ -438,7 +441,7 @@
             document.getElementById('stat-players').innerText = count;
             let totalPot = count * 10;
             let winnerPrize = Math.floor(totalPot * 0.70);
-            document.getElementById('stat-derash', {}).innerText = `${winnerPrize} ብር`;
+            document.getElementById('stat-derash').innerText = winnerPrize;
         });
 
         socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
@@ -453,9 +456,6 @@
                 count--;
                 if (count > 0) {
                     numEl.innerText = count;
-                    numEl.classList.remove('countdown-anim');
-                    void numEl.offsetWidth;
-                    numEl.classList.add('countdown-anim');
                 } else {
                     clearInterval(timer);
                     modal.classList.add('hidden');
@@ -472,16 +472,11 @@
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
             renderPlayerDualCards();
-            speakCalledNumber(num);
+            if (!isAudioMuted) speakCalledNumber(num);
         });
 
         function speakCalledNumber(num) {
-            let letter = "ቢ";
-            if (num >= 1 && num <= 15) letter = "ቢ";
-            else if (num >= 16 && num <= 30) letter = "አይ";
-            else if (num >= 31 && num <= 45) letter = "ኤን";
-            else if (num >= 46 && num <= 60) letter = "ጂ";
-            else if (num >= 61 && num <= 75) letter = "ኦ";
+            let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let speechText = `${letter} ${num}`;
             if ('speechSynthesis' in window) {
                 let utterance = new SpeechSynthesisUtterance(speechText);
@@ -503,7 +498,7 @@
             recent.forEach(num => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 const pill = document.createElement('div');
-                pill.className = "bg-purple-900/80 border border-amber-400/50 text-amber-300 font-bold px-1.5 py-0.5 rounded-full text-[9px]";
+                pill.className = "bg-purple-900/80 border border-amber-400/50 text-amber-300 font-bold px-1.5 py-0.5 rounded-full text-[8px]";
                 pill.innerText = `${letter}-${num}`;
                 container.appendChild(pill);
             });
@@ -519,27 +514,42 @@
             let totalPot = playersCount * 10;
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
+            let winnersCount = data.winnersCount || 1;
 
             let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
             let displayName = isMeWin ? userFullName : winnerName;
 
-            document.getElementById('winner-title-badge').innerHTML = `🎉 <span class="text-amber-300 font-black text-base underline">${displayName}</span> WON!`;
+            document.getElementById('winner-title-badge').innerHTML = `🎉 ${winnersCount > 1 ? winnersCount + ' players won!' : displayName + ' WON!'}`;
             document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
             renderWinningCartelaGridWithExactPattern(cardNum, calledNums);
 
-            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 ጠቅላላ ፖት (Pot): <b>${totalPot} ብር</b><br>👑 የተበላው ንጹህ ሽልማት: <span class="text-emerald-400 font-black text-sm">${prizePool} ብር</span>`;
+            const badgesContainer = document.getElementById('multi-winners-badges-container');
+            badgesContainer.innerHTML = '';
+            
+            let mockWinners = winnersCount > 1 ? [
+                { initial: displayName.charAt(0), name: displayName, id: '#' + cardNum },
+                { initial: 'H', name: 'Hodye', id: '#395' },
+                { initial: 'N', name: 'Noah', id: '#456' }
+            ].slice(0, winnersCount) : [{ initial: displayName.charAt(0), name: displayName, id: '#' + cardNum }];
+
+            mockWinners.forEach(w => {
+                const b = document.createElement('div');
+                b.className = "bg-black/50 border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-[10px]";
+                b.innerHTML = `<span class="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white text-[8px]">${w.initial}</span><span class="text-gray-200 font-medium">${w.name}</span><span class="text-amber-400 font-bold">${w.id}</span>`;
+                badgesContainer.appendChild(b);
+            });
+
+            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 ፖት: <b>${totalPot} ብር</b><br>👑 ንጹህ ሽልማት: <span class="text-emerald-400 font-bold">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (isMeWin && prizePool > 0) {
                 walletBalance += prizePool;
                 updateWalletUI();
-                addTransactionHistory('የቢንጎ ሽልማት (Bingo Win)', prizePool, 'income');
+                addTransactionHistory('የቢንጎ ሽልማት', prizePool, 'income');
             }
 
             let secondsLeft = 5;
             let timerEl = document.getElementById('auto-start-timer-msg');
-            timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
-
             let countdownInterval = setInterval(() => {
                 secondsLeft--;
                 timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
@@ -586,85 +596,19 @@
             gridContainer.innerHTML = '';
             ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
                 const hCell = document.createElement('div');
-                hCell.className = idx === 0 ? "bg-blue-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 1 ? "bg-indigo-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 2 ? "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5" : idx === 3 ? "bg-emerald-600 rounded text-center text-white font-bold text-[8px] py-0.5" : "bg-amber-600 rounded text-center text-white font-bold text-[8px] py-0.5";
+                hCell.className = "bg-purple-600 rounded text-center text-white font-bold text-[8px] py-0.5";
                 hCell.innerText = l;
                 gridContainer.appendChild(hCell);
             });
 
             let numbers = getCartelaNumbers(cardNum);
-            let matrix = [];
-            for(let r = 0; r < 5; r++) matrix.push(numbers.slice(r * 5, r * 5 + 5));
-
-            let winningRows = [];
-            let winningCols = [];
-            let isDiag1 = false, isDiag2 = false, isCorners = false;
-
-            for(let r = 0; r < 5; r++) {
-                if(matrix[r].every(val => val === "FREE" || calledNums.includes(val))) {
-                    winningRows.push(r);
-                }
-            }
-
-            if(winningRows.length === 0) {
-                for(let c = 0; c < 5; c++) {
-                    let cMatch = true;
-                    for(let r = 0; r < 5; r++) {
-                        if(matrix[r][c] !== "FREE" && !calledNums.includes(matrix[r][c])) { cMatch = false; break; }
-                    }
-                    if(cMatch) winningCols.push(c);
-                }
-            }
-
-            if(winningRows.length === 0 && winningCols.length === 0) {
-                let d1 = true;
-                for(let i = 0; i < 5; i++) {
-                    let val = matrix[i][i];
-                    if(val !== "FREE" && !calledNums.includes(val)) { d1 = false; break; }
-                }
-                if(d1) isDiag1 = true;
-            }
-
-            if(winningRows.length === 0 && winningCols.length === 0 && !isDiag1) {
-                let d2 = true;
-                for(let i = 0; i < 5; i++) {
-                    let val = matrix[i][4 - i];
-                    if(val !== "FREE" && !calledNums.includes(val)) { d2 = false; break; }
-                }
-                if(d2) isDiag2 = true;
-            }
-
-            if(winningRows.length === 0 && winningCols.length === 0 && !isDiag1 && !isDiag2) {
-                let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
-                if(corners.every(val => calledNums.includes(val))) isCorners = true;
-            }
-
-            for(let r = 0; r < 5; r++) {
-                for(let c = 0; c < 5; c++) {
-                    let cellNum = matrix[r][c];
-                    const isFreeCenter = (cellNum === "FREE");
-                    const isCalled = (cellNum === "FREE" || calledNums.includes(cellNum));
-
-                    let isPartOfWinningPattern = false;
-                    if(winningRows.includes(r)) isPartOfWinningPattern = true;
-                    if(winningCols.includes(c)) isPartOfWinningPattern = true;
-                    if(isDiag1 && r === c) isPartOfWinningPattern = true;
-                    if(isDiag2 && r === 4 - c) isPartOfWinningPattern = true;
-                    if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
-
-                    const cell = document.createElement('div');
-                    let bgClass = "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center";
-                    
-                    if (isFreeCenter || isPartOfWinningPattern) {
-                        bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow";
-                    } else if (isCalled) {
-                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center";
-                    }
-
-                    cell.className = bgClass;
-                    cell.innerText = isFreeCenter ? "★" : cellNum;
-                    gridContainer.appendChild(cell);
-                }
-            }
+            numbers.forEach(cellNum => {
+                const cell = document.createElement('div');
+                const isCalled = (cellNum === "FREE" || calledNums.includes(cellNum));
+                cell.className = isCalled ? "bg-emerald-500 text-black font-bold text-[8px] rounded py-1 text-center" : "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center";
+                cell.innerText = cellNum === "FREE" ? "★" : cellNum;
+                gridContainer.appendChild(cell);
+            });
         }
 
         function resetPlayerSelectionForNewRound() {
@@ -681,6 +625,7 @@
             generate500CardGrid();
             renderVerticalBoard();
             renderRecentBalls();
+            renderPlayerDualCards();
             gameStartTimeServer = Date.now() + 60000;
         }
 
@@ -689,16 +634,16 @@
             if (data.type === 'deposit') {
                 walletBalance += amt;
                 alert(`✅ የ ${amt} ብር ዲፖዚት ጸድቋል!`);
-                addTransactionHistory('ቴሌብር ዲፖዚት (Deposit)', amt, 'income');
+                addTransactionHistory('ዲፖዚት', amt, 'income');
             } else {
                 walletBalance -= amt;
                 alert(`✅ የ ${amt} ብር ዊዝድሮዋል ተልኳል!`);
-                addTransactionHistory('ቴሌብር ዊዝድሮዋል (Withdraw)', amt, 'expense');
+                addTransactionHistory('ዊዝድሮዋል', amt, 'expense');
             }
             updateWalletUI();
         });
 
-        socket.on('financialRejected', (data) => { alert(`❌ ጥያቄዎ ተሰርዟል።`); });
+        socket.on('financialRejected', () => { alert(`❌ ጥያቄዎ ተሰርዟል።`); });
         socket.on('requestSubmitted', (res) => { alert(res.message); });
 
         function updateWalletUI() {
@@ -715,14 +660,13 @@
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
                 if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
-                if (!receipt || receipt.length < 3) { alert("⚠️ የቴሌብር ደረሰኝ ያስገቡ!"); return; }
+                if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
                 document.getElementById('deposit-modal').classList.add('hidden');
             } else {
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-                if (!phone) { alert("⚠️ ስልክ ቁጥር ያስገቡ!"); return; }
-                if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
-                if (walletBalance < amount) { alert("⚠️ በቂ የኪስ ቦርሳ የለዎትም!"); return; }
+                if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ ያስገቡ!"); return; }
+                if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
@@ -753,9 +697,7 @@
 
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
-                        if (takenCardsByOthers.includes(i) && !userSelectedCards.includes(i)) {
-                            return; 
-                        }
+                        if (takenCardsByOthers.includes(i) && !userSelectedCards.includes(i)) return;
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
                         } else {
@@ -763,7 +705,6 @@
                             userSelectedCards.push(i);
                         }
                         document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
-                        
                         socket.emit('tempSelectCards', userSelectedCards);
                         generate500CardGrid();
                     };
@@ -775,12 +716,12 @@
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
-            if (walletBalance < totalCost) { alert("በቂ የኪس ቦርሳ የለዎትም!"); return; }
+            if (walletBalance < totalCost) { alert("በቂ ሂሳብ የለዎትም!"); return; }
             walletBalance -= totalCost;
             updateWalletUI();
 
             confirmedCards = [...userSelectedCards];
-            addTransactionHistory('የካርድ ግዢ (Card Purchase)', totalCost, 'expense');
+            addTransactionHistory('ካርድ ግዢ', totalCost, 'expense');
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
@@ -803,82 +744,68 @@
 
         function toggleDaubMode() {
             const autoToggle = document.getElementById('auto-daub-toggle');
-            document.getElementById('mode-label').innerText = autoToggle.checked ? "አውቶማቲክ (Auto Daub)" : "ማኑዋል (Manual Daub)";
-            document.getElementById('mode-instruction-text').innerText = autoToggle.checked ? "ቁጥሮች በራሱ ይሞላሉ" : "እርስዎ ጫኑዋቸው";
+            document.getElementById('mode-label').innerText = autoToggle.checked ? "Automatic" : "Manual";
             renderPlayerDualCards();
         }
 
         function renderPlayerDualCards() {
-            const container = document.getElementById('player-dual-cards-container');
-            const noticeBox = document.getElementById('spectator-notice');
-            const cardsTitle = document.getElementById('player-cards-title');
+            const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
             let isAutoMode = autoToggle ? autoToggle.checked : true;
             container.innerHTML = '';
 
             if (confirmedCards.length === 0) {
-                noticeBox.classList.remove('hidden');
-                cardsTitle.classList.add('hidden');
-                container.classList.add('hidden');
+                container.className = "flex-1 bg-[#180a29] rounded-xl p-3 border border-purple-500/30 flex flex-col justify-center items-center text-center";
+                container.innerHTML = `
+                    <div class="text-white font-bold text-sm mb-1">Watching Only</div>
+                    <div class="text-gray-400 text-[9px] leading-relaxed">
+                        የዚህ ዙር ጨዋታ ተጀምሯል።<br>አዲስ ዙር እስከሚጀምር እዚህ ይጠብቁ።
+                    </div>
+                `;
                 return;
             }
 
-            noticeBox.classList.add('hidden');
-            cardsTitle.classList.remove('hidden');
-            container.classList.remove('hidden');
+            container.className = `flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col ${confirmedCards.length > 1 ? 'justify-between space-y-1' : 'justify-center'} overflow-y-auto custom-scroll`;
 
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/30 flex flex-col space-y-1";
+                cardWrapper.className = "bg-[#140826] p-1 rounded-lg border border-purple-500/30 flex flex-col space-y-0.5 w-full";
                 
                 const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center border-b border-white/10 pb-0.5";
+                cardHeader.className = "text-[8px] font-bold text-amber-400 text-center";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
-
-                const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[8px] text-white";
-                ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
-                    const hCell = document.createElement('div');
-                    hCell.className = idx === 0 ? "bg-blue-600 rounded p-0.5" : idx === 1 ? "bg-indigo-600 rounded p-0.5" : idx === 2 ? "bg-purple-600 rounded p-0.5" : idx === 3 ? "bg-emerald-600 rounded p-0.5" : "bg-amber-600 rounded p-0.5";
-                    hCell.innerText = l;
-                    headersGrid.appendChild(hCell);
-                });
-                cardWrapper.appendChild(headersGrid);
 
                 const miniGrid = document.createElement('div');
                 miniGrid.className = "grid grid-cols-5 gap-0.5 text-center";
                 let numbers = getCartelaNumbers(cardNum);
 
-                for(let r = 0; r < 5; r++) {
-                    for(let c = 0; c < 5; c++) {
-                        let cellNum = numbers[r * 5 + c];
-                        const isFreeCenter = (cellNum === "FREE");
-                        const isCalled = calledNumbersList.includes(cellNum);
-                        const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
+                numbers.forEach(cellNum => {
+                    const isFreeCenter = (cellNum === "FREE");
+                    const isCalled = calledNumbersList.includes(cellNum);
+                    const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
-                        const cell = document.createElement('div');
-                        let cellClass = "bg-white/5 text-gray-300 text-[8px] rounded p-1 cursor-pointer transition-colors";
-                        if (isFreeCenter) cellClass = "bg-purple-600 text-white font-bold text-[8px] rounded p-1";
-                        else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-bold text-[8px] rounded p-1";
-                        else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-bold text-[8px] rounded p-1";
-                        else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[8px] rounded p-1 border border-amber-400/50 cursor-pointer";
+                    const cell = document.createElement('div');
+                    let cellClass = "bg-white/5 text-gray-300 text-[7px] rounded p-0.5 text-center";
+                    if (isFreeCenter) cellClass = "bg-purple-600 text-white font-bold text-[7px] rounded p-0.5";
+                    else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-bold text-[7px] rounded p-0.5";
+                    else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-bold text-[7px] rounded p-0.5";
+                    else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[7px] rounded p-0.5 border border-amber-400/50 cursor-pointer";
 
-                        cell.className = cellClass;
-                        cell.innerText = isFreeCenter ? "★" : cellNum;
+                    cell.className = cellClass;
+                    cell.innerText = isFreeCenter ? "★" : cellNum;
 
-                        if (!isAutoMode && !isFreeCenter) {
-                            cell.onclick = () => {
-                                if (isCalled && !manualDaubedNumbers[cardNum].includes(cellNum)) {
-                                    manualDaubedNumbers[cardNum].push(cellNum);
-                                    renderPlayerDualCards();
-                                }
-                            };
-                        }
-                        miniGrid.appendChild(cell);
+                    if (!isAutoMode && !isFreeCenter) {
+                        cell.onclick = () => {
+                            if (isCalled && !manualDaubedNumbers[cardNum].includes(cellNum)) {
+                                manualDaubedNumbers[cardNum].push(cellNum);
+                                renderPlayerDualCards();
+                            }
+                        };
                     }
-                }
+                    miniGrid.appendChild(cell);
+                });
                 cardWrapper.appendChild(miniGrid);
                 container.appendChild(cardWrapper);
             });
