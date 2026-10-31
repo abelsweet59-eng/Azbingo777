@@ -176,7 +176,7 @@
                 
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
                     <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ (Manual Winner Rigging)</div>
-                    <div class="text-[10px] text-gray-400">ቀጣዩ ጨዋታ ማሸነፍ ያለበትን አካል ከዚህ በታች በባተን ይምረጡ[span_0](start_span)[span_0](end_span):</div>
+                    <div class="text-[10px] text-gray-400">ቀጣዩ ጨዋታ ማሸነፍ ያለበትን አካል ከዚህ በታች ይምረጡ:</div>
                     
                     <div class="grid grid-cols-1 gap-2 pt-1">
                         <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ (Single Bot)</button>
@@ -775,7 +775,7 @@
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
-            if (walletBalance < totalCost) { alert("በቂ የኪስ ቦርሳ የለዎትም!"); return; }
+            if (walletBalance < totalCost) { alert("በቂ የኪس ቦርሳ የለዎትም!"); return; }
             walletBalance -= totalCost;
             updateWalletUI();
 
