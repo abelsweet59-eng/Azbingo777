@@ -29,7 +29,7 @@ let globalRoom = {
 let forcedNextWinner = null; 
 let activeGameInterval = null;
 let gameRoundCounter = 0;
-let currentRoundTargetCalls = 20; // 🟢 ለእያንዳንዱ ዙር በዘፈቀደ የሚመረጥ የማጠናቀቂያ ጥሪዎች ኢላማ
+let currentRoundTargetCalls = 20;
 
 // እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች)
 const fakeBotNames = [
@@ -44,13 +44,12 @@ const fakeBotNames = [
     "Ali_Bira", "Yohana_Negash", "Zelalem_Worku", "Kebede_Bante", "Mulugeta_Assefa", 
     "Getachew_Bekele", "Dagnachew_Molla", "Asnake_Tadesse", "Wondwossen_Reta", "Mekdes_Lemma", 
     "Bruk_Zenebe", "Natnael_Chala", "Samuel_Dagne", "Michael_Fikru", "Ephrem_Haile", 
-    "Addis_Boy", "Ethio_Pro", "ngo_Master", "Telegram_VIP", "Addis_Vibes", 
+    "Addis_Boy", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", 
     "Habesha_Style", "Nuru_Mohammed", "Bereket_Kassa", "Daniel_Tadesse", "Eyob_Lemma"
 ];
 
 let pendingRequests = {};
 
-// የሰዓት እና የሉፕ ራንደም ትራፊክ (Time-based & Loop Random Traffic Fluctuation)
 let currentRandomBaseBots = 135;
 function getRealisticBotsCount(realCount) {
     let nowHours = new Date().getHours();
@@ -316,22 +315,19 @@ setInterval(() => {
         globalRoom.calledNumbers = [];
         gameRoundCounter++;
         
-        // 🟢 እጅግ ሪአሊስቲክ የሆነ ራንደም ማጠናቀቂያ ጥሪ ብዛት (ከ 12 እስከ 42 ጥሪዎች በዘፈቀደ)
-        // አንዳንዴ በፍጥነት በ 12-15 ያበቃል፣ አንዳንዴ በ 22-30፣ አንዳንዴም ተዘርግቶ እስከ 35-42 ይደርሳል
         let randDist = Math.random();
         if (randDist < 0.25) {
-            currentRoundTargetCalls = Math.floor(Math.random() * 5) + 12; // 12 እስከ 16 (ፈጣን ዙር)
+            currentRoundTargetCalls = Math.floor(Math.random() * 5) + 12; 
         } else if (randDist < 0.70) {
-            currentRoundTargetCalls = Math.floor(Math.random() * 11) + 17; // 17 እስከ 27 (መካከለኛ ዙር)
+            currentRoundTargetCalls = Math.floor(Math.random() * 11) + 17; 
         } else {
-            currentRoundTargetCalls = Math.floor(Math.random() * 16) + 28; // 28 እስከ 43 (ረጅም እና ተወዳዳሪ ዙር)
+            currentRoundTargetCalls = Math.floor(Math.random() * 16) + 28; 
         }
 
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
-        // 🟢 የጥሪ ፍጥነት በየ 5 ሰከንድ (5000ms)
         activeGameInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(activeGameInterval);
@@ -343,7 +339,6 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                // 🟢 የተዘጋጀው ራንደም ኢላማ (currentRoundTargetCalls) ሲደርስ ወይም ከፍ ሲል አሸናፊ ይወጣል
                 if (globalRoom.calledNumbers.length >= currentRoundTargetCalls) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
@@ -376,7 +371,14 @@ setInterval(() => {
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = getRealisticBotsCount(realCount);
-                        let allowMultiBotWinners = (gameRoundCounter % 3 === 0);
+                        
+                        // 🟢 በየ 4 ጨዋታዎች አንዴ 2 አሸናፊዎች፤ በየ 5 ጨዋታዎች አንዴ 3 አሸናፊዎች እንዲኖሩ ማድረግ
+                        let winnersCountToPick = 1;
+                        if (gameRoundCounter % 5 === 0) {
+                            winnersCountToPick = 3; // በየ 5 ጨዋታ አንዴ 3 አሸናፊዎች
+                        } else if (gameRoundCounter % 4 === 0) {
+                            winnersCountToPick = 2; // በየ 4 ጨዋታ አንዴ 2 አሸናፊዎች
+                        }
 
                         if (!isRealDominant && currentBots > 0) {
                             let candidateCards = [];
@@ -384,9 +386,7 @@ setInterval(() => {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
-                                let winnersCountToPick = allowMultiBotWinners ? (Math.random() < 0.5 ? 2 : 3) : 1;
                                 let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
-                                
                                 for(let b = 0; b < winnersCountToPick && candidateCards.length > 0; b++) {
                                     let randCardIdx = Math.floor(Math.random() * candidateCards.length);
                                     let winningCard = candidateCards.splice(randCardIdx, 1)[0];
@@ -433,10 +433,11 @@ setInterval(() => {
                         forcedNextWinner = null;
 
                         let primaryWinner = winningCardsList[0];
+                        // 🟢 ፖቱ ተደብቆ ለአሸናፊው የሚገባው "ደራሽ" (Prize) ብቻ እንዲተላለፍ ተደርጓል
                         io.emit('bingoWinner', { 
                             username: primaryWinner.username, userId: primaryWinner.userId,
                             cardNum: primaryWinner.cardNum, playersCount: totalPlayers,
-                            totalPot: totalPot, prize: prizePerWinner, winnersCount: winningCardsList.length,
+                            prize: prizePerWinner, winnersCount: winningCardsList.length,
                             calledNumbers: globalRoom.calledNumbers
                         });
 
@@ -453,7 +454,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
-        }, 5000); // 5 ሰከንድ የጥሪ ልዩነት
+        }, 5000); 
     }
 }, 1000);
 
