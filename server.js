@@ -266,6 +266,7 @@ io.on('connection', (socket) => {
 
     let currentBotsCount = getRealisticBotsCount(realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
+
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
@@ -355,7 +356,6 @@ setInterval(() => {
         let activeSockets = Object.keys(globalRoom.playerRoundCards);
         let chosenWinner = null;
 
-        // 🟢 1. አድሚን ካልዘዘ በስተቀር (ማለትም forcedNextWinner ከሌለ) አሸናፊው ሁልጊዜ ቦት (Fake Bot) ብቻ ይሆናል!
         if (forcedNextWinner === "bot" || forcedNextWinner === "random_real" || (forcedNextWinner && forcedNextWinner.length > 0)) {
             if (forcedNextWinner === "bot") {
                 let winningCard = Math.floor(Math.random() * 500) + 1;
@@ -383,7 +383,6 @@ setInterval(() => {
                     chosenWinner = { username: winningUser, userId: "bot_fallback", cardNum: winningCard, winningNumbersNeeded: patternNums };
                 }
             } else {
-                // የተወሰነ ዩዘር ID በአድሚን ከተሰጠ
                 for (let sId of activeSockets) {
                     let pData = globalRoom.playerRoundCards[sId];
                     if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
@@ -401,7 +400,6 @@ setInterval(() => {
                 }
             }
         } else {
-            // 🟢 መደበኛ ዙር: አድሚን ካላዘዘ 100% ቦት ብቻ ነው የሚያሸንፈው! (ሪል ዩዘር በራሱ ፈቃድ አሸናፊ አይሆንም)
             let winningCard = Math.floor(Math.random() * 500) + 1;
             let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
             let patternNums = getWinningPatternNumbers(winningCard);
@@ -409,9 +407,22 @@ setInterval(() => {
         }
 
         currentRoundWinnerInfo = chosenWinner;
-
         let winningPatternNums = currentRoundWinnerInfo.winningNumbersNeeded;
-        currentRoundTargetCalls = winningPatternNums.length + Math.floor(Math.random() * 5) + 5;
+
+        // 🟢 ጳጥሪ ስሌት (Updated Call Count Logic)
+        // ሰው / ብዙ ተጫዋች ሲኖር (realCount > 0): ከ 10 እስከ 18 (አንዴ 10፣ 11፣ 13፣ 14፣ 15 እያለ)
+        // ሰው ሳይኖር ሲቀር (realCount === 0): ከ 20 እስከ 28 (አንዳንዴ በሬር ራንደም እስከ 32 ወይም 33)
+        if (realCount > 0) {
+            let fastRanges = [10, 11, 12, 13, 14, 15, 16, 17, 18];
+            currentRoundTargetCalls = fastRanges[Math.floor(Math.random() * fastRanges.length)];
+        } else {
+            let slowRanges = [20, 21, 22, 23, 24, 25, 26, 27, 28];
+            // ሬር አጋጣሚ (Rare chance) እስከ 32 ወይም 33 እንዲደርስ
+            if (Math.random() < 0.15) {
+                slowRanges = [29, 30, 31, 32, 33];
+            }
+            currentRoundTargetCalls = slowRanges[Math.floor(Math.random() * slowRanges.length)];
+        }
 
         io.emit('gameStartedBroadcast');
 
@@ -440,7 +451,11 @@ setInterval(() => {
 
                 let isWinnerReady = checkWinningPattern(currentRoundWinnerInfo.cardNum, globalRoom.calledNumbers);
 
-                if (isWinnerReady || globalRoom.calledNumbers.length >= 75) {
+                // ዝቅተኛው የጥሪ ገደብ እንደየሁኔታው ይስተካከላል
+                let minCallsNeeded = realCount > 0 ? 8 : 15;
+                let isTargetReached = globalRoom.calledNumbers.length >= currentRoundTargetCalls;
+
+                if ((isWinnerReady && globalRoom.calledNumbers.length >= minCallsNeeded && isTargetReached) || globalRoom.calledNumbers.length >= 75) {
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.playerRoundCards = {};
@@ -449,14 +464,14 @@ setInterval(() => {
                     forcedNextWinner = null;
 
                     let totalPot = totalPlayers * 10;
-                    let totalPrizePool = Math.floor(totalPot * 0.70);
+                    let netPrizePool = Math.floor(totalPot * 0.70); // ንጹህ የሽልማት መጠን (70%)
 
                     io.emit('bingoWinner', { 
                         username: currentRoundWinnerInfo.username, 
                         userId: currentRoundWinnerInfo.userId,
                         cardNum: currentRoundWinnerInfo.cardNum, 
                         playersCount: totalPlayers,
-                        prize: totalPrizePool, 
+                        prize: netPrizePool, 
                         winnersCount: 1,
                         calledNumbers: globalRoom.calledNumbers
                     });
