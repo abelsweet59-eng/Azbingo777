@@ -29,6 +29,7 @@ let globalRoom = {
 let forcedNextWinner = null; 
 let activeGameInterval = null;
 let gameRoundCounter = 0;
+let currentRoundTargetCalls = 20; // 🟢 ለእያንዳንዱ ዙር በዘፈቀደ የሚመረጥ የማጠናቀቂያ ጥሪዎች ኢላማ
 
 // እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች)
 const fakeBotNames = [
@@ -43,7 +44,7 @@ const fakeBotNames = [
     "Ali_Bira", "Yohana_Negash", "Zelalem_Worku", "Kebede_Bante", "Mulugeta_Assefa", 
     "Getachew_Bekele", "Dagnachew_Molla", "Asnake_Tadesse", "Wondwossen_Reta", "Mekdes_Lemma", 
     "Bruk_Zenebe", "Natnael_Chala", "Samuel_Dagne", "Michael_Fikru", "Ephrem_Haile", 
-    "Addis_Boy", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", 
+    "Addis_Boy", "Ethio_Pro", "ngo_Master", "Telegram_VIP", "Addis_Vibes", 
     "Habesha_Style", "Nuru_Mohammed", "Bereket_Kassa", "Daniel_Tadesse", "Eyob_Lemma"
 ];
 
@@ -314,11 +315,23 @@ setInterval(() => {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
         gameRoundCounter++;
+        
+        // 🟢 እጅግ ሪአሊስቲክ የሆነ ራንደም ማጠናቀቂያ ጥሪ ብዛት (ከ 12 እስከ 42 ጥሪዎች በዘፈቀደ)
+        // አንዳንዴ በፍጥነት በ 12-15 ያበቃል፣ አንዳንዴ በ 22-30፣ አንዳንዴም ተዘርግቶ እስከ 35-42 ይደርሳል
+        let randDist = Math.random();
+        if (randDist < 0.25) {
+            currentRoundTargetCalls = Math.floor(Math.random() * 5) + 12; // 12 እስከ 16 (ፈጣን ዙር)
+        } else if (randDist < 0.70) {
+            currentRoundTargetCalls = Math.floor(Math.random() * 11) + 17; // 17 እስከ 27 (መካከለኛ ዙር)
+        } else {
+            currentRoundTargetCalls = Math.floor(Math.random() * 16) + 28; // 28 እስከ 43 (ረጅም እና ተወዳዳሪ ዙር)
+        }
+
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
-        // 🟢 የጥሪ ፍጥነት በየ 5 ሰከንድ (5000ms) እንዲሆን ተስተካክሏል
+        // 🟢 የጥሪ ፍጥነት በየ 5 ሰከንድ (5000ms)
         activeGameInterval = setInterval(() => {
             if (!globalRoom.gameActive) {
                 clearInterval(activeGameInterval);
@@ -330,10 +343,8 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                // 🟢 ሉፕ ስታቲስቲክስ፡ ከ 17 እስከ 22 ጥሪዎች (አንዳንዴም እስከ 14 በዘፈቀደ) እንዲያልቅ የተደረገበት መስፈርት
-                let targetMinCalls = (Math.random() < 0.2) ? 14 : Math.floor(Math.random() * 6) + 17; // 17 እስከ 22 (ወይም 14)
-
-                if (globalRoom.calledNumbers.length >= targetMinCalls) {
+                // 🟢 የተዘጋጀው ራንደም ኢላማ (currentRoundTargetCalls) ሲደርስ ወይም ከፍ ሲል አሸናፊ ይወጣል
+                if (globalRoom.calledNumbers.length >= currentRoundTargetCalls) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
@@ -442,7 +453,7 @@ setInterval(() => {
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
-        }, 5000); // 🟢 የቲም ኢንተርቫል ወደ 5000 ሚሊሰከንድ (5 ሰከንድ) ተስተካክሏል
+        }, 5000); // 5 ሰከንድ የጥሪ ልዩነት
     }
 }, 1000);
 
