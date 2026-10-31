@@ -597,7 +597,7 @@
             return flatList;
         }
 
-        // 🟢 ትክክለኛው የዊኒንግ ንድፍ ማሳያ ሎጂክ (Strict Winning Pattern Highlighter)
+        // 🟢 ትክክለኛው የዊኒንግ ንድፍ ማሳያ ሎጂክ (Strict Winning Line + Other Called Numbers Highlight)
         function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
             const gridContainer = document.getElementById('winning-cartela-grid');
             gridContainer.innerHTML = '';
@@ -666,12 +666,12 @@
                     if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
 
                     const cell = document.createElement('div');
-                    let bgClass = "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center"; // ያልተጠሩ ቁጥሮች (ባዶ / ደብዘዝ ያለ)
+                    let bgClass = "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center"; // ⚪ ያልተጠሩ ቁጥሮች (ባዶ / ደብዘዝ ያለ)
                     
                     if (isFreeCenter || isPartOfWinningPattern) {
                         bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow"; // 🟢 ያሸነፈበት ትክክለኛው መስመር (አረንጓዴ)
                     } else if (isCalled) {
-                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center"; // 🟡 የተጠሩ ግን መስመር ያልሠሩ ቁጥሮች
+                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center"; // 🟡 ሌሎች የተጠሩ ቁጥሮች (ጣለ ጣለ ባለ መልኩ ቢጫ)
                     }
 
                     cell.className = bgClass;
@@ -721,7 +721,7 @@
         }
 
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.add('hidden'); } // fixed modal toggle
+        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
