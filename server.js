@@ -28,9 +28,9 @@ let globalRoom = {
 
 let forcedNextWinner = null; 
 let activeGameInterval = null;
-let gameRoundCounter = 0; // 🟢 የጨዋታዎችን ብዛት ለመቁጠር (Multi-winner በየ 3-4 ጨዋታ አንዴ እንዲከሰት)
+let gameRoundCounter = 0;
 
-// 🟢 እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች የተዋሃዱባቸው)
+// እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች)
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
     "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
@@ -49,7 +49,7 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// 🟢 የሰዓት እና የሉፕ ራንደም ትራፊክ (Time-based & Loop Random Traffic Fluctuation)
+// የሰዓት እና የሉፕ ራንደም ትራፊክ (Time-based & Loop Random Traffic Fluctuation)
 let currentRandomBaseBots = 135;
 function getRealisticBotsCount(realCount) {
     let nowHours = new Date().getHours();
@@ -313,7 +313,7 @@ setInterval(() => {
     if (!globalRoom.gameActive && now >= globalRoom.gameStartTime) {
         globalRoom.gameActive = true;
         globalRoom.calledNumbers = [];
-        gameRoundCounter++; // የጨዋታ ሉፕ ቆጠራ
+        gameRoundCounter++;
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
@@ -361,8 +361,6 @@ setInterval(() => {
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = getRealisticBotsCount(realCount);
-                        
-                        // 🟢 በየ 3 ወይም 4 ጨዋታዎች አንዴ (Multi-winner 2 ወይም 3 የተለያዩ ቦቶች በአንድ ላይ እንዲያሸንፉ ማድረግ)
                         let allowMultiBotWinners = (gameRoundCounter % 3 === 0);
 
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
@@ -371,7 +369,6 @@ setInterval(() => {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
-                                // 2 ወይም 3 የተለያዩ ቦቶች እንዲወጡ ማድረግ
                                 let winnersCountToPick = allowMultiBotWinners ? (Math.random() < 0.5 ? 2 : 3) : 1;
                                 let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
                                 
@@ -424,4 +421,28 @@ setInterval(() => {
                         io.emit('bingoWinner', { 
                             username: primaryWinner.username, userId: primaryWinner.userId,
                             cardNum: primaryWinner.cardNum, playersCount: totalPlayers,
-                            totalPot: totalPot, prize: prizePerWinner, winnersCount: winningCardsList
+                            totalPot: totalPot, prize: prizePerWinner, winnersCount: winningCardsList.length,
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+
+                        clearInterval(activeGameInterval);
+                    }
+                }
+            } else {
+                globalRoom.gameActive = false;
+                globalRoom.gameStartTime = Date.now() + roundDuration;
+                globalRoom.playerRoundCards = {};
+                globalRoom.playerTemporaryCards = {};
+                refreshTakenCardsList();
+                forcedNextWinner = null;
+                io.emit('gameEndedBroadcast');
+                clearInterval(activeGameInterval);
+            }
+        }, 3500); 
+    }
+}, 1000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
