@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[10px] font-bold text-amber-400">30</div>
+                <div id="stat-players" class="text-[10px] font-bold text-amber-400">200</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[8px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -72,7 +72,7 @@
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
                     <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
                         <div>
-                            <div id="user-welcome-info" class="text-gray-300 font-bold text-xs">የካርድ ምርጫ (ከ 1 እስከ 300)</div>
+                            <div id="user-welcome-info" class="text-gray-300 font-bold text-xs">የካርድ ምርጫ (ከ 1 እስከ 500)</div>
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
@@ -80,8 +80,8 @@
                         </div>
                     </div>
 
-                    <!-- 300 Cards Grid Container -->
-                    <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-6 gap-1.5" id="card-grid-300"></div>
+                    <!-- 500 Cards Grid Container -->
+                    <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
 
                     <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
                         <div>
@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: ADMIN PANEL (WITH MANUAL WINNER CONTROL) -->
+            <!-- TAB 3: ADMIN PANEL -->
             <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
@@ -329,7 +329,7 @@
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b> ${isAdmin ? '(አድሚን)' : ''}`;
             updateWalletUI();
             renderHistoryUI();
-            generate300CardGrid();
+            generate500CardGrid();
             startClientTimer();
 
             socket.on('connect', () => {
@@ -343,11 +343,10 @@
 
             socket.on('updateTakenCards', (takenList) => {
                 takenCardsByOthers = takenList;
-                generate300CardGrid();
+                generate500CardGrid();
             });
         });
 
-        // 🟢 የአድሚን ዊነር መቆጣጠሪያ ተግባራት (Admin Winner Functions)
         function adminSetWinner(type) {
             socket.emit('adminSetNextWinner', { winnerType: type });
             let msgEl = document.getElementById('admin-winner-status-msg');
@@ -453,7 +452,7 @@
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
                 renderVerticalBoard();
-                generate300CardGrid();
+                generate500CardGrid();
             }
         });
 
@@ -567,7 +566,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 30;
+            let playersCount = data.playersCount || 200;
             let totalPot = data.totalPot || (playersCount * 10);
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -735,7 +734,7 @@
             document.getElementById('stat-called-count').innerText = "0";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
-            generate300CardGrid();
+            generate500CardGrid();
             renderVerticalBoard();
             renderRecentBalls();
             gameStartTimeServer = Date.now() + 60000;
@@ -771,45 +770,59 @@
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
         function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
+        // 🟢 የፋይናንስ ጥያቄ መላኪያ (ባዶ እንዳይላክ እና የተሟላ መረጃ እንዲይዝ የተደረገ)
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
+                
+                if (isNaN(amount) || amount < 100) {
+                    alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 100 ብር ነው።");
+                    return;
+                }
+                if (!receipt || receipt.length < 3) {
+                    alert("⚠️ እባክዎ የቴሌብር ትራንዛክሽን ደረሰኝ (Receipt / SMS) በትክክል ያስገቡ! ባዶ መላክ አይቻልም።");
+                    return;
+                }
                 document.getElementById('deposit-modal').classList.add('hidden');
             } else {
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
+
+                if (!phone) {
+                    alert("⚠️ እባክዎ የሚቀበሉበትን ስልክ ቁጥር ያስገቡ!");
+                    return;
+                }
+                if (isNaN(amount) || amount < 100) {
+                    alert("⚠️ ዝቅተኛው የዊዝድሮዋል መጠን 100 ብር ነው።");
+                    return;
+                }
+                if (walletBalance < amount) {
+                    alert("⚠️ በቂ ሂሳብ የለዎትም!");
+                    return;
+                }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
 
-            if (type === 'withdraw' && !phone) {
-                alert("⚠️ እባክዎ ስልክ ቁጥር ያስገቡ!");
-                document.getElementById('withdraw-modal').classList.remove('hidden');
-                return;
-            }
-
-            if (isNaN(amount) || amount < 100) {
-                alert("⚠️ ዝቅተኛው መጠን 100 ብር ነው።");
-                if (type === 'deposit') document.getElementById('deposit-modal').classList.add('hidden');
-                else document.getElementById('withdraw-modal').classList.add('hidden');
-                return;
-            }
-
-            if (type === 'withdraw' && walletBalance < amount) {
-                alert("⚠️ በቂ ሂሳብ የለዎትም!");
-                document.getElementById('withdraw-modal').classList.add('hidden');
-                return;
-            }
-
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, phone, receipt });
+            // ዩዘር ID፣ ስም፣ አሁን ያለው ቀሪ ሂሳብ (walletBalance) እና የጥያቄ መጠኑ ወደ ሰርቨር ይላካል
+            socket.emit('financialRequest', { 
+                type, 
+                amount, 
+                username: userFullName, 
+                userId: telegramUserId, 
+                currentBalance: walletBalance,
+                phone, 
+                receipt 
+            });
         }
 
-        function generate300CardGrid() {
-            const grid = document.getElementById('card-grid-300');
+        // 🟢 የ 500 ካርዶች ግሪድ (Grid for 500 Cards)
+        function generate500CardGrid() {
+            const grid = document.getElementById('card-grid-500');
             if (!grid) return;
             grid.innerHTML = '';
-            for(let i = 1; i <= 300; i++) {
+            for(let i = 1; i <= 500; i++) {
                 const btn = document.createElement('button');
                 
                 let isSelectedByMe = userSelectedCards.includes(i);
@@ -819,14 +832,14 @@
                 let displayLabel = String(i);
 
                 if (isConfirmedByMe || isSelectedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-xs py-2 rounded shadow";
+                    btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded shadow";
                     btn.innerText = displayLabel;
                 } else if (isConfirmedByOther) {
-                    btn.className = "bg-red-950/70 text-red-300 font-medium text-xs py-2 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
+                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[10px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.innerText = displayLabel;
                     btn.disabled = true;
                 } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-xs py-2 rounded border border-white/5";
+                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[10px] py-1.5 rounded border border-white/5";
                     btn.innerText = displayLabel;
                 }
 
@@ -844,7 +857,7 @@
                             userSelectedCards.push(i);
                         }
                         document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
-                        generate300CardGrid();
+                        generate500CardGrid();
                     };
                 }
 
