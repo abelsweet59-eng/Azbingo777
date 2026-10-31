@@ -25,9 +25,7 @@ let globalRoom = {
     playerRoundCards: {}
 };
 
-// ለአድሚን ማኑዋል ዊነር መቆጣጠሪያ
-let forcedNextWinner = null; // "bot" ወይም የሪል ዩዘር ID (String)
-
+let forcedNextWinner = null; 
 let activeGameInterval = null;
 
 const fakeBotNames = [
@@ -40,7 +38,6 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// 1. የ 300 ቋሚ እና የተለዩ (Unique) ካርዶች አሰራር
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     let available = [];
@@ -95,17 +92,16 @@ function generateCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 4. 5ቱ የቢንጎ የድል ቅጦች (አግድም፣ ቁመት፣ ሰያፍ እና አራቱን ማዕዘኖች - Corners)
 function checkWinningPattern(cardNum, calledNumbers) {
     let numbers = generateCartelaNumbers(cardNum);
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // አግድም (Horizontal)
+    // አግድም
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-    // ቁመት (Vertical)
+    // ቁመት
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -113,28 +109,27 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
-    // ሰያፍ 1 (Diagonal 1)
+    // ሰያፍ 1
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
-    // ሰያፍ 2 (Diagonal 2)
+    // ሰያፍ 2
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
-    // አራቱን ማዕዘኖች (All four corners)
+    // ማዕዘኖች
     let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
     if(corners.every(val => calledNumbers.includes(val))) return true;
 
     return false;
 }
 
-// 7. የቴሌግራም ፖሊንግ እና አድሚን አሰራር
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -232,7 +227,6 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
-    // 2. ተለዋዋጭ የቦቶች ቅነሳ ሉፕ
     let currentBotsCount = Math.max(0, 30 - realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     
@@ -257,10 +251,8 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    // ከአድሚን ፓነል የሚመጣውን የሚቀጥለው አሸናፊ ምርጫ መቀበያ (Admin Set Winner)
     socket.on('adminSetNextWinner', (data) => {
         forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
-        console.log("🛡️ Admin set forced next winner to:", forcedNextWinner);
         socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
     });
 
@@ -290,6 +282,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// 🟢 የጨዋታ ፍሰት (Realistic Game Flow - 3.5 seconds interval per ball)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
@@ -316,11 +309,11 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                if (globalRoom.calledNumbers.length >= 4) {
+                // ኳሶች ቢያንስ 10 ቁጥር ከተጠሩ በኋላ ማሸነፍ ይጀምራል (ለእውነተኛ ፍሰት)
+                if (globalRoom.calledNumbers.length >= 10) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 🟢 የተስተካከለ የአድሚን ማኑዋል ዊነር ሎጂክ (Admin Forced Winner Execution)
                     if (forcedNextWinner === "bot") {
                         let currentBots = Math.max(0, 30 - realCount);
                         if (currentBots > 0) {
@@ -335,26 +328,25 @@ setInterval(() => {
                             }
                         }
                     } else if (forcedNextWinner && forcedNextWinner.length > 0) {
-                        // አድሚኑ የጻፈው ዩዘር ID ከገባ, ያ ሰው ካርድ መርጦ ከሆነ ወዲያውኑ አሸናፊ እናደርገዋለን
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
                             if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
                                 for (let cNum of pData.cards) {
-                                    // አድሚኑ ባዘዘበት ሰዓት ጥለቱን ከፍ አድርገን ዩዘሩ ወዲያውኑ እንዲያሸንፍ እናደርጋለን
-                                    winningCardsList.push({
-                                        username: pData.username || "ተጫዋች",
-                                        userId: pData.userId,
-                                        cardNum: cNum
-                                    });
+                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
+                                        winningCardsList.push({
+                                            username: pData.username || "ተጫዋች",
+                                            userId: pData.userId,
+                                            cardNum: cNum
+                                        });
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // ማኑዋል ዊነር ካልተመረጠ (ወይም ተጠቃሚው ካልተገኘ) በመደበኛ ህጎች (80% ሪል ዩዘር / ቦት ፖሊሲ) ይቀጥላል
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = Math.max(0, 30 - realCount);
-                        if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
+                        if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
                             let candidateCards = [];
                             for (let c = 1; c <= 300; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
@@ -380,7 +372,7 @@ setInterval(() => {
                                 }
                             }
 
-                            if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 12) {
+                            if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 20) {
                                 let candidateCards = [];
                                 for (let c = 1; c <= 300; c++) {
                                     if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
@@ -403,7 +395,7 @@ setInterval(() => {
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
                         globalRoom.playerRoundCards = {};
-                        forcedNextWinner = null; // ዙሩ ሲጠናቀቅ ሪሴት ይደረጋል
+                        forcedNextWinner = null;
 
                         let primaryWinner = winningCardsList[0];
 
@@ -427,11 +419,10 @@ setInterval(() => {
                 globalRoom.takenCards = [];
                 globalRoom.playerRoundCards = {};
                 forcedNextWinner = null;
-                io.md = false;
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
-        }, 4000);
+        }, 3500); // 🟢 የኳስ ጥሪ ፍጥነት ወደ 3.5 ሰከንድ (Realistic Pace) ተስተካክሏል
     }
 }, 1000);
 
