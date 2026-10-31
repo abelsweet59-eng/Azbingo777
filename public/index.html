@@ -180,7 +180,6 @@
                     
                     <div class="flex gap-2 pt-1">
                         <button onclick="adminSetWinner('bot')" class="flex-1 bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
-                        <!-- 🟢 ራንደም ሪል ዩዘር አሸናፊ እንዲሆን የሚደረግበት አዲስ አዝራር -->
                         <button onclick="adminSetWinner('random_real')" class="flex-1 bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር</button>
                     </div>
 
@@ -598,6 +597,7 @@
             return flatList;
         }
 
+        // 🟢 ዊኒንግ ካርቴላ ማሳያ፡ የሰራበት መስመር በልዩ ከለር ጎልቶ ይታያል፤ ቀሪዎቹ የተጠሩት ደግሞ በኖርማል ምልክት (ጣለ ጣለ ባለ መልኩ) ይታያሉ
         function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
             const gridContainer = document.getElementById('winning-cartela-grid');
             gridContainer.innerHTML = '';
@@ -650,6 +650,8 @@
                 for(let c = 0; c < 5; c++) {
                     let cellNum = matrix[r][c];
                     const isFreeCenter = (cellNum === "FREE");
+                    const isCalled = (cellNum === "FREE" || calledNums.includes(cellNum));
+
                     let isPartOfWinningPattern = false;
                     if(winningRow === r) isPartOfWinningPattern = true;
                     if(winningCol === c) isPartOfWinningPattern = true;
@@ -658,7 +660,13 @@
                     if(isCorners && ((r === 0 && c === 0) || (r === 0 && c === 4) || (r === 4 && c === 0) || (r === 4 && c === 4))) isPartOfWinningPattern = true;
 
                     const cell = document.createElement('div');
-                    let bgClass = (isFreeCenter || isPartOfWinningPattern) ? "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow" : "bg-white/90 text-black font-bold text-[8px] rounded py-1 text-center";
+                    let bgClass = "bg-white/10 text-gray-300 font-medium text-[8px] rounded py-1 text-center";
+                    if (isFreeCenter || isPartOfWinningPattern) {
+                        bgClass = "bg-emerald-500 text-black font-extrabold text-[8px] rounded py-1 text-center shadow"; // ያሸነፈበት ትክክለኛው መስመር
+                    } else if (isCalled) {
+                        bgClass = "bg-amber-500 text-black font-bold text-[8px] rounded py-1 text-center"; // ሌሎች የተጠሩ ቁጥሮች (ጣለ ጣለ ባለ መልኩ)
+                    }
+
                     cell.className = bgClass;
                     cell.innerText = isFreeCenter ? "★" : cellNum;
                     gridContainer.appendChild(cell);
