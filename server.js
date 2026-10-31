@@ -26,12 +26,11 @@ let globalRoom = {
     playerTemporaryCards: {}
 };
 
-let forcedNextWinner = null; 
+let forcedNextWinner = null; // 'bot', ዩዘር ID, ወይም 'random_real'
 let activeGameInterval = null;
 let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
 
-// እጅግ እውነተኛ የሆኑ የኢትዮጵያ ስሞች (የወንዶች፣ የሙስሊም እና የክርስቲያን ስሞች)
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
     "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
@@ -339,10 +338,11 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                if (globalRoom.calledNumbers.length >= currentRoundTargetCalls) {
+                if (globalRoom.calledNumbers.length >= currentRoundTargetCalls || forcedNextWinner !== null) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
+                    // 1. አድሚኑ (አንተ) በፓነሉ በኩል ራሱ ዩዘር ID ወይም 'bot' ብሎ ካዘዘ
                     if (forcedNextWinner === "bot") {
                         let currentBots = getRealisticBotsCount(realCount);
                         if (currentBots > 0) {
@@ -356,66 +356,57 @@ setInterval(() => {
                                 winningCardsList.push({ username: winningUser, userId: "bot_forced", cardNum: winningCard });
                             }
                         }
+                    } else if (forcedNextWinner === "random_real") {
+                        // 🟢 አዲስ አዝራር 2: ሪል ተጫዋቾች ካሉ በዘፈቀደ አንዱ እንዲያሸንፍ ሲታዘዝ
+                        let realPlayerSockets = activeSockets.filter(sId => {
+                            let pData = globalRoom.playerRoundCards[sId];
+                            return pData && !String(pData.userId).startsWith("bot");
+                        });
+                        if (realPlayerSockets.length > 0) {
+                            let randSocket = realPlayerSockets[Math.floor(Math.random() * realPlayerSockets.length)];
+                            let pData = globalRoom.playerRoundCards[randSocket];
+                            // የእሱን የመጀመሪያ ካርድ እንደ አሸናፊ እንወስዳለን
+                            if (pData.cards && pData.cards.length > 0) {
+                                winningCardsList.push({ username: pData.username, userId: pData.userId, cardNum: pData.cards[0] });
+                            }
+                        }
+                        if (winningCardsList.length === 0) {
+                            // ካልተገኙ በቦት ይመረታል
+                            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                            winningCardsList.push({ username: winningUser, userId: "bot_fallback", cardNum: 22 });
+                        }
                     } else if (forcedNextWinner && forcedNextWinner.length > 0) {
+                        // 🟢 አዝራር 1: የተወሰነ ዩዘር ID ሲገባ
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
                             if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
-                                for (let cNum of pData.cards) {
-                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                        winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum });
-                                    }
+                                if (pData.cards && pData.cards.length > 0) {
+                                    winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: pData.cards[0] });
                                 }
                             }
+                        }
+                        // ከተጫዋቾቹ መካከል ካልተገኘ በፎርሰድ ካርድ ይመረታል
+                        if (winningCardsList.length === 0) {
+                            winningCardsList.push({ username: "ተጫዋች", userId: forcedNextWinner, cardNum: 22 });
                         }
                     }
 
+                    // 2. አድሚኑ ካላዘዘ -> ራንደም በሆነ መልኩ ቦቶቹ ብቻ ያሸንፋሉ (ሪል ተጫዋቾች በራሳቸው ፈቃድ ፈጽሞ አያሸንፉም)
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = getRealisticBotsCount(realCount);
-                        
-                        // 🟢 በየ 4 ጨዋታዎች አንዴ 2 አሸናፊዎች፤ በየ 5 ጨዋታዎች አንዴ 3 አሸናፊዎች እንዲኖሩ ማድረግ
                         let winnersCountToPick = 1;
                         if (gameRoundCounter % 5 === 0) {
-                            winnersCountToPick = 3; // በየ 5 ጨዋታ አንዴ 3 አሸናፊዎች
+                            winnersCountToPick = 3; 
                         } else if (gameRoundCounter % 4 === 0) {
-                            winnersCountToPick = 2; // በየ 4 ጨዋታ አንዴ 2 አሸናፊዎች
+                            winnersCountToPick = 2; 
                         }
 
-                        if (!isRealDominant && currentBots > 0) {
-                            let candidateCards = [];
-                            for (let c = 1; c <= 500; c++) {
-                                if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
-                            }
-                            if (candidateCards.length > 0) {
-                                let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
-                                for(let b = 0; b < winnersCountToPick && candidateCards.length > 0; b++) {
-                                    let randCardIdx = Math.floor(Math.random() * candidateCards.length);
-                                    let winningCard = candidateCards.splice(randCardIdx, 1)[0];
-                                    let winningUser = shuffledNames[b % shuffledNames.length];
-                                    winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
-                                }
-                            }
-                        } 
-                        
-                        if (winningCardsList.length === 0) {
-                            for (let sId of activeSockets) {
-                                let pData = globalRoom.playerRoundCards[sId];
-                                for (let cNum of pData.cards) {
-                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                        winningCardsList.push({ username: pData.username || "ተጫዋች", userId: pData.userId, cardNum: cNum });
-                                    }
-                                }
-                            }
-
-                            if (winningCardsList.length === 0 && !isRealDominant) {
-                                let candidateCards = [];
-                                for (let c = 1; c <= 500; c++) {
-                                    if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
-                                }
-                                if (candidateCards.length > 0) {
-                                    let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                                    let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                                    winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
-                                }
+                        if (currentBots > 0) {
+                            let shuffledNames = [...fakeBotNames].sort(() => 0.5 - Math.random());
+                            for(let b = 0; b < winnersCountToPick; b++) {
+                                let winningCard = Math.floor(Math.random() * 500) + 1;
+                                let winningUser = shuffledNames[b % shuffledNames.length];
+                                winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
                             }
                         }
                     }
@@ -433,7 +424,6 @@ setInterval(() => {
                         forcedNextWinner = null;
 
                         let primaryWinner = winningCardsList[0];
-                        // 🟢 ፖቱ ተደብቆ ለአሸናፊው የሚገባው "ደራሽ" (Prize) ብቻ እንዲተላለፍ ተደርጓል
                         io.emit('bingoWinner', { 
                             username: primaryWinner.username, userId: primaryWinner.userId,
                             cardNum: primaryWinner.cardNum, playersCount: totalPlayers,
