@@ -409,19 +409,35 @@ setInterval(() => {
         currentRoundWinnerInfo = chosenWinner;
         let winningPatternNums = currentRoundWinnerInfo.winningNumbersNeeded;
 
-        // 🟢 ጳጥሪ ስሌት (Updated Call Count Logic)
-        // ሰው / ብዙ ተጫዋች ሲኖር (realCount > 0): ከ 10 እስከ 18 (አንዴ 10፣ 11፣ 13፣ 14፣ 15 እያለ)
-        // ሰው ሳይኖር ሲቀር (realCount === 0): ከ 20 እስከ 28 (አንዳንዴ በሬር ራንደም እስከ 32 ወይም 33)
+        // 🟢 በየ 15 ጨዋታዎች ሉፕ (Every 15 Games Loop) እና ፐርሰንት ስርጭት (Probability Distribution)
         if (realCount > 0) {
-            let fastRanges = [10, 11, 12, 13, 14, 15, 16, 17, 18];
-            currentRoundTargetCalls = fastRanges[Math.floor(Math.random() * fastRanges.length)];
+            let randProb = Math.random() * 100; // ከ 0 እስከ 100
+            
+            if (randProb < 80) {
+                // 80% አቬሬጅ (Average): ከ 10 እስከ 17 ጥሪዎች (በተለይ 17፣ 18፣ 19 አካባቢ)
+                let avgRanges = [10, 11, 12, 13, 14, 15, 16, 17, 17, 18, 18, 19, 19];
+                currentRoundTargetCalls = avgRanges[Math.floor(Math.random() * avgRanges.length)];
+            } else if (randProb < 90) {
+                // 10% ፈጣን (Fast): ከ 10 እስከ 16 ጥሪዎች (ከ 10 በታች በፍጹም አይወርድም)
+                let fastRanges = [10, 11, 12, 13, 14, 15, 16];
+                currentRoundTargetCalls = fastRanges[Math.floor(Math.random() * fastRanges.length)];
+            } else {
+                // 10% ሬር / ዘግያ (Rare): ከ 19 እስከ 25 ጥሪዎች
+                let rareRanges = [19, 20, 21, 22, 23, 24, 25];
+                currentRoundTargetCalls = rareRanges[Math.floor(Math.random() * rareRanges.length)];
+            }
         } else {
+            // ሰው ሳይኖር ሲቀር (ጥቂት ተጫዋቾች / ቦቶች ብቻ)
             let slowRanges = [20, 21, 22, 23, 24, 25, 26, 27, 28];
-            // ሬር አጋጣሚ (Rare chance) እስከ 32 ወይም 33 እንዲደርስ
             if (Math.random() < 0.15) {
                 slowRanges = [29, 30, 31, 32, 33];
             }
             currentRoundTargetCalls = slowRanges[Math.floor(Math.random() * slowRanges.length)];
+        }
+
+        // በየ 15 ጨዋታዎች ሉፕ ቆጣሪውን ማስተካከል
+        if (gameRoundCounter >= 15) {
+            gameRoundCounter = 0;
         }
 
         io.emit('gameStartedBroadcast');
@@ -451,7 +467,6 @@ setInterval(() => {
 
                 let isWinnerReady = checkWinningPattern(currentRoundWinnerInfo.cardNum, globalRoom.calledNumbers);
 
-                // ዝቅተኛው የጥሪ ገደብ እንደየሁኔታው ይስተካከላል
                 let minCallsNeeded = realCount > 0 ? 8 : 15;
                 let isTargetReached = globalRoom.calledNumbers.length >= currentRoundTargetCalls;
 
@@ -464,7 +479,7 @@ setInterval(() => {
                     forcedNextWinner = null;
 
                     let totalPot = totalPlayers * 10;
-                    let netPrizePool = Math.floor(totalPot * 0.70); // ንጹህ የሽልማት መጠን (70%)
+                    let netPrizePool = Math.floor(totalPot * 0.70);
 
                     io.emit('bingoWinner', { 
                         username: currentRoundWinnerInfo.username, 
