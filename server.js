@@ -20,7 +20,7 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 120, // የተረጋጋ መነሻ
+    playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
     playerTemporaryCards: {}
@@ -41,17 +41,24 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// 🟢 እጅግ የተረጋጋ እና የማይዋዥቅ (Very Smooth & Stable) የተጫዋቾች ቁጥር አስተካካይ
-let stableBotCount = 110;
-function getStableBotsCount(realCount) {
-    // በሰከንድ በሰከንድ ሳይሆን አልፎ አልፎ ብቻ በ 1 ወይም በ 2 ይለወጣል
-    if (Math.random() < 0.3) {
-        let step = Math.random() < 0.5 ? 1 : -1;
-        stableBotCount += step;
-        if (stableBotCount < 90) stableBotCount = 95;
-        if (stableBotCount > 150) stableBotCount = 145;
-    }
-    return stableBotCount;
+// 🟢 የሰዓት እና የሉፕ ራንደም ትራፊክ (Time-based & Loop Random Traffic Fluctuation)
+let currentRandomBaseBots = 135;
+function getRealisticBotsCount(realCount) {
+    let nowHours = new Date().getHours();
+    
+    // በሰዓታት ልዩነት ሰፊ ራንደም (ለምሳሌ ከ 200, 150, 110, 120, 170 እያለ)
+    let timePools = [110, 125, 140, 160, 185, 200, 150, 130, 120];
+    let poolIndex = nowHours % timePools.length;
+    currentRandomBaseBots = timePools[poolIndex];
+
+    // በየሉፑ መሃል ትንንሽ የ 2, 3 ወይም 5 ሰዎችን ራንደም ለውጥ ማድረጊያ
+    let smallDelta = Math.floor(Math.random() * 9) - 4; // -4 እስከ +4
+    let calculated = currentRandomBaseBots + smallDelta;
+    
+    if (calculated < 90) calculated = 95;
+    if (calculated > 210) calculated = 205;
+
+    return calculated;
 }
 
 function refreshTakenCardsList() {
@@ -66,14 +73,14 @@ function refreshTakenCardsList() {
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-// ቦቶች ካርዶችን ሲመርጡ ከነሱ ጋር የተስተካከለ ቁጥር እንዲይዙ
+// ቦቶች ከጠቅላላው 500 ካርዶች ውስጥ ራንደም በመምረጥ ከተጫዋቾች ጋር ሚዛን እንዲጠብቁ
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     let available = [];
     for(let i = 1; i <= 500; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 8) + 5;
+    let botPicksCount = Math.floor(Math.random() * 15) + 10;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
@@ -84,7 +91,7 @@ function simulateBotCardSelections() {
     io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-setInterval(simulateBotCardSelections, 10000);
+setInterval(simulateBotCardSelections, 6000);
 
 function generateCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -214,14 +221,14 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
-    let currentBotsCount = getStableBotsCount(realCount);
+    let currentBotsCount = getRealisticBotsCount(realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     io.emit('updatePlayersCount', globalRoom.playersCount);
 
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-    // 🟢 ተጠቃሚው ካርድ ሲነካ ወዲያውኑ ሎክ እንዲደረግ (Temporary Lock)
+    // 🟢 ተጠቃሚው እስካላረጋገጠ ድረስ ካርዶቹን መቀየር እንዲችል (Flexible Temp Selection)
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
             globalRoom.playerTemporaryCards[socket.id] = cards;
@@ -280,7 +287,7 @@ io.on('connection', (socket) => {
         refreshTakenCardsList();
 
         let realCount = connectedRealPlayers.length;
-        let currentBotsCount = getStableBotsCount(realCount);
+        let currentBotsCount = getRealisticBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
@@ -291,7 +298,7 @@ setInterval(() => {
     let realCount = connectedRealPlayers.length;
 
     if (!globalRoom.gameActive) {
-        let currentBotsCount = getStableBotsCount(realCount);
+        let currentBotsCount = getRealisticBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     }
@@ -323,7 +330,7 @@ setInterval(() => {
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
                     if (forcedNextWinner === "bot") {
-                        let currentBots = getStableBotsCount(realCount);
+                        let currentBots = getRealisticBotsCount(realCount);
                         if (currentBots > 0) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
@@ -349,7 +356,7 @@ setInterval(() => {
                     }
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
-                        let currentBots = getStableBotsCount(realCount);
+                        let currentBots = getRealisticBotsCount(realCount);
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
                             let candidateCards = [];
                             for (let c = 1; c <= 500; c++) {
