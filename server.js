@@ -25,6 +25,9 @@ let globalRoom = {
     playerRoundCards: {}
 };
 
+// 🟢 ለአድሚን ማኑዋል ዊነር መቆጣጠሪያ (Admin Manual Winner Control)
+let forcedNextWinner = null; // "bot", "random", ወይም የተወሰነ የዩዘር ID (socket.id / telegramUserId)
+
 let activeGameInterval = null;
 
 const fakeBotNames = [
@@ -131,7 +134,7 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
-// 7. የቴሌግራም ፖሊንግ እና አድሚን አሰራር (ዲፖዚት እና ዊዝድሮዋል ጥያቄዎች)
+// 7. የቴሌግራም ፖሊንግ እና አድሚን አሰራር
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -254,7 +257,12 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    // ዲፖዚት እና ዊዝድሮዋል ጥያቄ መቀበያ
+    // 🟢 ከአድሚን ፓነል የሚመጣውን የሚቀጥለው አሸናፊ ምርጫ መቀበያ (Admin Set Winner)
+    socket.on('adminSetNextWinner', (data) => {
+        forcedNextWinner = data.winnerType; // "bot", ወይም specific userId
+        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
+    });
+
     socket.on('financialRequest', async (data) => {
         if (!data) return;
         let { type, amount, username, userId, phone, receipt } = data;
@@ -312,48 +320,77 @@ setInterval(() => {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    let currentBots = Math.max(0, 30 - realCount);
-                    if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
-                        let candidateCards = [];
-                        for (let c = 1; c <= 300; c++) {
-                            if (checkWinningPattern(c, globalRoom.calledNumbers)) {
-                                candidateCards.push(c);
-                            }
-                        }
-                        if (candidateCards.length > 0) {
-                            let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
-                            let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                            let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
-                            winningCardsList.push({ username: winningUser, userId: winningUserId, cardNum: winningCard });
-                        }
-                    } 
-                    
-                    if (winningCardsList.length === 0) {
-                        for (let sId of activeSockets) {
-                            let pData = globalRoom.playerRoundCards[sId];
-                            for (let cNum of pData.cards) {
-                                if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                    winningCardsList.push({
-                                        username: pData.username || "ተጫዋች",
-                                        userId: pData.userId,
-                                        cardNum: cNum
-                                    });
-                                }
-                            }
-                        }
-
-                        if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 12) {
+                    // 🟢 የአድሚን ማኑዋል ዊነር ምርጫን ማረጋገጥ (Admin Forced Winner Logic)
+                    if (forcedNextWinner === "bot") {
+                        let currentBots = Math.max(0, 30 - realCount);
+                        if (currentBots > 0 && globalRoom.calledNumbers.length >= 7) {
                             let candidateCards = [];
                             for (let c = 1; c <= 300; c++) {
-                                if (checkWinningPattern(c, globalRoom.calledNumbers)) {
-                                    candidateCards.push(c);
-                                }
+                                if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
                                 let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
                                 let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
-                                let winningUserId = "bot_" + Math.floor(Math.random() * 90000 + 10000);
-                                winningCardsList.push({ username: winningUser, userId: winningUserId, cardNum: winningCard });
+                                winningCardsList.push({ username: winningUser, userId: "bot_forced", cardNum: winningCard });
+                            }
+                        }
+                    } else if (forcedNextWinner && forcedNextWinner !== "random" && forcedNextWinner !== "bot") {
+                        // የተወሰነ የዩዘር ID (Real User ID) ተመርጧል
+                        for (let sId of activeSockets) {
+                            let pData = globalRoom.playerRoundCards[sId];
+                            if (pData.userId === forcedNextWinner || sId === forcedNextWinner) {
+                                for (let cNum of pData.cards) {
+                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
+                                        winningCardsList.push({
+                                            username: pData.username || "ተጫዋች",
+                                            userId: pData.userId,
+                                            cardNum: cNum
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // ማኑዋል ዊነር ካልተመረጠ (ወይም ካልተገኘ) በመደበኛ ህጎች (80% ሪል ዩዘር / ቦት ፖሊሲ) ይቀጥላል
+                    if (winningCardsList.length === 0) {
+                        let currentBots = Math.max(0, 30 - realCount);
+                        if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
+                            let candidateCards = [];
+                            for (let c = 1; c <= 300; c++) {
+                                if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
+                            }
+                            if (candidateCards.length > 0) {
+                                let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+                                let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                                winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
+                            }
+                        } 
+                        
+                        if (winningCardsList.length === 0) {
+                            for (let sId of activeSockets) {
+                                let pData = globalRoom.playerRoundCards[sId];
+                                for (let cNum of pData.cards) {
+                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
+                                        winningCardsList.push({
+                                            username: pData.username || "ተጫዋች",
+                                            userId: pData.userId,
+                                            cardNum: cNum
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 12) {
+                                let candidateCards = [];
+                                for (let c = 1; c <= 300; c++) {
+                                    if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
+                                }
+                                if (candidateCards.length > 0) {
+                                    let winningCard = candidateCards[Math.floor(Math.random() * candidateCards.length)];
+                                    let winningUser = fakeBotNames[Math.floor(Math.random() * fakeBotNames.length)];
+                                    winningCardsList.push({ username: winningUser, userId: "bot_" + Math.floor(Math.random() * 90000 + 10000), cardNum: winningCard });
+                                }
                             }
                         }
                     }
@@ -368,6 +405,7 @@ setInterval(() => {
                         globalRoom.gameStartTime = Date.now() + roundDuration;
                         globalRoom.takenCards = [];
                         globalRoom.playerRoundCards = {};
+                        forcedNextWinner = null; // ዙሩ ሲጠናቀቅ ሪሴት ይደረጋል
 
                         let primaryWinner = winningCardsList[0];
 
@@ -390,6 +428,7 @@ setInterval(() => {
                 globalRoom.gameStartTime = Date.now() + roundDuration;
                 globalRoom.takenCards = [];
                 globalRoom.playerRoundCards = {};
+                forcedNextWinner = null;
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
