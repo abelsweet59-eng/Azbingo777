@@ -20,7 +20,7 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + roundDuration,
-    playersCount: 30,
+    playersCount: 200,
     takenCards: [],
     playerRoundCards: {}
 };
@@ -29,22 +29,40 @@ let forcedNextWinner = null;
 let activeGameInterval = null;
 
 const fakeBotNames = [
-    "Netsanet", "Av addis", "Solomon", "Taye", "Beke t", "Adane",
-    "ተሰማ", "henok", "12 yared b", "abel", "seyum", "somalew", "china",
-    "dagi g", "beti i", "jira", "lemma", "fikru", "neysi", "faya",
-    "faysel", "ahme", "dinu t", "mame mame", "baby", "gfrt", "victor",
-    "kidus", "samuel"
+    "Habesha_King", "Ethio_Winner", "Selam_21", "Abebe_G", "Mesfin_T", "Tigist_B", "Bethel_M", "Dawit_K", "Nati_B", "Eyu_99",
+    "Sam_Ethio", "Kidist_L", "Biruk_M", "Miki_A", "Hana_P", "Yordanos_K", "Solomon_X", "Redwan_Z", "Meron_D", "Henok_V",
+    "Abdi_J", "Fasika_C", "Bini_H", "Kidus_G", "Robel_S", "Marta_W", "Fitsum_N", "Brook_T", "Naod_L", "Senait_M",
+    "Addis_Boy", "Liyu_Girl", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", "Habesha_Style", "Nuru_M", "Bereket_K", "Ermias_S",
+    "Daniel_T", "Eyob_M", "Tedi_A", "Ali_Bira", "Yohana_F", "Zelalem_P", "Girma_W", "Kebede_N", "Aster_G", "Almaz_H",
+    "Lemlem_D", "Tsehay_S", "Mulugeta_K", "Getachew_B", "Dagnachew_M", "Asnake_T", "Wondwossen_R", "Mekdes_L", "Rahel_Y", "Yemisrach_V",
+    "Bruk_Z", "Natnael_C", "Henok_B", "Samuel_D", "Michael_F", "Daniel_G", "Ephrem_H", "Yared_J", "Kaleb_K", "Yohannes_L",
+    "Fikadu_M", "Tesfaye_N", "Bekele_P", "Worku_Q", "Negash_R", "Assefa_S", "Girum_T", "Surafel_U", "Nahom_V", "Abenezer_W",
+    "Ermias_X", "Gedion_Y", "Muluken_Z", "Teferi_A", "Molla_B", "Shifera_C", "Alemu_D", "Kebede_E", "Tadesse_F", "Gizachew_G",
+    "Zewdu_H", "Moges_I", "Getahun_J", "Teshome_K", "Demissie_L", "Chala_M", "Tolosa_N", "Gurmessa_P", "Bekelech_Q", "Abebech_R",
+    "Tsehay_S", "Almaz_T", "Meseret_U", "Tirunesh_V", "Genet_W", "Askale_X", "Letay_Y", "Zenebech_Z", "Worknesh_A", "Ayenalem_B",
+    "Mirt_C", "Banchi_D", "Etenesh_E", "Aster_F", "Meskerm_G", "Hirut_H", "Belaynesh_I", "Mahlet_J", "Saba_K", "Rahel_L",
+    "Tigist_M", "Mekides_N", "Bethelhem_P", "Ruth_Q", "Esther_R", "Hannah_S", "Sara_T", "Miriam_U", "Deborah_V", "Priscilla_W",
+    "Naomi_X", "Rachel_Y", "Leah_Z", "Abigail_A", "Elizabeth_B", "Martha_C", "Mary_D", "Salome_E", "Judith_F", "Lydia_G",
+    "Eunice_H", "Lois_I", "Chaltu_J", "Fantu_K", "Aman_L", "Diribe_M", "Bontu_N", "Gakkee_P", "Ifaa_Q", "Tokkee_R",
+    "Bilisum_S", "Caffee_T", "Oromia_1", "Amhara_2", "Tigray_3", "Sidama_4", "Gurage_5", "Somali_6", "Afar_7", "Harari_8",
+    "Gambella_9", "Benshangul_0", "Addis_Ababa", "Dire_Dawa", "Hawassa_VIP", "Bahirdar_Pro", "Mekelle_Star", "Adama_King", "Gojjam_Boy", "Gondar_Star"
 ];
 
 let pendingRequests = {};
 
+function getDynamicBotsCount(realCount) {
+    let fluctuations = [200, 180, 170, 130, 100, 160, 190, 140, 120, 150];
+    let randomBase = fluctuations[Math.floor(Math.random() * fluctuations.length)];
+    return Math.max(50, randomBase - (realCount * 2));
+}
+
 function simulateBotCardSelections() {
     if (globalRoom.gameActive) return;
     let available = [];
-    for(let i = 1; i <= 300; i++) {
+    for(let i = 1; i <= 500; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 10) + 5;
+    let botPicksCount = Math.floor(Math.random() * 15) + 10;
     for(let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
@@ -97,11 +115,9 @@ function checkWinningPattern(cardNum, calledNumbers) {
     let matrix = [];
     for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
 
-    // አግድም
     for(let r = 0; r < 5; r++) {
         if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
     }
-    // ቁመት
     for(let c = 0; c < 5; c++) {
         let cMatch = true;
         for(let r = 0; r < 5; r++) {
@@ -109,21 +125,18 @@ function checkWinningPattern(cardNum, calledNumbers) {
         }
         if(cMatch) return true;
     }
-    // ሰያፍ 1
     let d1 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
     }
     if(d1) return true;
 
-    // ሰያፍ 2
     let d2 = true;
     for(let i = 0; i < 5; i++) {
         if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
     }
     if(d2) return true;
 
-    // ማዕዘኖች
     let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
     if(corners.every(val => calledNumbers.includes(val))) return true;
 
@@ -196,14 +209,20 @@ async function pollTelegramUpdates() {
 
 setTimeout(pollTelegramUpdates, 2000);
 
-async function sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt) {
+// 🟢 የተስተካከለ የአድሚን የፋይናንስ ኖቲፊኬሽን (ስም፣ ዩዘር ID፣ ቀሪ ሂሳብ፣ የጥያቄ መጠን እና ደረሰኝ)
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
 
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት (ገንዘብ ማስገቢያ)' : '🏧 ቴሌብር ዊዝድሮዋል (ገንዘብ ማውጫ)';
-    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: \`${userId}\`\n💰 መጠን: *${amount} ብር*\n📱 ስልክ/አድራሻ: ${phone || 'አልተሰጠም'}`;
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n` +
+                  `👤 ስም: *${username || 'ተጫዋች'}*\n` +
+                  `🆔 ዩዘር ID: \`${userId}\`\n` +
+                  `💰 አሁን ያለው አካውንት ቀሪ ሂሳብ: *${currentBalance} ብር*\n` +
+                  `📥 ለመጨመር የጠየቀው መጠን: *${amount} ብር*\n` +
+                  `📱 ስልክ/አድራሻ: ${phone || 'አልተሰጠም'}`;
 
     if (receipt) {
-        message += `\n\n📄 *ደረሰኝ / SMS:*\n${receipt}`;
+        message += `\n\n📄 *የቴሌብር ደረሰኝ / SMS:*\n\`${receipt}\``;
     }
 
     try {
@@ -227,7 +246,7 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
-    let currentBotsCount = Math.max(0, 30 - realCount);
+    let currentBotsCount = getDynamicBotsCount(realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     
     io.emit('updatePlayersCount', globalRoom.playersCount);
@@ -256,19 +275,26 @@ io.on('connection', (socket) => {
         socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
     });
 
+    // 🟢 የዲፖዚት እና ዊዝድሮዋል ጥያቄ ማረጋገጫ (ክላይንቱ ባዶ መረጃ እንዳይልክ የተደረገ ጥበቃ)
     socket.on('financialRequest', async (data) => {
         if (!data) return;
-        let { type, amount, username, userId, phone, receipt } = data;
+        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
         
         if (!amount || amount < 100) {
             socket.emit('requestSubmitted', { success: false, message: '⚠️ ዝቅተኛው የገንዘብ ገደብ 100 ብር ነው።' });
             return;
         }
 
+        // ለዲፖዚት የደረሰኝ ኮድ (Receipt/SMS) ካልተጻፈ ጥያቄውን እንቀበለዋለን (ባዶ እንዳይሄድ)
+        if (type === 'deposit' && (!receipt || receipt.length < 3)) {
+            socket.emit('requestSubmitted', { success: false, message: '⚠️ እባክዎ የቴሌብር ትራንዛክሽን ደረሰኝ (Receipt / SMS) በትክክል ያስገቡ!' });
+            return;
+        }
+
         let requestId = 'req_' + Math.floor(Math.random() * 1000000);
         pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
 
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, phone, receipt);
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
 
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ በትክክል ለአድሚን ተልኳል!" });
     });
@@ -276,18 +302,23 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         let realCount = connectedRealPlayers.length;
-        let currentBotsCount = Math.max(0, 30 - realCount);
+        let currentBotsCount = getDynamicBotsCount(realCount);
         globalRoom.playersCount = currentBotsCount + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
 
-// 🟢 የጨዋታ ፍሰት (Realistic Game Flow - 3.5 seconds interval per ball)
 setInterval(() => {
     let now = Date.now();
     let realCount = connectedRealPlayers.length;
-    let totalPlayers = globalRoom.playersCount;
 
+    if (!globalRoom.gameActive) {
+        let currentBotsCount = getDynamicBotsCount(realCount);
+        globalRoom.playersCount = currentBotsCount + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    }
+
+    let totalPlayers = globalRoom.playersCount;
     let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
     let isRealDominant = realUserPercentage >= 80;
 
@@ -309,16 +340,15 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                // ኳሶች ቢያንስ 10 ቁጥር ከተጠሩ በኋላ ማሸነፍ ይጀምራል (ለእውነተኛ ፍሰት)
                 if (globalRoom.calledNumbers.length >= 10) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
                     if (forcedNextWinner === "bot") {
-                        let currentBots = Math.max(0, 30 - realCount);
+                        let currentBots = getDynamicBotsCount(realCount);
                         if (currentBots > 0) {
                             let candidateCards = [];
-                            for (let c = 1; c <= 300; c++) {
+                            for (let c = 1; c <= 500; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
@@ -345,10 +375,10 @@ setInterval(() => {
                     }
 
                     if (winningCardsList.length === 0 && !forcedNextWinner) {
-                        let currentBots = Math.max(0, 30 - realCount);
+                        let currentBots = getDynamicBotsCount(realCount);
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 15) {
                             let candidateCards = [];
-                            for (let c = 1; c <= 300; c++) {
+                            for (let c = 1; c <= 500; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                             }
                             if (candidateCards.length > 0) {
@@ -374,7 +404,7 @@ setInterval(() => {
 
                             if (winningCardsList.length === 0 && !isRealDominant && globalRoom.calledNumbers.length >= 20) {
                                 let candidateCards = [];
-                                for (let c = 1; c <= 300; c++) {
+                                for (let c = 1; c <= 500; c++) {
                                     if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
                                 }
                                 if (candidateCards.length > 0) {
@@ -402,31 +432,4 @@ setInterval(() => {
                         io.emit('bingoWinner', { 
                             username: primaryWinner.username, 
                             userId: primaryWinner.userId,
-                            cardNum: primaryWinner.cardNum,
-                            playersCount: totalPlayers,
-                            totalPot: totalPot,
-                            prize: prizePerWinner,
-                            winnersCount: winningCardsList.length,
-                            calledNumbers: globalRoom.calledNumbers
-                        });
-
-                        clearInterval(activeGameInterval);
-                    }
-                }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.takenCards = [];
-                globalRoom.playerRoundCards = {};
-                forcedNextWinner = null;
-                io.emit('gameEndedBroadcast');
-                clearInterval(activeGameInterval);
-            }
-        }, 3500); // 🟢 የኳስ ጥሪ ፍጥነት ወደ 3.5 ሰከንድ (Realistic Pace) ተስተካክሏል
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+                            card
