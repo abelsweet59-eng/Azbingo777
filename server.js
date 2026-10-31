@@ -25,8 +25,8 @@ let globalRoom = {
     playerRoundCards: {}
 };
 
-// 🟢 ለአድሚን ማኑዋል ዊነር መቆጣጠሪያ (Admin Manual Winner Control)
-let forcedNextWinner = null; // "bot", "random", ወይም የተወሰነ የዩዘር ID (socket.id / telegramUserId)
+// ለአድሚን ማኑዋል ዊነር መቆጣጠሪያ
+let forcedNextWinner = null; // "bot" ወይም የሪል ዩዘር ID (String)
 
 let activeGameInterval = null;
 
@@ -232,7 +232,7 @@ io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
 
-    // 2. ተለዋዋጭ የቦቶች ቅነሳ ሉፕ (Dynamic Bot Reduction Loop)
+    // 2. ተለዋዋጭ የቦቶች ቅነሳ ሉፕ
     let currentBotsCount = Math.max(0, 30 - realCount);
     globalRoom.playersCount = currentBotsCount + realCount; 
     
@@ -243,7 +243,7 @@ io.on('connection', (socket) => {
 
     socket.on('confirmCards', (data) => {
         let selectedCards = data.cards || data;
-        let userId = data.userId || socket.id;
+        let userId = String(data.userId || socket.id);
 
         let conflict = selectedCards.some(card => globalRoom.takenCards.includes(card));
         if (conflict) {
@@ -257,9 +257,10 @@ io.on('connection', (socket) => {
         io.emit('updateTakenCards', globalRoom.takenCards);
     });
 
-    // 🟢 ከአድሚን ፓነል የሚመጣውን የሚቀጥለው አሸናፊ ምርጫ መቀበያ (Admin Set Winner)
+    // ከአድሚን ፓነል የሚመጣውን የሚቀጥለው አሸናፊ ምርጫ መቀበያ (Admin Set Winner)
     socket.on('adminSetNextWinner', (data) => {
-        forcedNextWinner = data.winnerType; // "bot", ወይም specific userId
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        console.log("🛡️ Admin set forced next winner to:", forcedNextWinner);
         socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል: ${forcedNextWinner}` });
     });
 
@@ -294,7 +295,6 @@ setInterval(() => {
     let realCount = connectedRealPlayers.length;
     let totalPlayers = globalRoom.playersCount;
 
-    // 3. የ 80% ሪል ዩዘር የድል ገደብ (80% Real User Win Dominance)
     let realUserPercentage = totalPlayers > 0 ? (realCount / totalPlayers) * 100 : 0;
     let isRealDominant = realUserPercentage >= 80;
 
@@ -316,14 +316,14 @@ setInterval(() => {
                 globalRoom.calledNumbers.push(num);
                 io.emit('numberCalledBroadcast', num);
 
-                if (globalRoom.calledNumbers.length >= 5) {
+                if (globalRoom.calledNumbers.length >= 4) {
                     let winningCardsList = [];
                     let activeSockets = Object.keys(globalRoom.playerRoundCards);
 
-                    // 🟢 የአድሚን ማኑዋል ዊነር ምርጫን ማረጋገጥ (Admin Forced Winner Logic)
+                    // 🟢 የተስተካከለ የአድሚን ማኑዋል ዊነር ሎጂክ (Admin Forced Winner Execution)
                     if (forcedNextWinner === "bot") {
                         let currentBots = Math.max(0, 30 - realCount);
-                        if (currentBots > 0 && globalRoom.calledNumbers.length >= 7) {
+                        if (currentBots > 0) {
                             let candidateCards = [];
                             for (let c = 1; c <= 300; c++) {
                                 if (checkWinningPattern(c, globalRoom.calledNumbers)) candidateCards.push(c);
@@ -334,26 +334,25 @@ setInterval(() => {
                                 winningCardsList.push({ username: winningUser, userId: "bot_forced", cardNum: winningCard });
                             }
                         }
-                    } else if (forcedNextWinner && forcedNextWinner !== "random" && forcedNextWinner !== "bot") {
-                        // የተወሰነ የዩዘር ID (Real User ID) ተመርጧል
+                    } else if (forcedNextWinner && forcedNextWinner.length > 0) {
+                        // አድሚኑ የጻፈው ዩዘር ID ከገባ, ያ ሰው ካርድ መርጦ ከሆነ ወዲያውኑ አሸናፊ እናደርገዋለን
                         for (let sId of activeSockets) {
                             let pData = globalRoom.playerRoundCards[sId];
-                            if (pData.userId === forcedNextWinner || sId === forcedNextWinner) {
+                            if (String(pData.userId) === forcedNextWinner || sId === forcedNextWinner) {
                                 for (let cNum of pData.cards) {
-                                    if (checkWinningPattern(cNum, globalRoom.calledNumbers)) {
-                                        winningCardsList.push({
-                                            username: pData.username || "ተጫዋች",
-                                            userId: pData.userId,
-                                            cardNum: cNum
-                                        });
-                                    }
+                                    // አድሚኑ ባዘዘበት ሰዓት ጥለቱን ከፍ አድርገን ዩዘሩ ወዲያውኑ እንዲያሸንፍ እናደርጋለን
+                                    winningCardsList.push({
+                                        username: pData.username || "ተጫዋች",
+                                        userId: pData.userId,
+                                        cardNum: cNum
+                                    });
                                 }
                             }
                         }
                     }
 
-                    // ማኑዋል ዊነር ካልተመረጠ (ወይም ካልተገኘ) በመደበኛ ህጎች (80% ሪል ዩዘር / ቦት ፖሊሲ) ይቀጥላል
-                    if (winningCardsList.length === 0) {
+                    // ማኑዋል ዊነር ካልተመረጠ (ወይም ተጠቃሚው ካልተገኘ) በመደበኛ ህጎች (80% ሪል ዩዘር / ቦት ፖሊሲ) ይቀጥላል
+                    if (winningCardsList.length === 0 && !forcedNextWinner) {
                         let currentBots = Math.max(0, 30 - realCount);
                         if (!isRealDominant && currentBots > 0 && globalRoom.calledNumbers.length >= 8) {
                             let candidateCards = [];
@@ -398,7 +397,6 @@ setInterval(() => {
                     if (winningCardsList.length > 0) {
                         let totalPot = totalPlayers * 10;
                         let totalPrizePool = Math.floor(totalPot * 0.70);
-                        // 6. ብዙ አሸናፊዎች እና እኩል የሽልማት ክፍፍል (Multiple Winners Split)
                         let prizePerWinner = Math.floor(totalPrizePool / winningCardsList.length);
 
                         globalRoom.gameActive = false;
@@ -429,6 +427,7 @@ setInterval(() => {
                 globalRoom.takenCards = [];
                 globalRoom.playerRoundCards = {};
                 forcedNextWinner = null;
+                io.md = false;
                 io.emit('gameEndedBroadcast');
                 clearInterval(activeGameInterval);
             }
