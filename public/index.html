@@ -13,7 +13,7 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.4); border-radius: 3px; }
         @keyframes pulseGlow {
             0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
-            50% { transform: scale(1.04); box-shadow: 0 0 45px rgba(245, 158, 11, 1); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
         @keyframes countdownPop {
@@ -99,7 +99,7 @@
                     
                     <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <!-- ግራ ቦርድ (75 ቁጥሮች - ቁጥሮቹ ኖርማል ሆነው ራስጌው ብቻ የ BINGO ከለር ያለው) -->
+                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
                         <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -111,18 +111,18 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (አግድም ሰፋ ያለ እና ጎልቶ የሚታይ መጥሪያ ፓነል + የተጫዋች ካርዶች) -->
-                        <div class="col-span-7 flex flex-col space-y-2">
+                        <!-- ቀኝ በኩል (ቢልያርድ ኳስ መቁጠሪያ + ተቀራርበው የተዘረጉ የተጫዋች ካርዶች) -->
+                        <div class="col-span-7 flex flex-col space-y-1.5">
                             
-                            <!-- የቢንጎ መቁጠሪያ ፓነል (እንደ ፎቶ 9 አግድም ሰፋ ያለ እና ጎልቶ የሚታይ) -->
-                            <div class="bg-[#180a29] rounded-xl p-2.5 border border-purple-500/40 text-center space-y-2 shadow-lg">
+                            <!-- የቢንጎ መቁጠሪያ ፓነል (በቢልያርድ ኳስ መልክ እና ከለር የተስተካከለ) -->
+                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg">
                                 <div class="flex justify-between items-center">
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center text-[8px]"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
 
-                                <!-- አግድም ሰፋ ያለ ዋና ኳስ (Horizontal Wide Called Ball) -->
-                                <div id="main-called-ball" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 border-2 border-amber-200 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball my-1">
+                                <!-- ዋናው የሚጠራው ኳስ (Pool Ball Style with Column Color Glow) -->
+                                <div id="main-called-ball" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-gray-100 via-white to-gray-200 text-gray-900 border-2 border-amber-400 flex items-center justify-center font-black text-lg shadow-2xl pulse-ball my-1">
                                     --
                                 </div>
                                 
@@ -135,8 +135,8 @@
                                 </div>
                             </div>
 
-                            <!-- Watching Only / Player Cards Area -->
-                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-between items-center text-center overflow-y-auto custom-scroll space-y-1">
+                            <!-- Watching Only / Player Cards Area (ክፍተት የሌለው እና ግጥም ብሎ የተዘረጋ) -->
+                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-around items-center text-center overflow-y-auto custom-scroll space-y-1">
                             </div>
 
                         </div>
@@ -198,12 +198,12 @@
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won[span_3](start_span)[span_3](end_span)!</div>
+                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won[span_0](start_span)[span_0](end_span)!</div>
                     
                     <div id="multi-winners-badges-container" class="flex flex-wrap gap-1.5 justify-center my-2"></div>
 
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
-                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12[span_4](start_span)[span_4](end_span)</div>
+                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12[span_1](start_span)[span_1](end_span)</div>
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
@@ -212,7 +212,7 @@
                     </div>
                     
                     <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ Auto-starting next game in 4s[span_5](start_span)[span_5](end_span)
+                        ⏳ Auto-starting next game in 4s[span_2](start_span)[span_2](end_span)
                     </div>
                 </div>
             </div>
@@ -310,6 +310,15 @@
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
+
+        // የ BINGO አምድ ከለር መለያ
+        function getColumnColor(num) {
+            if (num <= 15) return "text-blue-500";     // B
+            if (num <= 30) return "text-purple-500";    // I
+            if (num <= 45) return "text-pink-500";      // N
+            if (num <= 60) return "text-emerald-500";   // G
+            return "text-amber-500";                    // O
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             if (isAdmin) {
@@ -415,7 +424,7 @@
             } else {
                 calledNumbersList = [];
                 manualDaubedNumbers = {};
-                document.getElementById('main-called-ball').innerText = "--";
+                document.getElementById('main-called-ball').innerHTML = "--";
                 document.getElementById('stat-called-count').innerText = "0";
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
@@ -480,13 +489,16 @@
             }
         }
 
+        // 🟢 ቢልያርድ ኳስ መልክ ያለው ዋና መጥሪያ (Pool Ball style with BINGO Column Color glow/text)
         function displayCalledBall(num) {
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
-            document.getElementById('main-called-ball').innerText = `${letter}-${num}`;
+            let colorClass = getColumnColor(num);
+            const mainBall = document.getElementById('main-called-ball');
+            mainBall.innerHTML = `<span class="${colorClass} font-black">${letter}-${num}</span>`;
             renderRecentBalls();
         }
 
-        // 🟢 የቅርብ ጊዜ የተጠሩ ኳሶች ፓጅ (ከቀለማት ጋር)
+        // 🟢 የቅርብ ጊዜ የተጠሩ ኳሶች ፓጅ (እንደ ቢልያርድ ኳስ ከቀለማት ጋር)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
@@ -616,7 +628,7 @@
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-            document.getElementById('main-called-ball').innerText = "--";
+            document.getElementById('main-called-ball').innerHTML = "--";
             document.getElementById('stat-called-count').innerText = "0";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
@@ -723,7 +735,6 @@
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
-        // 🟢 የ 75ቱ ቦርድ ቁጥሮች ኖርማል (ንጹህ) እንዲሆኑ የተደረገበት ክፍል
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
@@ -754,7 +765,7 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 የተጫዋች ካርዶች ከ BINGO ከለሮች ጋር (ቁጥሮቹ ኖርማል ሆነው)
+        // 🟢 የተጫዋች ካርዶች ግጥም ብለው እና ክፍተት ሳይኖር በቁመት እንዲዘረጉ የተደረገበት ክፍል
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -772,19 +783,19 @@
                 return;
             }
 
-            container.className = `flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col ${confirmedCards.length > 1 ? 'justify-between space-y-1' : 'justify-center'} overflow-y-auto custom-scroll`;
+            container.className = `flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-around items-center text-center overflow-y-auto custom-scroll`;
 
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/40 flex flex-col space-y-1 w-full shadow-md";
+                cardWrapper.className = "bg-[#140826] p-1 rounded-lg border border-purple-500/40 flex flex-col space-y-0.5 w-full shadow-md my-0.5";
                 
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
-                // BINGO ፊደላት ማሳያ ከትክክለኛ ከለሮች ጋር
+                // BINGO ፊደላት ማሳያ ከለር ጋር
                 const headersGrid = document.createElement('div');
                 headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[8px] text-white";
                 ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
