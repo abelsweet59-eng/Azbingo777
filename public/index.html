@@ -725,7 +725,7 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
         }
 
-        // 🟢 የካርድ ግሪድ ሪንደሪንግ (ተጠቃሚው አረጋግጥ እስካይል ድረስ በነፃነት እንዲቀያይር የተደረገ)
+        // 🟢 500 Cards Grid Rendering (Fully Synced & Flexible Selection)
         function generate500CardGrid() {
             const grid = document.getElementById('card-grid-500');
             if (!grid) return;
@@ -738,9 +738,9 @@
 
                 if (isConfirmedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded shadow";
-                    btn.disabled = true; // በይፋ የተረጋገጠ ካርድ መቀየር አይቻልም
+                    btn.disabled = true;
                 } else if (isSelectedByMe) {
-                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[10px] py-1.5 rounded border border-amber-300 shadow"; // እስካሁን አረጋግጥ ስላልተባለ መቀየር ይቻላል
+                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[10px] py-1.5 rounded border border-amber-300 shadow";
                 } else if (isConfirmedByOther) {
                     btn.className = "bg-red-950/70 text-red-300 font-medium text-[10px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
