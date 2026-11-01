@@ -385,13 +385,12 @@
         // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
 
-        // 🟢 ከቴሌግራም ዌብ አፕ ዩዘር ID ወዲያውኑ ለመቀበል የሚደረግ ሙከራ
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // ቴሌግራም ዌብአፕ ዳታ ወዲያውኑ ማንበብ
+        // ቴሌግራም ዌብአፕ ዳታ ማንበብ
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -407,7 +406,7 @@
             }
         }
 
-        // 🛡️ ማረጋገጫ፡ የቴሌግራም IDህ 371093083 ከሆነ ወይም በኮምፒዩተር ከፈተፍከው በሰርቨር ሲፈተሽ አድሚን እንዲሆን
+        // 🛡️ ጥብቅ ማረጋገጫ፡ የቴሌግራም 🆔ህ 371093083 ከሆነ ብቻ አድሚን 'true' ይሆናል!
         if (telegramUserId === ADMIN_TELEGRAM_ID) {
             isAdmin = true;
         }
@@ -480,7 +479,7 @@
                     isAdmin = true;
                 }
 
-                // 🟢 አድሚን ቁልፉን ማሳየት ወይም መደበቅ
+                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በቢንጎ ሄደር ውስጥ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
