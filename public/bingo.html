@@ -66,7 +66,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (በነባሪ hidden ነው፤ አንተ (አቤል) ስትገባ ብቻ በዲናሚክ ይታያል) -->
+                <!-- የአድሚን ቁልፍ (ለአቤል ብቻ በዲናሚክ እንዲታይ የተደረገ) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -263,7 +263,7 @@
                 </div>
             </div>
 
-            <!-- TAB 4: ADMIN PANEL (ለአቤል ብቻ የሚከፈት) -->
+            <!-- TAB 4: ADMIN PANEL -->
             <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
@@ -381,9 +381,9 @@
 
     <script>
         const socket = io();
-        
-        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው እና ሰርቨሩ/ክላየንቱ የሚለይበት የአድሚን ቴሌግራም ID
-        const ADMIN_TELEGRAM_ID = "371093083"; 
+
+        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
+        const ADMIN_TELEGRAM_ID = "371093083";
 
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "አደ-ሰማእት";
@@ -395,8 +395,8 @@
             userUsername = window.Telegram.WebApp.initDataUnsafe.user.username ? "@" + window.Telegram.WebApp.initDataUnsafe.user.username : "No Username";
         }
 
-        // 🟢 አድሚን መሆን አለመሆኑን ማረጋገጫ (አንተ ከሆንክ ብቻ true ይሆናል)
-        const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
+        // 🟢 አድሚን መሆን አለመሆኑን ማረጋገጫ
+        let isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
         let transactionHistory = [];
@@ -446,12 +446,25 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 🛡️ እውነተኛው አድሚን (አቤል) ከገባ ብቻ የአድሚን ቁልፍ በሄደር ውስጥ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
-            if (isAdmin) {
-                document.getElementById('admin-nav-btn').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-nav-btn').classList.add('hidden');
-            }
+            // የቴሌግራም አፕ ዩዘር ID እስኪጫን ትንሽ ሰከንድ (500ms) ቆይተን በድጋሚ እናረጋግጣለን
+            setTimeout(() => {
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                    let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                    if (realTgId === ADMIN_TELEGRAM_ID) {
+                        isAdmin = true;
+                    }
+                }
+
+                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
+                const adminBtn = document.getElementById('admin-nav-btn');
+                if (adminBtn) {
+                    if (isAdmin) {
+                        adminBtn.classList.remove('hidden');
+                    } else {
+                        adminBtn.classList.add('hidden');
+                    }
+                }
+            }, 500);
 
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
