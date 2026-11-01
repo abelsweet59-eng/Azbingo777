@@ -95,7 +95,6 @@ function getRandomNextTargetRound() {
     return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
 }
 
-// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ታሳቢ በማድረግ የቦቶች ብዛት ማስያዣ (ከ 75 እስከ 350)
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -179,26 +178,11 @@ function startMainGameLoop() {
                     return;
                 }
 
-                if (availableNumbers.length === 0) {
-                    endRoundAndRestart();
-                    return;
-                }
-
-                let randomIndex = Math.floor(Math.random() * availableNumbers.length);
-                let calledNum = availableNumbers.splice(randomIndex, 1)[0];
-                globalRoom.calledNumbers.push(calledNum);
-                globalRoom.lastCalledNumber = calledNum;
-
-                io.emit('numberCalled', {
-                    number: calledNum,
-                    calledNumbers: globalRoom.calledNumbers
-                });
-                io.emit('numberCalledBroadcast', calledNum);
-
-                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 35);
+                // 🟢 አሸናፊ የመምረጫ ርዝመት (ቁጥሮቹ ከ 12 በላይ ሲሆኑ ወይም ሁሉም ቁጥሮች ሲያልቁ በአስተማማኝ ሁኔታ አሸናፊ እንዲወጣ ይደረጋል)
+                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
                 let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
-                if (shouldTriggerWin || forcedNextWinner || isAutoMultiBotRound) {
+                if (shouldTriggerWin || forcedNextWinner || isAutoMultiBotRound || availableNumbers.length === 0) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
                     let winningUsername = getRandomBotNames(1)[0]; 
                     let winningUserId = null;
@@ -230,6 +214,7 @@ function startMainGameLoop() {
                     let totalPot = (globalRoom.playersCount || 114) * 10;
                     let prizePool = Math.floor(totalPot * 0.70);
 
+                    // 🟢 ዊን ሲል በቀጥታ ወደ ሁሉም ክላይንቶች ቆንጆ ማሳወቂያ (Event) ይልካል
                     io.emit('bingoWinner', {
                         username: winningUsername,
                         userId: winningUserId,
@@ -237,6 +222,12 @@ function startMainGameLoop() {
                         prize: prizePool,
                         calledNumbers: globalRoom.calledNumbers,
                         winnersCount: winnersCount
+                    });
+                    
+                    io.emit('bingoWinnerBroadcast', {
+                        username: winningUsername,
+                        cardNum: winningCardNum,
+                        prize: prizePool
                     });
 
                     forcedNextWinner = null;
@@ -247,8 +238,20 @@ function startMainGameLoop() {
                     
                     setTimeout(() => {
                         endRoundAndRestart();
-                    }, 5000);
+                    }, 6000); // አሸናፊው ለ 6 ሰከንድ ታይቶ እንዲቆይ ተደርጓል
+                    return;
                 }
+
+                let randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                let calledNum = availableNumbers.splice(randomIndex, 1)[0];
+                globalRoom.calledNumbers.push(calledNum);
+                globalRoom.lastCalledNumber = calledNum;
+
+                io.emit('numberCalled', {
+                    number: calledNum,
+                    calledNumbers: globalRoom.calledNumbers
+                });
+                io.emit('numberCalledBroadcast', calledNum);
 
             }, 4000); 
         }
