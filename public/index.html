@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[9px] font-bold text-amber-400">110</div>
+                <div id="stat-players" class="text-[9px] font-bold text-amber-400">114</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -55,11 +55,11 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">770</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">798</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
-                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">0</div>
+                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">19</div>
             </div>
         </section>
 
@@ -141,7 +141,7 @@
                                 </div>
                             </div>
 
-                            <!-- የተጠቃሚ ካርዶች (በጣም አጭር ክፍተት ኖሯቸው ተቀራርበው እንዲታዩ የተደረገ) -->
+                            <!-- የተጠቃሚ ካርዶች (ሳጥኖቹ እንዳሉ ሆኖ ልክ እንደ ዋናው ቦርድ በ BINGO አምድ ከለር የሚሞሉበት) -->
                             <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-1">
                             </div>
 
@@ -213,7 +213,6 @@
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
-                    <!-- 🟢 2. ፖት (Total Pot) ሙሉ በሙሉ ጠፍቶ 70% ንጹህ ሽልማት ብቻ የሚታይበት የተስተካከለ ክፍል -->
                     <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center font-bold" id="winner-banner-text">
                         የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">1393 ብር</span>
                     </div>
@@ -571,7 +570,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 110;
+            let playersCount = data.playersCount || 114;
             let totalPot = playersCount * 10;
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -600,7 +599,6 @@
                 badgesContainer.appendChild(b);
             });
 
-            // 🟢 70% ንጹህ ሽልማት ብቻ እንዲታይ የተደረገበት ክፍል
             document.getElementById('winner-banner-text').innerHTML = `የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
@@ -818,7 +816,7 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 3. የተጠቃሚ ካርዶች ክፍተት በጣም ጠብቦ እና እርስ በእርሳቸው ተቀራርበው እንዲታዩ የተደረገበት ክፍል
+        // 🟢 የተጠቃሚ ካርዶች ሳጥን ቅርጽ እንዳለ ሆኖ፣ ቲክ የተደረጉት ብቻ በ BINGO አምድ ከለር የሚሞሉበት ክፍል
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -868,14 +866,23 @@
                     const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                     const cell = document.createElement('div');
-                    let cellClass = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded p-0.5 text-center";
-                    if (isFreeCenter) cellClass = "bg-purple-600 text-white font-extrabold text-[9px] rounded p-0.5";
-                    else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-extrabold text-[9px] rounded p-0.5 shadow";
-                    else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-extrabold text-[9px] rounded p-0.5 shadow";
-                    else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[9px] rounded p-0.5 border border-amber-400/50 cursor-pointer";
-
-                    cell.className = cellClass;
-                    cell.innerText = isFreeCenter ? "★" : cellNum;
+                    
+                    // 🟢 ሳጥኑ እንዳለ ሆኖ ቲክ የተደረጉት ብቻ በየራሳቸው የ BINGO አምድ ከለር (Square Solid Column Color) ይሞላሉ
+                    if (isFreeCenter) {
+                        cell.className = "bg-purple-600 text-white font-extrabold text-[9px] rounded p-0.5 text-center shadow";
+                        cell.innerText = "★";
+                    } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
+                        let colColorClass = getColumnBgColor(cellNum);
+                        cell.className = `${colColorClass} text-white font-extrabold text-[9px] rounded p-0.5 text-center shadow`;
+                        cell.innerText = cellNum;
+                    } else {
+                        // ያልተመረጡ ቁጥሮች (መደበኛ ሳጥን)
+                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded p-0.5 text-center";
+                        cell.innerText = cellNum;
+                        if (!isAutoMode && isCalled) {
+                            cell.className = "bg-white/10 text-amber-300 font-bold text-[9px] rounded p-0.5 border border-amber-400/50 cursor-pointer text-center";
+                        }
+                    }
 
                     if (!isAutoMode && !isFreeCenter) {
                         cell.onclick = () => {
