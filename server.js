@@ -22,6 +22,7 @@ app.get('/bingo', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+// ቴሌግራም ቦት እና አድሚን መረጃዎች (ಅቤል 🆔: 371093083)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
@@ -42,6 +43,7 @@ let pendingRequests = {};
 let gameInterval = null;
 let numberCallInterval = null;
 
+// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ታሳቢ በማድረግ የቦቶች ብዛት ማስያዣ (ከ 75 እስከ 350)
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -66,9 +68,9 @@ function getRealisticBotsCount(realCount) {
 // 🟢 እንደ ተጫዋቾች ብዛት የቆይታ ሰዓቱን (Countdown Duration) በዲናሚክ መወሰን
 function calculateDynamicRoundDuration() {
     let pCount = globalRoom.playersCount || 140;
-    if (pCount > 200) return 20000; // 20 ሰከንድ ለብዙ ተጫዋቾች
-    if (pCount > 100) return 30000; // 30 ሰከንድ
-    return 40000; // 40 ሰከንድ ለትንሽ ተጫዋቾች
+    if (pCount > 200) return 20000; 
+    if (pCount > 100) return 30000; 
+    return 40000; 
 }
 
 function refreshTakenCardsList() {
@@ -145,8 +147,7 @@ function startMainGameLoop() {
                 });
                 io.emit('numberCalledBroadcast', calledNum);
 
-                // 🟢 አሸናፊ የመምረጥ እና የማረጋገጥ ሎጅክ (Winner Check)
-                let totalCardsInRound = Object.keys(globalRoom.playerRoundCards).length;
+                // 🟢 አሸናፊ የመምረጥ እና የማረጋገጥ ሎጅክ (70% ለአሸናፊ / 30% ለቤት) - ከሙሉ የአድሚን አማራጮች ጋር
                 let shouldTriggerWin = (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 35);
 
                 if (shouldTriggerWin || forcedNextWinner) {
@@ -156,9 +157,22 @@ function startMainGameLoop() {
                     let winnersCount = 1;
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
+                    
                     if (forcedNextWinner === 'bot') {
                         winningUsername = "አቶ ቦት";
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
+                        winnersCount = 1;
+                    } else if (forcedNextWinner === 'multi_real_3') {
+                        winningUsername = "3 እውነተኛ ተጠቃሚዎች";
+                        winnersCount = 3;
+                        winningCardNum = 45;
+                    } else if (forcedNextWinner === 'random_real' && entries.length > 0) {
+                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                        winningUserId = randEntry[0];
+                        winningUsername = randEntry[1].username;
+                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                            winningCardNum = randEntry[1].cards[0];
+                        }
                     } else if (entries.length > 0) {
                         let randEntry = entries[Math.floor(Math.random() * entries.length)];
                         winningUserId = randEntry[0];
@@ -211,6 +225,7 @@ function endRoundAndRestart() {
 
 startMainGameLoop();
 
+// 🟢 የቴሌግራም ዌብሁክ እና የክፍያ ጥያቄ ማረጋገጫ (Telegram Financial Approval Integration)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
