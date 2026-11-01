@@ -26,10 +26,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
+let roundDuration = 30000; // 30 ሰከንድ ቆጣሪ
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + 30000,
+    gameStartTime: Date.now() + roundDuration,
     playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
@@ -104,7 +105,7 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer)
+// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer - FIXED TO PREVENT FREEZING)
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
@@ -148,7 +149,7 @@ function startMainGameLoop() {
                 io.emit('numberCalledBroadcast', calledNum);
 
                 // 🟢 አሸናፊ የመምረጥ እና የማረጋገጥ ሎጅክ (70% ለአሸናፊ / 30% ለቤት) - ከሙሉ የአድሚን አማራጮች ጋር
-                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 35);
+                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 30);
 
                 if (shouldTriggerWin || forcedNextWinner) {
                     let winningCardNum = 22;
@@ -197,10 +198,12 @@ function startMainGameLoop() {
 
                     forcedNextWinner = null;
                     clearInterval(numberCallInterval);
+                    numberCallInterval = null;
                     
+                    // 🛡️ ቀጣዩ ዙር ያለ መቋረጥ (Freeze ሳያደርግ) በሰዓቱ እንዲቀጥል መደረጉ
                     setTimeout(() => {
                         endRoundAndRestart();
-                    }, 5000);
+                    }, 4000);
                 }
 
             }, 2500); 
@@ -209,7 +212,10 @@ function startMainGameLoop() {
 }
 
 function endRoundAndRestart() {
-    if (numberCallInterval) clearInterval(numberCallInterval);
+    if (numberCallInterval) {
+        clearInterval(numberCallInterval);
+        numberCallInterval = null;
+    }
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
