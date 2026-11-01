@@ -99,7 +99,7 @@
                     
                     <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
+                        <!-- ግራ ቦርድ (75 ቁጥሮች - ሳጥኖቹ ልክ እንደ ካርቴላዎቹ በየራሳቸው አምድ ከለር የሚሞሉበት) -->
                         <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -111,7 +111,7 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል -->
+                        <!-- ቀኝ በኩል (የተጠቃሚ ካርዶች ቦታውን ሙሉ በሙሉ ሰፍተው እንዲይዙ የተደረገበት) -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             
                             <!-- የቢንጎ መቁጠሪያ ፓነል -->
@@ -141,8 +141,8 @@
                                 </div>
                             </div>
 
-                            <!-- የተጠቃሚ ካርዶች (ሳጥኖቹ እንዳሉ ሆኖ ልክ እንደ ዋናው ቦርድ በ BINGO አምድ ከለር የሚሞሉበት) -->
-                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-1">
+                            <!-- የተጠቃሚ ካርዶች (ሰፋ ብለውና ስትራች ሆነው ቦታውን እንዲካፈሉ የተደረጉበት ክፍል) -->
+                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-between items-center text-center overflow-y-auto custom-scroll space-y-1">
                             </div>
 
                         </div>
@@ -786,6 +786,7 @@
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
+        // 🟢 75 ቁጥሮች ዋና ቦርድ (ሳጥኖቹ እንዳሉ ሆኖ በየራሳቸው አምድ ከለር የሚሞሉበት)
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
@@ -798,11 +799,12 @@
                     const cell = document.createElement('div');
                     
                     if (isLatest) {
-                        cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-1 border border-white animate-pulse shadow-lg';
+                        cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-1 border border-white animate-pulse shadow-lg flex items-center justify-center';
                     } else if (isCalled) {
-                        cell.className = 'bg-amber-600 text-white font-bold text-[10px] rounded py-1 shadow';
+                        let colColor = getColumnBgColor(num);
+                        cell.className = `${colColor} text-white font-bold text-[10px] rounded py-1 shadow flex items-center justify-center`;
                     } else {
-                        cell.className = 'bg-white/5 text-gray-300 text-[10px] rounded py-1 font-medium';
+                        cell.className = 'bg-white/5 text-gray-300 text-[10px] rounded py-1 font-medium flex items-center justify-center';
                     }
                     cell.innerText = num;
                     board.appendChild(cell);
@@ -816,7 +818,7 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 የተጠቃሚ ካርዶች ሳጥን ቅርጽ እንዳለ ሆኖ፣ ቲክ የተደረጉት ብቻ በ BINGO አምድ ከለር የሚሞሉበት ክፍል
+        // 🟢 የተጠቃሚ ካርዶች ቦታውን ሙሉ በሙሉ ሰፍተው እና ስትራች ሆነው እንዲካፈሉ የተደረጉበት ክፍል
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -834,20 +836,20 @@
                 return;
             }
 
-            container.className = `flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-0.5`;
+            container.className = `flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-between items-center text-center overflow-y-auto custom-scroll space-y-1`;
 
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-0.5 rounded-md border border-purple-500/40 flex flex-col space-y-0.5 w-full shadow-sm mb-0.5";
+                cardWrapper.className = "bg-[#140826] p-1 rounded-lg border border-purple-500/40 flex flex-col justify-between space-y-1 w-full flex-1 shadow-md";
                 
                 const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[8px] font-bold text-amber-400 text-center";
+                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
                 const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[7px] text-white";
+                headersGrid.className = "grid grid-cols-5 gap-1 text-center font-bold text-[8px] text-white";
                 ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
                     const hCell = document.createElement('div');
                     hCell.className = idx === 0 ? "bg-blue-600 rounded py-0.5" : idx === 1 ? "bg-purple-600 rounded py-0.5" : idx === 2 ? "bg-pink-600 rounded py-0.5" : idx === 3 ? "bg-emerald-600 rounded py-0.5" : "bg-amber-600 rounded py-0.5";
@@ -857,7 +859,7 @@
                 cardWrapper.appendChild(headersGrid);
 
                 const miniGrid = document.createElement('div');
-                miniGrid.className = "grid grid-cols-5 gap-0.5 text-center";
+                miniGrid.className = "grid grid-cols-5 gap-1 text-center flex-1";
                 let numbers = getCartelaNumbers(cardNum);
 
                 numbers.forEach(cellNum => {
@@ -867,20 +869,18 @@
 
                     const cell = document.createElement('div');
                     
-                    // 🟢 ሳጥኑ እንዳለ ሆኖ ቲክ የተደረጉት ብቻ በየራሳቸው የ BINGO አምድ ከለር (Square Solid Column Color) ይሞላሉ
                     if (isFreeCenter) {
-                        cell.className = "bg-purple-600 text-white font-extrabold text-[9px] rounded p-0.5 text-center shadow";
+                        cell.className = "bg-purple-600 text-white font-extrabold text-[10px] rounded flex items-center justify-center shadow";
                         cell.innerText = "★";
                     } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
                         let colColorClass = getColumnBgColor(cellNum);
-                        cell.className = `${colColorClass} text-white font-extrabold text-[9px] rounded p-0.5 text-center shadow`;
+                        cell.className = `${colColorClass} text-white font-extrabold text-[10px] rounded flex items-center justify-center shadow`;
                         cell.innerText = cellNum;
                     } else {
-                        // ያልተመረጡ ቁጥሮች (መደበኛ ሳጥን)
-                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded p-0.5 text-center";
+                        cell.className = "bg-white/5 text-gray-200 text-[10px] font-semibold rounded flex items-center justify-center";
                         cell.innerText = cellNum;
                         if (!isAutoMode && isCalled) {
-                            cell.className = "bg-white/10 text-amber-300 font-bold text-[9px] rounded p-0.5 border border-amber-400/50 cursor-pointer text-center";
+                            cell.className = "bg-white/10 text-amber-300 font-bold text-[10px] rounded border border-amber-400/50 cursor-pointer flex items-center justify-center";
                         }
                     }
 
