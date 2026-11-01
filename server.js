@@ -60,20 +60,37 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-let currentRandomBaseBots = 135;
+// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ተኮር የተጫዋች ብዛት ማመንጫ (ከቀኑ 10 ሰዓት እስከ ማታ 6 ሰዓት እየጨመረ የሚሄድ)
 function getRealisticBotsCount(realCount) {
-    let nowHours = new Date().getHours();
-    let timePools = [110, 125, 140, 160, 185, 200, 150, 130, 120];
-    let poolIndex = nowHours % timePools.length;
-    currentRandomBaseBots = timePools[poolIndex];
-
-    let smallDelta = Math.floor(Math.random() * 9) - 4; 
-    let calculated = currentRandomBaseBots + smallDelta;
+    const now = new Date();
+    let utcHours = now.getUTCHours();
+    let utcMinutes = now.getUTCMinutes();
     
-    if (calculated < 90) calculated = 95;
-    if (calculated > 210) calculated = 205;
+    // የኢትዮጵያ ሰዓት ከ UTC (+3) ጋር ሲሰላ
+    let ethiopianHour = (utcHours + 3) % 24; 
+    
+    let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
+    let maxDurationMinutes = 8 * 60; // ከቀኑ 10 እስከ ማታ 6 (8 ሰዓታት)
 
-    return calculated;
+    let calculated = 95;
+
+    // ከቀኑ 10 ሰዓት (16:00) እስከ ማታ 6 ሰዓት (00:00) መካከል ከሆነ
+    if (ethiopianHour >= 16 || ethiopianHour < 1) {
+        let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
+        // ከ 90 ተጫዋች ተነስቶ እስከ 320 ተጫዋች በሂደት እንዲጨምር ይደረጋል
+        calculated = Math.floor(90 + (progress * 230) + (Math.sin(Date.now() / 3000) * 12));
+    } else {
+        // ከዚህ ሰዓት ውጪ ባሉ ሰዓቶች መደበኛ እና የተረጋጋ ቁጥር ይኖረዋል
+        calculated = 85 + Math.floor(Math.sin(Date.now() / 5000) * 10);
+    }
+
+    let smallDelta = Math.floor(Math.random() * 7) - 3; 
+    let finalCount = calculated + smallDelta;
+    
+    if (finalCount < 70) finalCount = 75;
+    if (finalCount > 350) finalCount = 345;
+
+    return finalCount;
 }
 
 function refreshTakenCardsList() {
