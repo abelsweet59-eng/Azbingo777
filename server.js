@@ -22,15 +22,14 @@ app.get('/bingo', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ቴሌግራም ቦት እና አድሚን መረጃዎች (ಅቤል 🆔: 371093083)
+// ቴሌግራም ቦት እና አድሚን መረጃዎች (አቤል 🆔: 371093083)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 30000; // 30 ሰከንድ ቆጣሪ
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + roundDuration,
+    gameStartTime: Date.now() + 30000,
     playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
@@ -128,7 +127,10 @@ function startMainGameLoop() {
             // የቁጥር ጥሪ ሎጅክ (በየ 2.5 ሰከንዱ አንዲት ቁጥር እየጠራ)
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
-                    clearInterval(numberCallInterval);
+                    if (numberCallInterval) {
+                        clearInterval(numberCallInterval);
+                        numberCallInterval = null;
+                    }
                     return;
                 }
 
@@ -197,10 +199,11 @@ function startMainGameLoop() {
                     });
 
                     forcedNextWinner = null;
-                    clearInterval(numberCallInterval);
-                    numberCallInterval = null;
+                    if (numberCallInterval) {
+                        clearInterval(numberCallInterval);
+                        numberCallInterval = null;
+                    }
                     
-                    // 🛡️ ቀጣዩ ዙር ያለ መቋረጥ (Freeze ሳያደርግ) በሰዓቱ እንዲቀጥል መደረጉ
                     setTimeout(() => {
                         endRoundAndRestart();
                     }, 4000);
