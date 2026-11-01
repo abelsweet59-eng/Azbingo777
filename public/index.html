@@ -13,7 +13,7 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.4); border-radius: 3px; }
         @keyframes pulseGlow {
             0%, 100% { transform: scale(1); box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
-            50% { transform: scale(1.04); box-shadow: 0 0 40px rgba(245, 158, 11, 1); }
+            50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
         @keyframes countdownPop {
@@ -47,7 +47,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[9px] font-bold text-amber-400">200</div>
+                <div id="stat-players" class="text-[9px] font-bold text-amber-400">110</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -55,11 +55,11 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">1400</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">770</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
-                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">1</div>
+                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">2</div>
             </div>
         </section>
 
@@ -111,19 +111,19 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (ትክክለኛ የቢልያርድ ኳስ መልክ ያለው መጥሪያ + ተቀራርበው የተዘረጉ የተጫዋች ካርዶች) -->
+                        <!-- ቀኝ በኩል (ሙሉ በሙሉ ከለር የያዘው መጥሪያ ኳስ + ተቀራርበው የተዘረጉ የተጫዋች ካርዶች) -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             
-                            <!-- የቢንጎ መቁጠሪያ ፓነል (Pool Ball Style with exact BINGO column color and white text) -->
+                            <!-- የቢንጎ መቁጠሪያ ፓነል -->
                             <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg">
                                 <div class="flex justify-between items-center">
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center text-[8px]"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
 
-                                <!-- ዋናው የሚጠራው ኳስ (Pool Ball Style: Round, White background, BINGO color ring/band, White text) -->
-                                <div id="main-called-ball" class="w-20 h-20 rounded-full bg-gradient-to-br from-white via-gray-100 to-gray-300 border-4 border-amber-400 flex items-center justify-center text-gray-900 font-black text-lg shadow-2xl pulse-ball mx-auto my-1 relative overflow-hidden">
-                                    <span class="z-10 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-black shadow">B-10</span>
+                                <!-- ዋናው የሚጠራው ኳስ (ሙሉ የ BINGO አምድ ከለር የያዘ እና በነጭ ጽሁፍ የተጻፈበት) -->
+                                <div id="main-called-ball" class="w-full py-3 px-4 rounded-xl bg-blue-600 border-2 border-amber-300 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball my-1">
+                                    --
                                 </div>
                                 
                                 <div class="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
@@ -424,7 +424,9 @@
             } else {
                 calledNumbersList = [];
                 manualDaubedNumbers = {};
-                document.getElementById('main-called-ball').innerHTML = `<span class="z-10 bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-black shadow">--</span>`;
+                const mainBall = document.getElementById('main-called-ball');
+                mainBall.className = "w-full py-3 px-4 rounded-xl bg-purple-900 border-2 border-amber-300 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball my-1";
+                mainBall.innerText = "--";
                 document.getElementById('stat-called-count').innerText = "0";
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
@@ -489,25 +491,37 @@
             }
         }
 
-        // 🟢 የቢልያርድ ኳስ መልክ (Pool Ball Style: White ball with colored pill/band and white text)
+        // 🟢 ዋናው ኳስ ሙሉ በሙሉ በራሱ በ BINGO አምድ ከለር እንዲሞላ እና ጽሁፉ በነጭ እንዲሆን የተደረገበት ክፍል
         function displayCalledBall(num) {
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let bgClass = getColumnBgColor(num);
             const mainBall = document.getElementById('main-called-ball');
-            mainBall.innerHTML = `<span class="z-10 ${bgClass} text-white px-4 py-1.5 rounded-full text-base font-black shadow-lg">${letter}-${num}</span>`;
+            // ከለሩን ሙሉ ለሙሉ የኮለኑ ከለር እናደርገዋለን (bgClass)
+            mainBall.className = `w-full py-3 px-4 rounded-xl ${bgClass} border-2 border-amber-300 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball my-1`;
+            mainBall.innerText = `${letter}-${num}`;
             renderRecentBalls();
         }
 
-        // 🟢 የቅርብ ጊዜ የተጠሩ ኳሶች ፓጅ
+        // 🟢 የቅርብ ጊዜ ኳሶች (የመጨረሻው ጎልቶ እንዲታይ እና ቀደምት ኳሶች የተለየ ከለር እንዲይዙ)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
-            let recent = calledNumbersList.slice(-4).reverse();
-            recent.forEach(num => {
+            // calledNumbersList ውስጥ ያሉት (ከመጨረሻው በስተቀር ያሉት ቀደምት ናቸው)
+            let totalCalled = calledNumbersList.length;
+            calledNumbersList.forEach((num, index) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 const pill = document.createElement('div');
-                let colorClass = num <= 15 ? "bg-blue-600 text-white" : num <= 30 ? "bg-purple-600 text-white" : num <= 45 ? "bg-pink-600 text-white" : num <= 60 ? "bg-emerald-600 text-white" : "bg-amber-600 text-white";
-                pill.className = `${colorClass} font-bold px-2 py-0.5 rounded-full text-[9px] shadow`;
+                
+                let isLatest = (index === totalCalled - 1);
+                // የመጨረሻው (Latest) የራሱን የኮለም ከለር በድምቀት ይይዛል፣ ቀደምት (Older) ኳሶች ደግሞ ለስላሳ/ጨለመ ያለ ከለር ይይዛሉ
+                let colorClass = "";
+                if (isLatest) {
+                    colorClass = num <= 15 ? "bg-blue-600 text-white font-black border border-amber-300 shadow" : num <= 30 ? "bg-purple-600 text-white font-black border border-amber-300 shadow" : num <= 45 ? "bg-pink-600 text-white font-black border border-amber-300 shadow" : num <= 60 ? "bg-emerald-600 text-white font-black border border-amber-300 shadow" : "bg-amber-600 text-white font-black border border-amber-300 shadow";
+                } else {
+                    colorClass = "bg-purple-950/80 text-purple-200 border border-purple-500/30 opacity-70";
+                }
+
+                pill.className = `${colorClass} px-2 py-0.5 rounded-full text-[9px]`;
                 pill.innerText = `${letter}-${num}`;
                 container.appendChild(pill);
             });
@@ -519,7 +533,7 @@
             let winnerName = data.username;
             let winnerId = data.userId || telegramUserId;
             let cardNum = data.cardNum || 22;
-            let playersCount = data.playersCount || 200;
+            let playersCount = data.playersCount || 110;
             let totalPot = playersCount * 10;
             let prizePool = data.prize || Math.floor(totalPot * 0.70);
             let calledNums = data.calledNumbers || [];
@@ -628,7 +642,9 @@
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-            document.getElementById('main-called-ball').innerHTML = `<span class="z-10 bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-black shadow">--</span>`;
+            const mainBall = document.getElementById('main-called-ball');
+            mainBall.className = "w-full py-3 px-4 rounded-xl bg-purple-900 border-2 border-amber-300 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball my-1";
+            mainBall.innerText = "--";
             document.getElementById('stat-called-count').innerText = "0";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
