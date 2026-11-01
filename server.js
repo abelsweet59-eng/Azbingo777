@@ -37,7 +37,7 @@ let currentRoundWinnersList = [];
 // 🟢 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎችን ለመያዝ
 let onlineRealUsers = [];
 
-// 🟢 አዲሶቹን እና የቀድሞዎቹን ስሞች በአንድ ላይ የያዘ የራንደም ስሞች ዝርዝር (Randomized Bot Names Pool)
+// 🟢 የተዋሃደው እና በራንደም የተደረገው የስሞች ዝርዝር (Randomized Bot Names Pool)
 const fakeBotNames = [
     "Henok_Z", "Wase", "Dawit_B", "ሞለፍን ኔትስት ገበየሁ", "Quarezma",
     "ANIE X YUKKI", "ማኅበል", "Abebaw", "Teg 0920", "Yd",
@@ -78,7 +78,7 @@ const fakeBotNames = [
     "Ashagre", "Ed", "Gedefaw Aseffa", "Dada"
 ];
 
-// 🟢 እስከ 24 ሰዓት የሚቆዩ እና ብዙ ጥያቄዎችን (እስከ 50 እና ከዚያ በላይ) በአግባቡ የሚይዝ ማከማቻ
+// 🟢 እስከ 24 ሰዓት የሚቆዩ እና ብዙ ጥያቄዎችን በአግባቡ የሚይዝ ማከማቻ
 let pendingRequests = {};
 
 function getRealisticBotsCount(realCount) {
@@ -234,6 +234,7 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
+// 🟢 የቴሌብር ሪኩዌስት ማስተካከያ (ዊዝድሮዋል ሲጸድቅ ትክክለኛውን የሒሳብ ቅናሽ እንዲያስተላልፍ የተደረገ)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -259,7 +260,14 @@ async function pollTelegramUpdates() {
                         let targetSocket = io.sockets.sockets.get(reqData.socketId);
                         if (action === 'app') {
                             if (targetSocket) {
-                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                                // 🟢 ዊዝድሮዋል ከሆነ ከሂሳብ ላይ በትክክል እንዲቀነስ (Minus) እንዲሆን adjustedAmount ተሰናድቷል
+                                let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
+                                
+                                targetSocket.emit('financialApproved', { 
+                                    type: reqData.type, 
+                                    amount: reqData.amount,
+                                    adjustedAmount: finalAmountForClient 
+                                });
                             }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
