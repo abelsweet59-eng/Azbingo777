@@ -9,8 +9,13 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; background-color: #0b0317; color: white; }
-        .custom-scroll::-webkit-scrollbar { width: 3px; height: 3px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.4); border-radius: 3px; }
+        
+        /* 🟢 ስክሮል ማድረጊያው በግልጽ እንዲታይ (Custom Visible Scrollbar) */
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.7); border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 1); }
+
         @keyframes pulseGlow {
             0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
             50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
@@ -90,6 +95,7 @@
             <!-- TAB 1: GAME -->
             <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
                 
+                <!-- 🟢 ካርድ መምረጫ ቦታ (በደንብ ሰፍቶ እንዲታይ እና ስክሮል ማድረጊያው እንዲታይ የተደረገ) -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
                     <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
                         <div>
@@ -101,33 +107,33 @@
                         </div>
                     </div>
 
-                    <!-- 500 Cards Grid Container -->
-                    <div class="h-56 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+                    <!-- 500 Cards Grid Container (ሰፋ ያለ ቁመት እና ግልጽ ስክሮል ባር ያለው) -->
+                    <div class="flex-1 min-h-[220px] max-h-[340px] overflow-y-auto custom-scroll bg-black/40 p-2.5 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
 
-                    <!-- 🟢 በምስሉ ላይ ባለው ባዶ ቦታ (በክበብ የታየው ቦታ) ላይ የተገጠመ ውብ የ 60 ሰከንድ ካውንትዳውን ሰዓት ፓነል -->
-                    <div class="bg-gradient-to-r from-purple-950/80 via-[#1c0c33] to-purple-950/80 p-3 rounded-xl border border-amber-500/40 flex items-center justify-between shadow-xl">
+                    <!-- 🟢 የ 60 ሰከንድ ሰዓት ፓነል (በጣም አሪፍ በሆነ ዲዛይን የሰፋ) -->
+                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-3.5 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400 text-lg shadow-inner pulse-ball">
+                            <div class="w-11 h-11 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-xl shadow-inner pulse-ball">
                                 ⏳
                             </div>
                             <div>
-                                <div class="text-[10px] text-amber-300 font-bold uppercase tracking-wider">ጨዋታው ሊጀመር የሚቀረው ጊዜ</div>
-                                <div class="text-[9px] text-gray-400">እባክዎ ፈጣን በመሆን ካርድዎን ይምረጡ!</div>
+                                <div class="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">መጫዎቻው ሊጀመር የሚቀረው ጊዜ</div>
+                                <div class="text-[9px] text-gray-300">እባክዎ ፈጣን በመሆን ካርድዎን ይምረጡ!</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div id="big-countdown-timer" class="text-2xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_10px_rgba(245,158,11,0.6)]">
+                            <div id="big-countdown-timer" class="text-3xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
                                 60s
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
                         <div>
                             <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
                             <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
                         </div>
-                        <button onclick="confirmCardSelection()" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-3 py-2 rounded-lg font-bold text-xs shadow-md">
+                        <button onclick="confirmCardSelection()" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md">
                             ካርድ አረጋግጥ
                         </button>
                     </div>
@@ -448,7 +454,6 @@
             });
         }
 
-        // 🟢 የ 60 ሰከንድ ካውንትዳውን ሰዓት ማስተካከያ (በላይኛው ባጅ እና በታችኛው ትልቅ ፓነል ላይ በአንድነት የሚሰራ)
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
@@ -794,15 +799,15 @@
                 let isConfirmedByOther = takenCardsByOthers.includes(i);
 
                 if (isConfirmedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded shadow";
+                    btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-2 rounded shadow";
                     btn.disabled = true;
                 } else if (isSelectedByMe) {
-                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[10px] py-1.5 rounded border border-amber-300 shadow";
+                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-2 rounded border border-amber-300 shadow";
                 } else if (isConfirmedByOther) {
-                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[10px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
+                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-2 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
                 } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[10px] py-1.5 rounded border border-white/5";
+                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[11px] py-2 rounded border border-white/5";
                 }
                 btn.innerText = String(i);
 
@@ -867,6 +872,7 @@
             renderPlayerDualCards();
         }
 
+        // 🟢 የተጠቃሚ ካርዶች (ማዕከላዊው የ FREE ዞን ከ BINGO አምድ ከለር ውጪ በሆነ ወርቃማ/Gold ከለር የተሞላበት)
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -918,7 +924,8 @@
                     const cell = document.createElement('div');
                     
                     if (isFreeCenter) {
-                        cell.className = "bg-purple-600 text-white font-extrabold text-[10px] rounded flex items-center justify-center shadow";
+                        // 🟢 ማዕከላዊው የ FREE ዞን ከ BINGO ከለሮች ውጪ በሆነ ወርቃማ (Gold/Amber) ከለር ተሞላ
+                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-extrabold text-[11px] rounded flex items-center justify-center shadow-lg border border-amber-300";
                         cell.innerText = "★";
                     } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
                         let colColorClass = getColumnBgColor(cellNum);
