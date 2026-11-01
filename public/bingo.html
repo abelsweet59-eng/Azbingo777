@@ -66,7 +66,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ሲገባ ብቻ ይታያል) -->
+                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ሲገባ ብቻ በግልጽ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -385,24 +385,32 @@
         // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
 
+        // 🟢 ከቴሌግራም ዌብ አፕ ዩዘር ID ወዲያውኑ ለመቀበል የሚደረግ ሙከራ
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
         let userUsername = "guest_user";
+        let isAdmin = false;
 
-        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-            if (window.Telegram.WebApp.initDataUnsafe.user.id) {
-                telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
-            }
-            if (window.Telegram.WebApp.initDataUnsafe.user.first_name) {
-                userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
-            }
-            if (window.Telegram.WebApp.initDataUnsafe.user.username) {
-                userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
+        // ቴሌግራም ዌብአፕ ዳታ ወዲያውኑ ማንበብ
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                if (window.Telegram.WebApp.initDataUnsafe.user.id) {
+                    telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                }
+                if (window.Telegram.WebApp.initDataUnsafe.user.first_name) {
+                    userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
+                }
+                if (window.Telegram.WebApp.initDataUnsafe.user.username) {
+                    userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
+                }
             }
         }
 
-        // 🟢 ትክክለኛው ማረጋገጫ፡ የቴሌግራም IDህ 371093083 ከሆነ ብቻ isAdmin 'true' ይሆናል!
-        let isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
+        // 🛡️ ማረጋገጫ፡ የቴሌግራም IDህ 371093083 ከሆነ ወይም በኮምፒዩተር ከፈተፍከው በሰርቨር ሲፈተሽ አድሚን እንዲሆን
+        if (telegramUserId === ADMIN_TELEGRAM_ID) {
+            isAdmin = true;
+        }
 
         let walletBalance = 30.00;
         let transactionHistory = [];
@@ -452,15 +460,27 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // የቴሌግራም ዌብ አፕ ሙሉ መረጃ እስኪገባ ትንሽ ጊዜ ሰጥተን ዳግም እናረጋግጣለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
-                    if (realTgId === ADMIN_TELEGRAM_ID) {
-                        isAdmin = true;
+                    if (realTgId) {
+                        telegramUserId = realTgId;
+                    }
+                    if (window.Telegram.WebApp.initDataUnsafe.user.first_name) {
+                        userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
+                    }
+                    if (window.Telegram.WebApp.initDataUnsafe.user.username) {
+                        userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
                     }
                 }
 
-                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በቢንጎ ሄደር ውስጥ በግልጽ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
+                // 🟢 የመጨረሻ ማረጋገጫ (አቤል ID ከሆነ ብቻ አድሚን ይደረጋል)
+                if (telegramUserId === ADMIN_TELEGRAM_ID) {
+                    isAdmin = true;
+                }
+
+                // 🟢 አድሚን ቁልፉን ማሳየት ወይም መደበቅ
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -469,7 +489,9 @@
                         adminBtn.classList.add('hidden');
                     }
                 }
-            }, 500);
+                
+                document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
+            }, 300);
 
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
@@ -570,7 +592,7 @@
             });
 
             socket.on('financialRejected', (data) => {
-                alert(`❌ የ ${data.amount} ብር የతల ${data.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄዎ ውድቅ ተደርጓል።`);
+                alert(`❌ የ ${data.amount} ብር የ ${data.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄዎ ውድቅ ተደርጓል።`);
             });
 
             socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
