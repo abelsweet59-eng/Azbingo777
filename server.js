@@ -33,13 +33,6 @@ let currentRoundTargetCalls = 20;
 
 let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; 
 
-let currentRoundWinnerInfo = {
-    username: "",
-    userId: "",
-    cardNum: 0,
-    winningNumbersNeeded: []
-};
-
 let currentRoundWinnersList = [];
 
 const fakeBotNames = [
@@ -60,27 +53,20 @@ const fakeBotNames = [
 
 let pendingRequests = {};
 
-// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ተኮር የተጫዋች ብዛት ማመንጫ (ከቀኑ 10 ሰዓት እስከ ማታ 6 ሰዓት እየጨመረ የሚሄድ)
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
     let utcMinutes = now.getUTCMinutes();
-    
-    // የኢትዮጵያ ሰዓት ከ UTC (+3) ጋር ሲሰላ
     let ethiopianHour = (utcHours + 3) % 24; 
     
     let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
-    let maxDurationMinutes = 8 * 60; // ከቀኑ 10 እስከ ማታ 6 (8 ሰዓታት)
+    let maxDurationMinutes = 8 * 60;
 
     let calculated = 95;
-
-    // ከቀኑ 10 ሰዓት (16:00) እስከ ማታ 6 ሰዓት (00:00) መካከል ከሆነ
     if (ethiopianHour >= 16 || ethiopianHour < 1) {
         let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
-        // ከ 90 ተጫዋች ተነስቶ እስከ 320 ተጫዋች በሂደት እንዲጨምር ይደረጋል
         calculated = Math.floor(90 + (progress * 230) + (Math.sin(Date.now() / 3000) * 12));
     } else {
-        // ከዚህ ሰዓት ውጪ ባሉ ሰዓቶች መደበኛ እና የተረጋጋ ቁጥር ይኖረዋል
         calculated = 85 + Math.floor(Math.sin(Date.now() / 5000) * 10);
     }
 
@@ -467,75 +453,71 @@ setInterval(() => {
             currentRoundTargetCalls = slowRanges[Math.floor(Math.random() * slowRanges.length)];
         }
 
+        // 🟢 የካውንትዳውን ሲግናል ለሁሉም ተጫዋቾች ይላካል
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
-        activeGameInterval = setInterval(() => {
-            if (!globalRoom.gameActive) {
-                clearInterval(activeGameInterval);
-                return;
-            }
+        // 🟢 3 ሰከንድ (3000 ሚሊሰከንድ) ክፍተት (Gap) ተሰጥቶ ከዛ በኋላ ቁጥር መጥራት ይጀምራል
+        setTimeout(() => {
+            activeGameInterval = setInterval(() => {
+                if (!globalRoom.gameActive) {
+                    clearInterval(activeGameInterval);
+                    return;
+                }
 
-            let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
-            if (available.length > 0) {
-                let num;
-                let neededUncalled = winningPatternNums.filter(n => !globalRoom.calledNumbers.includes(n));
-                if (neededUncalled.length > 0 && Math.random() < 0.65 && globalRoom.calledNumbers.length < currentRoundTargetCalls - 2) {
-                    num = neededUncalled[Math.floor(Math.random() * neededUncalled.length)];
+                let available = Array.from({length: 75}, (_, i) => i + 1).filter(n => !globalRoom.calledNumbers.includes(n));
+                if (available.length > 0) {
+                    let num;
+                    let neededUncalled = winningPatternNums.filter(n => !globalRoom.calledNumbers.includes(n));
+                    if (neededUncalled.length > 0 && Math.random() < 0.65 && globalRoom.calledNumbers.length < currentRoundTargetCalls - 2) {
+                        num = neededUncalled[Math.floor(Math.random() * neededUncalled.length)];
+                    } else {
+                        num = available[Math.floor(Math.random() * available.length)];
+                    }
+
+                    if (!globalRoom.calledNumbers.includes(num)) {
+                        globalRoom.calledNumbers.push(num);
+                    }
+                    io.emit('numberCalledBroadcast', num);
+
+                    let isWinnerReady = checkWinningPattern(primaryWinner.cardNum, globalRoom.calledNumbers);
+
+                    let minCallsNeeded = realCount > 0 ? 8 : 15;
+                    let isTargetReached = globalRoom.calledNumbers.length >= currentRoundTargetCalls;
+
+                    if ((isWinnerReady && globalRoom.calledNumbers.length >= minCallsNeeded && isTargetReached) || globalRoom.calledNumbers.length >= 75) {
+                        globalRoom.gameActive = false;
+                        globalRoom.gameStartTime = Date.now() + roundDuration;
+                        globalRoom.playerRoundCards = {};
+                        globalRoom.playerTemporaryCards = {};
+                        refreshTakenCardsList();
+                        forcedNextWinner = null;
+
+                        let totalPot = totalPlayers * 10;
+                        let netPrizePool = Math.floor(totalPot * 0.70);
+                        let prizePerWinner = Math.floor(netPrizePool / currentRoundWinnersList.length);
+
+                        io.emit('bingoWinner', { 
+                            username: primaryWinner.username, 
+                            userId: primaryWinner.userId,
+                            cardNum: primaryWinner.cardNum, 
+                            playersCount: totalPlayers,
+                            prize: prizePerWinner, 
+                            winnersCount: currentRoundWinnersList.length,
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+
+                        clearInterval(activeGameInterval);
+                    }
                 } else {
-                    num = available[Math.floor(Math.random() * available.length)];
-                }
-
-                if (!globalRoom.calledNumbers.includes(num)) {
-                    globalRoom.calledNumbers.push(num);
-                }
-                io.emit('numberCalledBroadcast', num);
-
-                let isWinnerReady = checkWinningPattern(primaryWinner.cardNum, globalRoom.calledNumbers);
-
-                let minCallsNeeded = realCount > 0 ? 8 : 15;
-                let isTargetReached = globalRoom.calledNumbers.length >= currentRoundTargetCalls;
-
-                if ((isWinnerReady && globalRoom.calledNumbers.length >= minCallsNeeded && isTargetReached) || globalRoom.calledNumbers.length >= 75) {
                     globalRoom.gameActive = false;
                     globalRoom.gameStartTime = Date.now() + roundDuration;
                     globalRoom.playerRoundCards = {};
                     globalRoom.playerTemporaryCards = {};
                     refreshTakenCardsList();
                     forcedNextWinner = null;
-
-                    let totalPot = totalPlayers * 10;
-                    let netPrizePool = Math.floor(totalPot * 0.70);
-                    let prizePerWinner = Math.floor(netPrizePool / currentRoundWinnersList.length);
-
-                    io.emit('bingoWinner', { 
-                        username: primaryWinner.username, 
-                        userId: primaryWinner.userId,
-                        cardNum: primaryWinner.cardNum, 
-                        playersCount: totalPlayers,
-                        prize: prizePerWinner, 
-                        winnersCount: currentRoundWinnersList.length,
-                        calledNumbers: globalRoom.calledNumbers
-                    });
-
+                    io.emit('gameEndedBroadcast');
                     clearInterval(activeGameInterval);
                 }
-            } else {
-                globalRoom.gameActive = false;
-                globalRoom.gameStartTime = Date.now() + roundDuration;
-                globalRoom.playerRoundCards = {};
-                globalRoom.playerTemporaryCards = {};
-                refreshTakenCardsList();
-                forcedNextWinner = null;
-                io.emit('gameEndedBroadcast');
-                clearInterval(activeGameInterval);
-            }
-        }, 5000); 
-    }
-}, 1000);
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
-});
+            }, 500
