@@ -66,7 +66,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- የአድሚን ቁልፍ (ለአቤል ብቻ በዲናሚክ እንዲታይ የተደረገ) -->
+                <!-- 🛡️ አድሚን ቁልፍ (በነባሪ hidden ነው፤ አንተ (አቤል) ስትገባ ብቻ በዲናሚክ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -395,7 +395,7 @@
             userUsername = window.Telegram.WebApp.initDataUnsafe.user.username ? "@" + window.Telegram.WebApp.initDataUnsafe.user.username : "No Username";
         }
 
-        // 🟢 አድሚን መሆን አለመሆኑን ማረጋገጫ
+        // 🟢 አድሚን መሆን አለመሆኑን ማረጋገጫ (በ ID ብቻ)
         let isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
@@ -446,7 +446,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // የቴሌግራም አፕ ዩዘር ID እስኪጫን ትንሽ ሰከንድ (500ms) ቆይተን በድጋሚ እናረጋግጣለን
+            // የቴሌግራም አፕ ዩዘር ID እስኪጫን ትንሽ ሰከንድ ቆይተን እናረጋግጣለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -455,7 +455,7 @@
                     }
                 }
 
-                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
+                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በሄደር ውስጥ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -1128,9 +1128,9 @@
                 b.classList.remove('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
                 b.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
             });
-            if(btn) {
-                btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
-                btn.classList.add('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
+            if(b) {
+                b.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
+                b.classList.add('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
             }
         }
     </script>
