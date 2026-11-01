@@ -24,7 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-// 🟢 አቤል የሰጠው ትክክለኛ እና የተሟላ የቦቶች ስሞች ዝርዝር
+// 🟢 አቤል የሰጠው ትክክለኛ እና የተሟላ የቦቶች ስሞች ዝርዝር (ሙሉው)
 const ETHIOPIAN_BOT_NAMES = [
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
@@ -95,6 +95,7 @@ function getRandomNextTargetRound() {
     return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
 }
 
+// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ታሳቢ በማድረግ የቦቶች ብዛት ማስያዣ (ከ 75 እስከ 350)
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -147,10 +148,11 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
+// 🟢 ዋናው የጨዋታ ዑደት (Game Loop)
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
-    globalRoom.gameStartTime = Date.now() + 60000;
+    globalRoom.gameStartTime = Date.now() + 60000; // 60 ሰከንድ ቆጣሪ
 
     gameInterval = setInterval(() => {
         let timeLeft = globalRoom.gameStartTime - Date.now();
@@ -178,8 +180,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🟢 ራስ-ሰር አሸናፊ ማረጋገጫ (አድሚኑ ካላዘዘ በስተቀር ቦቶች ብቻ ያሸንፋሉ)
-                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
                 let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
                 if (shouldTriggerWin) {
@@ -190,7 +191,6 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    // 1. አድሚኑ 'random_real' ብሎ ካዘዘ ብቻ ሪል ዩዘር ያሸንፋል
                     if (forcedNextWinner === 'random_real' && entries.length > 0) {
                         let randEntry = entries[Math.floor(Math.random() * entries.length)];
                         winningUserId = randEntry[0];
@@ -198,9 +198,7 @@ function startMainGameLoop() {
                         if (randEntry[1].cards && randEntry[1].cards.length > 0) {
                             winningCardNum = randEntry[1].cards[0];
                         }
-                    } 
-                    // 2. አድሚኑ 'multi_real_3' ብሎ ካዘዘ ወይም ራስ-ሰር የብዙ ቦቶች ሰዓት ከደረሰ
-                    else if (forcedNextWinner === 'multi_real_3' || (!forcedNextWinner && isAutoMultiBotRound)) {
+                    } else if (forcedNextWinner === 'multi_real_3' || (!forcedNextWinner && isAutoMultiBotRound)) {
                         let threeBots = getRandomBotNames(3);
                         winningUsername = threeBots.join(', '); 
                         winnersCount = 3;
@@ -208,9 +206,7 @@ function startMainGameLoop() {
                         
                         roundsPlayedCount = 0;
                         nextMultiBotTargetRound = getRandomNextTargetRound();
-                    } 
-                    // 3. ነባሪ (Default): ቦት ያሸንፋል!
-                    else {
+                    } else {
                         winningUsername = getRandomBotNames(1)[0];
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         winnersCount = 1;
@@ -226,12 +222,6 @@ function startMainGameLoop() {
                         prize: prizePool,
                         calledNumbers: globalRoom.calledNumbers,
                         winnersCount: winnersCount
-                    });
-                    
-                    io.emit('bingoWinnerBroadcast', {
-                        username: winningUsername,
-                        cardNum: winningCardNum,
-                        prize: prizePool
                     });
 
                     forcedNextWinner = null;
