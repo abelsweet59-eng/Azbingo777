@@ -99,7 +99,7 @@
                     
                     <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <!-- ግራ ቦርድ (75 ቁጥሮች - ሳጥኖቹ ልክ እንደ ካርቴላዎቹ በየራሳቸው አምድ ከለር የሚሞሉበት) -->
+                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
                         <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -111,13 +111,14 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (የተጠቃሚ ካርዶች ቦታውን ሙሉ በሙሉ ሰፍተው እንዲይዙ የተደረገበት) -->
+                        <!-- ቀኝ በኩል -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             
-                            <!-- የቢንጎ መቁጠሪያ ፓነል -->
+                            <!-- የቢንጎ መቁጠሪያ ፓነል (በእርስዎ የተጠየቀው ትክክለኛ የፑል ኳስ መጥሪያ እና የቅርብ ጊዜ ኳሶች) -->
                             <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
                                 <div class="flex justify-between items-center">
-                                    <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center text-[8px]"></div>
+                                    <!-- 🟢 ከሱ ጀርባ/ላይ ያሉት የጠራቸውን ቁጥሮች በትንሽ የፑል ኳስ መልክ የሚያሳይ -->
+                                    <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
 
@@ -127,6 +128,7 @@
                                         <div id="in-place-countdown-num" class="text-3xl font-black text-amber-400 font-mono">30</div>
                                     </div>
 
+                                    <!-- 🟢 ዋናው የሚጠራው ቁጥር እንደ እውነተኛ ፑል ኳስ (Pure Pool Ball) ሙሉ በሙሉ በ BINGO Column Color የተሞላ ክብ -->
                                     <div id="main-called-ball" class="hidden w-24 h-24 rounded-full bg-purple-900 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball mx-auto">
                                         --
                                     </div>
@@ -141,7 +143,7 @@
                                 </div>
                             </div>
 
-                            <!-- የተጠቃሚ ካርዶች (ሰፋ ብለውና ስትራች ሆነው ቦታውን እንዲካፈሉ የተደረጉበት ክፍል) -->
+                            <!-- የተጠቃሚ ካርዶች -->
                             <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-between items-center text-center overflow-y-auto custom-scroll space-y-1">
                             </div>
 
@@ -529,6 +531,7 @@
             }
         }
 
+        // 🟢 1. ዋናው መጥሪያ ትክክለኛ የፑል ኳስ መልክ እንዲኖረው (Pure Pool Ball)
         function displayCalledBall(num) {
             const countdownBox = document.getElementById('in-place-countdown-box');
             const mainBall = document.getElementById('main-called-ball');
@@ -542,6 +545,7 @@
             renderRecentBalls();
         }
 
+        // 🟢 2. ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ቁጥሮች በትንሽ የፑል ኳስ መልክ (Pure Pool Ball Pills) እንዲታዩ የተደረገበት ክፍል
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
@@ -555,10 +559,10 @@
 
                 if (isLatest) {
                     pill.className = `w-7 h-7 rounded-full ${bgClass} flex items-center justify-center text-[9px] font-black text-white shadow-md`;
-                    pill.innerText = `${letter}`;
+                    pill.innerText = `${letter}-${num}`;
                 } else {
-                    pill.className = `${bgClass} text-white font-bold w-5 h-5 rounded-full flex items-center justify-center text-[8px] shadow opacity-70`;
-                    pill.innerText = `${letter}`;
+                    pill.className = `${bgClass} text-white font-bold w-6 h-6 rounded-full flex items-center justify-center text-[8px] shadow opacity-70`;
+                    pill.innerText = `${letter}-${num}`;
                 }
                 container.appendChild(pill);
             });
@@ -786,7 +790,6 @@
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
-        // 🟢 75 ቁጥሮች ዋና ቦርድ (ሳጥኖቹ እንዳሉ ሆኖ በየራሳቸው አምድ ከለር የሚሞሉበት)
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
             board.innerHTML = '';
@@ -818,7 +821,6 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 የተጠቃሚ ካርዶች ቦታውን ሙሉ በሙሉ ሰፍተው እና ስትራች ሆነው እንዲካፈሉ የተደረጉበት ክፍል
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
