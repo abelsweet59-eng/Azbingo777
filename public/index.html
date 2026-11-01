@@ -22,6 +22,27 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
+
+        /* 🟢 እውነተኛ የቢልያርድ ኳስ ዲዛይን (በመሀል ነጭ ክብ እና ጥቁር ቁጥር) */
+        .billiard-ball {
+            position: relative;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .billiard-inner-circle {
+            background-color: #ffffff;
+            border-radius: 9999px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #000000;
+            font-weight: 900;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -114,10 +135,10 @@
                         <!-- ቀኝ በኩል -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             
-                            <!-- የቢንጎ መቁጠሪያ ፓነል (በእርስዎ የተጠየቀው ትክክለኛ የፑል ኳስ መጥሪያ እና የቅርብ ጊዜ ኳሶች) -->
+                            <!-- የቢንጎ መቁጠሪያ ፓነል -->
                             <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
                                 <div class="flex justify-between items-center">
-                                    <!-- 🟢 ከሱ ጀርባ/ላይ ያሉት የጠራቸውን ቁጥሮች በትንሽ የፑል ኳስ መልክ የሚያሳይ -->
+                                    <!-- 🟢 ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ኳሶች በትክክለኛ የቢልያርድ ኳስ መልክ (መሀሉ ነጭ ክብ እና ጥቁር ቁጥር) -->
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
@@ -128,9 +149,12 @@
                                         <div id="in-place-countdown-num" class="text-3xl font-black text-amber-400 font-mono">30</div>
                                     </div>
 
-                                    <!-- 🟢 ዋናው የሚጠራው ቁጥር እንደ እውነተኛ ፑል ኳስ (Pure Pool Ball) ሙሉ በሙሉ በ BINGO Column Color የተሞላ ክብ -->
-                                    <div id="main-called-ball" class="hidden w-24 h-24 rounded-full bg-purple-900 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball mx-auto">
-                                        --
+                                    <!-- 🟢 ዋናው የሚጠራው ኳስ በትክክለኛ የቢልያርድ ኳስ ዲዛይን (ከነ ነጩ ክብ እና ጥቁር ጽሁፍ ጋር) -->
+                                    <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
+                                        <div class="billiard-inner-circle w-12 h-12 text-sm" id="main-ball-inner">
+                                            <span id="ball-letter" class="text-[8px] leading-none uppercase">B</span>
+                                            <span id="ball-num" class="text-sm font-black leading-tight">5</span>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -531,7 +555,7 @@
             }
         }
 
-        // 🟢 1. ዋናው መጥሪያ ትክክለኛ የፑል ኳስ መልክ እንዲኖረው (Pure Pool Ball)
+        // 🟢 1. ዋናው የቢልያርድ ኳስ መጥሪያ ዲዛይን (በመሀል ነጭ ክብ እና ጥቁር ጽሁፍ)
         function displayCalledBall(num) {
             const countdownBox = document.getElementById('in-place-countdown-box');
             const mainBall = document.getElementById('main-called-ball');
@@ -540,12 +564,14 @@
 
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let bgClass = getColumnBgColor(num);
-            mainBall.className = `w-24 h-24 rounded-full ${bgClass} flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball mx-auto`;
-            mainBall.innerText = `${letter}-${num}`;
+            
+            mainBall.className = `w-24 h-24 billiard-ball ${bgClass} pulse-ball mx-auto`;
+            document.getElementById('ball-letter').innerText = letter;
+            document.getElementById('ball-num').innerText = num;
             renderRecentBalls();
         }
 
-        // 🟢 2. ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ቁጥሮች በትንሽ የፑል ኳስ መልክ (Pure Pool Ball Pills) እንዲታዩ የተደረገበት ክፍል
+        // 🟢 2. ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ኳሶች በትክክለኛ የቢልያርድ ኳስ መልክ (ነጭ ክብ እና ጥቁር ቁጥር)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
@@ -553,17 +579,17 @@
             
             recent.forEach((num, index) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
-                const pill = document.createElement('div');
                 let isLatest = (index === recent.length - 1);
                 let bgClass = getColumnBgColor(num);
 
-                if (isLatest) {
-                    pill.className = `w-7 h-7 rounded-full ${bgClass} flex items-center justify-center text-[9px] font-black text-white shadow-md`;
-                    pill.innerText = `${letter}-${num}`;
-                } else {
-                    pill.className = `${bgClass} text-white font-bold w-6 h-6 rounded-full flex items-center justify-center text-[8px] shadow opacity-70`;
-                    pill.innerText = `${letter}-${num}`;
-                }
+                const pill = document.createElement('div');
+                pill.className = `${bgClass} billiard-ball shadow ${isLatest ? 'w-8 h-8' : 'w-7 h-7 opacity-75'}`;
+                
+                const inner = document.createElement('div');
+                inner.className = `billiard-inner-circle ${isLatest ? 'w-4.5 h-4.5 text-[8px]' : 'w-4 h-4 text-[7px]'}`;
+                inner.innerHTML = `<span style="font-size: 6px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
+                
+                pill.appendChild(inner);
                 container.appendChild(pill);
             });
         }
