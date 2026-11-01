@@ -25,7 +25,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 60000;
+let roundDuration = 30000; // 30 ሰከንድ ቆጣሪ
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
@@ -33,12 +33,15 @@ let globalRoom = {
     playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
-    playerTemporaryCards: {}
+    playerTemporaryCards: {},
+    lastCalledNumber: null
 };
 
 let forcedNextWinner = null; 
 let onlineRealUsers = [];
 let pendingRequests = {};
+let gameInterval = null;
+let numberCallInterval = null;
 
 function getRealisticBotsCount(realCount) {
     const now = new Date();
@@ -91,6 +94,66 @@ function simulateBotCardSelections() {
 }
 
 setInterval(simulateBotCardSelections, 6000);
+
+// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer)
+function startMainGameLoop() {
+    if (gameInterval) clearInterval(gameInterval);
+
+    gameInterval = setInterval(() => {
+        let timeLeft = globalRoom.gameStartTime - Date.now();
+
+        if (timeLeft <= 0 && !globalRoom.gameActive) {
+            // ⏰ ሰዓቱ አለቀ: ጨዋታውን ይጀምራል!
+            globalRoom.gameActive = true;
+            globalRoom.calledNumbers = [];
+            globalRoom.lastCalledNumber = null;
+            io.emit('gameStarted', { calledNumbers: [] });
+
+            // ኳሶችን በየ 2.5 ሰከንዱ መጥራት ይጀምራል
+            if (numberCallInterval) clearInterval(numberCallInterval);
+            let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            
+            // የቁጥር ጥሪ ሎጅክ
+            numberCallInterval = setInterval(() => {
+                if (!globalRoom.gameActive) {
+                    clearInterval(numberCallInterval);
+                    return;
+                }
+
+                if (availableNumbers.length === 0) {
+                    // ኳሶች አልቀቁ: ዙሩን እንደገና ያስጀምራል
+                    endRoundAndRestart();
+                    return;
+                }
+
+                let randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                let calledNum = availableNumbers.splice(randomIndex, 1)[0];
+                globalRoom.calledNumbers.push(calledNum);
+                globalRoom.lastCalledNumber = calledNum;
+
+                io.emit('numberCalled', {
+                    number: calledNum,
+                    calledNumbers: globalRoom.calledNumbers
+                });
+
+            }, 2500); // በየ 2.5 ሰከንዱ አንዲት ቁጥር ይጠራል
+        }
+    }, 1000);
+}
+
+function endRoundAndRestart() {
+    if (numberCallInterval) clearInterval(numberCallInterval);
+    globalRoom.gameActive = false;
+    globalRoom.calledNumbers = [];
+    globalRoom.lastCalledNumber = null;
+    globalRoom.playerRoundCards = {}; // የዙር ካርዶችን ማጽዳት
+    globalRoom.gameStartTime = Date.now() + roundDuration;
+    
+    io.emit('roundEnded', { nextGameIn: roundDuration });
+    refreshTakenCardsList();
+}
+
+startMainGameLoop();
 
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
