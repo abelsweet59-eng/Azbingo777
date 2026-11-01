@@ -60,7 +60,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ከሆነ ብቻ ይታያል) -->
+                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ሲገባ ብቻ በግልጽ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -376,6 +376,7 @@
     <script>
         const socket = io();
 
+        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
 
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
@@ -383,7 +384,7 @@
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // Telegram WebApp initialization
+        // 🟢 ከቴሌግራም ዌብአፕ ዩዘር ስም እና 🆔 በትክክል ማንበብ
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -399,6 +400,7 @@
             }
         }
 
+        // 🟢 🆔ህ 371093083 መሆኑን በማረጋገጥ አድሚን ማድረግ
         if (telegramUserId === ADMIN_TELEGRAM_ID) {
             isAdmin = true;
         }
@@ -451,6 +453,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // የቴሌግራም ዌብአፕ መረጃ እስኪረጋገጥ 300 ሚሊሰከንድ እንጠብቃለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -463,6 +466,7 @@
                     isAdmin = true;
                 }
 
+                // 🟢 አድሚን ከሆንክ ብቻ አድሚን ቁልፉን ማሳየት
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -472,6 +476,7 @@
                     }
                 }
                 
+                // 🟢 የተጫዋቹን ትክክለኛ ስም በሰላምታ ማሳየት
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
 
@@ -486,6 +491,7 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
+                // 🟢 የተጠቃሚውን ትክክለኛ መረጃ ወደ ሰርቨር መላክ
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
 
                 if (confirmedCards.length > 0) {
@@ -574,7 +580,7 @@
             });
 
             socket.on('financialRejected', (data) => {
-                alert(`❌ የ ${data.amount} ብር ጥያቄዎ ውድቅ ተደርጓል።`);
+                alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
             });
 
             socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
