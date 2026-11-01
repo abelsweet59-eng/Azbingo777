@@ -59,7 +59,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
-                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">5</div>
+                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">0</div>
             </div>
         </section>
 
@@ -111,19 +111,25 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (ትክክለኛ የፑል ኳስ መጥሪያ + ተቀራርበው የተዘረጉ የተጫዋች ካርዶች) -->
+                        <!-- ቀኝ በኩል -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             
                             <!-- የቢንጎ መቁጠሪያ ፓነል -->
-                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg">
+                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
                                 <div class="flex justify-between items-center">
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center text-[8px]"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
 
-                                <!-- ዋናው የሚጠራው ኳስ (Pure Pool Ball Shape with BINGO Column Color & White Text) -->
-                                <div id="main-called-ball" class="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-lg shadow-2xl pulse-ball mx-auto my-1 border-2 border-white/20">
-                                    B-7
+                                <div id="live-display-area" class="relative flex items-center justify-center my-1">
+                                    <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
+                                        <div class="text-[8px] text-amber-300 uppercase font-bold">ቀጣይ ጥሪ</div>
+                                        <div id="in-place-countdown-num" class="text-3xl font-black text-amber-400 font-mono">30</div>
+                                    </div>
+
+                                    <div id="main-called-ball" class="hidden w-24 h-24 rounded-full bg-purple-900 flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball mx-auto">
+                                        --
+                                    </div>
                                 </div>
                                 
                                 <div class="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
@@ -135,8 +141,8 @@
                                 </div>
                             </div>
 
-                            <!-- Watching Only / Player Cards Area -->
-                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-around items-center text-center overflow-y-auto custom-scroll space-y-1">
+                            <!-- የተጠቃሚ ካርዶች (በጣም አጭር ክፍተት ኖሯቸው ተቀራርበው እንዲታዩ የተደረገ) -->
+                            <div id="right-side-dynamic-area" class="flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-1">
                             </div>
 
                         </div>
@@ -207,8 +213,9 @@
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
 
-                    <div class="text-white text-[9px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center" id="winner-banner-text">
-                        አሸናፊው መረጃ እየጠበቀ...
+                    <!-- 🟢 2. ፖት (Total Pot) ሙሉ በሙሉ ጠፍቶ 70% ንጹህ ሽልማት ብቻ የሚታይበት የተስተካከለ ክፍል -->
+                    <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center font-bold" id="winner-banner-text">
+                        የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">1393 ብር</span>
                     </div>
                     
                     <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
@@ -310,8 +317,9 @@
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
+        let liveCountdownTimerVal = 30;
+        let liveCountdownInterval = null;
 
-        // የ BINGO አምድ ከለር (Tailwind background class)
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";     // B
             if (num <= 30) return "bg-purple-600";    // I
@@ -424,9 +432,7 @@
             } else {
                 calledNumbersList = [];
                 manualDaubedNumbers = {};
-                const mainBall = document.getElementById('main-called-ball');
-                mainBall.className = "w-24 h-24 rounded-full bg-purple-900 flex items-center justify-center text-white font-black text-lg shadow-2xl pulse-ball mx-auto my-1 border-2 border-white/20";
-                mainBall.innerText = "--";
+                resetLiveCountdownBox();
                 document.getElementById('stat-called-count').innerText = "0";
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
@@ -467,13 +473,46 @@
                     modal.classList.add('hidden');
                     document.getElementById('card-selection-section').classList.add('hidden');
                     document.getElementById('live-game-section').classList.remove('hidden');
+                    startLiveInPlaceCountdown();
                     renderPlayerDualCards();
                 }
             }, 1000);
         }
 
+        function startLiveInPlaceCountdown() {
+            if (calledNumbersList.length > 0) return;
+            const countdownBox = document.getElementById('in-place-countdown-box');
+            const mainBall = document.getElementById('main-called-ball');
+            const timerNumEl = document.getElementById('in-place-countdown-num');
+
+            countdownBox.classList.remove('hidden');
+            mainBall.classList.add('hidden');
+            liveCountdownTimerVal = 30;
+            timerNumEl.innerText = liveCountdownTimerVal;
+
+            if (liveCountdownInterval) clearInterval(liveCountdownInterval);
+            liveCountdownInterval = setInterval(() => {
+                liveCountdownTimerVal--;
+                if (liveCountdownTimerVal >= 0) {
+                    timerNumEl.innerText = liveCountdownTimerVal;
+                } else {
+                    clearInterval(liveCountdownInterval);
+                }
+            }, 1000);
+        }
+
+        function resetLiveCountdownBox() {
+            if (liveCountdownInterval) clearInterval(liveCountdownInterval);
+            const countdownBox = document.getElementById('in-place-countdown-box');
+            const mainBall = document.getElementById('main-called-ball');
+            countdownBox.classList.remove('hidden');
+            mainBall.classList.add('hidden');
+            startLiveInPlaceCountdown();
+        }
+
         socket.on('numberCalledBroadcast', (num) => {
             if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
+            if (liveCountdownInterval) clearInterval(liveCountdownInterval);
             displayCalledBall(num);
             document.getElementById('stat-called-count').innerText = calledNumbersList.length;
             renderVerticalBoard();
@@ -491,35 +530,34 @@
             }
         }
 
-        // 🟢 የፑል ኳስ መልክ (Pure Pool Ball with Column Color and White Text)
         function displayCalledBall(num) {
+            const countdownBox = document.getElementById('in-place-countdown-box');
+            const mainBall = document.getElementById('main-called-ball');
+            countdownBox.classList.add('hidden');
+            mainBall.classList.remove('hidden');
+
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let bgClass = getColumnBgColor(num);
-            const mainBall = document.getElementById('main-called-ball');
-            mainBall.className = `w-24 h-24 rounded-full ${bgClass} flex items-center justify-center text-white font-black text-lg shadow-2xl pulse-ball mx-auto my-1 border-2 border-white/20`;
+            mainBall.className = `w-24 h-24 rounded-full ${bgClass} flex items-center justify-center text-white font-black text-xl shadow-2xl pulse-ball mx-auto`;
             mainBall.innerText = `${letter}-${num}`;
             renderRecentBalls();
         }
 
-        // 🟢 የቅርብ ጊዜ ኳሶች (የመጨረሻው ጎልቶ የሚታይ ክብ ፑል ኳስ፣ ቀደምት ኳሶች ትናንሽ ፑል ኳሶች)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
-            let recent = calledNumbersList.slice(-5); // የመጨረሻዎቹ 5 ኳሶች
+            let recent = calledNumbersList.slice(-5);
             
             recent.forEach((num, index) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 const pill = document.createElement('div');
-                
                 let isLatest = (index === recent.length - 1);
                 let bgClass = getColumnBgColor(num);
 
                 if (isLatest) {
-                    // የመጨረሻው (Latest) ክብ ኳስ በድምቀት
-                    pill.className = `w-7 h-7 rounded-full ${bgClass} border border-white flex items-center justify-center text-[9px] font-black text-white shadow-md`;
+                    pill.className = `w-7 h-7 rounded-full ${bgClass} flex items-center justify-center text-[9px] font-black text-white shadow-md`;
                     pill.innerText = `${letter}`;
                 } else {
-                    // ቀደምት (Older) ትናንሽ ክብ ኳሶች
                     pill.className = `${bgClass} text-white font-bold w-5 h-5 rounded-full flex items-center justify-center text-[8px] shadow opacity-70`;
                     pill.innerText = `${letter}`;
                 }
@@ -562,7 +600,8 @@
                 badgesContainer.appendChild(b);
             });
 
-            document.getElementById('winner-banner-text').innerHTML = `👥 ተጫዋች: <b>${playersCount}</b> | 💰 ፖት: <b>${totalPot} ብር</b><br>👑 ንጹህ ሽልማት: <span class="text-emerald-400 font-bold">${prizePool} ብር</span>`;
+            // 🟢 70% ንጹህ ሽልማት ብቻ እንዲታይ የተደረገበት ክፍል
+            document.getElementById('winner-banner-text').innerHTML = `የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">${prizePool} ብር</span>`;
             document.getElementById('winner-modal').classList.remove('hidden');
 
             if (isMeWin && prizePool > 0) {
@@ -642,9 +681,7 @@
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-            const mainBall = document.getElementById('main-called-ball');
-            mainBall.className = "w-24 h-24 rounded-full bg-purple-900 flex items-center justify-center text-white font-black text-lg shadow-2xl pulse-ball mx-auto my-1 border-2 border-white/20";
-            mainBall.innerText = "--";
+            resetLiveCountdownBox();
             document.getElementById('stat-called-count').innerText = "0";
             document.getElementById('card-selection-section').classList.remove('hidden');
             document.getElementById('live-game-section').classList.add('hidden');
@@ -781,7 +818,7 @@
             renderPlayerDualCards();
         }
 
-        // 🟢 የተጫዋች ካርዶች ግጥም ብለው እና ክፍተት ሳይኖር በቁመት እንዲዘረጉ የተደረገበት ክፍል
+        // 🟢 3. የተጠቃሚ ካርዶች ክፍተት በጣም ጠብቦ እና እርስ በእርሳቸው ተቀራርበው እንዲታዩ የተደረገበት ክፍል
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
             const autoToggle = document.getElementById('auto-daub-toggle');
@@ -799,21 +836,20 @@
                 return;
             }
 
-            container.className = `flex-1 bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-around items-center text-center overflow-y-auto custom-scroll`;
+            container.className = `flex-1 bg-[#180a29] rounded-xl p-1 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-0.5`;
 
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1 rounded-lg border border-purple-500/40 flex flex-col space-y-0.5 w-full shadow-md my-0.5";
+                cardWrapper.className = "bg-[#140826] p-0.5 rounded-md border border-purple-500/40 flex flex-col space-y-0.5 w-full shadow-sm mb-0.5";
                 
                 const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
+                cardHeader.className = "text-[8px] font-bold text-amber-400 text-center";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
-                // BINGO ፊደላት ማሳያ ከለር ጋር
                 const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[8px] text-white";
+                headersGrid.className = "grid grid-cols-5 gap-0.5 text-center font-bold text-[7px] text-white";
                 ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
                     const hCell = document.createElement('div');
                     hCell.className = idx === 0 ? "bg-blue-600 rounded py-0.5" : idx === 1 ? "bg-purple-600 rounded py-0.5" : idx === 2 ? "bg-pink-600 rounded py-0.5" : idx === 3 ? "bg-emerald-600 rounded py-0.5" : "bg-amber-600 rounded py-0.5";
@@ -832,11 +868,11 @@
                     const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                     const cell = document.createElement('div');
-                    let cellClass = "bg-white/5 text-gray-200 text-[10px] font-semibold rounded p-1 text-center";
-                    if (isFreeCenter) cellClass = "bg-purple-600 text-white font-extrabold text-[10px] rounded p-1";
-                    else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-extrabold text-[10px] rounded p-1 shadow";
-                    else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-extrabold text-[10px] rounded p-1 shadow";
-                    else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[10px] rounded p-1 border border-amber-400/50 cursor-pointer";
+                    let cellClass = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded p-0.5 text-center";
+                    if (isFreeCenter) cellClass = "bg-purple-600 text-white font-extrabold text-[9px] rounded p-0.5";
+                    else if (isAutoMode && isCalled) cellClass = "bg-amber-500 text-black font-extrabold text-[9px] rounded p-0.5 shadow";
+                    else if (!isAutoMode && isManuallyDaubed) cellClass = "bg-emerald-500 text-black font-extrabold text-[9px] rounded p-0.5 shadow";
+                    else if (!isAutoMode && isCalled) cellClass = "bg-white/10 text-amber-300 font-bold text-[9px] rounded p-0.5 border border-amber-400/50 cursor-pointer";
 
                     cell.className = cellClass;
                     cell.innerText = isFreeCenter ? "★" : cellNum;
