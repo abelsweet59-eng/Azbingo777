@@ -9,31 +9,25 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; background-color: #0b0317; color: white; }
-        
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.7); border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(245, 158, 11, 1); }
-
         @keyframes pulseGlow {
             0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
             50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
-        
         @keyframes softBlink {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.65; transform: scale(0.98); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
         }
         .blink-btn { animation: softBlink 1.2s infinite ease-in-out; }
-
         @keyframes countdownPop {
             0% { transform: scale(0.5); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
-
         .billiard-ball {
             position: relative;
             border-radius: 9999px;
@@ -66,7 +60,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ሲገባ ብቻ በግልጽ ይታያል) -->
+                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ከሆነ ብቻ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -382,7 +376,6 @@
     <script>
         const socket = io();
 
-        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
 
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
@@ -390,7 +383,7 @@
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // 🟢 ከቴሌግራም ዌብአፕ የዩዘር ስም እና 🆔 በትክክል ማንበብ
+        // Telegram WebApp initialization
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -406,7 +399,6 @@
             }
         }
 
-        // 🛡️ አድሚን ማረጋገጫ (አቤል ID ከሆነ ብቻ ቱሩ ይሆናል)
         if (telegramUserId === ADMIN_TELEGRAM_ID) {
             isAdmin = true;
         }
@@ -459,27 +451,18 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // የቴሌግራም ዌብ አፕ ሙሉ መረጃ እስኪገባ ትንሽ ጊዜ ሰጥተን ዳግም እናረጋግጣለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
-                    if (realTgId) {
-                        telegramUserId = realTgId;
-                    }
-                    if (window.Telegram.WebApp.initDataUnsafe.user.first_name) {
-                        userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
-                    }
-                    if (window.Telegram.WebApp.initDataUnsafe.user.username) {
-                        userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
-                    }
+                    if (realTgId) telegramUserId = realTgId;
+                    if (window.Telegram.WebApp.initDataUnsafe.user.first_name) userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
+                    if (window.Telegram.WebApp.initDataUnsafe.user.username) userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
                 }
 
-                // 🟢 የመጨረሻ ማረጋገጫ
                 if (telegramUserId === ADMIN_TELEGRAM_ID) {
                     isAdmin = true;
                 }
 
-                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ ይታያል
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -489,11 +472,9 @@
                     }
                 }
                 
-                // 🟢 የተጫዋቹን ትክክለኛ ስም በሰላምታ ማሳየት
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
 
-            // መጀመሪያ ላይም ስሙን ማሳየት
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
             renderHistoryUI();
@@ -593,7 +574,7 @@
             });
 
             socket.on('financialRejected', (data) => {
-                alert(`❌ የ ${data.amount} ብር የ ${data.type === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄዎ ውድቅ ተደርጓል።`);
+                alert(`❌ የ ${data.amount} ብር ጥያቄዎ ውድቅ ተደርጓል።`);
             });
 
             socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
@@ -1138,7 +1119,6 @@
             });
         }
 
-        // 🛡️ አድሚን ፓነልን ለመክፈት ሲሞክሩ የሚደረግ ጥብቅ ማረጋገጫ
         function openAdminPanel() {
             if (!isAdmin) { 
                 alert("⚠️ ይቅርታ! ወደ አድሚን ፓነል ለመግባት ፈቃድ የለዎትም!"); 
