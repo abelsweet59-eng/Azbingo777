@@ -34,6 +34,9 @@ let currentRoundTargetCalls = 20;
 let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; 
 let currentRoundWinnersList = [];
 
+// 🟢 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎችን ለመያዝ
+let onlineRealUsers = [];
+
 const fakeBotNames = [
     "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
     "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
@@ -247,9 +250,8 @@ async function pollTelegramUpdates() {
                                 text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             });
                         }
-                        delete pendingRequests[requestId]; // ከተሰራ በኋላ ከማስታወሻ ይጸዳል
+                        delete pendingRequests[requestId]; 
                     } else {
-                        // ከ 24 ሰዓት በላይ ቆይቶ ወይም ሰርቨሩ ሪስታርት አድርጎ ከጠፋ
                         try {
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
@@ -292,6 +294,24 @@ io.on('connection', (socket) => {
 
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
+
+    // 🟢 እውነተኛ ተጠቃሚዎችን መመዝገቢያ (በአድሚን ፓነል ላይ ለማሳየት)
+    socket.on('registerRealUser', (userData) => {
+        if (userData && userData.userId) {
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userData.userId);
+            onlineRealUsers.push({
+                socketId: socket.id,
+                userId: userData.userId,
+                username: userData.username || 'No Username',
+                fullName: userData.fullName || 'User'
+            });
+        }
+    });
+
+    // 🟢 አድሚኑ ኦንላይን ያሉትን ሪል ዩዘሮች ሲጠይቅ መላክ
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    });
 
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
@@ -341,7 +361,6 @@ io.on('connection', (socket) => {
         let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
         pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
         
-        // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑ ძველ ጥያቄዎችን በራሱ ማጽዳት
         let nowTime = Date.now();
         for (let rId in pendingRequests) {
             if (nowTime - pendingRequests[rId].timestamp > 86400000) {
@@ -355,6 +374,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id); // ከኦንላይን ዝርዝር መሰረዝ
         delete globalRoom.playerRoundCards[socket.id];
         delete globalRoom.playerTemporaryCards[socket.id];
         refreshTakenCardsList();
