@@ -32,7 +32,6 @@ let gameRoundCounter = 0;
 let currentRoundTargetCalls = 20;
 
 let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; 
-
 let currentRoundWinnersList = [];
 
 const fakeBotNames = [
@@ -453,12 +452,10 @@ setInterval(() => {
             currentRoundTargetCalls = slowRanges[Math.floor(Math.random() * slowRanges.length)];
         }
 
-        // 🟢 የካውንትዳውን ሲግናል ለሁሉም ተጫዋቾች ይላካል
         io.emit('gameStartedBroadcast');
 
         if (activeGameInterval) clearInterval(activeGameInterval);
 
-        // 🟢 3 ሰከንድ (3000 ሚሊሰከንድ) ክፍተት (Gap) ተሰጥቶ ከዛ በኋላ ቁጥር መጥራት ይጀምራል
         setTimeout(() => {
             activeGameInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
@@ -517,7 +514,15 @@ setInterval(() => {
                     globalRoom.playerTemporaryCards = {};
                     refreshTakenCardsList();
                     forcedNextWinner = null;
-                    io.emit('gameEndedBroadcast');
+                    io.executeGameEndedBroadcast = io.emit('gameEndedBroadcast');
                     clearInterval(activeGameInterval);
                 }
-            }, 500
+            }, 5000); 
+        }, 3000);
+    }
+}, 1000);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
