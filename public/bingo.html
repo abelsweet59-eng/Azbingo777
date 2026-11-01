@@ -60,7 +60,6 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (አቤል ID: 371093083 ሲገባ ብቻ በግልጽ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -73,7 +72,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[9px] font-bold text-amber-400">114</div>
+                <div id="stat-players" class="text-[9px] font-bold text-amber-400">140</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ቤት (Bet)</div>
@@ -81,7 +80,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">798</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">980</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
@@ -103,7 +102,7 @@
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
-                            <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">60 ሰከንድ ይቀረዋል</div>
+                            <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">30 ሰከንድ ይቀረዋል</div>
                         </div>
                     </div>
 
@@ -121,7 +120,7 @@
                         </div>
                         <div class="text-right">
                             <div id="big-countdown-timer" class="text-3xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
-                                60s
+                                30s
                             </div>
                         </div>
                     </div>
@@ -163,8 +162,8 @@
 
                                 <div id="live-display-area" class="relative flex items-center justify-center my-1">
                                     <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold">ቀጣይ ጥሪ</div>
-                                        <div id="in-place-countdown-num" class="text-3xl font-black text-amber-400 font-mono">30</div>
+                                        <div class="text-[8px] text-amber-300 uppercase font-bold">የተጠራ ቁጥር</div>
+                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">በመጠበቅ ላይ</div>
                                     </div>
 
                                     <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
@@ -223,35 +222,23 @@
                     </div>
                 </div>
 
-                <!-- RULES PAGE 1 -->
                 <div id="rules-page-1" class="space-y-3">
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">1. 🎯 ጨዋታውን እንዴት ይጀምራሉ?</h3>
                         <ul class="list-disc list-inside text-gray-300 space-y-1 text-[11px]">
                             <li>በየዙሩ ከ **1 እስከ 500** ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ።</li>
                             <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
-                            <li>1 ደቂቃ ቆጥሮ ጨዋታው ሲጀመር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
-                            <li>**አውቶማቲክ ዳብ (Auto Daub)** በመጠቀም ቁጥሮቹ በራሳቸው ይሞላሉ፤ ወይም **ማኑዋል (Manual)** በማድረግ በራስዎ እጅ እየነኩ መጫወት ይችላሉ።</li>
+                            <li>ሰዓቱ ዜሮ ሲደርስ ጨዋታው በራሱ ይጀምራል እና ቦርዱ ቁጥሮችን መጥራት ይጀምራል።</li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- RULES PAGE 2 -->
                 <div id="rules-page-2" class="space-y-3 hidden">
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit)</h3>
                         <ol class="list-decimal list-inside text-gray-300 space-y-1.5 text-[11px]">
-                            <li>አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል። ከዚያም ወደ ቴሌብር በመሄድ ማስገባት የሚፈልጉትን የገንዘብ መጠን ወደዚህ ቁጥር ያስተላልፉ።</li>
-                            <li>ገንዘቡን ከላኩ በኋላ በቴሌብር በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርጉ።</li>
-                            <li>ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ **"ጥያቄ ላክ"** የሚለውን ሲጫኑ ገንዘቡ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 100 ብር ነው።)</li>
-                        </ol>
-                    </div>
-
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">4. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw)</h3>
-                        <ol class="list-decimal list-inside text-gray-300 space-y-1.5 text-[11px]">
-                            <li>ገንዘቡን መቀበል የሚፈልጉትን ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ።</li>
-                            <li>ማውጣት የሚፈልጉትን የብር መጠን መርጠው/አስገብተው **"ማውጫ ላክ"** የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</li>
+                            <li>አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል።</li>
+                            <li>የቴሌብር ደረሰኝ (SMS) ኮፒ አድርገው ፔስት በማድረግ ጥያቄውን ይላኩ።</li>
                         </ol>
                     </div>
                 </div>
@@ -269,7 +256,6 @@
                     <div class="grid grid-cols-1 gap-2 pt-1">
                         <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
                         <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ</button>
-                        <button onclick="adminSetWinner('multi_real_3')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 3 ሪል ዩዘሮች በአንድ ላይ ይብሉ</button>
                     </div>
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
                 </div>
@@ -298,21 +284,16 @@
                 <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
                 <div>
                     <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 3 players won!</div>
-                    
-                    <div id="multi-winners-badges-container" class="flex flex-wrap gap-1.5 justify-center my-2"></div>
-
+                    <div id="winner-title-badge" class="text-amber-200 text-sm font-black mt-1">🎉 አሸናፊ ተገኝቷል!</div>
                     <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
-                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela : 12</div>
+                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela</div>
                         <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
                     </div>
-
                     <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center font-bold" id="winner-banner-text">
-                        የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">1393 ብር</span>
+                        የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">980 ብር</span>
                     </div>
-                    
                     <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ Auto-starting next game in 4s
+                        ⏳ ቀጣዩ ዙር በቅርቡ ይጀምራል
                     </div>
                 </div>
             </div>
@@ -376,15 +357,12 @@
     <script>
         const socket = io();
 
-        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
-
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // 🟢 ከቴሌግራም ዌብአፕ ዩዘር ስም እና 🆔 በትክክል ማንበብ
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -400,10 +378,7 @@
             }
         }
 
-        // 🟢 🆔ህ 371093083 መሆኑን በማረጋገጥ አድሚን ማድረግ
-        if (telegramUserId === ADMIN_TELEGRAM_ID) {
-            isAdmin = true;
-        }
+        if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
 
         let walletBalance = 30.00;
         let transactionHistory = [];
@@ -419,9 +394,7 @@
         }
 
         if (localStorage.getItem(userHistoryKey)) {
-            try {
-                transactionHistory = JSON.parse(localStorage.getItem(userHistoryKey)) || [];
-            } catch(e) { transactionHistory = []; }
+            try { transactionHistory = JSON.parse(localStorage.getItem(userHistoryKey)) || []; } catch(e) { transactionHistory = []; }
         }
 
         let userSelectedCards = [];
@@ -430,19 +403,15 @@
         if (localStorage.getItem(userSavedCardsKey)) {
             try {
                 confirmedCards = JSON.parse(localStorage.getItem(userSavedCardsKey)) || [];
-                if (confirmedCards.length > 0) {
-                    userSelectedCards = [...confirmedCards];
-                }
+                if (confirmedCards.length > 0) userSelectedCards = [...confirmedCards];
             } catch(e) { confirmedCards = []; }
         }
 
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
-        let gameStartTimeServer = Date.now() + 60000;
+        let gameStartTimeServer = Date.now() + 30000;
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
-        let liveCountdownTimerVal = 30;
-        let liveCountdownInterval = null;
 
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";
@@ -453,7 +422,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // የቴሌግራም ዌብአፕ መረጃ እስኪረጋገጥ 300 ሚሊሰከንድ እንጠብቃለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -461,22 +429,10 @@
                     if (window.Telegram.WebApp.initDataUnsafe.user.first_name) userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
                     if (window.Telegram.WebApp.initDataUnsafe.user.username) userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
                 }
+                if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
 
-                if (telegramUserId === ADMIN_TELEGRAM_ID) {
-                    isAdmin = true;
-                }
-
-                // 🟢 አድሚን ከሆንክ ብቻ አድሚን ቁልፉን ማሳየት
                 const adminBtn = document.getElementById('admin-nav-btn');
-                if (adminBtn) {
-                    if (isAdmin) {
-                        adminBtn.classList.remove('hidden');
-                    } else {
-                        adminBtn.classList.add('hidden');
-                    }
-                }
-                
-                // 🟢 የተጫዋቹን ትክክለኛ ስም በሰላምታ ማሳየት
+                if (adminBtn && isAdmin) adminBtn.classList.remove('hidden');
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
 
@@ -491,7 +447,6 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
-                // 🟢 የተጠቃሚውን ትክክለኛ መረጃ ወደ ሰርቨር መላክ
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
 
                 if (confirmedCards.length > 0) {
@@ -542,13 +497,33 @@
                 } else {
                     calledNumbersList = [];
                     manualDaubedNumbers = {};
-                    resetLiveCountdownBox();
                     document.getElementById('stat-called-count').innerText = "0";
                     document.getElementById('card-selection-section').classList.remove('hidden');
                     document.getElementById('live-game-section').classList.add('hidden');
                     renderVerticalBoard();
                     generate500CardGrid();
                 }
+            });
+
+            socket.on('gameStarted', (data) => {
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
+                renderPlayerDualCards();
+            });
+
+            socket.on('numberCalled', (data) => {
+                let num = data.number;
+                if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
+                displayCalledBall(num);
+                document.getElementById('stat-called-count').innerText = calledNumbersList.length;
+                renderVerticalBoard();
+                renderPlayerDualCards();
+                if (!isAudioMuted) speakCalledNumber(num);
+            });
+
+            socket.on('roundEnded', (data) => {
+                gameStartTimeServer = Date.now() + (data.nextGameIn || 30000);
+                resetPlayerSelectionForNewRound();
             });
 
             socket.on('cardSelectionSuccess', () => {
@@ -581,73 +556,6 @@
 
             socket.on('financialRejected', (data) => {
                 alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
-            });
-
-            socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
-
-            socket.on('numberCalledBroadcast', (num) => {
-                if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
-                if (liveCountdownInterval) clearInterval(liveCountdownInterval);
-                displayCalledBall(num);
-                document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                renderVerticalBoard();
-                renderPlayerDualCards();
-                if (!isAudioMuted) speakCalledNumber(num);
-            });
-
-            socket.on('gameEndedBroadcast', () => { resetPlayerSelectionForNewRound(); });
-
-            socket.on('bingoWinner', (data) => {
-                let winnerName = data.username;
-                let winnerId = data.userId || telegramUserId;
-                let cardNum = data.cardNum || 22;
-                let prizePool = data.prize || 798;
-                let calledNums = data.calledNumbers || [];
-                let winnersCount = data.winnersCount || 1;
-
-                let isMeWin = (winnerId === telegramUserId) || (winnerName === userFullName) || (confirmedCards.includes(cardNum));
-                let displayName = isMeWin ? userFullName : winnerName;
-
-                document.getElementById('winner-title-badge').innerHTML = `🎉 ${winnersCount > 1 ? winnersCount + ' players won!' : displayName + ' WON!'}`;
-                document.getElementById('winning-cartela-title').innerHTML = `🏆 Winning Cartela : ${cardNum}`;
-                renderWinningCartelaGridWithExactPattern(cardNum, calledNums);
-
-                const badgesContainer = document.getElementById('multi-winners-badges-container');
-                badgesContainer.innerHTML = '';
-                
-                let mockWinners = winnersCount > 1 ? [
-                    { initial: displayName.charAt(0), name: displayName, id: '#' + cardNum },
-                    { initial: 'H', name: 'Hodye', id: '#395' },
-                    { initial: 'N', name: 'Noah', id: '#456' }
-                ].slice(0, winnersCount) : [{ initial: displayName.charAt(0), name: displayName, id: '#' + cardNum }];
-
-                mockWinners.forEach(w => {
-                    const b = document.createElement('div');
-                    b.className = "bg-black/50 border border-white/10 rounded-full px-2.5 py-1 flex items-center gap-1.5 text-[10px]";
-                    b.innerHTML = `<span class="w-4 h-4 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white text-[8px]">${w.initial}</span><span class="text-gray-200 font-medium">${w.name}</span><span class="text-amber-400 font-bold">${w.id}</span>`;
-                    badgesContainer.appendChild(b);
-                });
-
-                document.getElementById('winner-banner-text').innerHTML = `የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">${prizePool} ብር</span>`;
-                document.getElementById('winner-modal').classList.remove('hidden');
-
-                if (isMeWin && prizePool > 0) {
-                    walletBalance += prizePool;
-                    updateWalletUI();
-                    addTransactionHistory('የቢንጎ ሽልማት', prizePool, 'income');
-                }
-
-                let secondsLeft = 5;
-                let timerEl = document.getElementById('auto-start-timer-msg');
-                let countdownInterval = setInterval(() => {
-                    secondsLeft--;
-                    timerEl.innerText = `⏳ Auto-starting next game in ${secondsLeft}s`;
-                    if (secondsLeft <= 0) {
-                        clearInterval(countdownInterval);
-                        document.getElementById('winner-modal').classList.add('hidden');
-                        resetPlayerSelectionForNewRound();
-                    }
-                }, 1000);
             });
         });
 
@@ -739,58 +647,6 @@
             }, 1000);
         }
 
-        function triggerCountdownAndStart() {
-            const modal = document.getElementById('countdown-modal');
-            const numEl = document.getElementById('countdown-number');
-            modal.classList.remove('hidden');
-            let count = 3;
-            numEl.innerText = count;
-            let timer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    numEl.innerText = count;
-                } else {
-                    clearInterval(timer);
-                    modal.classList.add('hidden');
-                    document.getElementById('card-selection-section').classList.add('hidden');
-                    document.getElementById('live-game-section').classList.remove('hidden');
-                    startLiveInPlaceCountdown();
-                    renderPlayerDualCards();
-                }
-            }, 1000);
-        }
-
-        function startLiveInPlaceCountdown() {
-            if (calledNumbersList.length > 0) return;
-            const countdownBox = document.getElementById('in-place-countdown-box');
-            const mainBall = document.getElementById('main-called-ball');
-            const timerNumEl = document.getElementById('in-place-countdown-num');
-
-            countdownBox.classList.remove('hidden');
-            mainBall.classList.add('hidden');
-            liveCountdownTimerVal = 30;
-            timerNumEl.innerText = liveCountdownTimerVal;
-
-            if (liveCountdownInterval) clearInterval(liveCountdownInterval);
-            liveCountdownInterval = setInterval(() => {
-                liveCountdownTimerVal--;
-                if (liveCountdownTimerVal >= 0) {
-                    timerNumEl.innerText = liveCountdownTimerVal;
-                } else {
-                    clearInterval(liveCountdownInterval);
-                }
-            }, 1000);
-        }
-
-        function resetLiveCountdownBox() {
-            if (liveCountdownInterval) clearInterval(liveCountdownInterval);
-            const countdownBox = document.getElementById('in-place-countdown-box');
-            const mainBall = document.getElementById('main-called-ball');
-            countdownBox.classList.remove('hidden');
-            mainBall.classList.add('hidden');
-            startLiveInPlaceCountdown();
-        }
-
         function speakCalledNumber(num) {
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let speechText = `${letter} ${num}`;
@@ -868,27 +724,6 @@
             return flatList;
         }
 
-        function renderWinningCartelaGridWithExactPattern(cardNum, calledNums) {
-            const gridContainer = document.getElementById('winning-cartela-grid');
-            gridContainer.innerHTML = '';
-            ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
-                const hCell = document.createElement('div');
-                let headerColor = idx === 0 ? "bg-blue-600" : idx === 1 ? "bg-purple-600" : idx === 2 ? "bg-pink-600" : idx === 3 ? "bg-emerald-600" : "bg-amber-600";
-                hCell.className = `${headerColor} rounded text-center text-white font-bold text-[8px] py-0.5`;
-                hCell.innerText = l;
-                gridContainer.appendChild(hCell);
-            });
-
-            let numbers = getCartelaNumbers(cardNum);
-            numbers.forEach(cellNum => {
-                const cell = document.createElement('div');
-                const isCalled = (cellNum === "FREE" || calledNums.includes(cellNum));
-                cell.className = isCalled ? "bg-emerald-500 text-black font-bold text-[8px] rounded py-1 text-center" : "bg-white/10 text-gray-400 font-medium text-[8px] rounded py-1 text-center";
-                cell.innerText = cellNum === "FREE" ? "★" : cellNum;
-                gridContainer.appendChild(cell);
-            });
-        }
-
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
             confirmedCards = [];
@@ -902,7 +737,6 @@
             confirmBtn.classList.add('blink-btn', 'bg-gradient-to-r', 'from-amber-500', 'to-orange-600');
             confirmBtn.innerText = "ካርድ አረጋግጥ";
 
-            resetLiveCountdownBox();
             document.getElementById('stat-called-count').innerText = "0";
             
             const grid = document.getElementById('card-grid-500');
@@ -912,12 +746,11 @@
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
                 generate500CardGrid();
-            }, 2000);
+            }, 1000);
 
             renderVerticalBoard();
             renderRecentBalls();
             renderPlayerDualCards();
-            gameStartTimeServer = Date.now() + 60000;
         }
 
         function updateWalletUI() {
@@ -955,14 +788,7 @@
                 const btn = document.createElement('button');
                 let isSelectedByMe = userSelectedCards.includes(i);
                 let isConfirmedByMe = confirmedCards.includes(i);
-                
                 let isTakenByOther = takenCardsByOthers.includes(i);
-                if (!isConfirmedByMe && !isSelectedByMe) {
-                    let dynamicHash = (i + Math.floor(Date.now() / 4000)) % 10;
-                    if (i % 3 === 0 && dynamicHash < 3) {
-                        isTakenByOther = true;
-                    }
-                }
 
                 if (isConfirmedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-2 rounded shadow";
@@ -994,12 +820,6 @@
                 grid.appendChild(btn);
             }
         }
-
-        setInterval(() => {
-            if (document.getElementById('card-selection-section') && !document.getElementById('card-selection-section').classList.contains('hidden')) {
-                generate500CardGrid();
-            }
-        }, 4000);
 
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
@@ -1105,18 +925,6 @@
                     } else {
                         cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded flex items-center justify-center";
                         cell.innerText = cellNum;
-                        if (!isAutoMode && isCalled) {
-                            cell.className = "bg-white/10 text-amber-300 font-bold text-[9px] rounded border border-amber-400/50 cursor-pointer flex items-center justify-center";
-                        }
-                    }
-
-                    if (!isAutoMode && !isFreeCenter) {
-                        cell.onclick = () => {
-                            if (isCalled && !manualDaubedNumbers[cardNum].includes(cellNum)) {
-                                manualDaubedNumbers[cardNum].push(cellNum);
-                                renderPlayerDualCards();
-                            }
-                        };
                     }
                     miniGrid.appendChild(cell);
                 });
@@ -1126,10 +934,7 @@
         }
 
         function openAdminPanel() {
-            if (!isAdmin) { 
-                alert("⚠️ ይቅርታ! ወደ አድሚን ፓነል ለመግባት ፈቃድ የለዎትም!"); 
-                return; 
-            }
+            if (!isAdmin) { alert("⚠️ ይቅርታ! ፈቃድ የለዎትም!"); return; }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
             requestRealUsersList();
