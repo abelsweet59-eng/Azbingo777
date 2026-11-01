@@ -66,7 +66,8 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2 py-0.5 rounded-lg border border-red-400/40 font-bold whitespace-nowrap">🛡️ አድሚን</button>
+                <!-- የአድሚን ቁልፍ ሁልጊዜ እንዲታይ ተደርጓል -->
+                <button id="admin-nav-btn" onclick="openAdminPanel()" class="text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
 
@@ -380,7 +381,6 @@
 
     <script>
         const socket = io();
-        const ADMIN_TELEGRAM_ID = "371093083";
 
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "አደ-ሰማእት";
@@ -391,8 +391,6 @@
             userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name || "አደ-ሰማእት";
             userUsername = window.Telegram.WebApp.initDataUnsafe.user.username ? "@" + window.Telegram.WebApp.initDataUnsafe.user.username : "No Username";
         }
-
-        const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
         let transactionHistory = [];
@@ -442,12 +440,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            if (isAdmin) {
-                document.getElementById('admin-nav-btn').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-nav-btn').classList.add('hidden');
-            }
-
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
             renderHistoryUI();
@@ -532,7 +524,6 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🟢 **እዚህ ጋር ነው ዊዝድሮዋል እና ዲፖዚት ሂሳብ አያያዝ የተስተካከለው!**
             socket.on('financialApproved', (data) => {
                 if (data.type === 'deposit') {
                     walletBalance += data.amount;
@@ -1092,7 +1083,6 @@
         }
 
         function openAdminPanel() {
-            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
             requestRealUsersList();
