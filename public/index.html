@@ -23,7 +23,7 @@
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
 
-        /* 🟢 እውነተኛ የቢልያርድ ኳስ ዲዛይን (በመሀል ነጭ ክብ እና ጥቁር ቁጥር) */
+        /* 🟢 እውነተኛ የቢልያርድ ኳስ ዲዛይን */
         .billiard-ball {
             position: relative;
             border-radius: 9999px;
@@ -102,7 +102,25 @@
                     </div>
 
                     <!-- 500 Cards Grid Container -->
-                    <div class="h-64 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+                    <div class="h-56 overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/5 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+
+                    <!-- 🟢 በምስሉ ላይ ባለው ባዶ ቦታ (በክበብ የታየው ቦታ) ላይ የተገጠመ ውብ የ 60 ሰከንድ ካውንትዳውን ሰዓት ፓነል -->
+                    <div class="bg-gradient-to-r from-purple-950/80 via-[#1c0c33] to-purple-950/80 p-3 rounded-xl border border-amber-500/40 flex items-center justify-between shadow-xl">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-400 text-lg shadow-inner pulse-ball">
+                                ⏳
+                            </div>
+                            <div>
+                                <div class="text-[10px] text-amber-300 font-bold uppercase tracking-wider">ጨዋታው ሊጀመር የሚቀረው ጊዜ</div>
+                                <div class="text-[9px] text-gray-400">እባክዎ ፈጣን በመሆን ካርድዎን ይምረጡ!</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div id="big-countdown-timer" class="text-2xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_10px_rgba(245,158,11,0.6)]">
+                                60s
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
                         <div>
@@ -138,7 +156,6 @@
                             <!-- የቢንጎ መቁጠሪያ ፓነል -->
                             <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
                                 <div class="flex justify-between items-center">
-                                    <!-- 🟢 ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ኳሶች በትክክለኛ የቢልያርድ ኳስ መልክ (መሀሉ ነጭ ክብ እና ጥቁር ቁጥር) -->
                                     <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center"></div>
                                     <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
                                 </div>
@@ -149,7 +166,6 @@
                                         <div id="in-place-countdown-num" class="text-3xl font-black text-amber-400 font-mono">30</div>
                                     </div>
 
-                                    <!-- 🟢 ዋናው የሚጠራው ኳስ በትክክለኛ የቢልያርድ ኳስ ዲዛይን (ከነ ነጩ ክብ እና ጥቁር ጽሁፍ ጋር) -->
                                     <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
                                         <div class="billiard-inner-circle w-12 h-12 text-sm" id="main-ball-inner">
                                             <span id="ball-letter" class="text-[8px] leading-none uppercase">B</span>
@@ -432,12 +448,18 @@
             });
         }
 
+        // 🟢 የ 60 ሰከንድ ካውንትዳውን ሰዓት ማስተካከያ (በላይኛው ባጅ እና በታችኛው ትልቅ ፓነል ላይ በአንድነት የሚሰራ)
         function startClientTimer() {
             setInterval(() => {
                 let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
                 let regBadge = document.getElementById('reg-status-badge');
+                let bigTimerEl = document.getElementById('big-countdown-timer');
+
                 if (regBadge && !confirmedCards.length) {
                     regBadge.innerText = `${timeLeft} ሰከንድ ይቀረዋል`;
+                }
+                if (bigTimerEl) {
+                    bigTimerEl.innerText = `${timeLeft}s`;
                 }
             }, 1000);
         }
@@ -555,7 +577,6 @@
             }
         }
 
-        // 🟢 1. ዋናው የቢልያርድ ኳስ መጥሪያ ዲዛይን (በመሀል ነጭ ክብ እና ጥቁር ጽሁፍ)
         function displayCalledBall(num) {
             const countdownBox = document.getElementById('in-place-countdown-box');
             const mainBall = document.getElementById('main-called-ball');
@@ -571,7 +592,6 @@
             renderRecentBalls();
         }
 
-        // 🟢 2. ከሱ ጀርባ/ላይ ያሉት የቅርብ ጊዜ ኳሶች በትክክለኛ የቢልያርድ ኳስ መልክ (ነጭ ክብ እና ጥቁር ቁጥር)
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
