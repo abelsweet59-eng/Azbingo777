@@ -338,6 +338,17 @@
                     </div>
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
                 </div>
+
+                <!-- 🟢 ጨዋታው ላይ ንቁ ሆኖ ኦንላይን ያሉ እውነተኛ ተጠቃሚዎች ብቻ (Real Active Users) -->
+                <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div class="font-bold text-amber-300">👥 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎች</div>
+                        <button onclick="requestRealUsersList()" class="text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold">አድስ (Refresh)</button>
+                    </div>
+                    <div id="admin-real-users-list" class="space-y-1 max-h-40 overflow-y-auto custom-scroll text-[10px]">
+                        <div class="text-center text-gray-400 py-2">ምንም እውነተኛ ተጠቃሚ የለም</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -373,7 +384,7 @@
             </div>
         </div>
 
-        <!-- DEPOSIT MODAL (🟢 ከትክክለኛው የቴሌብር ሎጎ ጋር የተስተካከለ) -->
+        <!-- DEPOSIT MODAL -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
                 <div class="flex items-center justify-center gap-2 bg-white/10 p-2 rounded-xl border border-white/10">
@@ -446,10 +457,12 @@
 
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "አደ-ሰማእት";
+        let userUsername = "guest_user";
 
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
             userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name || "አደ-ሰማእት";
+            userUsername = window.Telegram.WebApp.initDataUnsafe.user.username ? "@" + window.Telegram.WebApp.initDataUnsafe.user.username : "No Username";
         }
 
         const isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
@@ -519,11 +532,31 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
+                // እውነተኛ ተጠቃሚን መመዝገብ
+                socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
+
                 if (confirmedCards.length > 0) {
                     socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
+            });
+
+            // ኦንላይን ያሉ እውነተኛ ተጠቃሚዎች ዝርዝር መቀበል
+            socket.on('adminRealUsersListUpdate', (usersList) => {
+                const listEl = document.getElementById('admin-real-users-list');
+                if (!listEl) return;
+                if (!usersList || usersList.length === 0) {
+                    listEl.innerHTML = `<div class="text-center text-gray-400 py-2">ምንም እውነተኛ ተጠቃሚ የለም</div>`;
+                    return;
+                }
+                listEl.innerHTML = '';
+                usersList.forEach(u => {
+                    const row = document.createElement('div');
+                    row.className = "flex justify-between items-center bg-black/40 p-1.5 rounded border border-white/5 text-[10px]";
+                    row.innerHTML = `<div><span class="text-amber-400 font-bold">${u.fullName}</span> <span class="text-gray-300">(${u.username})</span></div><div class="text-gray-400 font-mono">ID: ${u.userId}</div>`;
+                    listEl.appendChild(row);
+                });
             });
 
             socket.on('updateTakenCards', (takenList) => {
@@ -652,6 +685,10 @@
                 }, 1000);
             });
         });
+
+        function requestRealUsersList() {
+            socket.emit('getAdminRealUsers');
+        }
 
         function switchRulesPage(pageNum) {
             const p1 = document.getElementById('rules-page-1');
@@ -1124,6 +1161,7 @@
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
+            requestRealUsersList();
         }
 
         function switchTab(tabId, btn) {
