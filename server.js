@@ -87,16 +87,15 @@ let pendingRequests = {};
 let gameInterval = null;
 let numberCallInterval = null;
 
-// 🟢 የጨዋታ ቆጣሪዎችን ለመከታተል (ለ 3 ቦቶች በአንድ ላይ በየ 3፣ 4፣ 6 ወይም 10 ጨዋታዎች በራሱ እንዲለወጥ)
 let roundsPlayedCount = 0;
-let nextMultiBotTargetRound = 3; // የመጀመሪያው በ 3ተኛው ጨዋታ ይከሰታል
+let nextMultiBotTargetRound = 3; 
 
 function getRandomNextTargetRound() {
-    // ከ 3 እስከ 10 ባሉት ክልሎች ውስጥ በዘፈቀደ (3, 4, 6, 7, 10 ወዘተ) ይመርጣል
     const possibleTargets = [3, 4, 6, 7, 10];
     return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
 }
 
+// 🟢 የኢትዮጵያ ሰዓት አቆጣጠር ታሳቢ በማድረግ የቦቶች ብዛት ማስያዣ (ከ 75 እስከ 350)
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -149,7 +148,6 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-// 🟢 ዋናው የጨዋታ ዑደት (Game Loop & Dynamic Multi-Bot Rotation)
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
@@ -198,8 +196,6 @@ function startMainGameLoop() {
                 io.emit('numberCalledBroadcast', calledNum);
 
                 let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.30) || (globalRoom.calledNumbers.length >= 35);
-
-                // ራስ-ሰር 3 ቦቶች በአንድ ላይ የሚያሸንፉበትን ጊዜ ማረጋገጫ (በየ 3፣ 4፣ 6 ወይም 10 ጨዋታዎች በዘፈቀደ)
                 let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
                 if (shouldTriggerWin || forcedNextWinner || isAutoMultiBotRound) {
@@ -215,13 +211,11 @@ function startMainGameLoop() {
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         winnersCount = 1;
                     } else if (forcedNextWinner === 'multi_real_3' || isAutoMultiBotRound) {
-                        // 🟢 3 ቦቶች በአንድ ላይ ሲያሸንፉ (Realistic Multi-Bot Win)
                         let threeBots = getRandomBotNames(3);
-                        winningUsername = threeBots.join(', '); // ሦስቱ የቦት ስሞች በኮማ ተለይተው ይታያሉ
+                        winningUsername = threeBots.join(', '); 
                         winnersCount = 3;
                         winningCardNum = Math.floor(Math.random() * 450) + 1;
                         
-                        // ቀጣዩን የ 3 ቦቶች ማሸነፊያ ዙር በዘፈቀደ ማዘጋጀት (3፣ 4፣ 6፣ 7 ወይም 10)
                         roundsPlayedCount = 0;
                         nextMultiBotTargetRound = getRandomNextTargetRound();
                     } else if (forcedNextWinner === 'random_real' && entries.length > 0) {
