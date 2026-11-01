@@ -26,7 +26,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-// 🟢 ራሱ አቤል የሰጠው ትክክለኛ እና የተሟላ የቦቶች ስሞች ዝርዝር
+// 🟢 አቤል የሰጠው ትክክለኛ እና የተሟላ የቦቶች ስሞች ዝርዝር
 const ETHIOPIAN_BOT_NAMES = [
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
@@ -169,7 +169,7 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            // 🟢 የቁጥር ጥሪ ሎጅክ (በየ 3 ሰከንዱ አንዲት ቁጥር እየጠራ)
+            // 🟢 የቁጥር ጥሪ ሎጅክ (በየ 4 ሰከንዱ አንዲት ቁጥር እየጠራ)
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
                     if (numberCallInterval) {
@@ -254,7 +254,7 @@ function startMainGameLoop() {
                     }, 5000);
                 }
 
-            }, 3000); // 🟢 በየ 3 ሰከንዱ (3000ms) አንዲት ቁጥር እንዲጠራ ተስተካክሏል
+            }, 4000); // 🟢 በየ 4 ሰከንዱ (4000ms) አንዲት ቁጥር እንዲጠራ ተስተካክሏል
         }
     }, 1000);
 }
