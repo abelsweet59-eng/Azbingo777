@@ -105,7 +105,7 @@
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
                     <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
                         <div>
-                            <div id="user-welcome-info" class="text-gray-300 font-bold text-xs">የካርድ ምርጫ (ከ 1 እስከ 500)</div>
+                            <div id="user-welcome-info" class="text-gray-300 font-bold text-xs">ሰላም ተጫዋች</div>
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
@@ -390,7 +390,7 @@
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // ቴሌግራም ዌብአፕ ዳታ ማንበብ
+        // 🟢 ከቴሌግራም ዌብአፕ የዩዘር ስም እና 🆔 በትክክል ማንበብ
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -406,7 +406,7 @@
             }
         }
 
-        // 🛡️ ጥብቅ ማረጋገጫ፡ የቴሌግራም 🆔ህ 371093083 ከሆነ ብቻ አድሚን 'true' ይሆናል!
+        // 🛡️ አድሚን ማረጋገጫ (አቤል ID ከሆነ ብቻ ቱሩ ይሆናል)
         if (telegramUserId === ADMIN_TELEGRAM_ID) {
             isAdmin = true;
         }
@@ -474,12 +474,12 @@
                     }
                 }
 
-                // 🟢 የመጨረሻ ማረጋገጫ (አቤል ID ከሆነ ብቻ አድሚን ይደረጋል)
+                // 🟢 የመጨረሻ ማረጋገጫ
                 if (telegramUserId === ADMIN_TELEGRAM_ID) {
                     isAdmin = true;
                 }
 
-                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በቢንጎ ሄደር ውስጥ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
+                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ ይታያል
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -489,9 +489,11 @@
                     }
                 }
                 
+                // 🟢 የተጫዋቹን ትክክለኛ ስም በሰላምታ ማሳየት
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
 
+            // መጀመሪያ ላይም ስሙን ማሳየት
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
             renderHistoryUI();
