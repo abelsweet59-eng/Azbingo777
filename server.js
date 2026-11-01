@@ -178,11 +178,11 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🟢 አሸናፊ የመምረጫ ርዝመት (ቁጥሮቹ ከ 12 በላይ ሲሆኑ ወይም ሁሉም ቁጥሮች ሲያልቁ በአስተማማኝ ሁኔታ አሸናፊ እንዲወጣ ይደረጋል)
-                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
+                // 🟢 ራስ-ሰር አሸናፊ ማረጋገጫ (አድሚኑ ካላዘዘ በስተቀር ቦቶች ብቻ ያሸንፋሉ)
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 12 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
                 let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
-                if (shouldTriggerWin || forcedNextWinner || isAutoMultiBotRound || availableNumbers.length === 0) {
+                if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
                     let winningUsername = getRandomBotNames(1)[0]; 
                     let winningUserId = null;
@@ -190,11 +190,17 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    if (forcedNextWinner === 'bot' || (!forcedNextWinner && !isAutoMultiBotRound)) {
-                        winningUsername = getRandomBotNames(1)[0];
-                        winningCardNum = Math.floor(Math.random() * 500) + 1;
-                        winnersCount = 1;
-                    } else if (forcedNextWinner === 'multi_real_3' || isAutoMultiBotRound) {
+                    // 1. አድሚኑ 'random_real' ብሎ ካዘዘ ብቻ ሪል ዩዘር ያሸንፋል
+                    if (forcedNextWinner === 'random_real' && entries.length > 0) {
+                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                        winningUserId = randEntry[0];
+                        winningUsername = randEntry[1].username;
+                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                            winningCardNum = randEntry[1].cards[0];
+                        }
+                    } 
+                    // 2. አድሚኑ 'multi_real_3' ብሎ ካዘዘ ወይም ራስ-ሰር የብዙ ቦቶች ሰዓት ከደረሰ
+                    else if (forcedNextWinner === 'multi_real_3' || (!forcedNextWinner && isAutoMultiBotRound)) {
                         let threeBots = getRandomBotNames(3);
                         winningUsername = threeBots.join(', '); 
                         winnersCount = 3;
@@ -202,19 +208,17 @@ function startMainGameLoop() {
                         
                         roundsPlayedCount = 0;
                         nextMultiBotTargetRound = getRandomNextTargetRound();
-                    } else if (forcedNextWinner === 'random_real' && entries.length > 0) {
-                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                        winningUserId = randEntry[0];
-                        winningUsername = randEntry[1].username;
-                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                            winningCardNum = randEntry[1].cards[0];
-                        }
+                    } 
+                    // 3. ነባሪ (Default): ቦት ያሸንፋል!
+                    else {
+                        winningUsername = getRandomBotNames(1)[0];
+                        winningCardNum = Math.floor(Math.random() * 500) + 1;
+                        winnersCount = 1;
                     }
 
                     let totalPot = (globalRoom.playersCount || 114) * 10;
                     let prizePool = Math.floor(totalPot * 0.70);
 
-                    // 🟢 ዊን ሲል በቀጥታ ወደ ሁሉም ክላይንቶች ቆንጆ ማሳወቂያ (Event) ይልካል
                     io.emit('bingoWinner', {
                         username: winningUsername,
                         userId: winningUserId,
@@ -238,7 +242,7 @@ function startMainGameLoop() {
                     
                     setTimeout(() => {
                         endRoundAndRestart();
-                    }, 6000); // አሸናፊው ለ 6 ሰከንድ ታይቶ እንዲቆይ ተደርጓል
+                    }, 6000);
                     return;
                 }
 
