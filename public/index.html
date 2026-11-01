@@ -8,46 +8,79 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; background-color: #0b0317; color: white; }
+
+        @keyframes softBlink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.98); box-shadow: 0 0 20px rgba(245, 158, 11, 0.6); }
+        }
+        .blink-card { animation: softBlink 1.8s infinite ease-in-out; }
+
+        @keyframes activePress {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.95); background-color: rgba(245, 158, 11, 0.3); }
+            100% { transform: scale(1); }
+        }
+        .press-effect:active { animation: activePress 0.3s ease-in-out; }
     </style>
 </head>
-<body class="min-h-screen flex justify-center items-center p-4">
+<body class="min-h-screen flex justify-center items-center p-3">
 
-    <div class="w-full max-w-[430px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] border border-white/10 rounded-2xl p-6 shadow-2xl text-center space-y-6">
+    <div class="w-full max-w-[430px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] border border-white/10 rounded-2xl p-4 shadow-2xl flex flex-col justify-between space-y-4">
         
-        <div class="w-20 h-20 bg-amber-500/20 border border-amber-400/50 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg">
-            🎰
-        </div>
-        
-        <div>
-            <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300">AZ Games Lobby</h1>
-            <p id="welcome-user-text" class="text-xs text-gray-300 mt-1">ሰላም! መጫወት የሚፈልጉትን ጨዋታ ይምረጡ።</p>
-        </div>
-
-        <!-- ጨዋታዎችን መምረጫ ቦክሶች -->
-        <div class="space-y-3 pt-2">
-            <!-- 1. AZ Bingo (ንቁ ጨዋታ) -->
-            <button onclick="enterBingo()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold py-3.5 px-4 rounded-xl text-sm shadow-lg hover:opacity-90 transition-all flex items-center justify-between border border-amber-400/30">
-                <div class="flex items-center gap-3">
-                    <span class="text-xl">🎱</span>
-                    <div class="text-left">
-                        <div class="font-extrabold text-sm">AZ Bingo</div>
-                        <div class="text-[10px] text-amber-100 font-normal">ባለብዙ ተጫዋች የቢንጎ ጨዋታ</div>
-                    </div>
-                </div>
-                <span class="text-xs bg-black/30 px-2.5 py-1 rounded-lg text-amber-300 font-bold">ግባ ➔</span>
-            </button>
-
-            <!-- 2. Keno (Coming Soon) -->
-            <div class="w-full bg-purple-950/40 border border-purple-500/20 rounded-xl p-3.5 flex items-center justify-between opacity-75 cursor-not-allowed">
-                <div class="flex items-center gap-3">
-                    <span class="text-xl">⚡</span>
-                    <div class="text-left">
-                        <div class="font-bold text-sm text-gray-300">Keno</div>
-                        <div class="text-[10px] text-gray-400">ፈጣን የኬኖ ጨዋታ</div>
-                    </div>
-                </div>
-                <span class="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg font-bold uppercase tracking-wider">Coming Soon</span>
+        <!-- Top Header with Logo -->
+        <div class="flex flex-col items-center text-center space-y-2 pt-2">
+            <div class="w-20 h-20 rounded-2xl p-1 bg-gradient-to-br from-amber-400 to-orange-600 shadow-xl flex items-center justify-center border border-amber-300/50">
+                <img src="/1000005278.png" alt="AZ Logo" class="w-full h-full object-cover rounded-xl">
             </div>
+            <div>
+                <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300">AZ Games Lobby</h1>
+                <p id="welcome-user-text" class="text-[11px] text-gray-300">ሰላም! መጫወት የሚፈልጉትን ጨዋታ ይምረጡ።</p>
+            </div>
+        </div>
+
+        <!-- Games Grid / Cards Section (ሞላ ብሎ እንዲታይ እና ባዶ ስፔስ እንዳይኖር የተደረገ) -->
+        <div class="flex flex-col space-y-3.5 w-full">
+            
+            <!-- 1. AZ Bingo Card (ንቁ ጨዋታ) -->
+            <div onclick="enterBingo()" class="blink-card press-effect relative bg-gradient-to-r from-[#180a29] via-[#24103f] to-[#180a29] border-2 border-amber-500/50 rounded-2xl p-3.5 flex items-center justify-between shadow-2xl cursor-pointer hover:border-amber-400 transition-all">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-amber-400/40 shadow-md flex-shrink-0 bg-black/40">
+                        <img src="/1000005278.png" alt="Bingo" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-left">
+                        <div class="font-black text-amber-400 text-base tracking-wide">AZ Bingo</div>
+                        <div class="text-[11px] text-gray-300 font-medium">ባለብዙ ተጫዋች የቢንጎ ማጫወቻ</div>
+                        <div class="text-[9px] text-emerald-400 font-bold mt-0.5">● አሁን በመጫወት ላይ ይገኛል</div>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-r from-amber-500 to-orange-600 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-1">
+                    <span>ግባ</span>
+                    <span>➔</span>
+                </div>
+            </div>
+
+            <!-- 2. AZ Keno Card (Coming Soon) -->
+            <div class="relative bg-gradient-to-r from-[#180a29] via-[#200d35] to-[#180a29] border border-purple-500/30 rounded-2xl p-3.5 flex items-center justify-between opacity-80 shadow-xl">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-16 h-16 rounded-xl overflow-hidden border border-purple-500/40 shadow-md flex-shrink-0 bg-black/40">
+                        <img src="/1000005407.png" alt="Keno" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-left">
+                        <div class="font-bold text-gray-200 text-base">AZ Keno</div>
+                        <div class="text-[11px] text-gray-400 font-medium">ፈጣን እና አስደሳች የኬኖ ጨዋታ</div>
+                        <div class="text-[9px] text-amber-300 font-bold mt-0.5">⏳ በቅርብ ቀን የሚመጣ</div>
+                    </div>
+                </div>
+                <div class="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black px-3 py-2 rounded-xl uppercase tracking-wider">
+                    Coming Soon
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Info -->
+        <div class="text-center text-[10px] text-gray-500 pb-1">
+            AZ Games Platform © 2026 • All Rights Reserved
         </div>
 
     </div>
