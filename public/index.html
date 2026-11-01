@@ -212,13 +212,14 @@
                         <h3 class="text-xs font-bold text-amber-400">📜 የሂሳብ እንቅስቃሴ ታሪክ (History)</h3>
                         <span class="text-[9px] text-gray-400">ገቢ / ወጪ</span>
                     </div>
+                    <!-- 🟢 እስከ 30 መስመር የሚይዝ እና አዲሱ ከፊት (Top) እየተደረደረ የሚመጣ የታሪክ ዝርዝር -->
                     <div id="transaction-history-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-[10px]">
                         <div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 3: GAME RULES & INSTRUCTIONS (በ 2 ገጽ የተከፈለ እና በንድፍ/ፓተርን የተደገፈ) -->
+            <!-- TAB 3: GAME RULES & INSTRUCTIONS -->
             <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">📖 የጨዋታ እና የمال (Finance) መመሪያ</h2>
@@ -245,7 +246,7 @@
                         <p class="text-gray-300 text-[10px]">የሚከተሉትን ቅርጾች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል:</p>
                         
                         <div class="grid grid-cols-2 gap-2 pt-1">
-                            <!-- Horizontal Pattern Mini Grid -->
+                            <!-- Horizontal -->
                             <div class="bg-black/50 p-2 rounded border border-purple-500/30 text-center space-y-1">
                                 <div class="font-bold text-amber-200 text-[10px]">አግድም (Horizontal)</div>
                                 <div class="grid grid-cols-5 gap-0.5 bg-purple-950/80 p-1 rounded max-w-[90px] mx-auto">
@@ -258,7 +259,7 @@
                                 <div class="text-[9px] text-gray-300">አንድ ሙሉ አግድም ረድፍ ሲሞላ</div>
                             </div>
 
-                            <!-- Vertical Pattern Mini Grid -->
+                            <!-- Vertical -->
                             <div class="bg-black/50 p-2 rounded border border-purple-500/30 text-center space-y-1">
                                 <div class="font-bold text-amber-200 text-[10px]">ቁመት (Vertical)</div>
                                 <div class="grid grid-cols-5 gap-0.5 bg-purple-950/80 p-1 rounded max-w-[90px] mx-auto">
@@ -271,7 +272,7 @@
                                 <div class="text-[9px] text-gray-300">አንድ ሙሉ ቁመት ረድፍ ሲሞላ</div>
                             </div>
 
-                            <!-- Diagonal Pattern Mini Grid -->
+                            <!-- Diagonal -->
                             <div class="bg-black/50 p-2 rounded border border-purple-500/30 text-center space-y-1">
                                 <div class="font-bold text-amber-200 text-[10px]">ሰያፍ (Diagonal)</div>
                                 <div class="grid grid-cols-5 gap-0.5 bg-purple-950/80 p-1 rounded max-w-[90px] mx-auto">
@@ -284,7 +285,7 @@
                                 <div class="text-[9px] text-gray-300">ሰያፍ መስመር ሲሞላ</div>
                             </div>
 
-                            <!-- 4 Corners Pattern Mini Grid -->
+                            <!-- Corners -->
                             <div class="bg-black/50 p-2 rounded border border-purple-500/30 text-center space-y-1">
                                 <div class="font-bold text-amber-200 text-[10px]">አራቱ ማዕዘኖች</div>
                                 <div class="grid grid-cols-5 gap-0.5 bg-purple-950/80 p-1 rounded max-w-[90px] mx-auto">
@@ -373,10 +374,13 @@
             </div>
         </div>
 
-        <!-- DEPOSIT MODAL -->
+        <!-- DEPOSIT MODAL (🟢 የቴሌብር ሎጎ የተካተተበት) -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm text-center">💳 ቴሌብር ዲፖዚት</h3>
+                <div class="flex items-center justify-center gap-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/Telebirr_Logo.png" alt="Telebirr" class="w-7 h-7 object-contain rounded-full bg-white p-0.5">
+                    <h3 class="font-bold text-amber-400 text-sm text-center">ቴሌብር ዲፖዚት</h3>
+                </div>
                 <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer" onclick="copyAdminPhone()">
                     <div class="text-[10px] text-gray-300">ቁጥር (ለመቅዳት ይጫኑ)፡</div>
                     <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
@@ -394,7 +398,10 @@
         <!-- WITHDRAW MODAL -->
         <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <h3 class="font-bold text-amber-400 text-sm text-center">🏧 ቴሌብር ዊዝድሮዋል</h3>
+                <div class="flex items-center justify-center gap-2">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/9/9e/Telebirr_Logo.png" alt="Telebirr" class="w-7 h-7 object-contain rounded-full bg-white p-0.5">
+                    <h3 class="font-bold text-amber-400 text-sm text-center">ቴሌብር ዊዝድሮዋል</h3>
+                </div>
                 <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <input type="number" id="withdraw-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <div class="flex gap-2">
@@ -552,6 +559,18 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
+            // 🟢 የቴሌብር ሪኩዌስት ማጽደቂያ አፕሩቭ/ሪጀክት መልዕክት በሶኬት መቀበያ
+            socket.on('financialApproved', (data) => {
+                walletBalance += data.amount;
+                updateWalletUI();
+                addTransactionHistory('ቴሌብር ዲፖዚት (ጸድቋል)', data.amount, 'income');
+                alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+            });
+
+            socket.on('financialRejected', (data) => {
+                alert(`❌ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ውድቅ ተደርጓል።`);
+            });
+
             socket.on('gameStartedBroadcast', () => { triggerCountdownAndStart(); });
 
             socket.on('numberCalledBroadcast', (num) => {
@@ -661,10 +680,11 @@
             alert(isAudioMuted ? "ድምፅ ጠፍቷል (Muted)" : "ድምፅ በርቷል");
         }
 
+        // 🟢 የሂሳብ እንቅስቃሴ ታሪክ (ከፊት ለፊት አዲስ እየገባ እስከ 30 መስመር ብቻ እንዲይዝ)
         function addTransactionHistory(title, amount, type) {
             let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            transactionHistory.unshift({ title, amount, type, time: timeNow });
-            if (transactionHistory.length > 20) transactionHistory.pop();
+            transactionHistory.unshift({ title, amount, type, time: timeNow }); // ከፊት (Top) እንዲገባ unshift ይጠቀማል
+            if (transactionHistory.length > 30) transactionHistory.pop(); // ከ 30 ሲበልጥ የመጨረሻውን ይሰርዛል
             localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
             renderHistoryUI();
         }
