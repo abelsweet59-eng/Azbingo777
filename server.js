@@ -37,20 +37,45 @@ let currentRoundWinnersList = [];
 // 🟢 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎችን ለመያዝ
 let onlineRealUsers = [];
 
+// 🟢 አዲሶቹን እና የቀድሞዎቹን ስሞች በአንድ ላይ የያዘ የራንደም ስሞች ዝርዝር (Randomized Bot Names Pool)
 const fakeBotNames = [
-    "Abebe_Girma", "Ahmed_Kedir", "Mohammed_Amin", "Dawit_Kassaye", "Biruk_Moges", 
-    "Kidus_Alemu", "Robel_Solomon", "Ermias_Tadesse", "Yared_Jemal", "Kaleb_Kassa", 
-    "Yohannes_Lemma", "Fikadu_Mekonnen", "Tesfaye_Negash", "Bekele_Worku", "Assefa_Seifu", 
-    "Girum_Teshome", "Surafel_Umer", "Nahom_Getachew", "Abenezer_Wondwossen", "Gedion_Yilma", 
-    "Muluken_Zewdu", "Teferi_Alemu", "Shifera_Chala", "Tadesse_Fikru", "Gizachew_Girma", 
-    "Zewdu_Moges", "Teshome_Demissie", "Tolosa_Gurmessa", "Abebech_Tsehay", "Almaz_Tadesse", 
-    "Habtamu_Reta", "Esubalew_Kassa", "Mubarek_Nuru", "Bilal_Ahmed", "Siraj_Kedir", 
-    "Redwan_Zemedkun", "Henok_Wondimu", "Daniel_Tesfaye", "Eyob_Mekonnen", "Teddy_Afro", 
-    "Ali_Bira", "Yohana_Negash", "Zelalem_Worku", "Kebede_Bante", "Mulugeta_Assefa", 
-    "Getachew_Bekele", "Dagnachew_Molla", "Asnake_Tadesse", "Wondwossen_Reta", "Mekdes_Lemma", 
-    "Bruk_Zenebe", "Natnael_Chala", "Samuel_Dagne", "Michael_Fikru", "Ephrem_Haile", 
-    "Addis_Boy", "Ethio_Pro", "Bingo_Master", "Telegram_VIP", "Addis_Vibes", 
-    "Habesha_Style", "Nuru_Mohammed", "Bereket_Kassa", "Daniel_Tadesse", "Eyob_Lemma"
+    "Henok_Z", "Wase", "Dawit_B", "ሞለፍን ኔትስት ገበየሁ", "Quarezma",
+    "ANIE X YUKKI", "ማኅበል", "Abebaw", "Teg 0920", "Yd",
+    "Mulugeta Fantahun", "Samson_G", "Kalsidan_F", "Sittina", "Merlin",
+    "Naughty By nature", "Abdujalil Ahmed Detolale", "Ashenafi", "D 7", "Nimo",
+    "Gech man", "Frew", "Tedi", "Kifle Møk", "Yohannes Ng",
+    "Zehara", "Goyta Miraw ጣምራው", "Aman yi", "Mitiku57 Kibatu", "Asbada Abubakar",
+    "Biniyam_C", "Tesfaye Asnake", "Mesfin", "Beki", "Lidya_D",
+    "Seydou Kamite", "Osmehin", "Dibora", "Girmay Nigus", "Hanna_T",
+    "Assistant 2", "Wubamlak Belste", "Rediet_S", "Tame 😍", "Alemayehu Tesema",
+    "Henok", "Astu Bast", "Abel_T", "Yordanos_K", "Kefle birhane",
+    "Teddy", "Worku", "Anu 28", "Birukte#🦋", "Yohannes online",
+    "Dani", "አበነህ 💕💕💕", "Naṯaň......", "Pro max", "Big Boss 💪",
+    "Fire Tesfaye", "Simret Getachew", "Abel x", "Ali", "Chala",
+    "Ahmed Basher", "Ephrem_G", "Nscros", "Anwar", "Faħewot Yashtla",
+    "Yohannes", "Habtu Moges", "Ratum yasın", "Selma_L",
+    "Getachew", "L14", "Wenna last King", "Gizachew Kassahun", "Miki_Bingo",
+    "Bakle", "H 5", "Abush 💀💀", "Tigist_Y", "Tereyson Cruzman",
+    "Surafel", "Sintayehu Getachew", "Samii", "Kirra", "Melkamnew",
+    "Feven_A", "Tamirat Girma", "አቤል", "Skut mamaniyø", "Y@imam",
+    "Current thing", "Bilal", "Wizzy", "Gdg",
+    "Bereket P", "Pipo Kassa", "Tolosa", "Demsash", "ድር ድር",
+    "አፒው", "Ahadi Ahemed", "Tamirat", "Kasu", "PPP✌️🔥😋69",
+    "Ad la", "getesh aresenal", "WALEX JOSEF", "Habet", "♠[$]♠",
+    "ˋHEER X MUSICˎ", "Alexs Kebede", "Dagna King", "Haileyesus Geremew", "Chicken Road",
+    "nal", "weyn Ter", "Fenaan Fenaan Barbaadi", "Solomon_K", "Bethel_M",
+    "Natnael_X", "Kidist_L", "Tsion_M",
+    "Brook_H", "Michael_B", "Nahom_V", "Rut_K", "Robel_M",
+    "Ermias_99", "Rahel_N", "Yonas_P", "Semhar_L", "የማርያም",
+    "ተሜ", "ናቲና", "Dj", "wanaw", "Falcon",
+    "Šà¥¢ø Qü€€ñ", "syf", "Time Of", "§mrĕţ", "L F U",
+    "sosi", "Megdi", "Ibra", "Osmhen", "Fiyorina",
+    "Pilatos", "Denver", "Belew", "Jilalu", "bereket dagne",
+    "🦋Meklit🦋", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ", "0919091129",
+    "Lai", "ገብርኤል አባቴ", "Devido ✝", "Mamush Kasim Mucaa Kakuuuu", "Abonesh Kinfu",
+    "Lij yalfex jinka 🫅", "Firde Nigus", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim",
+    "Ebrahim M/d Ebrahim", "Abdu Shekna", "urjii 🥷", "Amoo", "Kejelcha Mamo",
+    "Ashagre", "Ed", "Gedefaw Aseffa", "Dada"
 ];
 
 // 🟢 እስከ 24 ሰዓት የሚቆዩ እና ብዙ ጥያቄዎችን (እስከ 50 እና ከዚያ በላይ) በአግባቡ የሚይዝ ማከማቻ
@@ -209,7 +234,6 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
-// 🟢 የቴሌብር ሪኩዌስት ማስተካከያ (ለ 24 ሰዓት የሚቆይ እና ብዙ ጥያቄዎችን የሚይዝ)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -295,7 +319,6 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-    // 🟢 እውነተኛ ተጠቃሚዎችን መመዝገቢያ (በአድሚን ፓነል ላይ ለማሳየት)
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userData.userId);
@@ -308,7 +331,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🟢 አድሚኑ ኦንላይን ያሉትን ሪል ዩዘሮች ሲጠይቅ መላክ
     socket.on('getAdminRealUsers', () => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
@@ -374,7 +396,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id); // ከኦንላይን ዝርዝር መሰረዝ
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         delete globalRoom.playerRoundCards[socket.id];
         delete globalRoom.playerTemporaryCards[socket.id];
         refreshTakenCardsList();
