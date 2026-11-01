@@ -20,6 +20,14 @@
             50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
+        
+        /* 🟢 የካርድ አረጋግጥ ቡተን በስሱ እንዲብለጨለጭ (Blinking Animation) */
+        @keyframes softBlink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.65; transform: scale(0.98); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+        }
+        .blink-btn { animation: softBlink 1.2s infinite ease-in-out; }
+
         @keyframes countdownPop {
             0% { transform: scale(0.5); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
@@ -129,7 +137,8 @@
                             <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
                             <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
                         </div>
-                        <button onclick="confirmCardSelection()" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md">
+                        <!-- 🟢 የካርድ አረጋግጥ ቡተን (Confirm Button with Dynamic Blink & Red State) -->
+                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md transition-all">
                             ካርድ አረጋግጥ
                         </button>
                     </div>
@@ -427,6 +436,13 @@
             socket.on('cardSelectionSuccess', () => {
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
+                
+                // 🟢 ካርዱ ሲረጋገጥ ቡተኑ ወደ ቀይ ከለር ይቀየራል
+                const confirmBtn = document.getElementById('confirm-card-btn');
+                confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
+                confirmBtn.classList.add('bg-red-600', 'text-white');
+                confirmBtn.innerText = "ካርድ ተረጋግጧል ✔";
+
                 renderPlayerDualCards();
             });
 
@@ -720,11 +736,26 @@
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
+
+            // 🟢 ቡተኑን ወደ መጀመሪያው ብሊንክ ሁኔታ መመለስ
+            const confirmBtn = document.getElementById('confirm-card-btn');
+            confirmBtn.classList.remove('bg-red-600', 'text-white');
+            confirmBtn.classList.add('blink-btn', 'bg-gradient-to-r', 'from-amber-500', 'to-orange-600');
+            confirmBtn.innerText = "ካርድ አረጋግጥ";
+
             resetLiveCountdownBox();
             document.getElementById('stat-called-count').innerText = "0";
-            document.getElementById('card-selection-section').classList.remove('hidden');
-            document.getElementById('live-game-section').classList.add('hidden');
-            generate500CardGrid();
+            
+            // 🟢 2 ሰከንድ ባዶ አሳይቶ ከዛ 70% እና 30% ያዝ-ለቀቅ ስሜት እንዲጀምር ማድረግ
+            const grid = document.getElementById('card-grid-500');
+            if (grid) grid.innerHTML = `<div class="col-span-8 text-center text-amber-400 text-xs py-10 font-bold">አዲስ ዙር ካርዶች እየተዘጋጁ ነው...</div>`;
+
+            setTimeout(() => {
+                document.getElementById('card-selection-section').classList.remove('hidden');
+                document.getElementById('live-game-section').classList.add('hidden');
+                generate500CardGrid();
+            }, 2000);
+
             renderVerticalBoard();
             renderRecentBalls();
             renderPlayerDualCards();
@@ -757,22 +788,33 @@
             socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
         }
 
+        // 🟢 70% እና 30% ያዝ-ለቀቅ ሪል ታይም ሲስተም ያለው የ 500 ካርዶች ግሪድ
         function generate500CardGrid() {
             const grid = document.getElementById('card-grid-500');
             if (!grid) return;
             grid.innerHTML = '';
+            
             for(let i = 1; i <= 500; i++) {
                 const btn = document.createElement('button');
                 let isSelectedByMe = userSelectedCards.includes(i);
                 let isConfirmedByMe = confirmedCards.includes(i);
-                let isConfirmedByOther = takenCardsByOthers.includes(i);
+                
+                // ሰርቨሩ ካመጣቸው የተያዙ ካርዶች ውጪ, በክላይንት በኩል 70% ቋሚ እና 30% ያዝ-ለቀቅ (Dynamic Hold/Release) ስሜት እንዲኖረው ማድረግ
+                let isTakenByOther = takenCardsByOthers.includes(i);
+                if (!isConfirmedByMe && !isSelectedByMe) {
+                    // የ 30% ሮቴሽን በሰዓቱ እያሻሻለ እንዲለቀቅ እና እንዲያዝ ማድረግ
+                    let dynamicHash = (i + Math.floor(Date.now() / 4000)) % 10;
+                    if (i % 3 === 0 && dynamicHash < 3) {
+                        isTakenByOther = true; // በጊዜ ሂደት የሚለቀቅ እና የሚጠቃለል
+                    }
+                }
 
                 if (isConfirmedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-2 rounded shadow";
                     btn.disabled = true;
                 } else if (isSelectedByMe) {
                     btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-2 rounded border border-amber-300 shadow";
-                } else if (isConfirmedByOther) {
+                } else if (isTakenByOther) {
                     btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-2 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
                 } else {
@@ -782,7 +824,7 @@
 
                 if (!isConfirmedByMe) {
                     btn.onclick = () => {
-                        if (takenCardsByOthers.includes(i) && !userSelectedCards.includes(i)) return;
+                        if (isTakenByOther && !userSelectedCards.includes(i)) return;
                         if(userSelectedCards.includes(i)) {
                             userSelectedCards = userSelectedCards.filter(c => c !== i);
                         } else {
@@ -797,6 +839,13 @@
                 grid.appendChild(btn);
             }
         }
+
+        // በየጥቂት ሰኮንዶች የ 30% ቦቶችን ያዝ-ለቀቅ (Dynamic Hold/Release) በስክሮል ውስጥ በሕያው ሁኔታ ማደስ
+        setInterval(() => {
+            if (document.getElementById('card-selection-section') && !document.getElementById('card-selection-section').classList.contains('hidden')) {
+                generate500CardGrid();
+            }
+        }, 4000);
 
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
