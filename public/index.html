@@ -1,0 +1,18 @@
+const path = require('path');
+// ... (ሌሎች ያሉት ኮዶች እንደነበሩ ይቀጥላሉ)
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// 1. መጀመሪያ ፊት ለፊት የሚከፈተው መግቢያ ገጽ (Front Lobby)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// 2. ተጠቃሚው AZ Bingo ሲጫን የሚከፈተው የቢንጎ ጌም ፋይል
+app.get('/bingo', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'bingo.html'));
+});
+
+// 3. የስታቲክ ፋይሎች ማስተናገጃ (CSS, JS, Images)
+app.use(express.static(path.join(__dirname, 'public')));
