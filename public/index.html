@@ -3,57 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AZ Games Hub - Front Lobby</title>
+    <title>AZ Bingo - Lobby</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; background-color: #0b0f19; color: white; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-    </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
-<body>
-    <div class="w-full max-w-[430px] h-full bg-[#101421] flex flex-col justify-between shadow-2xl relative overflow-hidden p-4">
-        <div class="flex justify-between items-center py-3 border-b border-white/5 z-20 shrink-0">
-            <div class="text-xs font-bold text-gray-300">AZ Games Hub</div>
-            <div class="text-sm font-black text-amber-400 tracking-wider">AZEM</div>
-            <div class="text-gray-400 text-sm">⋮</div>
+<body class="min-h-screen bg-[#0b0317] text-white flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-[430px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] border border-white/10 rounded-2xl p-6 shadow-2xl text-center space-y-6">
+        <div class="w-20 h-20 bg-amber-500/20 border border-amber-400/50 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg">
+            🎰
         </div>
-        <div class="flex-1 flex flex-col justify-center space-y-4 my-auto">
-            <div class="space-y-1">
-                <h2 class="text-sm font-bold text-gray-200">ጨዋታ ይምረጡ</h2>
-                <p class="text-[11px] text-gray-400">መጫወት የሚፈልጉትን ጨዋታ ይምረጡ</p>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div onclick="openBingoGame()" class="bg-[#181f33] rounded-2xl overflow-hidden border border-white/5 flex flex-col justify-between cursor-pointer hover:border-amber-400/50 transition group shadow-lg">
-                    <div class="h-32 bg-gradient-to-br from-purple-900 via-indigo-950 to-black p-3 relative flex items-center justify-center">
-                        <span class="absolute top-2 left-2 text-[8px] font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">AZ ORIGINAL</span>
-                        <div class="text-3xl">🎯</div>
-                        <div class="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-[#c7ff44] text-black flex items-center justify-center text-xs font-bold shadow group-hover:scale-110 transition-transform">▶</div>
-                    </div>
-                    <div class="p-3">
-                        <div class="text-xs font-bold text-white group-hover:text-amber-400 transition">AZ Bingo</div>
-                        <div class="text-[10px] text-gray-400 mt-0.5">ክፍል ይምረጡ። ዙሩን ይቀላቀሉ።</div>
-                    </div>
-                </div>
-                <div onclick="openKenoComingSoon()" class="bg-[#181f33] rounded-2xl overflow-hidden border border-white/5 flex flex-col justify-between cursor-pointer hover:border-blue-400/50 transition group shadow-lg opacity-85">
-                    <div class="h-32 bg-gradient-to-br from-blue-950 via-indigo-900 to-black p-3 relative flex items-center justify-center">
-                        <span class="absolute top-2 left-2 text-[8px] font-bold bg-blue-500 text-white px-1.5 py-0.5 rounded">COMING SOON</span>
-                        <div class="text-3xl">🎲</div>
-                        <div class="absolute bottom-2 right-2 w-7 h-7 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center text-xs font-bold shadow">⏳</div>
-                    </div>
-                    <div class="p-3">
-                        <div class="text-xs font-bold text-white group-hover:text-blue-400 transition">AZ Keno</div>
-                        <div class="text-[10px] text-amber-400 mt-0.5 font-medium">በቅርቡ ይለቀቃል...</div>
-                    </div>
-                </div>
-            </div>
+        <div>
+            <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300">AZ Bingo</h1>
+            <p id="welcome-user-text" class="text-xs text-gray-300 mt-1">ሰላም! ወደ ባለብዙ ተጫዋች የቢንጎ ጨዋታ እንኳን ደህና መጡ።</p>
         </div>
-        <div class="text-center py-2 shrink-0">
-            <span class="text-[10px] text-gray-500 font-mono">AZEM Games System © 2026</span>
-        </div>
+
+        <button onclick="enterGame()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold py-3.5 rounded-xl text-sm shadow-lg hover:opacity-90 transition-all">
+            🎮 ወደ ጨዋታው ግባ
+        </button>
     </div>
+
     <script>
-        function openBingoGame() { window.location.href = '/bingo'; }
-        function openKenoComingSoon() { alert("⏳ AZ Keno ጨዋታ ገና በግንባታ ላይ ነው። በቅርቡ ይለቀቃል!"); }
+        let tgUser = null;
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+                tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+                if (tgUser.first_name) {
+                    document.getElementById('welcome-user-text').innerHTML = `ሰላም <b>${tgUser.first_name}</b>! ወደ ጨዋታው ለመግባት ከታች ይጫኑ።`;
+                }
+            }
+        }
+
+        function enterGame() {
+            // የቴሌግራም መረጃዎችን ይዞ ወደ ቢንጎ ገጽ እንዲያልፍ ማድረግ
+            if (tgUser) {
+                let params = new URLSearchParams({
+                    id: tgUser.id || '',
+                    name: tgUser.first_name || 'ተጫዋች',
+                    username: tgUser.username ? '@' + tgUser.username : 'guest'
+                });
+                window.location.href = `/bingo?${params.toString()}`;
+            } else {
+                window.location.href = '/bingo';
+            }
+        }
     </script>
 </body>
 </html>
