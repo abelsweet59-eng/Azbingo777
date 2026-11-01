@@ -373,14 +373,21 @@
             </div>
         </div>
 
-        <!-- DEPOSIT MODAL (🟢 ትክክለኛው የቴሌብር ሎጎ የተካተተበት - SVG Icon) -->
+        <!-- DEPOSIT MODAL (🟢 ከትክክለኛው የቴሌብር ሎጎ ጋር የተስተካከለ) -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <div class="flex items-center justify-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md border border-cyan-400">
-                        ቴ
+                <div class="flex items-center justify-center gap-2 bg-white/10 p-2 rounded-xl border border-white/10">
+                    <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden shadow">
+                        <svg viewBox="0 0 512 512" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
+                            <path fill="#0084d6" d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z"/>
+                            <path fill="#ffffff" d="M352 176c0-17.7-14.3-32-32-32H192c-17.7 0-32 14.3-32 32s14.3 32 32 32h128c17.7 0 32-14.3 32-32zm0 80c0-17.7-14.3-32-32-32H192c-17.7 0-32 14.3-32 32s14.3 32 32 32h128c17.7 0 32-14.3 32-32zm0 80c0-17.7-14.3-32-32-32H192c-17.7 0-32 14.3-32 32s14.3 32 32 32h128c17.7 0 32-14.3 32-32z"/>
+                            <path fill="#00d2ff" d="M192 144h96c17.7 0 32 14.3 32 32s-14.3 32-32 32h-96c-17.7 0-32-14.3-32-32s14.3-32 32-32z"/>
+                        </svg>
                     </div>
-                    <h3 class="font-bold text-amber-400 text-sm text-center">ቴሌብር ዲፖዚት</h3>
+                    <div class="text-left">
+                        <div class="text-amber-400 font-black text-xs">telebirr</div>
+                        <div class="text-[9px] text-gray-300">ቴሌብር ዲፖዚት</div>
+                    </div>
                 </div>
                 <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer" onclick="copyAdminPhone()">
                     <div class="text-[10px] text-gray-300">ቁጥር (ለመቅዳት ይጫኑ)፡</div>
@@ -399,11 +406,16 @@
         <!-- WITHDRAW MODAL -->
         <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <div class="flex items-center justify-center gap-2">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-xs shadow-md border border-cyan-400">
-                        ቴ
+                <div class="flex items-center justify-center gap-2 bg-white/10 p-2 rounded-xl border border-white/10">
+                    <div class="w-7 h-7 rounded-full bg-white flex items-center justify-center overflow-hidden shadow">
+                        <svg viewBox="0 0 512 512" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg">
+                            <path fill="#0084d6" d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0z"/>
+                        </svg>
                     </div>
-                    <h3 class="font-bold text-amber-400 text-sm text-center">ቴሌብር ዊዝድሮዋል</h3>
+                    <div class="text-left">
+                        <div class="text-amber-400 font-black text-xs">telebirr</div>
+                        <div class="text-[9px] text-gray-300">ቴሌብር ዊዝድሮዋል</div>
+                    </div>
                 </div>
                 <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <input type="number" id="withdraw-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
