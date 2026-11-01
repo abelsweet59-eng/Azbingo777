@@ -50,6 +50,7 @@ const fakeBotNames = [
     "Habesha_Style", "Nuru_Mohammed", "Bereket_Kassa", "Daniel_Tadesse", "Eyob_Lemma"
 ];
 
+// 🟢 እስከ 24 ሰዓት የሚቆዩ እና ብዙ ጥያቄዎችን (እስከ 50 እና ከዚያ በላይ) በአግባቡ የሚይዝ ማከማቻ
 let pendingRequests = {};
 
 function getRealisticBotsCount(realCount) {
@@ -205,6 +206,7 @@ function checkWinningPattern(cardNum, calledNumbers) {
     return false;
 }
 
+// 🟢 የቴሌብር ሪኩዌስት ማስተካከያ (ለ 24 ሰዓት የሚቆይ እና ብዙ ጥያቄዎችን የሚይዝ)
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
     if (!TELEGRAM_BOT_TOKEN) return;
@@ -225,22 +227,35 @@ async function pollTelegramUpdates() {
                     let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
                     let reqData = pendingRequests[requestId];
+
                     if (reqData) {
                         let targetSocket = io.sockets.sockets.get(reqData.socketId);
                         if (action === 'app') {
-                            if (targetSocket) targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                            if (targetSocket) {
+                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount });
+                            }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር)`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             });
                         } else {
-                            if (targetSocket) targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
+                            if (targetSocket) {
+                                targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount });
+                            }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!*`, parse_mode: 'Markdown'
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             });
                         }
-                        delete pendingRequests[requestId];
+                        delete pendingRequests[requestId]; // ከተሰራ በኋላ ከማስታወሻ ይጸዳል
+                    } else {
+                        // ከ 24 ሰዓት በላይ ቆይቶ ወይም ሰርቨሩ ሪስታርት አድርጎ ከጠፋ
+                        try {
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `⚠️ *ይህ ጥያቄ ጊዜው አልፎአል ወይም ቀድሞ ተጠናቋል!*`, parse_mode: 'Markdown'
+                            });
+                        } catch (e) {}
                     }
                     try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
                 }
@@ -323,8 +338,17 @@ io.on('connection', (socket) => {
             socket.emit('requestSubmitted', { success: false, message: '⚠️ እባክዎ የቴሌብር ደረሰኝ በትክክል ያስገቡ!' });
             return;
         }
-        let requestId = 'req_' + Math.floor(Math.random() * 1000000);
-        pendingRequests[requestId] = { userId, type, amount, socketId: socket.id };
+        let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
+        pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
+        
+        // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑ ძველ ጥያቄዎችን በራሱ ማጽዳት
+        let nowTime = Date.now();
+        for (let rId in pendingRequests) {
+            if (nowTime - pendingRequests[rId].timestamp > 86400000) {
+                delete pendingRequests[rId];
+            }
+        }
+
         await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
@@ -514,7 +538,7 @@ setInterval(() => {
                     globalRoom.playerTemporaryCards = {};
                     refreshTakenCardsList();
                     forcedNextWinner = null;
-                    io.executeGameEndedBroadcast = io.emit('gameEndedBroadcast');
+                    io.emit('gameEndedBroadcast');
                     clearInterval(activeGameInterval);
                 }
             }, 5000); 
