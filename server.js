@@ -37,54 +37,7 @@ let globalRoom = {
 };
 
 let forcedNextWinner = null; 
-let activeGameInterval = null;
-let gameRoundCounter = 0;
-let currentRoundTargetCalls = 20;
-
-let nextMultiWinnerRound = Math.floor(Math.random() * 3) + 4; 
-let currentRoundWinnersList = [];
 let onlineRealUsers = [];
-
-const fakeBotNames = [
-    "Henok_Z", "Wase", "Dawit_B", "ሞለፍን ኔትስት ገበየሁ", "Quarezma",
-    "ANIE X YUKKI", "ማኅበል", "Abebaw", "Teg 0920", "Yd",
-    "Mulugeta Fantahun", "Samson_G", "Kalsidan_F", "Sittina", "Merlin",
-    "Naughty By nature", "Abdujalil Ahmed Detolale", "Ashenafi", "D 7", "Nimo",
-    "Gech man", "Frew", "Tedi", "Kifle Møk", "Yohannes Ng",
-    "Zehara", "Goyta Miraw ጣምራው", "Aman yi", "Mitiku57 Kibatu", "Asbada Abubakar",
-    "Biniyam_C", "Tesfaye Asnake", "Mesfin", "Beki", "Lidya_D",
-    "Seydou Kamite", "Osmehin", "Dibora", "Girmay Nigus", "Hanna_T",
-    "Assistant 2", "Wubamlak Belste", "Rediet_S", "Tame 😍", "Alemayehu Tesema",
-    "Henok", "Astu Bast", "Abel_T", "Yordanos_K", "Kefle birhane",
-    "Teddy", "Worku", "Anu 28", "Birukte#🦋", "Yohannes online",
-    "Dani", "አበነህ 💕💕💕", "Naṯaň......", "Pro max", "Big Boss 💪",
-    "Fire Tesfaye", "Simret Getachew", "Abel x", "Ali", "Chala",
-    "Ahmed Basher", "Ephrem_G", "Nscros", "Anwar", "Faħewot Yashtla",
-    "Yohannes", "Habtu Moges", "Ratum yasın", "Selma_L",
-    "Getachew", "L14", "Wenna last King", "Gizachew Kassahun", "Miki_Bingo",
-    "Bakle", "H 5", "Abush 💀💀", "Tigist_Y", "Tereyson Cruzman",
-    "Surafel", "Sintayehu Getachew", "Samii", "Kirra", "Melkamnew",
-    "Feven_A", "Tamirat Girma", "አቤል", "Skut mamaniyø", "Y@imam",
-    "Current thing", "Bilal", "Wizzy", "Gdg",
-    "Bereket P", "Pipo Kassa", "Tolosa", "Demsash", "ድር ድር",
-    "አፒው", "Ahadi Ahemed", "Tamirat", "Kasu", "PPP✌️🔥😋69",
-    "Ad la", "getesh aresenal", "WALEX JOSEF", "Habet", "♠[$]♠",
-    "ˋHEER X MUSICˎ", "Alexs Kebede", "Dagna King", "Haileyesus Geremew", "Chicken Road",
-    "nal", "weyn Ter", "Fenaan Fenaan Barbaadi", "Solomon_K", "Bethel_M",
-    "Natnael_X", "Kidist_L", "Tsion_M",
-    "Brook_H", "Michael_B", "Nahom_V", "Rut_K", "Robel_M",
-    "Ermias_99", "Rahel_N", "Yonas_P", "Semhar_L", "የማርያም",
-    "ተሜ", "ናቲና", "Dj", "wanaw", "Falcon",
-    "Šà¥¢ø Qü€€ñ", "syf", "Time Of", "§mrĕţ", "L F U",
-    "sosi", "Megdi", "Ibra", "Osmhen", "Fiyorina",
-    "Pilatos", "Denver", "Belew", "Jilalu", "bereket dagne",
-    "🦋Meklit🦋", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ", "0919091129",
-    "Lai", "ገብርኤል አባቴ", "Devido ✝", "Mamush Kasim Mucaa Kakuuuu", "Abonesh Kinfu",
-    "Lij yalfex jinka 🫅", "Firde Nigus", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim",
-    "Ebrahim M/d Ebrahim", "Abdu Shekna", "urjii 🥷", "Amoo", "Kejelcha Mamo",
-    "Ashagre", "Ed", "Gedefaw Aseffa", "Dada"
-];
-
 let pendingRequests = {};
 
 function getRealisticBotsCount(realCount) {
@@ -138,74 +91,6 @@ function simulateBotCardSelections() {
 }
 
 setInterval(simulateBotCardSelections, 6000);
-
-function generateCartelaNumbers(cardNum) {
-    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-    let cols = ['B', 'I', 'N', 'G', 'O'];
-    cols.forEach((col, colIdx) => {
-        let range = colRanges[col];
-        let pool = [];
-        for (let n = range[0]; n <= range[1]; n++) pool.push(n);
-        let seed = (cardNum * 7919) + (colIdx * 104729);
-        for (let i = pool.length - 1; i > 0; i--) {
-            seed = (seed * 9301 + 49297) % 233280;
-            let rnd = seed / 233280;
-            let j = Math.floor(rnd * (i + 1));
-            let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
-        }
-        cardNumbersByCol[col] = pool.slice(0, 5);
-    });
-    let flatList = [];
-    for (let r = 0; r < 5; r++) {
-        cols.forEach(col => {
-            if (r === 2 && col === 'N') flatList.push("FREE");
-            else flatList.push(cardNumbersByCol[col][r]);
-        });
-    }
-    return flatList;
-}
-
-function getWinningPatternNumbers(cardNum) {
-    let numbers = generateCartelaNumbers(cardNum);
-    let matrix = [];
-    for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
-    let possiblePatterns = [];
-    for(let r = 0; r < 5; r++) possiblePatterns.push(matrix[r].filter(v => v !== "FREE"));
-    for(let c = 0; c < 5; c++) {
-        let colNums = [];
-        for(let r = 0; r < 5; r++) if(matrix[r][c] !== "FREE") colNums.push(matrix[r][c]);
-        possiblePatterns.push(colNums);
-    }
-    let d1Nums = [];
-    for(let i = 0; i < 5; i++) if(matrix[i][i] !== "FREE") d1Nums.push(matrix[i][i]);
-    possiblePatterns.push(d1Nums);
-    let d2Nums = [];
-    for(let i = 0; i < 5; i++) if(matrix[i][4 - i] !== "FREE") d2Nums.push(matrix[i][4 - i]);
-    possiblePatterns.push(d2Nums);
-    return possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-}
-
-function checkWinningPattern(cardNum, calledNumbers) {
-    let numbers = generateCartelaNumbers(cardNum);
-    let matrix = [];
-    for(let i = 0; i < 5; i++) matrix.push(numbers.slice(i * 5, i * 5 + 5));
-    for(let r = 0; r < 5; r++) if(matrix[r].every(val => val === "FREE" || calledNumbers.includes(val))) return true;
-    for(let c = 0; c < 5; c++) {
-        let cMatch = true;
-        for(let r = 0; r < 5; r++) if(matrix[r][c] !== "FREE" && !calledNumbers.includes(matrix[r][c])) { cMatch = false; break; }
-        if(cMatch) return true;
-    }
-    let d1 = true;
-    for(let i = 0; i < 5; i++) if(matrix[i][i] !== "FREE" && !calledNumbers.includes(matrix[i][i])) { d1 = false; break; }
-    if(d1) return true;
-    let d2 = true;
-    for(let i = 0; i < 5; i++) if(matrix[i][4 - i] !== "FREE" && !calledNumbers.includes(matrix[i][4 - i])) { d2 = false; break; }
-    if(d2) return true;
-    let corners = [matrix[0][0], matrix[0][4], matrix[4][0], matrix[4][4]];
-    if(corners.every(val => calledNumbers.includes(val))) return true;
-    return false;
-}
 
 let telegramOffset = 0;
 async function pollTelegramUpdates() {
