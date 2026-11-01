@@ -146,6 +146,18 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
+// 🟢 አሸናፊ ሲኖር ወደ አድሚን ቴሌግራም ቻት ፖስት የሚያደርግ ፊንክሽን
+async function sendWinnerNotificationToAdmin(winnerName, cardNum, prize, isRealUser) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let userTypeTitle = isRealUser ? '👤 ሪል ዩዘር አሸናፊ (Real Winner)' : '🤖 ቦት አሸናፊ (Bot Winner)';
+    let message = `🏆 *AZ BINGO - ${userTypeTitle}*\n\n🎉 አሸናፊ: *${winnerName}*\n🔢 ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው ሽልማት: *${prize} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
+        });
+    } catch (error) {}
+}
+
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
     globalRoom.gameStartTime = Date.now() + 60000;
@@ -179,6 +191,7 @@ function startMainGameLoop() {
                     let winningUsername = getRandomBotNames(1)[0]; 
                     let winningUserId = null;
                     let winnersCount = 1;
+                    let isRealUserWin = false;
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
@@ -189,6 +202,7 @@ function startMainGameLoop() {
                         if (randEntry[1].cards && randEntry[1].cards.length > 0) {
                             winningCardNum = randEntry[1].cards[0];
                         }
+                        isRealUserWin = true;
                     } else if (forcedNextWinner === 'multi_real_3' || (!forcedNextWinner && isAutoMultiBotRound)) {
                         let threeBots = getRandomBotNames(3);
                         winningUsername = threeBots.join(', '); 
@@ -204,6 +218,9 @@ function startMainGameLoop() {
 
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePool = Math.floor(totalPot * 0.70);
+
+                    // 🟢 አሸናፊው ሲወጣ ለአድሚን ማሳወቂያ መላክ
+                    sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
 
                     io.emit('bingoWinner', {
                         username: winningUsername,
@@ -345,4 +362,38 @@ io.on('connection', (socket) => {
         let selectedCards = data.cards || data;
         let userId = String(data.userId || socket.id);
         delete globalRoom.playerTemporaryCards[socket.id];
-        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId, username: data.username || "ተጫዋች"
+        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId, username: data.username || "ተጫዋች" };
+        socket.emit('cardSelectionSuccess');
+        refreshTakenCardsList();
+    });
+
+    socket.on('adminSetNextWinner', (data) => {
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+    });
+
+    socket.on('financialRequest', async (data) => {
+        if (!data) return;
+        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
+        let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
+        pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+    });
+
+    socket.on('disconnect', () => {
+        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        delete globalRoom.playerRoundCards[socket.id];
+        delete globalRoom.playerTemporaryCards[socket.id];
+        refreshTakenCardsList();
+        let realCount = connectedRealPlayers.length;
+        globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
