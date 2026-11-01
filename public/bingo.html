@@ -66,7 +66,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <!-- 🛡️ አድሚን ቁልፍ (አቤል ሲገባ ብቻ በዲናሚክ ይታያል) -->
+                <!-- 🛡️ አድሚን ቁልፍ (አቤል ሲገባ ቢንጎ ፔጅ ላይ ብቻ ይታያል) -->
                 <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
             </div>
         </header>
@@ -382,14 +382,13 @@
     <script>
         const socket = io();
 
-        // 🛡️ የአቤል ቋሚ እና የማይለወጥ አድሚን ID እና ትክክለኛ ስም
+        // 🛡️ አቤል (አንተ) ብቻ የምታውቀው አድሚን ቴሌግራም ID
         const ADMIN_TELEGRAM_ID = "371093083";
 
         let telegramUserId = ADMIN_TELEGRAM_ID;
         let userFullName = "አቤል ስዩም"; 
         let userUsername = "Avaddis1";
 
-        // የቴሌግራም ዌብ አፕ ሲከፈት የእውነተኛ ዩዘር መረጃውን እንወስዳለን (የአንተን ID እና ትክክለኛ ስም ይይዛል)
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             if (window.Telegram.WebApp.initDataUnsafe.user.id) {
                 telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -402,7 +401,7 @@
             }
         }
 
-        // 🟢 አድሚን መሆን አለመሆኑን ማረጋገጫ (አንተ ከሆንክ በእርግጠኝነት true ይሆናል)
+        // 🟢 አድሚን ማረጋገጫ (አንተ ከሆንክ true ይሆናል)
         let isAdmin = (telegramUserId === ADMIN_TELEGRAM_ID);
 
         let walletBalance = 30.00;
@@ -453,7 +452,6 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            // የቴሌግራም አፕ ሙሉ በሙሉ እስኪጫን 0.5 ሰከንድ ቆይተን እናረጋግጣለን
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -462,7 +460,7 @@
                     }
                 }
 
-                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በሄደር ውስጥ ይታያል፤ ለሌሎች ፈጽሞ ተደብቋል!
+                // 🟢 አድሚን ከሆንክ (አቤል) ብቻ የአድሚን ቁልፍ በቢንጎ ሄደር ውስጥ ይታያል
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn) {
                     if (isAdmin) {
@@ -1117,7 +1115,7 @@
             });
         }
 
-        // 🛡️ አድሚን ፓነልን ለመክፈት ሲሞክሩ የሚደረግ ጥብቅ ማረጋገጫ
+        // 🛡️ አድሚን ፓነልን ለመክፈት ሲሞክሩ የሚደረግ ማረጋገጫ
         function openAdminPanel() {
             if (!isAdmin) { 
                 alert("⚠️ ይቅርታ! ወደ አድሚን ፓነል ለመግባት ፈቃድ የለዎትም!"); 
