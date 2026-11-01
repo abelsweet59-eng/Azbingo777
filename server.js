@@ -25,11 +25,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-let roundDuration = 30000; // 30 ሰከንድ ቆጣሪ
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
-    gameStartTime: Date.now() + roundDuration,
+    gameStartTime: Date.now() + 30000,
     playersCount: 140,
     takenCards: [],
     playerRoundCards: {},
@@ -62,6 +61,14 @@ function getRealisticBotsCount(realCount) {
     if (finalCount < 70) finalCount = 75;
     if (finalCount > 350) finalCount = 345;
     return finalCount;
+}
+
+// 🟢 እንደ ተጫዋቾች ብዛት የቆይታ ሰዓቱን (Countdown Duration) በዲናሚክ መወሰን
+function calculateDynamicRoundDuration() {
+    let pCount = globalRoom.playersCount || 140;
+    if (pCount > 200) return 20000; // 20 ሰከንድ ለብዙ ተጫዋቾች
+    if (pCount > 100) return 30000; // 30 ሰከንድ
+    return 40000; // 40 ሰከንድ ለትንሽ ተጫዋቾች
 }
 
 function refreshTakenCardsList() {
@@ -99,21 +106,23 @@ setInterval(simulateBotCardSelections, 6000);
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
 
+    globalRoom.gameStartTime = Date.now() + calculateDynamicRoundDuration();
+
     gameInterval = setInterval(() => {
         let timeLeft = globalRoom.gameStartTime - Date.now();
 
         if (timeLeft <= 0 && !globalRoom.gameActive) {
-            // ⏰ ሰዓቱ አለቀ: ጨዋታውን ይጀምራል!
+            // ⏰ ሰዓቱ አለቀ: ጨዋታውን በራሱ ይጀምራል!
             globalRoom.gameActive = true;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             io.emit('gameStarted', { calledNumbers: [] });
+            io.emit('gameStartedBroadcast');
 
-            // ኳሶችን በየ 2.5 ሰከንዱ መጥራት ይጀምራል
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            // የቁጥር ጥሪ ሎጅክ
+            // የቁጥር ጥሪ ሎጅክ (በየ 2.5 ሰከንዱ አንዲት ቁጥር እየጠራ)
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
                     clearInterval(numberCallInterval);
@@ -121,7 +130,6 @@ function startMainGameLoop() {
                 }
 
                 if (availableNumbers.length === 0) {
-                    // ኳሶች አልቀቁ: ዙሩን እንደገና ያስጀምራል
                     endRoundAndRestart();
                     return;
                 }
@@ -135,8 +143,53 @@ function startMainGameLoop() {
                     number: calledNum,
                     calledNumbers: globalRoom.calledNumbers
                 });
+                io.emit('numberCalledBroadcast', calledNum);
 
-            }, 2500); // በየ 2.5 ሰከንዱ አንዲት ቁጥር ይጠራል
+                // 🟢 አሸናፊ የመምረጥ እና የማረጋገጥ ሎጅክ (Winner Check)
+                let totalCardsInRound = Object.keys(globalRoom.playerRoundCards).length;
+                let shouldTriggerWin = (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 35);
+
+                if (shouldTriggerWin || forcedNextWinner) {
+                    let winningCardNum = 22;
+                    let winningUsername = "ተጫዋች";
+                    let winningUserId = null;
+                    let winnersCount = 1;
+
+                    let entries = Object.entries(globalRoom.playerRoundCards);
+                    if (forcedNextWinner === 'bot') {
+                        winningUsername = "አቶ ቦት";
+                        winningCardNum = Math.floor(Math.random() * 500) + 1;
+                    } else if (entries.length > 0) {
+                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                        winningUserId = randEntry[0];
+                        winningUsername = randEntry[1].username;
+                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                            winningCardNum = randEntry[1].cards[0];
+                        }
+                    }
+
+                    // 70% ለአሸናፊው የሚሄድ የገንዘብ ድርሻ (Total Pot = playersCount * 10 ብር)
+                    let totalPot = (globalRoom.playersCount || 140) * 10;
+                    let prizePool = Math.floor(totalPot * 0.70);
+
+                    io.emit('bingoWinner', {
+                        username: winningUsername,
+                        userId: winningUserId,
+                        cardNum: winningCardNum,
+                        prize: prizePool,
+                        calledNumbers: globalRoom.calledNumbers,
+                        winnersCount: winnersCount
+                    });
+
+                    forcedNextWinner = null;
+                    clearInterval(numberCallInterval);
+                    
+                    setTimeout(() => {
+                        endRoundAndRestart();
+                    }, 5000);
+                }
+
+            }, 2500); 
         }
     }, 1000);
 }
@@ -146,10 +199,13 @@ function endRoundAndRestart() {
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
-    globalRoom.playerRoundCards = {}; // የዙር ካርዶችን ማጽዳት
-    globalRoom.gameStartTime = Date.now() + roundDuration;
+    globalRoom.playerRoundCards = {}; 
     
-    io.emit('roundEnded', { nextGameIn: roundDuration });
+    let dynamicDuration = calculateDynamicRoundDuration();
+    globalRoom.gameStartTime = Date.now() + dynamicDuration;
+    
+    io.emit('roundEnded', { nextGameIn: dynamicDuration });
+    io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
 }
 
