@@ -8,6 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+app.express = express;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -83,6 +84,36 @@ let gameInterval = null;
 let numberCallInterval = null;
 
 let roundsPlayedCount = 0;
+
+function getCartelaNumbers(cardNum) {
+    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+    let cols = ['B', 'I', 'N', 'G', 'O'];
+
+    cols.forEach((col, colIdx) => {
+        let range = colRanges[col];
+        let pool = [];
+        for (let n = range[0]; n <= range[1]; n++) pool.push(n);
+
+        let seed = (cardNum * 7919) + (colIdx * 104729);
+        for (let i = pool.length - 1; i > 0; i--) {
+            seed = (seed * 9301 + 49297) % 233280;
+            let rnd = seed / 233280;
+            let j = Math.floor(rnd * (i + 1));
+            let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+        }
+        cardNumbersByCol[col] = pool.slice(0, 5);
+    });
+
+    let flatList = [];
+    for (let r = 0; r < 5; r++) {
+        cols.forEach(col => {
+            if (r === 2 && col === 'N') flatList.push("FREE");
+            else flatList.push(cardNumbersByCol[col][r]);
+        });
+    }
+    return flatList;
+}
 
 function getRealisticBotsCount(realCount) {
     const now = new Date();
@@ -175,7 +206,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // ቁጥሮቹ በሥርዓት እየተጠሩ ከ 22 ቁጥሮች በኋላ ወይም አድሚኑ ሲያዝ አሸናፊ ይወጣል።
                 let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 24) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
@@ -214,6 +244,15 @@ function startMainGameLoop() {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
+                    // የድል ካርቴላ ቁጥሮች እና የተመቱባቸውን ኢንዴክሶች ማሰላት
+                    let winningCardNumbers = getCartelaNumbers(winningCardNum);
+                    let matchedIndices = [];
+                    winningCardNumbers.forEach((cn, idx) => {
+                        if (cn === "FREE" || globalRoom.calledNumbers.includes(cn)) {
+                            matchedIndices.push(idx);
+                        }
+                    });
+
                     sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
 
                     if (isRealUserWin && winningUserId) {
@@ -229,6 +268,7 @@ function startMainGameLoop() {
                         cardNum: winningCardNum,
                         prize: prizePool,
                         calledNumbers: globalRoom.calledNumbers,
+                        matchedIndices: matchedIndices,
                         winnersCount: winnersCount,
                         playersCount: globalRoom.playersCount
                     });
