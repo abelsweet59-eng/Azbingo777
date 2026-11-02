@@ -115,6 +115,68 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
+// 🏆 አሸናፊው ካርድ የትኛውን ፓተርን (አግድም፣ ቁመት፣ ሰያፍ ወይም ዳር ዳር) እንደዘጋ በሂሳብ አሰልቶ ኢንዴክሶቹን የሚለይ ፋንክሽን
+function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
+    let matchedIndices = [];
+    let grid2D = [];
+    
+    for(let r=0; r<5; r++) {
+        let row = [];
+        for(let c=0; c<5; c++) {
+            let idx = r * 5 + c;
+            let val = winningCardNumbers[idx];
+            let isHit = (val === "FREE" || calledNumbers.includes(val));
+            row.push({ idx, isHit });
+        }
+        grid2D.push(row);
+    }
+
+    // 1. አግድም (Horizontal Rows)
+    for(let r=0; r<5; r++) {
+        if(grid2D[r].every(cell => cell.isHit)) {
+            grid2D[r].forEach(cell => matchedIndices.push(cell.idx));
+        }
+    }
+
+    // 2. ቁመት (Vertical Columns)
+    for(let c=0; c<5; c++) {
+        let colHits = true;
+        for(let r=0; r<5; r++) {
+            if(!grid2D[r][c].isHit) colHits = false;
+        }
+        if(colHits) {
+            for(let r=0; r<5; r++) matchedIndices.push(grid2D[r][c].idx);
+        }
+    }
+
+    // 3. ሰያፍ (Diagonals)
+    let diag1Hits = true, diag2Hits = true;
+    for(let i=0; i<5; i++) {
+        if(!grid2D[i][i].isHit) diag1Hits = false;
+        if(!grid2D[i][4-i].isHit) diag2Hits = false;
+    }
+    if(diag1Hits) {
+        for(let i=0; i<5; i++) matchedIndices.push(grid2D[i][i].idx);
+    }
+    if(diag2Hits) {
+        for(let i=0; i<5; i++) matchedIndices.push(grid2D[i][4-i].idx);
+    }
+
+    // 4. ዳር ዳር (Four Corners)
+    if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+        matchedIndices.push(0, 4, 20, 24);
+    }
+
+    // በጨዋታው ውስጥ የተጠሩትን ሌሎች ቁጥሮችም ጭምር ማካተት
+    winningCardNumbers.forEach((cn, idx) => {
+        if (cn === "FREE" || calledNumbers.includes(cn)) {
+            if (!matchedIndices.includes(idx)) matchedIndices.push(idx);
+        }
+    });
+
+    return Array.from(new Set(matchedIndices));
+}
+
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -244,14 +306,9 @@ function startMainGameLoop() {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
-                    // የድል ካርቴላ ቁጥሮች እና የተመቱባቸውን ኢንዴክሶች ማሰላት
+                    // የድል ካርቴላ ቁጥሮች እና የተመቱባቸውን እና ያሸነፈበትን ፓተርን ኢንዴክሶች ማሰላት
                     let winningCardNumbers = getCartelaNumbers(winningCardNum);
-                    let matchedIndices = [];
-                    winningCardNumbers.forEach((cn, idx) => {
-                        if (cn === "FREE" || globalRoom.calledNumbers.includes(cn)) {
-                            matchedIndices.push(idx);
-                        }
-                    });
+                    let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
                     sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
 
