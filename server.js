@@ -83,7 +83,6 @@ let gameInterval = null;
 let numberCallInterval = null;
 
 let roundsPlayedCount = 0;
-let nextMultiBotTargetRound = 3; 
 let userBonusStatus = {};
 
 function getDynamicWinThreshold(roundCount) {
@@ -192,7 +191,6 @@ function startMainGameLoop() {
                         return;
                     }
 
-                    // አድሚኑ ካላዘዘ በስተቀር ሪል ዩዘር በዘፈቀደ ከቶውንም እንዳያሸንፍ የተደረገ ጥብቅ ቁጥጥር
                     let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= currentWinThreshold) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
                     
                     if (shouldTriggerWin) {
@@ -221,7 +219,6 @@ function startMainGameLoop() {
                             isRealUserWin = true;
                             forcedNextWinner = null;
                         } else {
-                            // አድሚኑ ትዕዛዝ ካልሰጠ ሁልጊዜ ቦቶች ብቻ እንዲያሸንፉ ይደረጋል
                             winningUsername = getRandomBotNames(1)[0];
                             winnersCount = 1;
                             winningCardNum = Math.floor(Math.random() * 500) + 1;
@@ -233,6 +230,14 @@ function startMainGameLoop() {
                         let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
                         sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
+
+                        // ሪል ዩዘር ካሸነፈ የሽልማት ብሩን ወደ ዋሌቱ እንዲጨመር ትዕዛዝ መላክ
+                        if (isRealUserWin && winningUserId) {
+                            let targetSocket = io.sockets.sockets.get(winningUserId);
+                            if (targetSocket) {
+                                targetSocket.emit('rewardPrize', { prize: prizePool });
+                            }
+                        }
 
                         io.emit('bingoWinner', {
                             username: winningUsername,
