@@ -461,7 +461,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🎯 ተጫዋቹ ተጨማሪ ካርድ ሲያረጋግጥ ትክክለኛውን የካርድ ብዛት ልዩነት ብቻ (በ 10 ብር ተባዝቶ) የሚቆርጥበት ጥብቅ ሎጂክ
+    // 🎯 ትክክለኛው የካርድ ማረጋገጫ እና የክፍያ ስሌት ሎጂክ በሰርቨር በኩል
     socket.on('confirmCards', (data) => {
         let newCards = data.cards || data;
         let userId = String(data.userId || socket.id);
