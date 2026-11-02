@@ -117,6 +117,7 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
+// 🎯 **እዚህ ጋር ነው የተስተካከለው:** ከተጠሩት ትክክለኛ ቁጥሮች ጋር የተሟሉትን (Matched) ብቻ በመለየት ትክክለኛውን የቢንጎ ንድፍ (Winning Pattern) ብቻ አረንጓዴ እንዲያደርግ የሚያስችለው ትክክለኛ አሰራር።
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let matchedIndices = [];
     let grid2D = [];
@@ -133,15 +134,17 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    let hasValidBingoPattern = false;
+    let winningPatternFound = false;
 
+    // 1. አግድም (Horizontal Rows)
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
-            hasValidBingoPattern = true;
+            winningPatternFound = true;
             grid2D[r].forEach(cell => matchedIndices.push(cell.idx));
         }
     }
 
+    // 2. ቁመት (Vertical Columns)
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -150,11 +153,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
             if(!grid2D[r][c].isHit) colHits = false;
         }
         if(colHits) {
-            hasValidBingoPattern = true;
+            winningPatternFound = true;
             colCells.forEach(cell => matchedIndices.push(cell.idx));
         }
     }
 
+    // 3. ሰያፍ (Diagonals)
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -164,21 +168,27 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         if(!grid2D[i][4-i].isHit) diag2Hits = false;
     }
     if(diag1Hits) {
-        hasValidBingoPattern = true;
+        winningPatternFound = true;
         diag1Cells.forEach(cell => matchedIndices.push(cell.idx));
     }
     if(diag2Hits) {
-        hasValidBingoPattern = true;
+        winningPatternFound = true;
         diag2Cells.forEach(cell => matchedIndices.push(cell.idx));
     }
 
+    // 4. አራቱ ማዕዘኖች (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
-        hasValidBingoPattern = true;
+        winningPatternFound = true;
         matchedIndices.push(0, 4, 20, 24);
     }
 
-    if (!hasValidBingoPattern) {
-        for(let c=0; c<5; c++) matchedIndices.push(grid2D[0][c].idx);
+    // 🎯 ማሳሰቢያ: የተጠሩት ቁጥሮች አሸናፊ ቅርጽ ካላሟሉ (ይህ በልዩ ሁኔታ የሚከሰት ከሆነ) ከተጠሩት ውስጥ ከካርቴላው ጋር የሚዛመዱትን ብቻ እንወስዳለን እንጂ ሁሉንም አንቀላቅልም
+    if (!winningPatternFound) {
+        grid2D.forEach(row => {
+            row.forEach(cell => {
+                if (cell.isHit) matchedIndices.push(cell.idx);
+            });
+        });
     }
 
     return Array.from(new Set(matchedIndices));
@@ -278,7 +288,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 አስተካክለናል፡ ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት (targetWinCallCount) ልክ ሲደርስ ብቻ ነው!
+                // 🎯 ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት ልክ ሲደርስ ብቻ ነው
                 let shouldTriggerWin = (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount);
                 
                 if (shouldTriggerWin) {
@@ -290,9 +300,9 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    // 🎯 የአድሚን ትዕዛዝ (forcedNextWinner) ከተሰጠ እሱን እንጠቀማለን፣ ካልተሰጠ በተለመደው ሮቴሽን እንቀጥላለን
+                    // 🎯 የአድሚን ትዕዛዝ (forcedNextWinner)
                     let currentWinnerType = forcedNextWinner;
-                    forcedNextWinner = null; // አንዴ ጥቅም ላይ ከዋለ በኋላ ሪሴት ይደረጋል
+                    forcedNextWinner = null; 
 
                     if (currentWinnerType === 'random_real') {
                         if (entries.length > 0) {
@@ -325,7 +335,6 @@ function startMainGameLoop() {
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         isRealUserWin = false;
                     } else {
-                        // አድሚኑ ካላዘዘ በነባሪ (Default) ተጫዋቾች ካሉ ሪል ዩዘር አሸናፊ እንዲሆን ወይም ቦት እንዲወጣ ይደረጋል
                         if (entries.length > 0 && Math.random() > 0.4) {
                             let randEntry = entries[Math.floor(Math.random() * entries.length)];
                             winningUserId = randEntry[0];
@@ -386,7 +395,7 @@ function startMainGameLoop() {
                 });
                 io.emit('numberCalledBroadcast', calledNum);
 
-            }, 4000); // በየ 4 ሰከንዱ አንድ ቁጥር ይጠራል
+            }, 4000); 
         }
     }, 1000);
 }
