@@ -78,8 +78,7 @@ let globalRoom = {
     playerTemporaryCards: {},
     lastCalledNumber: null,
     targetWinCallCount: 25,
-    forcedWinningCardNums: [],
-    forcedWinningPatternNumbers: []
+    forcedWinningCardNums: []
 };
 
 let forcedNextWinner = null; 
@@ -233,7 +232,7 @@ setInterval(simulateBotCardSelections, 6000);
 
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
-    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
     try {
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
@@ -336,7 +335,6 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **እዚህ ጋር ነው ዋናው ማስተካከያ የተደረገው:** ለሁሉም የታቀዱ አሸናፊዎች (ለሶስቱም ወይም ለሁለቱም) የየራሳቸውን የድል መስመር ቁጥሮች አንድ ላይ አሰባስበን በጨዋታው ሂደት ውስጥ እኩል ተጠራርተው በአንድ ሰዓት እንዲያልቁ እናደርጋለን!
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
@@ -351,7 +349,6 @@ function startMainGameLoop() {
                 let pNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
                 combinedWinningNumbers.push(...pNums);
             });
-            // ድግግሞሾችን እናስወግዳለን
             combinedWinningNumbers = Array.from(new Set(combinedWinningNumbers));
 
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
@@ -402,7 +399,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **ትክክለኛ ማቆሚያ (Trigger Win):** ሁሉም የታቀዱ አሸናፊዎች ቁጥሮች ተጠርተው ሲያልቁ በአንድ ላይ ጨዋታው ይጠናቀቃል!
+                // 🎯 **ፍጹም የተመሳሰለ (Synchronized) ማቆሚያ:** የታቀዱት አሸናፊዎች ቁጥሮች በሙሉ ተጠርተው ሲያልቁ ጨዋታው በአንድ ላይ ይጠናቀቃል
                 let shouldTriggerWin = (callStep >= totalCalls && combinedWinningNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
@@ -455,7 +452,6 @@ function endRoundAndRestart() {
     globalRoom.playerRoundCards = {}; 
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
-    globalRoom.forcedWinningPatternNumbers = [];
     
     io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
