@@ -80,7 +80,7 @@
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">980</div>
+                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">1260</div>
             </div>
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
@@ -411,7 +411,7 @@
 
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
-        let gameStartTimeServer = Date.now() + 60000; // 60 ሰከንድ ቆጣሪ
+        let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
 
@@ -484,7 +484,8 @@
                 if (room.playersCount) {
                     document.getElementById('stat-players').innerText = room.playersCount;
                     let totalPot = room.playersCount * 10;
-                    document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.70);
+                    // የደራሽ መጠን 10% ኮሚሽን ተቀንሶ (90%) እንዲታይ ተስተካክሏል
+                    document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
                 if (room.gameActive) {
                     calledNumbersList = room.calledNumbers || [];
@@ -572,6 +573,12 @@
                 setTimeout(() => {
                     winnerModal.classList.add('hidden');
                 }, 6000);
+            });
+
+            socket.on('updatePlayersCount', (count) => {
+                document.getElementById('stat-players').innerText = count;
+                let totalPot = count * 10;
+                document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
             });
 
             socket.on('financialApproved', (data) => {
