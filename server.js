@@ -118,13 +118,14 @@ function getCartelaNumbers(cardNum) {
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let matchedIndices = [];
     let grid2D = [];
+    let cleanCalled = (calledNumbers || []).map(n => Number(n));
     
     for(let r=0; r<5; r++) {
         let row = [];
         for(let c=0; c<5; c++) {
             let idx = r * 5 + c;
             let val = winningCardNumbers[idx];
-            let isHit = (val === "FREE" || calledNumbers.includes(val));
+            let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
             row.push({ idx, isHit });
         }
         grid2D.push(row);
@@ -163,7 +164,7 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     }
 
     winningCardNumbers.forEach((cn, idx) => {
-        if (cn === "FREE" || calledNumbers.includes(cn)) {
+        if (cn === "FREE" || cleanCalled.includes(Number(cn))) {
             if (!matchedIndices.includes(idx)) matchedIndices.push(idx);
         }
     });
