@@ -118,7 +118,6 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🎯 ትክክለኛ የቢንጎ ማረጋገጫ (Matched Indices)
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let grid2D = [];
     let cleanCalled = (calledNumbers || []).map(n => Number(n));
@@ -134,14 +133,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    // 1. አግድም (Horizontal Rows)
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
             return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    // 2. ቁመት (Vertical Columns)
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -154,7 +151,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
-    // 3. ሰያፍ (Diagonals)
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -166,7 +162,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     if(diag1Hits) return diag1Cells.map(cell => cell.idx);
     if(diag2Hits) return diag2Cells.map(cell => cell.idx);
 
-    // 4. አራቱ ማዕዘኖች (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         return [0, 4, 20, 24];
     }
@@ -236,9 +231,9 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-async function sendWinnerNotificationToAdmin(winnerName, cardNum, prize, isRealUser) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
-    let message = `🏆 *AZ BINGO - 👤 ሪል ዩዘር አሸናፊ!*\n\n🎉 አሸናፊ: *${winnerName}*\n🔢 ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው ሽልማት: *${prize} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
     try {
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
@@ -258,57 +253,80 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            let entries = Object.entries(globalRoom.playerRoundCards);
+            let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
             let winningCardNum = Math.floor(Math.random() * 500) + 1;
-            let winningUsername = ""; 
-            let winningUserId = null;
+            let winningUsernamesArr = [];
+            let winningSocketData = []; 
             let winnersCount = 1;
             let isRealUserWin = false;
 
-            if (currentWinnerType === 'random_real') {
-                if (entries.length > 0) {
-                    let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                    winningUserId = randEntry[0];
-                    winningUsername = randEntry[1].username;
-                    if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                        winningCardNum = randEntry[1].cards[0];
+            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
+                let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
+                winnersCount = requiredCount;
+
+                if (activeRealEntries.length > 0) {
+                    isRealUserWin = true;
+                    let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                    let chosenReal = shuffledReal.slice(0, requiredCount);
+                    
+                    chosenReal.forEach(item => {
+                        winningUsernamesArr.push(item[1].username);
+                        winningSocketData.push({ socketId: item[0], isBot: false });
+                    });
+                    if (chosenReal.length > 0 && chosenReal[0][1].cards && chosenReal[0][1].cards.length > 0) {
+                        winningCardNum = chosenReal[0][1].cards[0];
+                    }
+
+                    if (winningUsernamesArr.length < requiredCount) {
+                        let neededBots = requiredCount - winningUsernamesArr.length;
+                        let botNames = getRandomBotNames(neededBots);
+                        botNames.forEach(bName => {
+                            winningUsernamesArr.push(bName);
+                            winningSocketData.push({ socketId: null, isBot: true });
+                        });
                     }
                 } else {
-                    winningUsername = "ተጫዋች";
+                    isRealUserWin = false;
+                    let botNames = getRandomBotNames(requiredCount);
+                    botNames.forEach(bName => {
+                        winningUsernamesArr.push(bName);
+                        winningSocketData.push({ socketId: null, isBot: true });
+                    });
+                    winningCardNum = Math.floor(Math.random() * 450) + 1;
                 }
-                winnersCount = 1;
-                isRealUserWin = true;
-            } else if (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
-                let threeBots = getRandomBotNames(3);
-                winningUsername = threeBots.join(', '); 
-                winnersCount = 3;
-                winningCardNum = Math.floor(Math.random() * 450) + 1;
-                isRealUserWin = true;
             } else if (currentWinnerType === 'dual_bot') {
                 let twoBots = getRandomBotNames(2);
-                winningUsername = twoBots.join(', ');
                 winnersCount = 2;
+                twoBots.forEach(bName => {
+                    winningUsernamesArr.push(bName);
+                    winningSocketData.push({ socketId: null, isBot: true });
+                });
                 winningCardNum = Math.floor(Math.random() * 450) + 1;
                 isRealUserWin = false;
             } else if (currentWinnerType === 'bot') {
-                winningUsername = getRandomBotNames(1)[0];
+                let botName = getRandomBotNames(1)[0];
                 winnersCount = 1;
+                winningUsernamesArr.push(botName);
+                winningSocketData.push({ socketId: null, isBot: true });
                 winningCardNum = Math.floor(Math.random() * 500) + 1;
                 isRealUserWin = false;
             } else {
-                if (entries.length > 0 && Math.random() > 0.4) {
-                    let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                    winningUserId = randEntry[0];
-                    winningUsername = randEntry[1].username;
+                if (activeRealEntries.length > 0 && Math.random() > 0.3) {
+                    let randEntry = activeRealEntries[Math.floor(Math.random() * activeRealEntries.length)];
+                    winningSocketData.push({ socketId: randEntry[0], isBot: false });
+                    winningUsernamesArr.push(randEntry[1].username);
                     if (randEntry[1].cards && randEntry[1].cards.length > 0) {
                         winningCardNum = randEntry[1].cards[0];
                     }
                     isRealUserWin = true;
+                    winnersCount = 1;
                 } else {
-                    winningUsername = getRandomBotNames(1)[0];
+                    let botName = getRandomBotNames(1)[0];
+                    winningUsernamesArr.push(botName);
+                    winningSocketData.push({ socketId: null, isBot: true });
                     winnersCount = 1;
                     winningCardNum = Math.floor(Math.random() * 500) + 1;
                     isRealUserWin = false;
@@ -317,7 +335,6 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNum = winningCardNum;
             
-            // 🎯 የዚህን ካርቴላ ትክክለኛ የድል ንድፍ (Pattern) እንመርጣለን
             let cardNumsList = getCartelaNumbers(winningCardNum);
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
@@ -331,7 +348,6 @@ function startMainGameLoop() {
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
             globalRoom.targetWinCallCount = Math.max(winningPatternNumbers.length + 5, ALLOWED_WIN_CALL_COUNTS[randomIndex]);
 
-            // 🎯 **እዚህ ጋር ቁጥሮቹ በሂደት እንዲሰራጭ ይደረጋል:** የድል ቁጥሮቹን በጨዋታው ሂደት ውስጥ በጊዜ ሰሌዳው መሰረት እንበትናቸዋለን
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
             io.emit('gameStarted', { calledNumbers: [] });
@@ -340,7 +356,6 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             
             let callStep = 0;
-            // የድል ቁጥሮቹን በየትኛው የጥሪ ቅደም ተከተል (Steps) መጥራት እንዳለብን እናסላለን
             let totalCalls = globalRoom.targetWinCallCount;
             let stepIntervals = [];
             winningPatternNumbers.forEach((_, idx) => {
@@ -357,7 +372,6 @@ function startMainGameLoop() {
                 callStep++;
                 let calledNum;
 
-                // 🎯 በሂደት ላይ ሳለ የድል ቁጥሮቹ ከደረሱ በቅደም ተከተል እንጠራቸዋለን
                 let winNumIndex = stepIntervals.indexOf(callStep);
                 if (winNumIndex > -1 && winningPatternNumbers.length > 0) {
                     calledNum = Number(winningPatternNumbers.shift());
@@ -379,30 +393,34 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 ጨዋታው የሚያበቃው የጥሪ ብዛት ሲሞላ እና ሁሉም የድል ቁጥሮች ሲጠሩ ብቻ ነው
                 let shouldTriggerWin = (callStep >= totalCalls && winningPatternNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
-                    let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
+                    // 🎯 **ትክክለኛው የክፍፍል ስሌት:** አጠቃላይ ሽልማቱ በአጠቃላይ አሸናፊዎች ብዛት (winnersCount) ተካፍሎ ለእያንዳንዱ ይሰጣል
+                    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
                     let winningCardNumbers = getCartelaNumbers(winningCardNum);
                     let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
-                    sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
+                    let winnerNamesStr = winningUsernamesArr.join(', ');
+                    sendWinnerNotificationToAdmin(winnerNamesStr, winningCardNum, prizePerWinner, isRealUserWin);
 
-                    if (isRealUserWin && winningUserId) {
-                        let targetSocket = io.sockets.sockets.get(winningUserId);
-                        if (targetSocket) {
-                            targetSocket.emit('rewardPrize', { prize: prizePool });
+                    // 🎯 **ለሪል ዩዘሮች ብቻ** የተከፈለውን የድርሻ ብር በየራሳቸው አካውንት ገቢ እናደርጋለን
+                    winningSocketData.forEach(item => {
+                        if (!item.isBot && item.socketId) {
+                            let targetSocket = io.sockets.sockets.get(item.socketId);
+                            if (targetSocket) {
+                                targetSocket.emit('rewardPrize', { prize: prizePerWinner });
+                            }
                         }
-                    }
+                    });
 
                     io.emit('bingoWinner', {
-                        username: winningUsername,
-                        userId: winningUserId,
+                        username: winnerNamesStr,
+                        userId: winningSocketData.find(i => !i.isBot)?.socketId || null,
                         cardNum: winningCardNum,
-                        prize: prizePool,
+                        prize: prizePerWinner,
                         calledNumbers: globalRoom.calledNumbers,
                         matchedIndices: matchedIndices,
                         winnersCount: winnersCount,
