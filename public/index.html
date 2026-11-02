@@ -366,7 +366,7 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v5_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v6_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
@@ -543,7 +543,7 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🏆 ፖፕ-አፕ (Winning Modal) ላይ የተመቱት ቁጥሮች እና ያዘጋጀበት ፓርቲሽን (ዳር ዳር/መስመር) በአረንጓዴ ከለር እንዲታይ የሚያደርግ ትክክለኛ ሎጂክ
+            // 🏆 ፖፕ-አፕ (Winning Modal) - እስከዚያው ሰዓት ድረስ በጨዋታው የተጠሩትን ሙሉ ቁጥሮች እና ያዘጋጀበትን ፓርቲሽን በአረንጓዴ የሚያሳይ ትክክለኛ ሎጂክ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -555,19 +555,19 @@
                 
                 cartelaGrid.innerHTML = '';
                 let winningCardNumbers = getCartelaNumbers(data.cardNum);
+                
+                // ሰርቨሩ የላከውን የተጠሩ ቁጥሮች ሙሉ ሊስት (Array) በቀጥታ በመውሰድ ማወዳደር
                 let finalCalledList = data.calledNumbers || calledNumbersList || [];
-                let matchedIndices = data.matchedIndices || [];
 
-                winningCardNumbers.forEach((cn, idx) => {
+                winningCardNumbers.forEach((cn) => {
                     const cell = document.createElement('div');
                     cell.className = "h-5 text-[9px] font-bold flex items-center justify-center rounded text-white";
                     
-                    let isMatched = matchedIndices.includes(idx) || (cn === "FREE") || finalCalledList.includes(cn);
-
                     if (cn === "FREE") {
                         cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded shadow";
                         cell.innerText = "★";
-                    } else if (isMatched) {
+                    } else if (finalCalledList.includes(cn)) {
+                        // ጨዋታው እስከተጠናቀቀበት ሰዓት ድረስ የተጠሩት ቁጥሮች በሙሉ በአረንጓዴ ከለር እንዲሞሉ ይደረጋል
                         cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
@@ -749,7 +749,6 @@
             });
         }
 
-        // ካርቴላ ቁጥሮችን የሚያመነጨው ትክክለኛ ፋንክሽን
         function getCartelaNumbers(cardNum) {
             let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
             let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
