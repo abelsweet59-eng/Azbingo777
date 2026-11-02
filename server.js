@@ -90,6 +90,19 @@ function getRandomNextTargetRound() {
     return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
 }
 
+// በየ 3 ጨዋታው የሚለዋወጥ የቁጥር ጥሪ ገደብ (ቅደም ተከተል እና Rare 32-35)
+function getDynamicWinThreshold(roundCount) {
+    let patterns = [15, 16, 13, 18, 23, 20, 18, 15, 27, 18, 19, 16, 15, 22, 18, 30, 15, 20, 18, 19, 13, 27, 19];
+    let baseIndex = (Math.floor(roundCount / 3)) % patterns.length;
+    let limit = patterns[baseIndex];
+
+    // አልፎ አልፎ (Rare) ከ 32 እስከ 35 ቁጥሮች እንዲደርስ ዕድል መስጠት
+    if (Math.random() < 0.12) {
+        limit = Math.floor(Math.random() * (35 - 32 + 1)) + 32;
+    }
+    return limit;
+}
+
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -174,8 +187,9 @@ function startMainGameLoop() {
 
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            let currentWinThreshold = getDynamicWinThreshold(roundsPlayedCount);
             
-            // ከ 60 ሰከንድ ቆጣሪ በኋላ ወደ ጨዋታ ሲገባ ለ 5 ሰከንድ ቆይቶ ቁጥር መጥራት ይጀምራል
+            // ጨዋታው ሲጀምር ለ 5 ሰከንድ ቆይቶ በየ 4 ሰከንዱ ቁጥር መጥራት ይጀምራል
             setTimeout(() => {
                 if (!globalRoom.gameActive) return;
 
@@ -185,7 +199,7 @@ function startMainGameLoop() {
                         return;
                     }
 
-                    let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
+                    let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= currentWinThreshold) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
                     let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
                     if (shouldTriggerWin) {
@@ -267,8 +281,8 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', calledNum);
 
-                }, 4000); 
-            }, 5000); 
+                }, 4000); // በየ 4 ሰከንድ ቁጥር ይጠራል
+            }, 5000); // ጨዋታው ሲገባ የ 5 ሰከንድ መዘግየት
         }
     }, 1000);
 }
