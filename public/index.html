@@ -303,7 +303,6 @@
                 </div>
 
                 <div id="rules-page-2" class="space-y-3 hidden">
-                    <!-- 3. ገንዘብ ገቢ የማድረጊያ መመሪያ -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
                         <ol class="list-decimal list-inside text-gray-300 space-y-1.5 text-[11px]">
@@ -312,7 +311,6 @@
                         </ol>
                     </div>
 
-                    <!-- 4. ገንዘብ የማወጫ መመሪያ -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">4. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
                         <ol class="list-decimal list-inside text-gray-300 space-y-1.5 text-[11px]">
@@ -464,12 +462,16 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
+        const userBonusResetKey = `az_bingo_bonus_reset_v3_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
-        
-        if (!localStorage.getItem(userLocalStorageKey)) {
-            localStorage.setItem(userLocalStorageKey, walletBalance.toString());
+
+        // የድሮውን ዋሌት ሙሉ በሙሉ ሪሴት አድርጎ 30 ብር ቦነስ ብቻ እንዲኖር ማድረግ እና ሎግ አውት ቢደረግም ድጋሚ እንዳይሰጥ መቆጣጠር
+        if (!localStorage.getItem(userBonusResetKey)) {
+            localStorage.setItem(userBonusResetKey, "true");
+            walletBalance = 30.00;
+            localStorage.setItem(userLocalStorageKey, "30.00");
         } else {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 30.00;
         }
@@ -546,6 +548,11 @@
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
+            });
+
+            socket.on('resetToBonusOnly', (data) => {
+                walletBalance = data.balance;
+                updateWalletUI();
             });
 
             socket.on('adminRealUsersListUpdate', (usersList) => {
