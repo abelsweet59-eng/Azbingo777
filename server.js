@@ -15,10 +15,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/bingo', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'bingo.html'));
-});
-
 app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
@@ -102,16 +98,20 @@ function getRealisticBotsCount(realCount) {
     let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
     let maxDurationMinutes = 8 * 60;
     let calculated = 95;
-    if (ethiopianHour >= 16 || ethiopianHour < 1) {
-        let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
-        calculated = Math.floor(90 + (progress * 230) + (Math.sin(Date.now() / 3000) * 12));
+
+    if (ethiopianHour >= 6 && ethiopianHour < 12) {
+        calculated = 45 + Math.floor(Math.random() * 15);
+    } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
+        calculated = 70 + Math.floor(Math.random() * 20);
     } else {
-        calculated = 85 + Math.floor(Math.sin(Date.now() / 5000) * 10);
+        let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
+        calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
     }
+
     let smallDelta = Math.floor(Math.random() * 7) - 3; 
     let finalCount = calculated + smallDelta;
-    if (finalCount < 70) finalCount = 75;
-    if (finalCount > 350) finalCount = 345;
+    if (finalCount < 40) finalCount = 40;
+    if (finalCount > 250) finalCount = 250;
     return finalCount;
 }
 
@@ -175,88 +175,99 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            numberCallInterval = setInterval(() => {
-                if (!globalRoom.gameActive) {
-                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                    return;
-                }
+            // ጨዋታው ከገባ በኋላ ለ 5 ሰከንድ (5000 ሚሊሰከንድ) ቆይቶ በየ 4 ሰከንድ ቁጥሮችን መጥራት ይጀምራል
+            setTimeout(() => {
+                if (!globalRoom.gameActive) return;
 
-                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
-                let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
+                numberCallInterval = setInterval(() => {
+                    if (!globalRoom.gameActive) {
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        return;
+                    }
 
-                if (shouldTriggerWin) {
-                    let winningCardNum = Math.floor(Math.random() * 500) + 1;
-                    let winningUsername = ""; 
-                    let winningUserId = null;
-                    let winnersCount = 1;
-                    let isRealUserWin = false;
+                    let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 15 && Math.random() < 0.25) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
+                    let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
 
-                    let entries = Object.entries(globalRoom.playerRoundCards);
-                    
-                    if (forcedNextWinner === 'random_real' && entries.length > 0) {
-                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                        winningUserId = randEntry[0];
-                        winningUsername = randEntry[1].username;
-                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                            winningCardNum = randEntry[1].cards[0];
-                        }
-                        isRealUserWin = true;
-                        forcedNextWinner = null;
-                    } else if (forcedNextWinner === 'multi_real_3') {
-                        let threeBots = getRandomBotNames(3);
-                        winningUsername = threeBots.join(', '); 
-                        winnersCount = 3;
-                        winningCardNum = Math.floor(Math.random() * 450) + 1;
-                        isRealUserWin = true;
-                        forcedNextWinner = null;
-                    } else {
-                        if (isAutoMultiBotRound) {
+                    if (shouldTriggerWin) {
+                        let winningCardNum = Math.floor(Math.random() * 500) + 1;
+                        let winningUsername = ""; 
+                        let winningUserId = null;
+                        let winnersCount = 1;
+                        let isRealUserWin = false;
+
+                        let entries = Object.entries(globalRoom.playerRoundCards);
+                        
+                        if (forcedNextWinner === 'random_real' && entries.length > 0) {
+                            let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                            winningUserId = randEntry[0];
+                            winningUsername = randEntry[1].username;
+                            if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                                winningCardNum = randEntry[1].cards[0];
+                            }
+                            isRealUserWin = true;
+                            forcedNextWinner = null;
+                        } else if (forcedNextWinner === 'multi_real_3' || forcedNextWinner === 'random_3_real') {
                             let threeBots = getRandomBotNames(3);
                             winningUsername = threeBots.join(', '); 
                             winnersCount = 3;
-                            roundsPlayedCount = 0;
-                            nextMultiBotTargetRound = getRandomNextTargetRound();
+                            winningCardNum = Math.floor(Math.random() * 450) + 1;
+                            isRealUserWin = true;
+                            forcedNextWinner = null;
+                        } else if (forcedNextWinner === 'dual_bot' || forcedNextWinner === 'bot') {
+                            winningUsername = getRandomBotNames(2).join(', ');
+                            winnersCount = 2;
+                            winningCardNum = Math.floor(Math.random() * 500) + 1;
+                            isRealUserWin = false;
+                            forcedNextWinner = null;
                         } else {
-                            winningUsername = getRandomBotNames(1)[0];
-                            winnersCount = 1;
+                            if (isAutoMultiBotRound) {
+                                let threeBots = getRandomBotNames(3);
+                                winningUsername = threeBots.join(', '); 
+                                winnersCount = 3;
+                                roundsPlayedCount = 0;
+                                nextMultiBotTargetRound = getRandomNextTargetRound();
+                            } else {
+                                winningUsername = getRandomBotNames(1)[0];
+                                winnersCount = 1;
+                            }
+                            winningCardNum = Math.floor(Math.random() * 500) + 1;
+                            isRealUserWin = false;
                         }
-                        winningCardNum = Math.floor(Math.random() * 500) + 1;
-                        isRealUserWin = false;
+
+                        let totalPot = (globalRoom.playersCount || 140) * 10;
+                        let prizePool = Math.floor((totalPot * 0.70) / winnersCount);
+
+                        sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
+
+                        io.emit('bingoWinner', {
+                            username: winningUsername,
+                            userId: winningUserId,
+                            cardNum: winningCardNum,
+                            prize: prizePool,
+                            calledNumbers: globalRoom.calledNumbers,
+                            winnersCount: winnersCount,
+                            playersCount: globalRoom.playersCount
+                        });
+
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        
+                        setTimeout(() => { endRoundAndRestart(); }, 6000);
+                        return;
                     }
 
-                    let totalPot = (globalRoom.playersCount || 140) * 10;
-                    let prizePool = Math.floor(totalPot * 0.70);
+                    let randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                    let calledNum = availableNumbers.splice(randomIndex, 1)[0];
+                    globalRoom.calledNumbers.push(calledNum);
+                    globalRoom.lastCalledNumber = calledNum;
 
-                    sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
-
-                    io.emit('bingoWinner', {
-                        username: winningUsername,
-                        userId: winningUserId,
-                        cardNum: winningCardNum,
-                        prize: prizePool,
-                        calledNumbers: globalRoom.calledNumbers,
-                        winnersCount: winnersCount,
-                        playersCount: globalRoom.playersCount
+                    io.emit('numberCalled', {
+                        number: calledNum,
+                        calledNumbers: globalRoom.calledNumbers
                     });
+                    io.emit('numberCalledBroadcast', calledNum);
 
-                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                    
-                    setTimeout(() => { endRoundAndRestart(); }, 6000);
-                    return;
-                }
-
-                let randomIndex = Math.floor(Math.random() * availableNumbers.length);
-                let calledNum = availableNumbers.splice(randomIndex, 1)[0];
-                globalRoom.calledNumbers.push(calledNum);
-                globalRoom.lastCalledNumber = calledNum;
-
-                io.emit('numberCalled', {
-                    number: calledNum,
-                    calledNumbers: globalRoom.calledNumbers
-                });
-                io.emit('numberCalledBroadcast', calledNum);
-
-            }, 4000); 
+                }, 4000); 
+            }, 5000); // የ 5 ሰከንድ መዘግየት (Delay)
         }
     }, 1000);
 }
@@ -353,8 +364,12 @@ io.on('connection', (socket) => {
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userData.userId);
-            onlineRealUsers.push({ socketId: socket.id, userId: userData.userId, username: userData.username || 'No Username' });
+            onlineRealUsers.push({ socketId: socket.id, userId: userData.userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
         }
+    });
+
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
     socket.on('tempSelectCards', (cards) => {
