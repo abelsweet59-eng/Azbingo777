@@ -66,8 +66,6 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-const ALLOWED_WIN_CALL_COUNTS = [22, 24, 26, 28, 30, 32, 35];
-
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
@@ -335,7 +333,9 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **ፍጹም የተመሳሰለ (Simultaneous Multi-Card) ሎጂክ:** የሁሉም የታቀዱ አሸናፊዎች ካርዶች የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው እኩል እየተጠሩ እንዲያልቁ ይደረጋል
+            // 🎯 **ፍጹም የተመሳሰለ (Strict Simultaneous Sync) ሎጂክ:** 
+            // የሁሉም አሸናፊዎች ካርዶች ትክክለኛ የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው፣ በጨዋታው ሂደት ውስጥ በቅደም ተከተል ተመጣጥነው ይያዛሉ።
+            // በምንም መልኩ አንዱ ቀድሞ አያልቅም፤ ሁሉም አሸናፊዎች የመጨረሻውን ቁጥር በአንድ ሰዓት ተቀብለው በአንድ ላይ ዊን ያደርጋሉ።
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
@@ -350,10 +350,12 @@ function startMainGameLoop() {
                 let pNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
                 combinedWinningNumbers.push(...pNums);
             });
-            combinedWinningNumbers = Array.from(new Set(combinedWinningNumbers));
+            // ከእያንዳንዱ ካርድ የሚፈለጉትን ልዩ ቁጥሮች እናወጣለን
+            let uniqueWinningNumbers = Array.from(new Set(combinedWinningNumbers));
 
-            let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
-            globalRoom.targetWinCallCount = Math.max(combinedWinningNumbers.length + 5, ALLOWED_WIN_CALL_COUNTS[randomIndex]);
+            // ጨዋታው ሊያልቅ የሚገባበትን የጥሪ ብዛት እንወስናለን (ቢያንስ የድል ቁጥሮቹ ብዛት + የዘፈቀደ ርቀት)
+            let targetCalls = Math.max(uniqueWinningNumbers.length + 8, 28);
+            globalRoom.targetWinCallCount = targetCalls;
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
@@ -363,12 +365,13 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             
             let callStep = 0;
-            let totalCalls = globalRoom.targetWinCallCount;
-            let stepIntervals = [];
-            combinedWinningNumbers.forEach((_, idx) => {
-                let targetStep = Math.floor(((idx + 1) / combinedWinningNumbers.length) * (totalCalls - 2)) + 1;
-                stepIntervals.push(targetStep);
-            });
+            // የድል ቁጥሮቹን በጨዋታው ሂደት ውስጥ (ከ 1 እስከ targetCalls ባለው ጊዜ ውስጥ) በእኩል ክፍተት እንበትናቸዋለን
+            let winNumQueue = [...uniqueWinningNumbers];
+            let intervalSlots = [];
+            let slotStep = Math.floor(targetCalls / (winNumQueue.length + 1));
+            for (let i = 1; i <= winNumQueue.length; i++) {
+                intervalSlots.push(i * slotStep);
+            }
 
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
@@ -379,9 +382,10 @@ function startMainGameLoop() {
                 callStep++;
                 let calledNum;
 
-                let winNumIndex = stepIntervals.indexOf(callStep);
-                if (winNumIndex > -1 && combinedWinningNumbers.length > 0) {
-                    calledNum = Number(combinedWinningNumbers.shift());
+                // ከቀጠሮው ጋር የሚዛመድ የድል ቁጥር ካለ እንጠራለን፣ ካልሆነ በዘፈቀደ እንጠራለን
+                let slotIndex = intervalSlots.indexOf(callStep);
+                if (slotIndex > -1 && winNumQueue.length > 0) {
+                    calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
@@ -400,8 +404,9 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **ትክክለኛ እና ጥብቅ ማቆሚያ (Simultaneous End):** የታቀዱት ቁጥሮች በሙሉ ተጠርተው ሲያልቁ ብቻ ጨዋታው በአንድ ጊዜ ይጠናቀቃል
-                let shouldTriggerWin = (callStep >= totalCalls && combinedWinningNumbers.length === 0);
+                // 🎯 **ፍጹም የተመሳሰለ (Simultaneous End) ማቆሚያ:** 
+                // የጥሪው ብዛት ሲሞላ እና ሁሉም የታቀዱ የድል ቁጥሮች ተጠርተው ሲያልቁ ብቻ ጨዋታው በአንድ ጊዜ ይጠናቀቃል!
+                let shouldTriggerWin = (callStep >= targetCalls && winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
