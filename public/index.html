@@ -366,15 +366,17 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v7_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v8_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
+        const userAlreadyPaidCountKey = `az_bingo_paid_count_${telegramUserId}`;
 
         if (!localStorage.getItem(oneTimeMigrationKey)) {
             localStorage.setItem(oneTimeMigrationKey, "true");
             walletBalance = 30.00;
             localStorage.setItem(userLocalStorageKey, "30.00");
+            localStorage.setItem(userAlreadyPaidCountKey, "0");
         } else {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 30.00;
         }
@@ -385,6 +387,7 @@
 
         let userSelectedCards = [];
         let confirmedCards = []; 
+        let alreadyPaidCardsCount = parseInt(localStorage.getItem(userAlreadyPaidCountKey)) || 0;
 
         if (localStorage.getItem(userSavedCardsKey)) {
             try {
@@ -459,7 +462,6 @@
                 addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
             });
 
-            // 🎯 ተጨማሪ የካርድ ክፍያ ሲኖር ከተጠቃሚው ሂሳብ ትክክለኛውን ልዩነት ብቻ የሚቀንስበት
             socket.on('deductExtraCardCost', (data) => {
                 walletBalance -= data.cost;
                 updateWalletUI();
@@ -539,6 +541,7 @@
             socket.on('cardSelectionSuccess', () => {
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
+                localStorage.setItem(userAlreadyPaidCountKey, String(alreadyPaidCardsCount));
                 
                 const confirmBtn = document.getElementById('confirm-card-btn');
                 confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
@@ -789,9 +792,11 @@
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
             confirmedCards = [];
+            alreadyPaidCardsCount = 0;
             calledNumbersList = [];
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
+            localStorage.setItem(userAlreadyPaidCountKey, "0");
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
 
             const confirmBtn = document.getElementById('confirm-card-btn');
@@ -821,7 +826,9 @@
         }
 
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.add('hidden'); } // Wait, let's keep openWithdrawModal working properly
+        // correction for withdraw modal opener:
+        window.openWithdrawModal = function() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
@@ -854,7 +861,6 @@
 
                 if (isConfirmedByMe) {
                     btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-2 rounded shadow";
-                    btn.disabled = true;
                 } else if (isSelectedByMe) {
                     btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-2 rounded border border-amber-300 shadow";
                 } else if (isTakenByOther) {
@@ -865,32 +871,29 @@
                 }
                 btn.innerText = String(i);
 
-                if (!isConfirmedByMe) {
-                    btn.onclick = () => {
-                        if (isTakenByOther && !userSelectedCards.includes(i)) return;
-                        if(userSelectedCards.includes(i)) {
-                            userSelectedCards = userSelectedCards.filter(c => c !== i);
-                        } else {
-                            if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
-                            userSelectedCards.push(i);
-                        }
-                        document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
-                        socket.emit('tempSelectCards', userSelectedCards);
-                        generate500CardGrid();
-                    };
-                }
+                btn.onclick = () => {
+                    if (isTakenByOther && !userSelectedCards.includes(i)) return;
+                    if(userSelectedCards.includes(i)) {
+                        userSelectedCards = userSelectedCards.filter(c => c !== i);
+                    } else {
+                        if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
+                        userSelectedCards.push(i);
+                    }
+                    document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
+                    socket.emit('tempSelectCards', userSelectedCards);
+                    generate500CardGrid();
+                };
                 grid.appendChild(btn);
             }
         }
 
-        // 🎯 1 ካርድ ገዝቶ እንደገና ሃሳቡን ቀይሮ 2 ካርድ ሲያረጋግጥ አጠቃላይ ድምር ሳይሆን የልዩነቱን (የተጨማሪውን 10 ብር) ብቻ የሚቆርጥበት ሎጂክ
+        // 🎯 ትክክለኛው የካርድ ክፍያ ሎጂክ፡ መጀመሪያ የተከፈለውን (alreadyPaidCardsCount) በመቀነስ ትክክለኛውን የልዩነት ክፍያ ብቻ የሚወስን
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             
-            let previouslyConfirmedCount = confirmedCards.length;
-            let newlySelectedCount = userSelectedCards.length;
-            let extraCardsCount = newlySelectedCount - previouslyConfirmedCount;
-            let costToPay = extraCardsCount > 0 ? (extraCardsCount * 10) : 0;
+            let targetCount = userSelectedCards.length;
+            let cardsDifference = targetCount - alreadyPaidCardsCount;
+            let costToPay = cardsDifference > 0 ? (cardsDifference * 10) : 0;
 
             if (costToPay > 0 && walletBalance < costToPay) { 
                 alert("በቂ ሂሳብ የለዎትም!"); 
@@ -900,9 +903,10 @@
             if (costToPay > 0) {
                 walletBalance -= costToPay;
                 updateWalletUI();
-                addTransactionHistory('ተጨማሪ ካርድ ግዢ', costToPay, 'expense');
+                addTransactionHistory('ካርድ ግዢ', costToPay, 'expense');
             }
 
+            alreadyPaidCardsCount = targetCount;
             confirmedCards = [...userSelectedCards];
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
