@@ -193,7 +193,7 @@
             <div id="tab-wallet" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll">
                 <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
                     <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
-                    <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">30.00 <span class="text-sm text-white">ብር</span></div>
+                    <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">0.00 <span class="text-sm text-white">ብር</span></div>
                     <div class="text-[11px] text-amber-200/80">⚠️ ዝቅተኛው የዲፖዚት እና ዊዝድሮዋል ገደብ 100 ብር ነው።</div>
                     <div class="flex gap-2.5 pt-2">
                         <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2.5 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
@@ -363,22 +363,21 @@
 
         if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
 
-        let walletBalance = 30.00;
+        let walletBalance = 0.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v9_${telegramUserId}`;
-        const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
-        const userHistoryKey = `az_bingo_history_${telegramUserId}`;
+        const userLocalStorageKey = `az_bingo_wallet_v11_${telegramUserId}`;
+        const userHistoryKey = `az_bingo_history_v11_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
         const userCurrentRoundPaidKey = `az_bingo_round_paid_${telegramUserId}`;
 
-        if (!localStorage.getItem(oneTimeMigrationKey)) {
-            localStorage.setItem(oneTimeMigrationKey, "true");
-            walletBalance = 30.00;
-            localStorage.setItem(userLocalStorageKey, "30.00");
-            localStorage.setItem(userCurrentRoundPaidKey, "0");
+        // 🎯 የሂሳብ ማስተካከያ፡ አፑን ሲዘጋ እና ሲከፈት በነበሪው 30 ብር ምትክ ትክክለኛውን የተጠቃሚውን ባላንስ መያዝ
+        if (localStorage.getItem(userLocalStorageKey) !== null) {
+            walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
         } else {
-            walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 30.00;
+            walletBalance = 0.00;
+            localStorage.setItem(userLocalStorageKey, "0.00");
+            localStorage.setItem(userCurrentRoundPaidKey, "0");
         }
 
         if (localStorage.getItem(userHistoryKey)) {
@@ -879,17 +878,16 @@
             }
         }
 
-        // 🎯 ትክክለኛው የካርድ ማረጋገጫ እና የክፍያ ስሌት ሎጂክ (በአጠቃላይ ለተመረጡት ካርዶች ከዚህ በፊት ከተከፈለው ውጭ ያለውን ትክክለኛ ልዩነት ብቻ የሚቆርጥ)
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             
-            let desiredTotalCardsCount = userSelectedCards.length; // ለምሳሌ 2 ካርድ
-            let desiredTotalCost = desiredTotalCardsCount * 10;    // 20 ብር
+            let desiredTotalCardsCount = userSelectedCards.length; 
+            let desiredTotalCost = desiredTotalCardsCount * 10;    
             
             let amountToDeduct = desiredTotalCost - totalPaidForCurrentRound;
 
             if (amountToDeduct > 0 && walletBalance < amountToDeduct) { 
-                alert("በቂ ሂሳብ የለዎትም!"); 
+                alert("በቂ ሂሳብ የለዎትም! እባክዎ አካውንትዎ ላይ ገንዘብ ያስገቡ።"); 
                 return; 
             }
             
@@ -897,6 +895,12 @@
                 walletBalance -= amountToDeduct;
                 updateWalletUI();
                 addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense');
+                totalPaidForCurrentRound = desiredTotalCost;
+            } else if (amountToDeduct < 0) {
+                let refundAmount = Math.abs(amountToDeduct);
+                walletBalance += refundAmount;
+                updateWalletUI();
+                addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income');
                 totalPaidForCurrentRound = desiredTotalCost;
             }
 
