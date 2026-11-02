@@ -366,7 +366,7 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v6_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v7_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
@@ -459,6 +459,13 @@
                 addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
             });
 
+            // 🎯 ተጨማሪ የካርድ ክፍያ ሲኖር ከተጠቃሚው ሂሳብ ትክክለኛውን ልዩነት ብቻ የሚቀንስበት
+            socket.on('deductExtraCardCost', (data) => {
+                walletBalance -= data.cost;
+                updateWalletUI();
+                addTransactionHistory('ተጨማሪ ካርድ ግዢ', data.cost, 'expense');
+            });
+
             socket.on('adminRealUsersListUpdate', (usersList) => {
                 const listEl = document.getElementById('admin-real-users-list');
                 if (!listEl) return;
@@ -543,7 +550,6 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🏆 ፖፕ-አፕ (Winning Modal) - የተጠሩት ሙሉ ቁጥሮች እና ያሸነፈበት ትክክለኛው የድል መስመር በአረንጓዴ እንዲበሩ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -569,11 +575,9 @@
                         cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded shadow";
                         cell.innerText = "★";
                     } else if (isWinningPatternCell || isCalled) {
-                        // የተጠሩት ሙሉ ቁጥሮች እና ያሸነፈበት ፓተርን በሙሉ በአረንጓዴ ከለር እንዲበሩ
                         cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
-                        // ያልተጠሩ ቁጥሮች
                         cell.className = "h-5 bg-purple-950/60 text-gray-400 text-[9px] font-medium flex items-center justify-center rounded";
                         cell.innerText = cn;
                     }
@@ -879,16 +883,27 @@
             }
         }
 
+        // 🎯 1 ካርድ ገዝቶ እንደገና ሃሳቡን ቀይሮ 2 ካርድ ሲያረጋግጥ አጠቃላይ ድምር ሳይሆን የልዩነቱን (የተጨማሪውን 10 ብር) ብቻ የሚቆርጥበት ሎጂክ
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
-            let totalCost = userSelectedCards.length * 10;
-            if (walletBalance < totalCost) { alert("በቂ ሂሳብ የለዎትም!"); return; }
             
-            walletBalance -= totalCost;
-            updateWalletUI();
+            let previouslyConfirmedCount = confirmedCards.length;
+            let newlySelectedCount = userSelectedCards.length;
+            let extraCardsCount = newlySelectedCount - previouslyConfirmedCount;
+            let costToPay = extraCardsCount > 0 ? (extraCardsCount * 10) : 0;
+
+            if (costToPay > 0 && walletBalance < costToPay) { 
+                alert("በቂ ሂሳብ የለዎትም!"); 
+                return; 
+            }
+            
+            if (costToPay > 0) {
+                walletBalance -= costToPay;
+                updateWalletUI();
+                addTransactionHistory('ተጨማሪ ካርድ ግዢ', costToPay, 'expense');
+            }
 
             confirmedCards = [...userSelectedCards];
-            addTransactionHistory('ካርድ ግዢ', totalCost, 'expense');
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
 
