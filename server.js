@@ -84,19 +84,13 @@ let numberCallInterval = null;
 
 let roundsPlayedCount = 0;
 let nextMultiBotTargetRound = 3; 
+let userBonusStatus = {};
 
-function getRandomNextTargetRound() {
-    const possibleTargets = [3, 4, 6, 7, 10];
-    return possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
-}
-
-// በየ 3 ጨዋታው የሚለዋወጥ የቁጥር ጥሪ ገደብ (ቅደም ተከተል እና Rare 32-35)
 function getDynamicWinThreshold(roundCount) {
     let patterns = [15, 16, 13, 18, 23, 20, 18, 15, 27, 18, 19, 16, 15, 22, 18, 30, 15, 20, 18, 19, 13, 27, 19];
     let baseIndex = (Math.floor(roundCount / 3)) % patterns.length;
     let limit = patterns[baseIndex];
 
-    // አልፎ አልፎ (Rare) ከ 32 እስከ 35 ቁጥሮች እንዲደርስ ዕድል መስጠት
     if (Math.random() < 0.12) {
         limit = Math.floor(Math.random() * (35 - 32 + 1)) + 32;
     }
@@ -189,7 +183,6 @@ function startMainGameLoop() {
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             let currentWinThreshold = getDynamicWinThreshold(roundsPlayedCount);
             
-            // ጨዋታው ሲጀምር ለ 5 ሰከንድ ቆይቶ በየ 4 ሰከንዱ ቁጥር መጥራት ይጀምራል
             setTimeout(() => {
                 if (!globalRoom.gameActive) return;
 
@@ -199,9 +192,9 @@ function startMainGameLoop() {
                         return;
                     }
 
+                    // አድሚኑ ካላዘዘ በስተቀር ሪል ዩዘር በዘፈቀደ ከቶውንም እንዳያሸንፍ የተደረገ ጥብቅ ቁጥጥር
                     let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= currentWinThreshold) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
-                    let isAutoMultiBotRound = (roundsPlayedCount >= nextMultiBotTargetRound);
-
+                    
                     if (shouldTriggerWin) {
                         let winningCardNum = Math.floor(Math.random() * 500) + 1;
                         let winningUsername = ""; 
@@ -227,29 +220,16 @@ function startMainGameLoop() {
                             winningCardNum = Math.floor(Math.random() * 450) + 1;
                             isRealUserWin = true;
                             forcedNextWinner = null;
-                        } else if (forcedNextWinner === 'dual_bot' || forcedNextWinner === 'bot') {
-                            winningUsername = getRandomBotNames(2).join(', ');
-                            winnersCount = 2;
+                        } else {
+                            // አድሚኑ ትዕዛዝ ካልሰጠ ሁልጊዜ ቦቶች ብቻ እንዲያሸንፉ ይደረጋል (ሪል ዩዘር ፈጽሞ በዘፈቀደ አያሸንፍም)
+                            winningUsername = getRandomBotNames(1)[0];
+                            winnersCount = 1;
                             winningCardNum = Math.floor(Math.random() * 500) + 1;
                             isRealUserWin = false;
                             forcedNextWinner = null;
-                        } else {
-                            if (isAutoMultiBotRound) {
-                                let threeBots = getRandomBotNames(3);
-                                winningUsername = threeBots.join(', '); 
-                                winnersCount = 3;
-                                roundsPlayedCount = 0;
-                                nextMultiBotTargetRound = getRandomNextTargetRound();
-                            } else {
-                                winningUsername = getRandomBotNames(1)[0];
-                                winnersCount = 1;
-                            }
-                            winningCardNum = Math.floor(Math.random() * 500) + 1;
-                            isRealUserWin = false;
                         }
 
                         let totalPot = (globalRoom.playersCount || 140) * 10;
-                        // የቤቱ ኮሚሽን 10% ሲቀነስ, ለሽልማት የሚቀረው 90% ይሆናል
                         let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
                         sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
@@ -281,8 +261,8 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', calledNum);
 
-                }, 4000); // በየ 4 ሰከንድ ቁጥር ይጠራል
-            }, 5000); // ጨዋታው ሲገባ የ 5 ሰከንድ መዘግየት
+                }, 4000);
+            }, 5000);
         }
     }, 1000);
 }
@@ -378,8 +358,14 @@ io.on('connection', (socket) => {
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
-            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userData.userId);
-            onlineRealUsers.push({ socketId: socket.id, userId: userData.userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+            let userId = String(userData.userId);
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+
+            if (!userBonusStatus[userId]) {
+                userBonusStatus[userId] = true;
+                socket.emit('resetToBonusOnly', { balance: 30.00 });
+            }
         }
     });
 
