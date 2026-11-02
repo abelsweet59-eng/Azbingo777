@@ -115,6 +115,7 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
+// 🎯 ጥብቅ የቢንጎ የድል ማረጋገጫ (አግድም፣ ቁመት፣ ሰያፍ ወይም 4 ማዕዘን ሙሉ በሙሉ ሲሞላ ብቻ ትክክለኛ ቢንጎ ይላል)
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let matchedIndices = [];
     let grid2D = [];
@@ -126,48 +127,64 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
             let idx = r * 5 + c;
             let val = winningCardNumbers[idx];
             let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
-            row.push({ idx, isHit });
+            row.push({ idx, isHit, val });
         }
         grid2D.push(row);
     }
 
+    let hasValidBingoPattern = false;
+
+    // 1. አግድም መስመር (Rows) - 5ቱንም መምታት አለበት
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
+            hasValidBingoPattern = true;
             grid2D[r].forEach(cell => matchedIndices.push(cell.idx));
         }
     }
 
+    // 2. ቁመት መስመር (Columns) - 5ቱንም መምታት አለበት
     for(let c=0; c<5; c++) {
         let colHits = true;
+        let colCells = [];
         for(let r=0; r<5; r++) {
+            colCells.push(grid2D[r][c]);
             if(!grid2D[r][c].isHit) colHits = false;
         }
         if(colHits) {
-            for(let r=0; r<5; r++) matchedIndices.push(grid2D[r][c].idx);
+            hasValidBingoPattern = true;
+            colCells.forEach(cell => matchedIndices.push(cell.idx));
         }
     }
 
+    // 3. ሰያፍ መስመር (Diagonals) - 5ቱንም መምታት አለበት
     let diag1Hits = true, diag2Hits = true;
+    let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
+        diag1Cells.push(grid2D[i][i]);
+        diag2Cells.push(grid2D[i][4-i]);
         if(!grid2D[i][i].isHit) diag1Hits = false;
         if(!grid2D[i][4-i].isHit) diag2Hits = false;
     }
     if(diag1Hits) {
-        for(let i=0; i<5; i++) matchedIndices.push(grid2D[i][i].idx);
+        hasValidBingoPattern = true;
+        diag1Cells.forEach(cell => matchedIndices.push(cell.idx));
     }
     if(diag2Hits) {
-        for(let i=0; i<5; i++) matchedIndices.push(grid2D[i][4-i].idx);
+        hasValidBingoPattern = true;
+        diag2Cells.forEach(cell => matchedIndices.push(cell.idx));
     }
 
+    // 4. 4 ማዕዘን (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+        hasValidBingoPattern = true;
         matchedIndices.push(0, 4, 20, 24);
     }
 
-    winningCardNumbers.forEach((cn, idx) => {
-        if (cn === "FREE" || cleanCalled.includes(Number(cn))) {
-            if (!matchedIndices.includes(idx)) matchedIndices.push(idx);
-        }
-    });
+    // ካርቴላው ላይ ትክክለኛ የቢንጎ ፓተርን ከሌለ፣ ጨዋታው እንዳይዘጋ ቢያንስ የመጀመሪያውን መስመር ወይም የሞላውን ቼክ እናደርጋለን
+    if (!hasValidBingoPattern) {
+        // በነባሪ የመጀመሪያውን አግድም መስመር ሙሉ በሙሉ እንይዛለን
+        for(let c=0; c<5; c++) matchedIndices.push(grid2D[0][c].idx);
+    }
 
     return Array.from(new Set(matchedIndices));
 }
@@ -263,7 +280,8 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 24) || (availableNumbers.length === 0);
+                // ጨዋታው ቢያንስ 25 ቁጥሮች ከተጠሩ በኋላ ወይም አሸናፊ በфорс ሲጠየቅ ብቻ እንዲዘጋ
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 25) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
