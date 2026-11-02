@@ -543,7 +543,7 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🏆 ፖፕ-አፕ (Winning Modal) - የተጠሩትን ሙሉ ቁጥሮች እና ያሸነፈበትን ትክክለኛ የድል ፓርቲሽን በልዩ ከለር የሚያሳይ
+            // 🏆 ፖፕ-አፕ (Winning Modal) - የተጠሩትን ሙሉ ቁጥሮች እና ያሸነፈበትን ፓርቲሽን በግልጽ የሚያሳይ ትክክለኛ ሎጂክ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
