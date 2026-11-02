@@ -366,17 +366,17 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v8_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v9_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
-        const userAlreadyPaidCountKey = `az_bingo_paid_count_${telegramUserId}`;
+        const userCurrentRoundPaidKey = `az_bingo_round_paid_${telegramUserId}`;
 
         if (!localStorage.getItem(oneTimeMigrationKey)) {
             localStorage.setItem(oneTimeMigrationKey, "true");
             walletBalance = 30.00;
             localStorage.setItem(userLocalStorageKey, "30.00");
-            localStorage.setItem(userAlreadyPaidCountKey, "0");
+            localStorage.setItem(userCurrentRoundPaidKey, "0");
         } else {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 30.00;
         }
@@ -387,7 +387,7 @@
 
         let userSelectedCards = [];
         let confirmedCards = []; 
-        let alreadyPaidCardsCount = parseInt(localStorage.getItem(userAlreadyPaidCountKey)) || 0;
+        let totalPaidForCurrentRound = parseFloat(localStorage.getItem(userCurrentRoundPaidKey)) || 0;
 
         if (localStorage.getItem(userSavedCardsKey)) {
             try {
@@ -460,12 +460,6 @@
                 walletBalance += data.prize;
                 updateWalletUI();
                 addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
-            });
-
-            socket.on('deductExtraCardCost', (data) => {
-                walletBalance -= data.cost;
-                updateWalletUI();
-                addTransactionHistory('ተጨማሪ ካርድ ግዢ', data.cost, 'expense');
             });
 
             socket.on('adminRealUsersListUpdate', (usersList) => {
@@ -541,7 +535,7 @@
             socket.on('cardSelectionSuccess', () => {
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
-                localStorage.setItem(userAlreadyPaidCountKey, String(alreadyPaidCardsCount));
+                localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
                 
                 const confirmBtn = document.getElementById('confirm-card-btn');
                 confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
@@ -792,11 +786,11 @@
         function resetPlayerSelectionForNewRound() {
             userSelectedCards = [];
             confirmedCards = [];
-            alreadyPaidCardsCount = 0;
+            totalPaidForCurrentRound = 0;
             calledNumbersList = [];
             manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
-            localStorage.setItem(userAlreadyPaidCountKey, "0");
+            localStorage.setItem(userCurrentRoundPaidKey, "0");
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
 
             const confirmBtn = document.getElementById('confirm-card-btn');
@@ -826,9 +820,7 @@
         }
 
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.add('hidden'); } // Wait, let's keep openWithdrawModal working properly
-        // correction for withdraw modal opener:
-        window.openWithdrawModal = function() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
 
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
@@ -887,26 +879,27 @@
             }
         }
 
-        // 🎯 ትክክለኛው የካርድ ክፍያ ሎጂክ፡ መጀመሪያ የተከፈለውን (alreadyPaidCardsCount) በመቀነስ ትክክለኛውን የልዩነት ክፍያ ብቻ የሚወስን
+        // 🎯 ትክክለኛው የካርድ ማረጋገጫ እና የክፍያ ስሌት ሎጂክ (በአጠቃላይ ለተመረጡት ካርዶች ከዚህ በፊት ከተከፈለው ውጭ ያለውን ትክክለኛ ልዩነት ብቻ የሚቆርጥ)
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             
-            let targetCount = userSelectedCards.length;
-            let cardsDifference = targetCount - alreadyPaidCardsCount;
-            let costToPay = cardsDifference > 0 ? (cardsDifference * 10) : 0;
+            let desiredTotalCardsCount = userSelectedCards.length; // ለምሳሌ 2 ካርድ
+            let desiredTotalCost = desiredTotalCardsCount * 10;    // 20 ብር
+            
+            let amountToDeduct = desiredTotalCost - totalPaidForCurrentRound;
 
-            if (costToPay > 0 && walletBalance < costToPay) { 
+            if (amountToDeduct > 0 && walletBalance < amountToDeduct) { 
                 alert("በቂ ሂሳብ የለዎትም!"); 
                 return; 
             }
             
-            if (costToPay > 0) {
-                walletBalance -= costToPay;
+            if (amountToDeduct > 0) {
+                walletBalance -= amountToDeduct;
                 updateWalletUI();
-                addTransactionHistory('ካርድ ግዢ', costToPay, 'expense');
+                addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense');
+                totalPaidForCurrentRound = desiredTotalCost;
             }
 
-            alreadyPaidCardsCount = targetCount;
             confirmedCards = [...userSelectedCards];
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
         }
