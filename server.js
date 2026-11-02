@@ -66,7 +66,7 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-// 🎯 እርስዎ የጠየቋቸው ትክክለኛ የጥሪ ብዛት ሮቴሽኖች (Allowed Win Call Counts)
+// 🎯 ትክክለኛው የጥሪ ብዛት ሮቴሽኖች
 const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
 
 let globalRoom = {
@@ -262,7 +262,7 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🎯 ልክ ጨዋታው ሲጀመር ከታቀቁት የጥሪ ብዛት ውስጥ አንዱን በራንደም እንመርጣለን (ለምሳሌ 15፣ 22፣ 28 ወዘተ)
+            // 🎯 የጥሪ ብዛት ሮቴሽን መምረጥ
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
             globalRoom.targetWinCallCount = ALLOWED_WIN_CALL_COUNTS[randomIndex];
 
@@ -278,9 +278,8 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 እዚህ ጋር አስተካክለናል፡ ጨዋታው ከጅምሩ ወዲያው እንዳያልቅ!
-                // የሚጨርሰው አድሚኑ አስገዳጅ ትዕዛዝ (forcedNextWinner) ሲሰጥ ወይም የተመረጠው የጥሪ ብዛት (targetWinCallCount) ልክ ሲደርስ ብቻ ነው
-                let shouldTriggerWin = (forcedNextWinner !== null) || (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount);
+                // 🎯 አስተካክለናል፡ ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት (targetWinCallCount) ልክ ሲደርስ ብቻ ነው!
+                let shouldTriggerWin = (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount);
                 
                 if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
@@ -290,16 +289,23 @@ function startMainGameLoop() {
                     let isRealUserWin = false;
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
+                    
+                    // 🎯 የአድሚን ትዕዛዝ (forcedNextWinner) ከተሰጠ እሱን እንጠቀማለን፣ ካልተሰጠ በተለመደው ሮቴሽን እንቀጥላለን
                     let currentWinnerType = forcedNextWinner;
                     forcedNextWinner = null; // አንዴ ጥቅም ላይ ከዋለ በኋላ ሪሴት ይደረጋል
 
-                    if (currentWinnerType === 'random_real' && entries.length > 0) {
-                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                        winningUserId = randEntry[0];
-                        winningUsername = randEntry[1].username;
-                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                            winningCardNum = randEntry[1].cards[0];
+                    if (currentWinnerType === 'random_real') {
+                        if (entries.length > 0) {
+                            let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                            winningUserId = randEntry[0];
+                            winningUsername = randEntry[1].username;
+                            if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                                winningCardNum = randEntry[1].cards[0];
+                            }
+                        } else {
+                            winningUsername = "ተጫዋች";
                         }
+                        winnersCount = 1;
                         isRealUserWin = true;
                     } else if (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
                         let threeBots = getRandomBotNames(3);
@@ -319,7 +325,7 @@ function startMainGameLoop() {
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         isRealUserWin = false;
                     } else {
-                        // አድሚኑ ካላዘዘ በራሱ ሮቴሽን የተመረጠው ቁጥር ሲደርስ ቦት ወይም ሪል ዩዘር አሸናፊ ይሆናል
+                        // አድሚኑ ካላዘዘ በነባሪ (Default) ተጫዋቾች ካሉ ሪል ዩዘር አሸናፊ እንዲሆን ወይም ቦት እንዲወጣ ይደረጋል
                         if (entries.length > 0 && Math.random() > 0.4) {
                             let randEntry = entries[Math.floor(Math.random() * entries.length)];
                             winningUserId = randEntry[0];
@@ -514,7 +520,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('financialRequest', async (data) => {
-        if (!data) return;
+        printAdminRequest = true;
         let { type, amount, username, userId, currentBalance, phone, receipt } = data;
         let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
         pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
