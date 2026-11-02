@@ -83,7 +83,6 @@ let gameInterval = null;
 let numberCallInterval = null;
 
 let roundsPlayedCount = 0;
-let globalSystemResetDone = true; // ይህ አንዴ ብቻ ሪሴት እንዲደረግ የሚቆጣጠር ፍላግ ነው
 
 function getRealisticBotsCount(realCount) {
     const now = new Date();
@@ -176,7 +175,8 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 22) || (availableNumbers.length === 0);
+                // ቁጥሮቹ በሥርዓት እየተጠሩ ከ 22 ቁጥሮች በኋላ ወይም አድሚኑ ሲያዝ አሸናፊ ይወጣል።
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 24) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
@@ -349,9 +349,6 @@ io.on('connection', (socket) => {
             let userId = String(userData.userId);
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
-
-            // አንዴ ብቻ ሂሳባቸውን ወደ 30 ብር ማስተካከል (One-time reset)
-            socket.emit('oneTimeResetBonus', { balance: 30.00 });
         }
     });
 
