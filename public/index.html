@@ -543,7 +543,7 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🏆 ፖፕ-አፕ (Winning Modal) - የተጠሩትን ሙሉ ቁጥሮች እና ያሸነፈበትን ፓርቲሽን በግልጽ የሚያሳይ ትክክለኛ ሎጂክ
+            // 🏆 ፖፕ-አፕ (Winning Modal) - የተጠሩት ሙሉ ቁጥሮች እና ያሸነፈበት ትክክለኛው የድል መስመር በአረንጓዴ እንዲበሩ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -556,26 +556,21 @@
                 cartelaGrid.innerHTML = '';
                 let winningCardNumbers = getCartelaNumbers(data.cardNum);
                 
-                let finalCalledList = data.calledNumbers || calledNumbersList || [];
+                let finalCalledList = (data.calledNumbers || calledNumbersList || []).map(n => Number(n));
                 let matchedIndices = data.matchedIndices || [];
 
                 winningCardNumbers.forEach((cn, idx) => {
                     const cell = document.createElement('div');
-                    cell.className = "h-5 text-[9px] font-bold flex items-center justify-center rounded text-white";
                     
                     let isWinningPatternCell = matchedIndices.includes(idx);
-                    let isCalled = (cn === "FREE" || finalCalledList.includes(cn));
+                    let isCalled = (cn === "FREE" || finalCalledList.includes(Number(cn)));
 
                     if (cn === "FREE") {
                         cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded shadow";
                         cell.innerText = "★";
-                    } else if (isWinningPatternCell) {
-                        // ያሸነፈበት ትክክለኛው የድል መስመር / ፓተርን በልዩ ወርቃማ/አረንጓዴ ከለር ጎልቶ ይታያል
-                        cell.className = "h-5 bg-emerald-400 text-black font-black text-[10px] flex items-center justify-center rounded shadow-lg border border-amber-300";
-                        cell.innerText = cn;
-                    } else if (isCalled) {
-                        // በጨዋታው ውስጥ የተጠሩት እና የተመቱት ሌሎች ቁጥሮች በሙሉ በአረንጓዴ ከለር ይታያሉ
-                        cell.className = "h-5 bg-emerald-600 text-white font-bold text-[9px] flex items-center justify-center rounded shadow border border-emerald-400";
+                    } else if (isWinningPatternCell || isCalled) {
+                        // የተጠሩት ሙሉ ቁጥሮች እና ያሸነፈበት ፓተርን በሙሉ በአረንጓዴ ከለር እንዲበሩ
+                        cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
                         // ያልተጠሩ ቁጥሮች
