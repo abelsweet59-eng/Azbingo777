@@ -175,6 +175,7 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
+            // ከ 60 ሰከንድ ቆጣሪ በኋላ ወደ ጨዋታ ሲገባ ለ 5 ሰከንድ ቆይቶ ቁጥር መጥራት ይጀምራል
             setTimeout(() => {
                 if (!globalRoom.gameActive) return;
 
