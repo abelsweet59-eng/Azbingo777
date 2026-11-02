@@ -335,6 +335,7 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🎯 **ፍጹም የተመሳሰለ (Simultaneous Multi-Card) ሎጂክ:** የሁሉም የታቀዱ አሸናፊዎች ካርዶች የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው እኩል እየተጠሩ እንዲያልቁ ይደረጋል
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
@@ -399,7 +400,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **ፍጹም የተመሳሰለ (Synchronized) ማቆሚያ:** የታቀዱት አሸናፊዎች ቁጥሮች በሙሉ ተጠርተው ሲያልቁ ጨዋታው በአንድ ላይ ይጠናቀቃል
+                // 🎯 **ትክክለኛ እና ጥብቅ ማቆሚያ (Simultaneous End):** የታቀዱት ቁጥሮች በሙሉ ተጠርተው ሲያልቁ ብቻ ጨዋታው በአንድ ጊዜ ይጠናቀቃል
                 let shouldTriggerWin = (callStep >= totalCalls && combinedWinningNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
