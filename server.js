@@ -66,6 +66,9 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
+// 🎯 እርስዎ የላኳቸው ቁጥሮች (12, 15, 22, 18, 17, 23, 27, ወዘተ) ውስጥ ራንደም በሆነ መንገድ እንዲመረጥ የተደረገበት አርሬ (Array)
+const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
+
 let globalRoom = {
     gameActive: false,
     calledNumbers: [],
@@ -74,7 +77,8 @@ let globalRoom = {
     takenCards: [],
     playerRoundCards: {},
     playerTemporaryCards: {},
-    lastCalledNumber: null
+    lastCalledNumber: null,
+    targetWinCallCount: 20
 };
 
 let forcedNextWinner = null; 
@@ -257,6 +261,10 @@ function startMainGameLoop() {
             globalRoom.gameActive = true;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
+            
+            // 🎯 በሰጡን ቁጥሮች (እንደ 17, 18, 22, 23, ወዘተ) መሰረት ራንደም በማድረግ ጨዋታው የሚያልቅበትን የጥሪ ብዛት መምረጥ
+            let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
+            globalRoom.targetWinCallCount = ALLOWED_WIN_CALL_COUNTS[randomIndex];
 
             io.emit('gameStarted', { calledNumbers: [] });
             io.emit('gameStartedBroadcast');
@@ -270,7 +278,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 25) || (availableNumbers.length === 0);
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
@@ -404,7 +412,7 @@ async function pollTelegramUpdates() {
                             if (targetSocket) { targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_message_id: messageId, parse_mode: 'Markdown'
                             });
                         }
                         delete pendingRequests[requestId]; 
@@ -459,31 +467,6 @@ io.on('connection', (socket) => {
             globalRoom.playerTemporaryCards[socket.id] = cards;
             refreshTakenCardsList();
         }
-    });
-
-    // 🎯 ትክክለኛው የካርድ ማረጋገጫ እና የክፍያ ስሌት ሎጂክ በሰርቨር በኩል
-    socket.on('confirmCards', (data) => {
-        let newCards = data.cards || data;
-        let userId = String(data.userId || socket.id);
-        delete globalRoom.playerTemporaryCards[socket.id];
-        
-        let existingRecord = globalRoom.playerRoundCards[socket.id];
-        let previousCards = existingRecord ? existingRecord.cards : [];
-        let prevCount = previousCards.length;
-        let newCount = newCards.length;
-        let diff = newCount - prevCount;
-
-        if (diff > 0) {
-            let extraCost = diff * 10;
-            let targetSocket = io.sockets.sockets.get(socket.id);
-            if (targetSocket) {
-                targetSocket.emit('deductExtraCardCost', { cost: extraCost });
-            }
-        }
-
-        globalRoom.playerRoundCards[socket.id] = { cards: newCards, userId: userId, username: data.username || "ተጫዋች" };
-        socket.emit('cardSelectionSuccess');
-        refreshTakenCardsList();
     });
 
     socket.on('adminSetNextWinner', (data) => {
