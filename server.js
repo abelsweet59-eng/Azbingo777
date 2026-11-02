@@ -175,7 +175,6 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            // ጨዋታው ከገባ በኋላ ለ 5 ሰከንድ (5000 ሚሊሰከንድ) ቆይቶ በየ 4 ሰከንድ ቁጥሮችን መጥራት ይጀምራል
             setTimeout(() => {
                 if (!globalRoom.gameActive) return;
 
@@ -235,7 +234,8 @@ function startMainGameLoop() {
                         }
 
                         let totalPot = (globalRoom.playersCount || 140) * 10;
-                        let prizePool = Math.floor((totalPot * 0.70) / winnersCount);
+                        // የቤቱ ኮሚሽን 10% ሲቀነስ, ለሽልማት የሚቀረው 90% ይሆናል
+                        let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
                         sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
 
@@ -267,7 +267,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', calledNum);
 
                 }, 4000); 
-            }, 5000); // የ 5 ሰከንድ መዘግየት (Delay)
+            }, 5000); 
         }
     }, 1000);
 }
