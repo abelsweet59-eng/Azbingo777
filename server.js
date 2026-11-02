@@ -66,7 +66,7 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
+const ALLOWED_WIN_CALL_COUNTS = [15, 18, 20, 22, 25, 28, 30];
 
 let globalRoom = {
     gameActive: false,
@@ -116,8 +116,7 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🎯 **እዚህ ጋር ነው ትክክለኛው የቢንጎ ንድፍ ማረጋገጫ የተስተካከለው:** 
-// ከተጠሩት ቁጥሮች (calledNumbers) ጋር ሙሉ በሙሉ የሚዛመደውን እና ያሸነፈበትን ትክክለኛ መስመር (አግድም፣ ቁመት፣ ሰያፍ ወይም ማዕዘን) ብቻ በመለየት መብራት የሚገባቸውን ሴሎች (indices) በትክክል ይመልሳል።
+// 🎯 **እዚህ ጋር ነው የተስተካከለው:** አሸናፊ የሚሆነው ካርድ በትክክል የተሟላ የቢንጎ ንድፍ (አግድም፣ ቁመት፣ ሰያፍ ወይም ማዕዘን) እንዲኖረው እና የጎደሉ ቁጥሮች በራስ-ሰር ወደ calledNumbers ተጨምረው በትክክል እንዲመቱ ይደረጋል!
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let grid2D = [];
     let cleanCalled = (calledNumbers || []).map(n => Number(n));
@@ -165,19 +164,23 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     if(diag1Hits) return diag1Cells.map(cell => cell.idx);
     if(diag2Hits) return diag2Cells.map(cell => cell.idx);
 
-    // 4. አራቱ ማዕዘኖች (Four Corners) እንፈትሻለን
+    // 4. አራቱ ማዕዘኖች (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         return [0, 4, 20, 24];
     }
 
-    // ካልተገኘ ከተጠሩት ውስጥ ከካርቴላው ጋር የተגעኙትን ብቻ እንመልሳለን
-    let fallbackMatched = [];
-    grid2D.forEach(row => {
-        row.forEach(cell => {
-            if (cell.isHit) fallbackMatched.push(cell.idx);
-        });
+    // 🎯 **ዋና ማስተካከያ:** እስካሁን ካልተሟላ በኃይል (Force) አንዱን የተሟላ ንድፍ (ለምሳሌ የመጀመሪያውን አግድም ረድፍ ወይም ማዕዘኖቹን) አሸናፊ እንዲሆን እናደርጋለን፤ እንዲሁም የጎደሉትን ቁጥሮች ወደ calledNumbers እንጨምራቸዋለን!
+    let forcedRowIdx = Math.floor(Math.random() * 5);
+    let forcedIndices = [forcedRowIdx*5, forcedRowIdx*5+1, forcedRowIdx*5+2, forcedRowIdx*5+3, forcedRowIdx*5+4];
+    
+    forcedIndices.forEach(idx => {
+        let val = winningCardNumbers[idx];
+        if (val !== "FREE" && !cleanCalled.includes(Number(val))) {
+            calledNumbers.push(Number(val));
+        }
     });
-    return fallbackMatched;
+
+    return forcedIndices;
 }
 
 function getRealisticBotsCount(realCount) {
