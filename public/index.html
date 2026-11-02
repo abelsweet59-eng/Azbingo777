@@ -351,12 +351,6 @@
             </div>
         </div>
 
-        <!-- COUNTDOWN MODAL -->
-        <div id="countdown-modal" class="hidden absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
-            <div class="text-amber-400 font-bold text-lg mb-4 tracking-wide">ጨዋታው ሊጀመር ነው...</div>
-            <div id="countdown-number" class="text-7xl font-black text-white countdown-anim drop-shadow-[0_0_25px_rgba(245,158,11,0.8)]">3</div>
-        </div>
-
         <!-- WINNING MODAL -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2">
             <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-3 w-full max-w-[320px] space-y-2 shadow-2xl text-center relative">
@@ -462,13 +456,13 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const userBonusResetKey = `az_bingo_bonus_reset_v5_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v3_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
 
-        if (!localStorage.getItem(userBonusResetKey)) {
-            localStorage.setItem(userBonusResetKey, "true");
+        if (!localStorage.getItem(oneTimeMigrationKey)) {
+            localStorage.setItem(oneTimeMigrationKey, "true");
             walletBalance = 30.00;
             localStorage.setItem(userLocalStorageKey, "30.00");
         } else {
@@ -547,11 +541,6 @@
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
-            });
-
-            socket.on('resetToBonusOnly', (data) => {
-                walletBalance = data.balance;
-                updateWalletUI();
             });
 
             socket.on('rewardPrize', (data) => {
@@ -644,6 +633,7 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
+            // 🏆 የተጠሩትን ቁጥሮች ሙሉ በሙሉ በአረንጓዴ ከለር የሚያሳይ የዊነር ፖፕ-አፕ ሎጂክ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -655,13 +645,19 @@
                 
                 cartelaGrid.innerHTML = '';
                 let winningCardNumbers = getCartelaNumbers(data.cardNum);
+                
+                // እስከ ጨዋታው ማጠናቀቂያ ድረስ የተጠሩት ሙሉ ቁጥሮች ሊስት
+                let finalCalledList = data.calledNumbers || calledNumbersList || [];
+
                 winningCardNumbers.forEach(cn => {
                     const cell = document.createElement('div');
                     cell.className = "h-5 bg-purple-950/60 text-[9px] font-bold flex items-center justify-center rounded text-white";
+                    
                     if (cn === "FREE") {
                         cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded";
                         cell.innerText = "★";
-                    } else if (data.calledNumbers && data.calledNumbers.includes(cn)) {
+                    } else if (finalCalledList.includes(cn)) {
+                        // የተጠሩት ቁጥሮች በሙሉ በአረንጓዴ ከለር እንዲሞሉ ይደረጋል
                         cell.className = "h-5 bg-emerald-600 text-[9px] font-black flex items-center justify-center rounded text-white";
                         cell.innerText = cn;
                     } else {
