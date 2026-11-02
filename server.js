@@ -221,7 +221,7 @@ function startMainGameLoop() {
                             isRealUserWin = true;
                             forcedNextWinner = null;
                         } else {
-                            // አድሚኑ ትዕዛዝ ካልሰጠ ሁልጊዜ ቦቶች ብቻ እንዲያሸንፉ ይደረጋል (ሪል ዩዘር ፈጽሞ በዘፈቀደ አያሸንፍም)
+                            // አድሚኑ ትዕዛዝ ካልሰጠ ሁልጊዜ ቦቶች ብቻ እንዲያሸንፉ ይደረጋል
                             winningUsername = getRandomBotNames(1)[0];
                             winnersCount = 1;
                             winningCardNum = Math.floor(Math.random() * 500) + 1;
