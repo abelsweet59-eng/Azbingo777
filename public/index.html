@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="am">
 <head>
@@ -103,7 +102,7 @@
                             <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
                         </div>
                         <div class="text-right">
-                            <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">30 ሰከንድ ይቀረዋል</div>
+                            <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">60 ሰከንድ ይቀረዋል</div>
                         </div>
                     </div>
 
@@ -121,7 +120,7 @@
                         </div>
                         <div class="text-right">
                             <div id="big-countdown-timer" class="text-3xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
-                                30s
+                                60s
                             </div>
                         </div>
                     </div>
@@ -257,8 +256,20 @@
                     <div class="grid grid-cols-1 gap-2 pt-1">
                         <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
                         <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ</button>
+                        <button onclick="adminSetWinner('random_3_real')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 3 ሪል ዩዘሮች በአንድ ላይ ያሸንፉ</button>
+                        <button onclick="adminSetWinner('dual_bot')" class="w-full bg-pink-700 hover:bg-pink-600 text-white font-bold py-2 rounded text-xs shadow">🤖🤖 2 ቦቶች በአንድ ላይ ያሸንፉ</button>
                     </div>
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
+                </div>
+
+                <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div class="font-bold text-amber-300">👥 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎች</div>
+                        <button onclick="requestRealUsersList()" class="text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold">አድስ (Refresh)</button>
+                    </div>
+                    <div id="admin-real-users-list" class="space-y-1 max-h-40 overflow-y-auto custom-scroll text-[10px]">
+                        <div class="text-center text-gray-400 py-2">ምንም እውነተኛ ተጠቃሚ የለም</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -400,7 +411,7 @@
 
         let takenCardsByOthers = []; 
         let calledNumbersList = [];
-        let gameStartTimeServer = Date.now() + 30000;
+        let gameStartTimeServer = Date.now() + 60000; // 60 ሰከንድ ቆጣሪ
         let manualDaubedNumbers = {};
         let isAudioMuted = false;
 
@@ -513,7 +524,7 @@
             });
 
             socket.on('roundEnded', (data) => {
-                gameStartTimeServer = Date.now() + (data.nextGameIn || 30000);
+                gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
                 resetPlayerSelectionForNewRound();
             });
 
@@ -532,7 +543,6 @@
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
             socket.on('bingoWinner', (data) => {
-                // Winning modal logic
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
                 const bannerText = document.getElementById('winner-banner-text');
@@ -633,7 +643,7 @@
         function addTransactionHistory(title, amount, type) {
             let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             transactionHistory.unshift({ title, amount, type, time: timeNow });
-            if (transactionHistory.length > 30) transactionHistory.pop();
+            if (transactionHistory.length > 120) transactionHistory.pop();
             localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
             renderHistoryUI();
         }
@@ -947,8 +957,21 @@
                         cell.className = `${colColorClass} text-white font-extrabold text-[9px] rounded flex items-center justify-center shadow`;
                         cell.innerText = cellNum;
                     } else {
-                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded flex items-center justify-center";
+                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded flex items-center justify-center cursor-pointer";
                         cell.innerText = cellNum;
+                        
+                        if (!isAutoMode) {
+                            cell.onclick = () => {
+                                if (isCalled) {
+                                    if (!manualDaubedNumbers[cardNum].includes(cellNum)) {
+                                        manualDaubedNumbers[cardNum].push(cellNum);
+                                        renderPlayerDualCards();
+                                    }
+                                } else {
+                                    alert("⚠️ ገና ያልተጠራ ቁጥር ላይ ምልክት ማድረግ አይችሉም!");
+                                }
+                            };
+                        }
                     }
                     miniGrid.appendChild(cell);
                 });
