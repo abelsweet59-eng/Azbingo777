@@ -229,7 +229,7 @@
                             <li>በየዙሩ ከ 1 እስከ 500 ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ[span_0](start_span)[span_0](end_span)።</li>
                             <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
                             <li>ሰዓቱ ዜሮ ሲደርስ ጨዋታው በራሱ ይጀምራል እና ቦርዱ ቁጥሮችን መጥራት ይጀምራል።</li>
-                            <li>**አውቶማቲክ ዳብ (Auto Daub)** በመጠቀም ቁጥሮች በራሳቸው ይሞላሉ፤ ወይም **ማኑዋል (Manual)** በመድረግ በራስዎ እጅ እያዩ መምታት ይችላሉ[span_1](start_span)[span_1](end_span)።</li>
+                            <li>**አውቶማቲክ ዳብ (Auto Daub)** በመጠቀም ቁጥሮች በራሳቸው ይሞላሉ፤ ወይም **ማኑዋል (Manual)** በማድረግ በራስዎ እጅ እያዩ መምታት ይችላሉ[span_1](start_span)[span_1](end_span)።</li>
                         </ul>
                     </div>
 
@@ -297,7 +297,7 @@
 
                         <!-- ከእንግዲህ አሸናፊዎች ካሉ ሽልማቱ እኩል ይካፈላል የሚለው ማስታወሻ -->
                         <div class="text-[9px] text-amber-400 mt-2 bg-amber-500/10 p-2 rounded-lg border border-amber-500/30 text-center">
-                            ⚠️ ማስታወሻ: ከእንግዲህ ከእነዚህ ቅጦች ውጭ ወይም ከ አንድ በላይ አሸናፊዎች ካሉ ሽልማቱ እኩል ይከፈላል (ይካፈላል)[span_11](start_span)[span_11](end_span)!
+                            ⚠️ ማስታወሻ: ከእነዚህ ቅጦች ውጭ ወይም ከእንድ በላይ አሸናፊዎች ካሉ ሽልማቱ እኩል ይካፈላል[span_11](start_span)[span_11](end_span)!
                         </div>
                     </div>
                 </div>
@@ -483,7 +483,18 @@
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
+        let amharicVoice = null;
         let isAudioMuted = false;
+
+        function loadVoices() {
+            let voices = window.speechSynthesis.getVoices();
+            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET')) || voices[0];
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
 
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";
@@ -758,11 +769,17 @@
         }
 
         function speakCalledNumber(num) {
-            let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
+            let letter = num <= 15 ? "ቢ" : num <= 30 ? "አይ" : num <= 45 ? "ኤን" : num <= 60 ? "ጂ" : "ኦ";
             let speechText = `${letter} ${num}`;
             if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
                 let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET'; utterance.rate = 0.9;
+                utterance.lang = 'am-ET'; 
+                utterance.rate = 0.85; 
+                utterance.pitch = 1.0;
+                if (amharicVoice) {
+                    utterance.voice = amharicVoice;
+                }
                 window.speechSynthesis.speak(utterance);
             }
         }
