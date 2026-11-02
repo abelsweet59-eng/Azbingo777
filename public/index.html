@@ -462,12 +462,11 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const userBonusResetKey = `az_bingo_bonus_reset_v3_${telegramUserId}`;
+        const userBonusResetKey = `az_bingo_bonus_reset_v5_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
 
-        // የድሮውን ዋሌት ሙሉ በሙሉ ሪሴት አድርጎ 30 ብር ቦነስ ብቻ እንዲኖር ማድረግ እና ሎግ አውት ቢደረግም ድጋሚ እንዳይሰጥ መቆጣጠር
         if (!localStorage.getItem(userBonusResetKey)) {
             localStorage.setItem(userBonusResetKey, "true");
             walletBalance = 30.00;
@@ -553,6 +552,12 @@
             socket.on('resetToBonusOnly', (data) => {
                 walletBalance = data.balance;
                 updateWalletUI();
+            });
+
+            socket.on('rewardPrize', (data) => {
+                walletBalance += data.prize;
+                updateWalletUI();
+                addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
             });
 
             socket.on('adminRealUsersListUpdate', (usersList) => {
@@ -968,6 +973,7 @@
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             let totalCost = userSelectedCards.length * 10;
             if (walletBalance < totalCost) { alert("በቂ ሂሳብ የለዎትም!"); return; }
+            
             walletBalance -= totalCost;
             updateWalletUI();
 
