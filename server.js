@@ -66,7 +66,7 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-// 🎯 እርስዎ የላኳቸው ትክክለኛ ቁጥሮች ብቻ ራንደም ሆኖ እንዲወጣ የተደረገበት አርሬ (Array)
+// 🎯 እርስዎ የላኳቸው ትክክለኛ የቁጥር ክልሎች (ለምሳሌ 12 እስከ 30 ያሉት) ራንደም ሮቴት እያደረጉ እንዲወጡ
 const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
 
 let globalRoom = {
@@ -262,7 +262,7 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🎯 ከተሰጡት ትክክለኛ ቁጥሮች ውስጥ ራንደም በሆነ መንገድ መምረጥ
+            // 🎯 ልክ ጨዋታው ሲጀመር ከተሰጡት ቁጥሮች ውስጥ ራንደም በሆነ ሮቴሽን የጥሪ ብዛት ይመረጣል (ለምሳሌ 15, 22, 28 ወዘተ)
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
             globalRoom.targetWinCallCount = ALLOWED_WIN_CALL_COUNTS[randomIndex];
 
@@ -278,6 +278,7 @@ function startMainGameLoop() {
                     return;
                 }
 
+                // 🎯 ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት ሲደርስ ወይም አድሚኑ አስገዳጅ አሸናፊ (forcedNextWinner) ሲሰጥ ብቻ ነው
                 let shouldTriggerWin = (forcedNextWinner !== null) || (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
@@ -289,7 +290,7 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     let currentWinnerType = forcedNextWinner;
-                    forcedNextWinner = null; // ሪሴት ማድረግ
+                    forcedNextWinner = null; // ትዕዛዙን አንዴ ከፈጸመ በኋላ ሪሴት ይደረጋል
 
                     if (currentWinnerType === 'random_real' && entries.length > 0) {
                         let randEntry = entries[Math.floor(Math.random() * entries.length)];
@@ -317,8 +318,8 @@ function startMainGameLoop() {
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         isRealUserWin = false;
                     } else {
-                        // በነባሪ (Default) የሚመረጥ አሸናፊ
-                        if (Math.random() > 0.5 && entries.length > 0) {
+                        // አድሚኑ ካላዘዘ በነባሪ (Default) ተጫዋቾች ካሉ ሪል ዩዘር አሸናፊ እንዲሆን ወይም ቦት እንዲወጣ ይደረጋል
+                        if (entries.length > 0 && Math.random() > 0.4) {
                             let randEntry = entries[Math.floor(Math.random() * entries.length)];
                             winningUserId = randEntry[0];
                             winningUsername = randEntry[1].username;
@@ -377,7 +378,7 @@ function startMainGameLoop() {
                 });
                 io.emit('numberCalledBroadcast', calledNum);
 
-            }, 4000); 
+            }, 4000); // በየ 4 ሰከንዱ አንድ ቁጥር ይጠራል
         }
     }, 1000);
 }
@@ -494,8 +495,8 @@ io.on('connection', (socket) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             globalRoom.playerRoundCards[socket.id] = {
                 cards: data.cards,
-                username: data.username || userFullName,
-                userId: data.userId || telegramUserId
+                username: data.username || 'ተጫዋች',
+                userId: data.userId || 'unknown'
             };
             if (globalRoom.playerTemporaryCards[socket.id]) {
                 delete globalRoom.playerTemporaryCards[socket.id];
