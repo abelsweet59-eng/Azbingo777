@@ -115,7 +115,6 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🏆 አሸናፊው ካርድ የትኛውን ፓተርን (አግድም፣ ቁመት፣ ሰያፍ ወይም ዳር ዳር) እንደዘጋ በሂሳብ አሰልቶ ኢንዴክሶቹን የሚለይ ፋንክሽን
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let matchedIndices = [];
     let grid2D = [];
@@ -131,14 +130,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    // 1. አግድም (Horizontal Rows)
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
             grid2D[r].forEach(cell => matchedIndices.push(cell.idx));
         }
     }
 
-    // 2. ቁመት (Vertical Columns)
     for(let c=0; c<5; c++) {
         let colHits = true;
         for(let r=0; r<5; r++) {
@@ -149,7 +146,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
-    // 3. ሰያፍ (Diagonals)
     let diag1Hits = true, diag2Hits = true;
     for(let i=0; i<5; i++) {
         if(!grid2D[i][i].isHit) diag1Hits = false;
@@ -162,12 +158,10 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         for(let i=0; i<5; i++) matchedIndices.push(grid2D[i][4-i].idx);
     }
 
-    // 4. ዳር ዳር (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         matchedIndices.push(0, 4, 20, 24);
     }
 
-    // በጨዋታው ውስጥ የተጠሩትን ሌሎች ቁጥሮችም ጭምር ማካተት
     winningCardNumbers.forEach((cn, idx) => {
         if (cn === "FREE" || calledNumbers.includes(cn)) {
             if (!matchedIndices.includes(idx)) matchedIndices.push(idx);
@@ -306,7 +300,6 @@ function startMainGameLoop() {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
-                    // የድል ካርቴላ ቁጥሮች እና የተመቱባቸውን እና ያሸነፈበትን ፓተርን ኢንዴክሶች ማሰላት
                     let winningCardNumbers = getCartelaNumbers(winningCardNum);
                     let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
