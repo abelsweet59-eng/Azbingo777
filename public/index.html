@@ -229,22 +229,7 @@
                             <li>በየዙሩ ከ 1 እስከ 500 ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ።</li>
                             <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
                             <li>ሰዓቱ ዜሮ ሲደርስ ጨዋታው በራሱ ይጀምራል እና ቦርዱ ቁጥሮችን መጥራት ይጀምራል።</li>
-                            <li>**አውቶማቲክ ዳብ (Auto Daub)** በመጠቀም ቁጥሮች በራሳቸው ይሞላሉ፤ ወይም **ማኑዋል (Manual)** በማድረግ በራስዎ እጅ እያዩ መምታት ይችላሉ።</li>
                         </ul>
-                    </div>
-
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህግ እና የድል ቅጥ (Winning Criteria)</h3>
-                        <p class="text-[10px] text-gray-300">የሚከተሉትን ቅጦች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል፦</p>
-                        
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <div class="bg-black/50 p-2 rounded-xl border border-purple-500/30 text-center flex flex-col items-center justify-center space-y-1.5 shadow-md">
-                                <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)</div>
-                            </div>
-                            <div class="bg-black/50 p-2 rounded-xl border border-purple-500/30 text-center flex flex-col items-center justify-center space-y-1.5 shadow-md">
-                                <div class="font-bold text-amber-300 text-[10px]">ቁመት (Vertical)</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -253,7 +238,6 @@
                         <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
                         <ol class="list-decimal list-inside text-gray-300 space-y-1.5 text-[11px]">
                             <li>አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል።</li>
-                            <li>ገንዘቡን ከላኩ በኋላ በቴሌብር በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው ገደብ 100 ብር ነው።)</li>
                         </ol>
                     </div>
                 </div>
@@ -382,7 +366,7 @@
         let walletBalance = 30.00;
         let transactionHistory = [];
 
-        const oneTimeMigrationKey = `az_bingo_one_time_reset_v4_${telegramUserId}`;
+        const oneTimeMigrationKey = `az_bingo_one_time_reset_v5_${telegramUserId}`;
         const userLocalStorageKey = `az_bingo_wallet_${telegramUserId}`;
         const userHistoryKey = `az_bingo_history_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
@@ -559,7 +543,7 @@
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
-            // 🏆 የድል ፓርቲሽኑን እና የተመቱትን ቁጥሮች በአረንጓዴ ከለር የሚያሳይ የዊነር ፖፕ-አፕ ሎጂክ
+            // 🏆 ፖፕ-አፕ (Winning Modal) ላይ የተመቱት ቁጥሮች እና ያዘጋጀበት ፓርቲሽን (ዳር ዳር/መስመር) በአረንጓዴ ከለር እንዲታይ የሚያደርግ ትክክለኛ ሎጂክ
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -587,7 +571,7 @@
                         cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
-                        cell.className = "h-5 bg-purple-950/60 text-gray-400 text-[9px] font-medium flex items-center justify-center rounded";
+                        cell.className = "h-5 bg-purple-950/60 text-gray-300 text-[9px] font-medium flex items-center justify-center rounded";
                         cell.innerText = cn;
                     }
                     cartelaGrid.appendChild(cell);
@@ -763,6 +747,37 @@
                 pill.appendChild(inner);
                 container.appendChild(pill);
             });
+        }
+
+        // ካርቴላ ቁጥሮችን የሚያመነጨው ትክክለኛ ፋንክሽን
+        function getCartelaNumbers(cardNum) {
+            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+            let cols = ['B', 'I', 'N', 'G', 'O'];
+
+            cols.forEach((col, colIdx) => {
+                let range = colRanges[col];
+                let pool = [];
+                for (let n = range[0]; n <= range[1]; n++) pool.push(n);
+
+                let seed = (cardNum * 7919) + (colIdx * 104729);
+                for (let i = pool.length - 1; i > 0; i--) {
+                    seed = (seed * 9301 + 49297) % 233280;
+                    let rnd = seed / 233280;
+                    let j = Math.floor(rnd * (i + 1));
+                    let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+                }
+                cardNumbersByCol[col] = pool.slice(0, 5);
+            });
+
+            let flatList = [];
+            for (let r = 0; r < 5; r++) {
+                cols.forEach(col => {
+                    if (r === 2 && col === 'N') flatList.push("FREE");
+                    else flatList.push(cardNumbersByCol[col][r]);
+                });
+            }
+            return flatList;
         }
 
         function resetPlayerSelectionForNewRound() {
