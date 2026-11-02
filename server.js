@@ -66,7 +66,6 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-// 🎯 ትክክለኛው የጥሪ ብዛት ሮቴሽኖች
 const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
 
 let globalRoom = {
@@ -117,9 +116,9 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🎯 **እዚህ ጋር ነው የተስተካከለው:** ከተጠሩት ትክክለኛ ቁጥሮች ጋር የተሟሉትን (Matched) ብቻ በመለየት ትክክለኛውን የቢንጎ ንድፍ (Winning Pattern) ብቻ አረንጓዴ እንዲያደርግ የሚያስችለው ትክክለኛ አሰራር።
+// 🎯 **እዚህ ጋር ነው ትክክለኛው የቢንጎ ንድፍ ማረጋገጫ የተስተካከለው:** 
+// ከተጠሩት ቁጥሮች (calledNumbers) ጋር ሙሉ በሙሉ የሚዛመደውን እና ያሸነፈበትን ትክክለኛ መስመር (አግድም፣ ቁመት፣ ሰያፍ ወይም ማዕዘን) ብቻ በመለየት መብራት የሚገባቸውን ሴሎች (indices) በትክክል ይመልሳል።
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
-    let matchedIndices = [];
     let grid2D = [];
     let cleanCalled = (calledNumbers || []).map(n => Number(n));
     
@@ -134,17 +133,14 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    let winningPatternFound = false;
-
-    // 1. አግድም (Horizontal Rows)
+    // 1. አግድም (Horizontal Rows) እንፈትሻለን
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
-            winningPatternFound = true;
-            grid2D[r].forEach(cell => matchedIndices.push(cell.idx));
+            return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    // 2. ቁመት (Vertical Columns)
+    // 2. ቁመት (Vertical Columns) እንፈትሻለን
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -153,12 +149,11 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
             if(!grid2D[r][c].isHit) colHits = false;
         }
         if(colHits) {
-            winningPatternFound = true;
-            colCells.forEach(cell => matchedIndices.push(cell.idx));
+            return colCells.map(cell => cell.idx);
         }
     }
 
-    // 3. ሰያፍ (Diagonals)
+    // 3. ሰያፍ (Diagonals) እንፈትሻለን
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -167,31 +162,22 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         if(!grid2D[i][i].isHit) diag1Hits = false;
         if(!grid2D[i][4-i].isHit) diag2Hits = false;
     }
-    if(diag1Hits) {
-        winningPatternFound = true;
-        diag1Cells.forEach(cell => matchedIndices.push(cell.idx));
-    }
-    if(diag2Hits) {
-        winningPatternFound = true;
-        diag2Cells.forEach(cell => matchedIndices.push(cell.idx));
-    }
+    if(diag1Hits) return diag1Cells.map(cell => cell.idx);
+    if(diag2Hits) return diag2Cells.map(cell => cell.idx);
 
-    // 4. አራቱ ማዕዘኖች (Four Corners)
+    // 4. አራቱ ማዕዘኖች (Four Corners) እንፈትሻለን
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
-        winningPatternFound = true;
-        matchedIndices.push(0, 4, 20, 24);
+        return [0, 4, 20, 24];
     }
 
-    // 🎯 ማሳሰቢያ: የተጠሩት ቁጥሮች አሸናፊ ቅርጽ ካላሟሉ (ይህ በልዩ ሁኔታ የሚከሰት ከሆነ) ከተጠሩት ውስጥ ከካርቴላው ጋር የሚዛመዱትን ብቻ እንወስዳለን እንጂ ሁሉንም አንቀላቅልም
-    if (!winningPatternFound) {
-        grid2D.forEach(row => {
-            row.forEach(cell => {
-                if (cell.isHit) matchedIndices.push(cell.idx);
-            });
+    // ካልተገኘ ከተጠሩት ውስጥ ከካርቴላው ጋር የተגעኙትን ብቻ እንመልሳለን
+    let fallbackMatched = [];
+    grid2D.forEach(row => {
+        row.forEach(cell => {
+            if (cell.isHit) fallbackMatched.push(cell.idx);
         });
-    }
-
-    return Array.from(new Set(matchedIndices));
+    });
+    return fallbackMatched;
 }
 
 function getRealisticBotsCount(realCount) {
@@ -272,7 +258,6 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🎯 የጥሪ ብዛት ሮቴሽን መምረጥ
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
             globalRoom.targetWinCallCount = ALLOWED_WIN_CALL_COUNTS[randomIndex];
 
@@ -288,7 +273,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት ልክ ሲደርስ ብቻ ነው
                 let shouldTriggerWin = (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount);
                 
                 if (shouldTriggerWin) {
@@ -300,7 +284,6 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    // 🎯 የአድሚን ትዕዛዝ (forcedNextWinner)
                     let currentWinnerType = forcedNextWinner;
                     forcedNextWinner = null; 
 
@@ -383,7 +366,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // ቁጥሮችን በቅደም ተከተል መጥራት
                 let randomIndex = Math.floor(Math.random() * availableNumbers.length);
                 let calledNum = availableNumbers.splice(randomIndex, 1)[0];
                 globalRoom.calledNumbers.push(calledNum);
@@ -529,7 +511,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('financialRequest', async (data) => {
-        printAdminRequest = true;
         let { type, amount, username, userId, currentBalance, phone, receipt } = data;
         let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
         pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
