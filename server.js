@@ -85,17 +85,6 @@ let numberCallInterval = null;
 let roundsPlayedCount = 0;
 let userBonusStatus = {};
 
-function getDynamicWinThreshold(roundCount) {
-    let patterns = [15, 16, 13, 18, 23, 20, 18, 15, 27, 18, 19, 16, 15, 22, 18, 30, 15, 20, 18, 19, 13, 27, 19];
-    let baseIndex = (Math.floor(roundCount / 3)) % patterns.length;
-    let limit = patterns[baseIndex];
-
-    if (Math.random() < 0.12) {
-        limit = Math.floor(Math.random() * (35 - 32 + 1)) + 32;
-    }
-    return limit;
-}
-
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -180,94 +169,90 @@ function startMainGameLoop() {
 
             if (numberCallInterval) clearInterval(numberCallInterval);
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
-            let currentWinThreshold = getDynamicWinThreshold(roundsPlayedCount);
             
-            setTimeout(() => {
-                if (!globalRoom.gameActive) return;
+            // ቁጥሮቹ በሥርዓት በየ 4 ሰከንዱ እንዲጠሩ ማድረግ
+            numberCallInterval = setInterval(() => {
+                if (!globalRoom.gameActive) {
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    return;
+                }
 
-                numberCallInterval = setInterval(() => {
-                    if (!globalRoom.gameActive) {
-                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        return;
-                    }
+                // ቁጥሮቹ ከ 20 እስከ 25 ቁጥር ሲጠሩ ወይም አድሚኑ ሲያዝ አሸናፊ እንዲወጣ ማድረግ
+                let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 22) || (availableNumbers.length === 0);
+                
+                if (shouldTriggerWin) {
+                    let winningCardNum = Math.floor(Math.random() * 500) + 1;
+                    let winningUsername = ""; 
+                    let winningUserId = null;
+                    let winnersCount = 1;
+                    let isRealUserWin = false;
 
-                    let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= currentWinThreshold) || (globalRoom.calledNumbers.length >= 45) || (availableNumbers.length === 0);
+                    let entries = Object.entries(globalRoom.playerRoundCards);
                     
-                    if (shouldTriggerWin) {
-                        let winningCardNum = Math.floor(Math.random() * 500) + 1;
-                        let winningUsername = ""; 
-                        let winningUserId = null;
-                        let winnersCount = 1;
-                        let isRealUserWin = false;
-
-                        let entries = Object.entries(globalRoom.playerRoundCards);
-                        
-                        if (forcedNextWinner === 'random_real' && entries.length > 0) {
-                            let randEntry = entries[Math.floor(Math.random() * entries.length)];
-                            winningUserId = randEntry[0];
-                            winningUsername = randEntry[1].username;
-                            if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                                winningCardNum = randEntry[1].cards[0];
-                            }
-                            isRealUserWin = true;
-                            forcedNextWinner = null;
-                        } else if (forcedNextWinner === 'multi_real_3' || forcedNextWinner === 'random_3_real') {
-                            let threeBots = getRandomBotNames(3);
-                            winningUsername = threeBots.join(', '); 
-                            winnersCount = 3;
-                            winningCardNum = Math.floor(Math.random() * 450) + 1;
-                            isRealUserWin = true;
-                            forcedNextWinner = null;
-                        } else {
-                            winningUsername = getRandomBotNames(1)[0];
-                            winnersCount = 1;
-                            winningCardNum = Math.floor(Math.random() * 500) + 1;
-                            isRealUserWin = false;
-                            forcedNextWinner = null;
+                    if (forcedNextWinner === 'random_real' && entries.length > 0) {
+                        let randEntry = entries[Math.floor(Math.random() * entries.length)];
+                        winningUserId = randEntry[0];
+                        winningUsername = randEntry[1].username;
+                        if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                            winningCardNum = randEntry[1].cards[0];
                         }
-
-                        let totalPot = (globalRoom.playersCount || 140) * 10;
-                        let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
-
-                        sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
-
-                        // ሪል ዩዘር ካሸነፈ የሽልማት ብሩን ወደ ዋሌቱ እንዲጨመር ትዕዛዝ መላክ
-                        if (isRealUserWin && winningUserId) {
-                            let targetSocket = io.sockets.sockets.get(winningUserId);
-                            if (targetSocket) {
-                                targetSocket.emit('rewardPrize', { prize: prizePool });
-                            }
-                        }
-
-                        io.emit('bingoWinner', {
-                            username: winningUsername,
-                            userId: winningUserId,
-                            cardNum: winningCardNum,
-                            prize: prizePool,
-                            calledNumbers: globalRoom.calledNumbers,
-                            winnersCount: winnersCount,
-                            playersCount: globalRoom.playersCount
-                        });
-
-                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        
-                        setTimeout(() => { endRoundAndRestart(); }, 6000);
-                        return;
+                        isRealUserWin = true;
+                        forcedNextWinner = null;
+                    } else if (forcedNextWinner === 'multi_real_3' || forcedNextWinner === 'random_3_real') {
+                        let threeBots = getRandomBotNames(3);
+                        winningUsername = threeBots.join(', '); 
+                        winnersCount = 3;
+                        winningCardNum = Math.floor(Math.random() * 450) + 1;
+                        isRealUserWin = true;
+                        forcedNextWinner = null;
+                    } else {
+                        winningUsername = getRandomBotNames(1)[0];
+                        winnersCount = 1;
+                        winningCardNum = Math.floor(Math.random() * 500) + 1;
+                        isRealUserWin = false;
+                        forcedNextWinner = null;
                     }
 
-                    let randomIndex = Math.floor(Math.random() * availableNumbers.length);
-                    let calledNum = availableNumbers.splice(randomIndex, 1)[0];
-                    globalRoom.calledNumbers.push(calledNum);
-                    globalRoom.lastCalledNumber = calledNum;
+                    let totalPot = (globalRoom.playersCount || 140) * 10;
+                    let prizePool = Math.floor((totalPot * 0.90) / winnersCount);
 
-                    io.emit('numberCalled', {
-                        number: calledNum,
-                        calledNumbers: globalRoom.calledNumbers
+                    sendWinnerNotificationToAdmin(winningUsername, winningCardNum, prizePool, isRealUserWin);
+
+                    if (isRealUserWin && winningUserId) {
+                        let targetSocket = io.sockets.sockets.get(winningUserId);
+                        if (targetSocket) {
+                            targetSocket.emit('rewardPrize', { prize: prizePool });
+                        }
+                    }
+
+                    io.emit('bingoWinner', {
+                        username: winningUsername,
+                        userId: winningUserId,
+                        cardNum: winningCardNum,
+                        prize: prizePool,
+                        calledNumbers: globalRoom.calledNumbers,
+                        winnersCount: winnersCount,
+                        playersCount: globalRoom.playersCount
                     });
-                    io.emit('numberCalledBroadcast', calledNum);
 
-                }, 4000);
-            }, 5000);
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    
+                    setTimeout(() => { endRoundAndRestart(); }, 6000);
+                    return;
+                }
+
+                let randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                let calledNum = availableNumbers.splice(randomIndex, 1)[0];
+                globalRoom.calledNumbers.push(calledNum);
+                globalRoom.lastCalledNumber = calledNum;
+
+                io.emit('numberCalled', {
+                    number: calledNum,
+                    calledNumbers: globalRoom.calledNumbers
+                });
+                io.emit('numberCalledBroadcast', calledNum);
+
+            }, 4000); 
         }
     }, 1000);
 }
