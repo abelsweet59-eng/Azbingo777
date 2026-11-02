@@ -83,8 +83,6 @@ let pendingRequests = {};
 let gameInterval = null;
 let numberCallInterval = null;
 
-let roundsPlayedCount = 0;
-
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
     let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
@@ -115,7 +113,6 @@ function getCartelaNumbers(cardNum) {
     return flatList;
 }
 
-// 🎯 ጥብቅ የቢንጎ የድል ማረጋገጫ (አግድም፣ ቁመት፣ ሰያፍ ወይም 4 ማዕዘን ሙሉ በሙሉ ሲሞላ ብቻ ትክክለኛ ቢንጎ ይላል)
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     let matchedIndices = [];
     let grid2D = [];
@@ -134,7 +131,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
 
     let hasValidBingoPattern = false;
 
-    // 1. አግድም መስመር (Rows) - 5ቱንም መምታት አለበት
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
             hasValidBingoPattern = true;
@@ -142,7 +138,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
-    // 2. ቁመት መስመር (Columns) - 5ቱንም መምታት አለበት
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -156,7 +151,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
-    // 3. ሰያፍ መስመር (Diagonals) - 5ቱንም መምታት አለበት
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -174,15 +168,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         diag2Cells.forEach(cell => matchedIndices.push(cell.idx));
     }
 
-    // 4. 4 ማዕዘን (Four Corners)
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         hasValidBingoPattern = true;
         matchedIndices.push(0, 4, 20, 24);
     }
 
-    // ካርቴላው ላይ ትክክለኛ የቢንጎ ፓተርን ከሌለ፣ ጨዋታው እንዳይዘጋ ቢያንስ የመጀመሪያውን መስመር ወይም የሞላውን ቼክ እናደርጋለን
     if (!hasValidBingoPattern) {
-        // በነባሪ የመጀመሪያውን አግድም መስመር ሙሉ በሙሉ እንይዛለን
         for(let c=0; c<5; c++) matchedIndices.push(grid2D[0][c].idx);
     }
 
@@ -266,7 +257,6 @@ function startMainGameLoop() {
             globalRoom.gameActive = true;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
-            roundsPlayedCount++;
 
             io.emit('gameStarted', { calledNumbers: [] });
             io.emit('gameStartedBroadcast');
@@ -280,7 +270,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // ጨዋታው ቢያንስ 25 ቁጥሮች ከተጠሩ በኋላ ወይም አሸናፊ በфорс ሲጠየቅ ብቻ እንዲዘጋ
                 let shouldTriggerWin = (forcedNextWinner) || (globalRoom.calledNumbers.length >= 25) || (availableNumbers.length === 0);
                 
                 if (shouldTriggerWin) {
@@ -472,11 +461,26 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 🎯 ተጫዋቹ ካርድ ሲያረጋግጥ የነበረውን የድሮ ክፍያ አስተካክሎ ትክክለኛውን ልዩነት ብቻ የሚቆርጥበት ሎጂክ
     socket.on('confirmCards', (data) => {
-        let selectedCards = data.cards || data;
+        let newCards = data.cards || data;
         let userId = String(data.userId || socket.id);
         delete globalRoom.playerTemporaryCards[socket.id];
-        globalRoom.playerRoundCards[socket.id] = { cards: selectedCards, userId: userId, username: data.username || "ተጫዋች" };
+        
+        let previousCards = globalRoom.playerRoundCards[socket.id] ? globalRoom.playerRoundCards[socket.id].cards : [];
+        let prevCount = previousCards.length;
+        let newCount = newCards.length;
+        let cardDifference = newCount - prevCount;
+
+        if (cardDifference > 0) {
+            let extraCost = cardDifference * 10;
+            let targetSocket = io.sockets.sockets.get(socket.id);
+            if (targetSocket) {
+                targetSocket.emit('deductExtraCardCost', { cost: extraCost });
+            }
+        }
+
+        globalRoom.playerRoundCards[socket.id] = { cards: newCards, userId: userId, username: data.username || "ተጫዋች" };
         socket.emit('cardSelectionSuccess');
         refreshTakenCardsList();
     });
