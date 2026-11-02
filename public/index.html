@@ -231,6 +231,68 @@
                             <li>ሰዓቱ ዜሮ ሲደርስ ጨዋታው በራሱ ይጀምራል እና ቦርዱ ቁጥሮችን መጥራት ይጀምራል።</li>
                         </ul>
                     </div>
+
+                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
+                        <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህግ እና የቢንጎ ቅጥ (Winning Criteria)</h3>
+                        <p class="text-gray-300 text-[11px]">የሚከተሉትን ቅጦች በመከተል ማሸነፍ ይችላሉ[span_2](start_span)[span_2](end_span)፦</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <!-- Horizontal -->
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)[span_3](start_span)[span_3](end_span)</div>
+                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ አግድም መስመር ሲመታ[span_4](start_span)[span_4](end_span)</div>
+                            </div>
+
+                            <!-- Vertical -->
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">ቀጥመት (Vertical)[span_5](start_span)[span_5](end_span)</div>
+                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ ቀጥተኛ መስመር ሲመታ[span_6](start_span)[span_6](end_span)</div>
+                            </div>
+
+                            <!-- Diagonal -->
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 relative flex items-center justify-center">
+                                        <div class="absolute w-10 h-1 bg-emerald-500 rotate-45 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">ሰያፍ (Diagonal)[span_7](start_span)[span_7](end_span)</div>
+                                <div class="text-[9px] text-gray-300 leading-tight">ሰያፍ መስመር ሲመታ[span_8](start_span)[span_8](end_span)</div>
+                            </div>
+
+                            <!-- Four Corners -->
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 col-start-1 row-start-1 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-5 row-start-1 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-1 row-start-5 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-5 row-start-5 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">አራት ማዕዘኖች (Four Corners)[span_9](start_span)[span_9](end_span)</div>
+                                <div class="text-[9px] text-gray-300 leading-tight">አራቱ ማዕዘኖች ሲመቱ[span_10](start_span)[span_10](end_span)</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="rules-page-2" class="space-y-3 hidden">
@@ -371,7 +433,6 @@
         const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
         const userCurrentRoundPaidKey = `az_bingo_round_paid_${telegramUserId}`;
 
-        // 🎯 የሂሳብ ማስተካከያ፡ አፑን ሲዘጋ እና ሲከፈት በነበሪው 30 ብር ምትክ ትክክለኛውን የተጠቃሚውን ባላንስ መያዝ
         if (localStorage.getItem(userLocalStorageKey) !== null) {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
         } else {
