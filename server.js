@@ -461,19 +461,20 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🎯 ተጫዋቹ ካርድ ሲያረጋግጥ የነበረውን የድሮ ክፍያ አስተካክሎ ትክክለኛውን ልዩነት ብቻ የሚቆርጥበት ሎጂክ
+    // 🎯 ተጫዋቹ ተጨማሪ ካርድ ሲያረጋግጥ ትክክለኛውን የካርድ ብዛት ልዩነት ብቻ (በ 10 ብር ተባዝቶ) የሚቆርጥበት ጥብቅ ሎጂክ
     socket.on('confirmCards', (data) => {
         let newCards = data.cards || data;
         let userId = String(data.userId || socket.id);
         delete globalRoom.playerTemporaryCards[socket.id];
         
-        let previousCards = globalRoom.playerRoundCards[socket.id] ? globalRoom.playerRoundCards[socket.id].cards : [];
+        let existingRecord = globalRoom.playerRoundCards[socket.id];
+        let previousCards = existingRecord ? existingRecord.cards : [];
         let prevCount = previousCards.length;
         let newCount = newCards.length;
-        let cardDifference = newCount - prevCount;
+        let diff = newCount - prevCount;
 
-        if (cardDifference > 0) {
-            let extraCost = cardDifference * 10;
+        if (diff > 0) {
+            let extraCost = diff * 10;
             let targetSocket = io.sockets.sockets.get(socket.id);
             if (targetSocket) {
                 targetSocket.emit('deductExtraCardCost', { cost: extraCost });
