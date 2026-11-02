@@ -66,7 +66,7 @@ function getRandomBotNames(count) {
     return shuffled.slice(0, count);
 }
 
-// 🎯 እርስዎ የላኳቸው ትክክለኛ የቁጥር ክልሎች (ለምሳሌ 12 እስከ 30 ያሉት) ራንደም ሮቴት እያደረጉ እንዲወጡ
+// 🎯 እርስዎ የጠየቋቸው ትክክለኛ የጥሪ ብዛት ሮቴሽኖች (Allowed Win Call Counts)
 const ALLOWED_WIN_CALL_COUNTS = [12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 30];
 
 let globalRoom = {
@@ -262,7 +262,7 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🎯 ልክ ጨዋታው ሲጀመር ከተሰጡት ቁጥሮች ውስጥ ራንደም በሆነ ሮቴሽን የጥሪ ብዛት ይመረጣል (ለምሳሌ 15, 22, 28 ወዘተ)
+            // 🎯 ልክ ጨዋታው ሲጀመር ከታቀቁት የጥሪ ብዛት ውስጥ አንዱን በራንደም እንመርጣለን (ለምሳሌ 15፣ 22፣ 28 ወዘተ)
             let randomIndex = Math.floor(Math.random() * ALLOWED_WIN_CALL_COUNTS.length);
             globalRoom.targetWinCallCount = ALLOWED_WIN_CALL_COUNTS[randomIndex];
 
@@ -278,8 +278,9 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 ጨዋታው የሚያበቃው የተመረጠው የጥሪ ብዛት ሲደርስ ወይም አድሚኑ አስገዳጅ አሸናፊ (forcedNextWinner) ሲሰጥ ብቻ ነው
-                let shouldTriggerWin = (forcedNextWinner !== null) || (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount) || (availableNumbers.length === 0);
+                // 🎯 እዚህ ጋር አስተካክለናል፡ ጨዋታው ከጅምሩ ወዲያው እንዳያልቅ!
+                // የሚጨርሰው አድሚኑ አስገዳጅ ትዕዛዝ (forcedNextWinner) ሲሰጥ ወይም የተመረጠው የጥሪ ብዛት (targetWinCallCount) ልክ ሲደርስ ብቻ ነው
+                let shouldTriggerWin = (forcedNextWinner !== null) || (globalRoom.calledNumbers.length >= globalRoom.targetWinCallCount);
                 
                 if (shouldTriggerWin) {
                     let winningCardNum = Math.floor(Math.random() * 500) + 1;
@@ -290,7 +291,7 @@ function startMainGameLoop() {
 
                     let entries = Object.entries(globalRoom.playerRoundCards);
                     let currentWinnerType = forcedNextWinner;
-                    forcedNextWinner = null; // ትዕዛዙን አንዴ ከፈጸመ በኋላ ሪሴት ይደረጋል
+                    forcedNextWinner = null; // አንዴ ጥቅም ላይ ከዋለ በኋላ ሪሴት ይደረጋል
 
                     if (currentWinnerType === 'random_real' && entries.length > 0) {
                         let randEntry = entries[Math.floor(Math.random() * entries.length)];
@@ -318,7 +319,7 @@ function startMainGameLoop() {
                         winningCardNum = Math.floor(Math.random() * 500) + 1;
                         isRealUserWin = false;
                     } else {
-                        // አድሚኑ ካላዘዘ በነባሪ (Default) ተጫዋቾች ካሉ ሪል ዩዘር አሸናፊ እንዲሆን ወይም ቦት እንዲወጣ ይደረጋል
+                        // አድሚኑ ካላዘዘ በራሱ ሮቴሽን የተመረጠው ቁጥር ሲደርስ ቦት ወይም ሪል ዩዘር አሸናፊ ይሆናል
                         if (entries.length > 0 && Math.random() > 0.4) {
                             let randEntry = entries[Math.floor(Math.random() * entries.length)];
                             winningUserId = randEntry[0];
@@ -367,6 +368,7 @@ function startMainGameLoop() {
                     return;
                 }
 
+                // ቁጥሮችን በቅደም ተከተል መጥራት
                 let randomIndex = Math.floor(Math.random() * availableNumbers.length);
                 let calledNum = availableNumbers.splice(randomIndex, 1)[0];
                 globalRoom.calledNumbers.push(calledNum);
