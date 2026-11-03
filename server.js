@@ -228,8 +228,9 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
+// 🎯 **ቦቶች ሲያሸንፉ ወደ ቴሌግራም ኖቲፊኬሽን እንዳይላክ ተደርጓል (ሪል ዩዘር ሲያሸንፍ ብቻ ይልካል)**
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
     let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
     try {
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -259,9 +260,6 @@ function startMainGameLoop() {
             let winnersCount = 1; 
             let winningCardNums = [];
 
-            // 🎯 **ክሩሻል ህግ (Strict Admin Control):** 
-            // አድሚኑ ካላዘዘ (ማለትም currentWinnerTypeባዶ ከሆነ) ሪል ዩዘር በጭራሽ አያሸንፍም፤ ቦቶች ብቻ በዘፈቀደ (1 ወይም 2 ቦቶች) ያሸንፋሉ።
-            // አድሚኑ ካዘዘ ብቻ ነው ሪል ዩዘር እንዲያሸንፍ የሚደረገው።
             let targetRealCount = 0;
             let targetBotCount = 1;
 
@@ -282,7 +280,6 @@ function startMainGameLoop() {
                 targetBotCount = 1;
                 winnersCount = 2;
             } else {
-                // 🛑 **ነባሪ (Default):** አድሚኑ ካላዘዘ ቦቶች ብቻ በዘፈቀደ (1 ወይም 2) ያሸንፋሉ!
                 targetRealCount = 0;
                 winnersCount = Math.random() < 0.5 ? 1 : 2;
                 targetBotCount = winnersCount;
@@ -308,7 +305,6 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Strict Rotation Call Count (ከ 12 እስከ 30፣ 18/19/28 በብዛት፣ ሬር 35-37 — ከዚህ በጭራሽ አያልፍም)**
             let rotationPool = [
                 12, 13, 14, 15, 16, 17, 18, 18, 18, 19, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29, 30,
                 35, 36, 37
@@ -359,10 +355,8 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 **ጥሪው targetCallCount ላይ ሲደርስ በግድ ቆሞ ዊን ይላል!**
                 let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount);
                 
-                // ሪል ዩዘር ካለ እና አድሚን ካዘዘው ብቻ እንዲጨርስ ይደረጋል
                 let realUserCompleted = false;
                 if (targetRealCount > 0) {
                     perWinnerConfigs.forEach((cfg, idx) => {
@@ -386,6 +380,8 @@ function startMainGameLoop() {
 
                     let winnerNamesStr = winningUsernamesArr.join(', ');
                     let hasRealWinner = winningSocketData.some(i => !i.isBot);
+                    
+                    // 🎯 **ኖቲፊኬሽኑ የሚላከው ሪል ዩዘር ሲያሸንፍ ብቻ ነው!**
                     sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
                     winningSocketData.forEach(item => {
