@@ -260,7 +260,7 @@ function startMainGameLoop() {
             let isRealUserWin = false;
             let winningCardNums = [];
 
-            // 🎯 **የተመረጡትን አሸናፊዎች (ሪል ዩዘሮች እና ቦቶች) በትክክል የመምረጥ ሎጂክ**
+            // 🎯 **ቅድመ-ዝግጅት: አሸናፊዎቹን እና ካርዶቻቸውን አስቀድሞ መወሰን**
             if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
                 let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
                 winnersCount = requiredCount;
@@ -338,8 +338,9 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **ጥብቅ የተመሳሰለ (Strict Simultaneous Real-Time Synchronization):**
-            // ለሁሉም አሸናፊዎች ካርዶች የሚያስፈልጉትን የማሸነፊያ ቁጥሮች (Patterns) አንድ ላይ አቀናጅተን እንይዛለን።
+            // 🎯 **Pre-Determined Pattern & Synchronized Queue Generation:**
+            // ጨዋታው ሲጀመር ለሁሉም አሸናፊዎች የሚገባው የማሸነፊያ ፓተርን በቅድመ-ዝግጅት ተሰልፎ 
+            // የቁጥር ጥሪው ኪዩው (winNumQueue) በትክክል እኩል ሰዓት እንዲያልቅ ይደረጋል።
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -373,7 +374,6 @@ function startMainGameLoop() {
 
                 let calledNum;
 
-                // ቁጥሮቹ በቅደም ተከተል ይጠራሉ
                 if (winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
@@ -394,9 +394,9 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Instant Simultaneous Win Trigger:**
-                // የሁሉም አሸናፊዎች (የሪል ዩዘሮች እና ቦቶች) ማሸነፊያ ቁጥሮች ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) 
-                // ማንም ሳይዘገይ ጨዋታው ወዲያውኑ ቆሞ ለሁሉም በአንድ ጊዜ ፖፕ አፑን ያመጣል።
+                // 🎯 **True Simultaneous Pre-Planned Win Trigger:**
+                // የቅድመ-ዝግጅቱ ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) 
+                // ሁሉም ተጫዋቾች በአንድ ሰዓት መስመራቸውን ጨርሰው ፖፕ አፑ በአንድ ጊዜ ይከፈታል።
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
