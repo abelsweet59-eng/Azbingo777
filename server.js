@@ -350,10 +350,8 @@ function startMainGameLoop() {
                 let pNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
                 combinedWinningNumbers.push(...pNums);
             });
-            // ከእያንዳንዱ ካርድ የሚፈለጉትን ልዩ ቁጥሮች እናወጣለን
             let uniqueWinningNumbers = Array.from(new Set(combinedWinningNumbers));
 
-            // ጨዋታው ሊያልቅ የሚገባበትን የጥሪ ብዛት እንወስናለን (ቢያንስ የድል ቁጥሮቹ ብዛት + የዘፈቀደ ርቀት)
             let targetCalls = Math.max(uniqueWinningNumbers.length + 8, 28);
             globalRoom.targetWinCallCount = targetCalls;
 
@@ -365,7 +363,6 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             
             let callStep = 0;
-            // የድል ቁጥሮቹን በጨዋታው ሂደት ውስጥ (ከ 1 እስከ targetCalls ባለው ጊዜ ውስጥ) በእኩል ክፍተት እንበትናቸዋለን
             let winNumQueue = [...uniqueWinningNumbers];
             let intervalSlots = [];
             let slotStep = Math.floor(targetCalls / (winNumQueue.length + 1));
@@ -382,7 +379,6 @@ function startMainGameLoop() {
                 callStep++;
                 let calledNum;
 
-                // ከቀጠሮው ጋር የሚዛመድ የድል ቁጥር ካለ እንጠራለን፣ ካልሆነ በዘፈቀደ እንጠራለን
                 let slotIndex = intervalSlots.indexOf(callStep);
                 if (slotIndex > -1 && winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
