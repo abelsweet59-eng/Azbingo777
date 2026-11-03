@@ -333,6 +333,8 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🎯 **Strict Simultaneous Multi-Winner Synchronization:**
+            // የሁሉም አሸናፊዎች ካርዶች የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው፣ በጨዋታው ውስጥ ተመጣጥረው እንዲጠሩ ይደረጋል።
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
@@ -349,11 +351,6 @@ function startMainGameLoop() {
             });
             let uniqueWinningNumbers = Array.from(new Set(combinedWinningNumbers));
 
-            // 🎯 **ፍጹም የተመሳሰለ (Strict Simultaneous Sync):**
-            // የጥሪው ብዛት በትክክል ከሁሉም አሸናፊዎች የመጨረሻ ቁጥር ጋር ይስተካከላል።
-            let targetCalls = uniqueWinningNumbers.length + 2; 
-            globalRoom.targetWinCallCount = targetCalls;
-
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
             io.emit('gameStarted', { calledNumbers: [] });
@@ -362,7 +359,6 @@ function startMainGameLoop() {
             if (numberCallInterval) clearInterval(numberCallInterval);
             
             let callStep = 0;
-            // የድል ቁጥሮቹን በቅደም ተከተል አስቀምጠን በየደረጃው እንጠራቸዋለን
             let winNumQueue = [...uniqueWinningNumbers];
 
             numberCallInterval = setInterval(() => {
@@ -374,7 +370,6 @@ function startMainGameLoop() {
                 callStep++;
                 let calledNum;
 
-                // 🎯 **ቁልፍ ማስተካከያ:** የታቀዱት አሸናፊዎች ቁጥሮች በቅደም ተከተል ተጠራርተው ሲያልቁ ጨዋታው በአንድ ጊዜ ይጠናቀቃል
                 if (winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
@@ -395,8 +390,8 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **ጥብቅ የሶስትዮሽ/ባለብዙ ዊነር ማቆሚያ (Simultaneous End):** 
-                // የሁሉም አሸናፊዎች መስመር ተሞልቶ ሲያልቅ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይቋረጣል!
+                // 🎯 **Simultaneous Multi-Winner Trigger:** 
+                // የሁሉም አሸናፊዎች ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይጠናቀቃል!
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
