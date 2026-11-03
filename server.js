@@ -260,7 +260,6 @@ function startMainGameLoop() {
             let isRealUserWin = false;
             let winningCardNums = [];
 
-            // 🎯 **ቅድመ-ዝግጅት: አሸናፊዎቹን እና ካርዶቻቸውን አስቀድሞ መወሰን**
             if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
                 let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
                 winnersCount = requiredCount;
@@ -338,9 +337,9 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Pre-Determined Pattern & Synchronized Queue Generation:**
-            // ጨዋታው ሲጀመር ለሁሉም አሸናፊዎች የሚገባው የማሸነፊያ ፓተርን በቅድመ-ዝግጅት ተሰልፎ 
-            // የቁጥር ጥሪው ኪዩው (winNumQueue) በትክክል እኩል ሰዓት እንዲያልቅ ይደረጋል።
+            // 🎯 **Interleaved & Alternating Queue Generation (ቁጥሮቹን እየቀያየረ እና እያቀላቀለ ማቀናጀት):**
+            // ለአንደኛው ጨርሶ ከመስጠት ይልቅ፣ የሁሉም አሸናፊዎች የማሸነፊያ ቁጥሮች (Patterns) ተቀላቅለው (Interleaved) 
+            // በየተራ እየተጠሩ በመጨረሻ ላይ በአንድ ሰዓት እንዲያልቁ ይደረጋል።
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -348,14 +347,22 @@ function startMainGameLoop() {
                 [0,4,20,24]
             ];
 
-            let combinedWinningNumbers = [];
-            winningCardNums.forEach(cNum => {
+            let perWinnerNumArrays = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                let pNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
-                combinedWinningNumbers.push(...pNums);
+                return p.map(idx => cList[idx]).filter(n => n !== "FREE");
             });
-            let uniqueWinningNumbers = Array.from(new Set(combinedWinningNumbers));
+
+            let interleavedWinningNumbers = [];
+            let maxLength = Math.max(...perWinnerNumArrays.map(arr => arr.length));
+            
+            for (let i = 0; i < maxLength; i++) {
+                perWinnerNumArrays.forEach(arr => {
+                    if (arr[i] !== undefined && !interleavedWinningNumbers.includes(arr[i])) {
+                        interleavedWinningNumbers.push(arr[i]);
+                    }
+                });
+            }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
@@ -364,7 +371,7 @@ function startMainGameLoop() {
 
             if (numberCallInterval) clearInterval(numberCallInterval);
             
-            let winNumQueue = [...uniqueWinningNumbers];
+            let winNumQueue = [...interleavedWinningNumbers];
 
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
@@ -394,9 +401,9 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **True Simultaneous Pre-Planned Win Trigger:**
-                // የቅድመ-ዝግጅቱ ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) 
-                // ሁሉም ተጫዋቾች በአንድ ሰዓት መስመራቸውን ጨርሰው ፖፕ አፑ በአንድ ጊዜ ይከፈታል።
+                // 🎯 **Simultaneous Alternated Win Trigger:**
+                // ቁጥሮቹ ተራ በተራ እየተፈራረቁ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) 
+                // ሁሉም ተጫዋቾች በተመሳሳይ ሰዓት መስመራቸውን ጨርሰው ፖፕ አፑ በአንድ ጊዜ ይወጣል።
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
