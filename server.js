@@ -256,12 +256,14 @@ function startMainGameLoop() {
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = 3; 
-            let isRealUserWin = true;
+            let winnersCount = 1; 
             let winningCardNums = [];
 
-            let targetRealCount = 1;
-            let targetBotCount = 2;
+            // 🎯 **ክሩሻል ህግ (Strict Admin Control):** 
+            // አድሚኑ ካላዘዘ (ማለትም currentWinnerTypeባዶ ከሆነ) ሪል ዩዘር በጭራሽ አያሸንፍም፤ ቦቶች ብቻ በዘፈቀደ (1 ወይም 2 ቦቶች) ያሸንፋሉ።
+            // አድሚኑ ካዘዘ ብቻ ነው ሪል ዩዘር እንዲያሸንፍ የሚደረገው።
+            let targetRealCount = 0;
+            let targetBotCount = 1;
 
             if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
                 targetRealCount = 3;
@@ -275,6 +277,15 @@ function startMainGameLoop() {
                 targetRealCount = 0;
                 targetBotCount = 1;
                 winnersCount = 1;
+            } else if (currentWinnerType === 'real_user' || currentWinnerType === 'single_real') {
+                targetRealCount = 1;
+                targetBotCount = 1;
+                winnersCount = 2;
+            } else {
+                // 🛑 **ነባሪ (Default):** አድሚኑ ካላዘዘ ቦቶች ብቻ በዘፈቀደ (1 ወይም 2) ያሸንፋሉ!
+                targetRealCount = 0;
+                winnersCount = Math.random() < 0.5 ? 1 : 2;
+                targetBotCount = winnersCount;
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -304,7 +315,6 @@ function startMainGameLoop() {
             ];
             let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
 
-            // አሸናፊዎቹ በ targetCallCount ውስጥ እንዲጨርሱ የሚያስፈልጉ ቁጥሮችን በቅደም ተከተል ማዘጋጀት
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -330,7 +340,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // የሚጠሩት ቁጥሮች ከ targetCallCount እንዳያልፉ በጥብቅ መቁረጥ
             if (interleavedWinningNumbers.length > targetCallCount) {
                 interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
@@ -350,19 +359,24 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 **የቁጥር ጥሪው ብዛት (targetCallCount) ላይ ሲደርስ ወይም ሪል ዩዘር ሲጨርስ በግድ ቆሞ ዊን ይላል!**
-                let realUserCompleted = false;
-                perWinnerConfigs.forEach((cfg, idx) => {
-                    let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
-                    let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (!winningSocketData[idx].isBot && isPatternDone) {
-                        realUserCompleted = true;
-                    }
-                });
-
+                // 🎯 **ጥሪው targetCallCount ላይ ሲደርስ በግድ ቆሞ ዊን ይላል!**
                 let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount);
                 
-                if (realUserCompleted || reachedTargetLimit) {
+                // ሪል ዩዘር ካለ እና አድሚን ካዘዘው ብቻ እንዲጨርስ ይደረጋል
+                let realUserCompleted = false;
+                if (targetRealCount > 0) {
+                    perWinnerConfigs.forEach((cfg, idx) => {
+                        let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
+                        let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                        if (!winningSocketData[idx].isBot && isPatternDone) {
+                            realUserCompleted = true;
+                        }
+                    });
+                }
+                
+                let shouldTriggerWin = (reachedTargetLimit || (targetRealCount > 0 && realUserCompleted) || (targetRealCount === 0 && reachedTargetLimit));
+                
+                if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
@@ -371,7 +385,8 @@ function startMainGameLoop() {
                     let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
                     let winnerNamesStr = winningUsernamesArr.join(', ');
-                    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, isRealUserWin);
+                    let hasRealWinner = winningSocketData.some(i => !i.isBot);
+                    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
                     winningSocketData.forEach(item => {
                         if (!item.isBot && item.socketId) {
