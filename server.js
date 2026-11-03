@@ -297,10 +297,10 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Dynamic Rotation Call Count Pool (እንደ እርስዎ ምሳሌ ከ 12 እስከ 30 ሮቴት የሚያደርግ፣ 18/19/28 በብዛት የሚወጡበት እና አልፎ አልፎ እስከ 35-37 የሚደርስ)**
+            // 🎯 **Dynamic Rotation Call Count Pool (12 እስከ 30፣ 18/19/28 በብዛት፣ ሬር 35-37)**
             let rotationPool = [
                 12, 13, 14, 15, 16, 17, 18, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 29, 30,
-                35, 37 // አልፎ አልፎ (Rare)
+                35, 37
             ];
             let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
 
