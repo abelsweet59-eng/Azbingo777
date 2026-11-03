@@ -251,6 +251,8 @@ function startMainGameLoop() {
             globalRoom.lastCalledNumber = null;
             
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
+            let currentWinnerType = forcedNextWinner;
+            forcedNextWinner = null; 
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
@@ -261,29 +263,50 @@ function startMainGameLoop() {
             let chosenRealSocketId = null;
             let chosenRealUsername = "ተጫዋች";
 
-            if (activeRealEntries.length > 0) {
-                let randReal = activeRealEntries[Math.floor(Math.random() * activeRealEntries.length)];
-                chosenRealSocketId = randReal[0];
-                chosenRealUsername = randReal[1].username;
-                winningCardNums.push(randReal[1].cards && randReal[1].cards.length > 0 ? randReal[1].cards[0] : Math.floor(Math.random() * 450) + 1);
-            } else {
-                let dummyBotExtra = getRandomBotNames(1)[0];
-                winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-                chosenRealUsername = dummyBotExtra; 
+            // 🎯 **Strict Admin Command Enforcement (አድሚኑ ካዘዘው ውጭ በዘፈቀደ እንዳያሸንፍ ጥብቅ ቁጥጥር)**
+            let targetRealCount = 1;
+            let targetBotCount = 2;
+
+            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
+                targetRealCount = 3;
+                targetBotCount = 0;
+                winnersCount = 3;
+            } else if (currentWinnerType === 'dual_bot') {
+                targetRealCount = 0;
+                targetBotCount = 2;
+                winnersCount = 2;
+            } else if (currentWinnerType === 'bot') {
+                targetRealCount = 0;
+                targetBotCount = 1;
+                winnersCount = 1;
             }
 
-            winningUsernamesArr.push(chosenRealUsername);
-            winningSocketData.push({ socketId: chosenRealSocketId, isBot: (activeRealEntries.length === 0) });
+            // ሪል ዩዘሮችን መምረጥ
+            if (targetRealCount > 0 && activeRealEntries.length > 0) {
+                let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                let chosenReal = shuffledReal.slice(0, targetRealCount);
+                chosenReal.forEach(item => {
+                    winningUsernamesArr.push(item[1].username);
+                    winningSocketData.push({ socketId: item[0], isBot: false });
+                    winningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
+                });
+            }
 
-            let twoBots = getRandomBotNames(2);
-            twoBots.forEach(bName => {
+            // ሪል ዩዘር ከሌለ ወይም ካነሰ በቦት መሙላት
+            while (winningUsernamesArr.length < winnersCount) {
+                let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
                 winningSocketData.push({ socketId: null, isBot: true });
                 winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-            });
+            }
 
+            winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🎯 **Dynamic Count Variation (የጥሪ ብዛት ከ 12፣ 17፣ 18፣ 25፣ 28 እስከ 35 ወይም 37 በራንደም እንዲቀያየር ማድረግ)**
+            let possibleCallCounts = [12, 17, 18, 25, 28, 32, 35, 37];
+            let targetCallCount = possibleCallCounts[Math.floor(Math.random() * possibleCallCounts.length)];
+
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -298,6 +321,7 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
             });
 
+            // ዚግዛግ አቀማመጥ (Interleaved Zig-Zag Queue)
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -307,6 +331,14 @@ function startMainGameLoop() {
                         interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
+            }
+
+            // የጥሪ ብዛቱን ከታለመው (targetCallCount) ጋር ማቀናጀት
+            while (interleavedWinningNumbers.length < targetCallCount) {
+                let extraRandNum = Math.floor(Math.random() * 75) + 1;
+                if (!interleavedWinningNumbers.includes(extraRandNum)) {
+                    interleavedWinningNumbers.push(extraRandNum);
+                }
             }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
@@ -346,6 +378,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
+                // 🎯 **Strict 100% Simultaneous Win Trigger (አድሚኑ ካዘዘው ውጭ እንዳይበላ እና ሁሉም በአንድ ሰዓት እንዲጨርሱ)**
                 let allCardsCompleted = true;
                 perWinnerConfigs.forEach(cfg => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
@@ -529,6 +562,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('financialRequest', async (data) => {
+        data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt } = data;
         let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
         pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
