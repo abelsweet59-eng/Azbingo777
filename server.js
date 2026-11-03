@@ -260,6 +260,7 @@ function startMainGameLoop() {
             let isRealUserWin = false;
             let winningCardNums = [];
 
+            // 🎯 **እውነተኛ ተጫዋቾች (Real Users) እና ቦቶችን በትክክል የማዛመድ ሎጂክ:**
             if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
                 let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
                 winnersCount = requiredCount;
@@ -267,19 +268,24 @@ function startMainGameLoop() {
                 if (activeRealEntries.length > 0) {
                     isRealUserWin = true;
                     let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                    
+                    // ኦንላይን ያሉትን ሪል ዩዘሮች እንወስዳለን
                     let chosenReal = shuffledReal.slice(0, requiredCount);
                     
                     chosenReal.forEach(item => {
                         winningUsernamesArr.push(item[1].username);
                         winningSocketData.push({ socketId: item[0], isBot: false });
                         if (item[1].cards && item[1].cards.length > 0) {
-                            winningCardNums.push(item[1].cards[0]);
+                            winningCardNums.push(item[1].cards[0]); // የዩዘሩን ትክክለኛ የተመረጠ ካርድ ቁጥር እንይዛለን!
+                        } else {
+                            winningCardNums.push(Math.floor(Math.random() * 450) + 1);
                         }
                     });
 
+                    // ሪል ዩዘሮቹ ከታዘዘው ቁጥር (ለምሳሌ 3) ካነሱ፣ የቀሩትን በቦት እንሞላቸዋለን
                     if (winningUsernamesArr.length < requiredCount) {
-                        let neededBots = requiredCount - winningUsernamesArr.length;
-                        let botNames = getRandomBotNames(neededBots);
+                        let neededCount = requiredCount - winningUsernamesArr.length;
+                        let botNames = getRandomBotNames(neededCount);
                         botNames.forEach(bName => {
                             winningUsernamesArr.push(bName);
                             winningSocketData.push({ socketId: null, isBot: true });
@@ -318,6 +324,8 @@ function startMainGameLoop() {
                     winningUsernamesArr.push(randEntry[1].username);
                     if (randEntry[1].cards && randEntry[1].cards.length > 0) {
                         winningCardNums.push(randEntry[1].cards[0]);
+                    } else {
+                        winningCardNums.push(Math.floor(Math.random() * 500) + 1);
                     }
                     isRealUserWin = true;
                     winnersCount = 1;
@@ -333,10 +341,9 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **True Simultaneous Multi-Winner Logic:**
-            // የሁሉም አሸናፊዎች (የተመረጡት ዩዘሮች እና ቦቶች) ካርዶች የማሸነፊያ ቁጥሮች በአንድ ላይ ተሰብስበው፣ 
-            // በጨዋታው ሂደት ውስጥ በቅደም ተከተል ተመጣጥነው ይጠራሉ። አንዱም ቀድሞ ጨርሶ ሌላኛውን አይጠብቅም፤ 
-            // ሁሉም ቁጥሮች ተጠርተው ሲያልቁ ብቻ (በተመሳሳይ ሰዓት) ዊን ይደረጋል።
+            // 🎯 **Perfect Real-Time Synchronization Logic:**
+            // የሁሉም የተመረጡ አሸናፊዎች (የሪል ዩዘሮች እና ቦቶች) ካርዶች የማሸነፊያ ቁጥሮች አስቀድመው ተሰልፈው፣ 
+            // በቁጥር ጥሪው ሂደት ውስጥ ፍጹም በሆነ ቅደም ተከተል ተጠራርተው ሲያልቁ ብቻ ሁሉም በአንድ ሰዓት ዊን ያደርጋሉ።
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -372,6 +379,7 @@ function startMainGameLoop() {
                 callStep++;
                 let calledNum;
 
+                // ቁጥሮቹ ሲጠሩ አሸናፊዎቹ እንዲሞሉላቸው በቅደም ተከተል ይደረጋል
                 if (winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
@@ -392,8 +400,8 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Strict Simultaneous End Trigger:**
-                // የሁሉም አሸናፊዎች የመጨረሻ ቁጥር ተጠርቶ ሲያልቅ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይቋረጣል!
+                // 🎯 **Strict Simultaneous Real-Time Trigger:**
+                // የታቀዱት ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይጠናቀቃል!
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
