@@ -260,10 +260,6 @@ function startMainGameLoop() {
             let isRealUserWin = true;
             let winningCardNums = [];
 
-            let chosenRealSocketId = null;
-            let chosenRealUsername = "ተጫዋች";
-
-            // 🎯 **Strict Admin Command Enforcement (አድሚኑ ካዘዘው ውጭ በዘፈቀደ እንዳያሸንፍ ጥብቅ ቁጥጥር)**
             let targetRealCount = 1;
             let targetBotCount = 2;
 
@@ -281,7 +277,6 @@ function startMainGameLoop() {
                 winnersCount = 1;
             }
 
-            // ሪል ዩዘሮችን መምረጥ
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
                 let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
                 let chosenReal = shuffledReal.slice(0, targetRealCount);
@@ -292,7 +287,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // ሪል ዩዘር ከሌለ ወይም ካነሰ በቦት መሙላት
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -303,7 +297,6 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Dynamic Count Variation (የጥሪ ብዛት ከ 12፣ 17፣ 18፣ 25፣ 28 እስከ 35 ወይም 37 በራንደም እንዲቀያየር ማድረግ)**
             let possibleCallCounts = [12, 17, 18, 25, 28, 32, 35, 37];
             let targetCallCount = possibleCallCounts[Math.floor(Math.random() * possibleCallCounts.length)];
 
@@ -321,7 +314,6 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
             });
 
-            // ዚግዛግ አቀማመጥ (Interleaved Zig-Zag Queue)
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -333,7 +325,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // የጥሪ ብዛቱን ከታለመው (targetCallCount) ጋር ማቀናጀት
             while (interleavedWinningNumbers.length < targetCallCount) {
                 let extraRandNum = Math.floor(Math.random() * 75) + 1;
                 if (!interleavedWinningNumbers.includes(extraRandNum)) {
@@ -378,7 +369,18 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Strict 100% Simultaneous Win Trigger (አድሚኑ ካዘዘው ውጭ እንዳይበላ እና ሁሉም በአንድ ሰዓት እንዲጨርሱ)**
+                // 🎯 **Instant Real-User Win Trigger (ሪል ዩዘሩ መስመሩን እንዳጠናቀቀ ወዲያውኑ ጨዋታው እንዲቆም ማድረግ)**
+                let realUserCompleted = false;
+                perWinnerConfigs.forEach((cfg, idx) => {
+                    let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
+                    let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                    // winningSocketData[idx] ሪል ዩዘር ከሆነ ወይም ሁሉም ሲጨርሱ
+                    if (!winningSocketData[idx].isBot && isPatternDone) {
+                        realUserCompleted = true;
+                    }
+                });
+
+                // እንዲሁም የሁሉም ካርዶች ሁኔታ
                 let allCardsCompleted = true;
                 perWinnerConfigs.forEach(cfg => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
@@ -388,7 +390,8 @@ function startMainGameLoop() {
                     }
                 });
 
-                let shouldTriggerWin = (winNumQueue.length === 0 && allCardsCompleted);
+                // ሪል ዩዘሩ ከጨረሰ (ወይም ኪዩው አልቆ ሁሉም ከጨረሱ) ወዲያውኑ ዊን ይላል!
+                let shouldTriggerWin = (realUserCompleted || (winNumQueue.length === 0 && allCardsCompleted));
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
