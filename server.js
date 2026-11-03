@@ -333,13 +333,15 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Strict Simultaneous Multi-Winner Synchronization:**
-            // የሁሉም አሸናፊዎች ካርዶች የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው፣ በጨዋታው ውስጥ ተመጣጥረው እንዲጠሩ ይደረጋል።
+            // 🎯 **True Simultaneous Multi-Winner Logic:**
+            // የሁሉም አሸናፊዎች (የተመረጡት ዩዘሮች እና ቦቶች) ካርዶች የማሸነፊያ ቁጥሮች በአንድ ላይ ተሰብስበው፣ 
+            // በጨዋታው ሂደት ውስጥ በቅደም ተከተል ተመጣጥነው ይጠራሉ። አንዱም ቀድሞ ጨርሶ ሌላኛውን አይጠብቅም፤ 
+            // ሁሉም ቁጥሮች ተጠርተው ሲያልቁ ብቻ (በተመሳሳይ ሰዓት) ዊን ይደረጋል።
             let possiblePatterns = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
-                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ
-                [0,4,20,24] // ማዕዘኖች
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                [0,6,12,18,24], [4,8,12,16,20],
+                [0,4,20,24]
             ];
 
             let combinedWinningNumbers = [];
@@ -390,8 +392,8 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Simultaneous Multi-Winner Trigger:** 
-                // የሁሉም አሸናፊዎች ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይጠናቀቃል!
+                // 🎯 **Strict Simultaneous End Trigger:**
+                // የሁሉም አሸናፊዎች የመጨረሻ ቁጥር ተጠርቶ ሲያልቅ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይቋረጣል!
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
