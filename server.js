@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -13,7 +13,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    Res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -62,371 +62,354 @@ const ETHIOPIAN_BOT_NAMES = [
 ];
 
 function getRandomBotNames(count) {
-    let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    Let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
+    Return shuffled.slice(0, count);
 }
 
-let globalRoom = {
-    gameActive: false,
-    calledNumbers: [],
-    gameStartTime: Date.now() + 60000,
-    playersCount: 140,
-    takenCards: [],
-    playerRoundCards: {},
-    playerTemporaryCards: {},
-    lastCalledNumber: null,
-    targetWinCallCount: 25,
-    forcedWinningCardNums: []
+Let globalRoom = {
+    GameActive: false,
+    CalledNumbers: [],
+    GameStartTime: Date.now() + 60000,
+    PlayersCount: 140,
+    TakenCards: [],
+    PlayerRoundCards: {},
+    PlayerTemporaryCards: {},
+    LastCalledNumber: null,
+    TargetWinCallCount: 25,
+    ForcedWinningCardNums: []
 };
 
-let forcedNextWinner = null; 
-let onlineRealUsers = [];
-let pendingRequests = {};
-let gameInterval = null;
-let numberCallInterval = null;
+Let forcedNextWinner = null; 
+Let onlineRealUsers = [];
+Let pendingRequests = {};
+Let gameInterval = null;
+Let numberCallInterval = null;
 
 function getCartelaNumbers(cardNum) {
-    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-    let cols = ['B', 'I', 'N', 'G', 'O'];
+    Let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+    Let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+    Let cols = ['B', 'I', 'N', 'G', 'O'];
 
-    cols.forEach((col, colIdx) => {
-        let range = colRanges[col];
-        let pool = [];
-        for (let n = range[0]; n <= range[1]; n++) pool.push(n);
+    Cols.forEach((col, colIdx) => {
+        Let range = colRanges[col];
+        Let pool = [];
+        For (let n = range[0]; n <= range[1]; n++) pool.push(n);
 
-        let seed = (cardNum * 7919) + (colIdx * 104729);
-        for (let i = pool.length - 1; i > 0; i--) {
-            seed = (seed * 9301 + 49297) % 233280;
-            let rnd = seed / 233280;
-            let j = Math.floor(rnd * (i + 1));
-            let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+        Let seed = (cardNum * 7919) + (colIdx * 104729);
+        For (let i = pool.length - 1; i > 0; i--) {
+            Seed = (seed * 9301 + 49297) % 233280;
+            Let rnd = seed / 233280;
+            Let j = Math.floor(rnd * (i + 1));
+            Let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
         }
-        cardNumbersByCol[col] = pool.slice(0, 5);
+        CardNumbersByCol[col] = pool.slice(0, 5);
     });
 
-    let flatList = [];
-    for (let r = 0; r < 5; r++) {
-        cols.forEach(col => {
-            if (r === 2 && col === 'N') flatList.push("FREE");
-            else flatList.push(cardNumbersByCol[col][r]);
+    Let flatList = [];
+    For (let r = 0; r < 5; r++) {
+        Cols.forEach(col => {
+            If (r === 2 && col === 'N') flatList.push("FREE");
+            Else flatList.push(cardNumbersByCol[col][r]);
         });
     }
-    return flatList;
+    Return flatList;
 }
 
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
-    let grid2D = [];
-    let cleanCalled = (calledNumbers || []).map(n => Number(n));
+    Let grid2D = [];
+    Let cleanCalled = (calledNumbers || []).map(n => Number(n));
     
-    for(let r=0; r<5; r++) {
-        let row = [];
-        for(let c=0; c<5; c++) {
-            let idx = r * 5 + c;
-            let val = winningCardNumbers[idx];
-            let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
-            row.push({ idx, isHit, val });
+    For(let r=0; r<5; r++) {
+        Let row = [];
+        For(let c=0; c<5; c++) {
+            Let idx = r * 5 + c;
+            Let val = winningCardNumbers[idx];
+            Let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
+            Row.push({ idx, isHit, val });
         }
-        grid2D.push(row);
+        Grid2D.push(row);
     }
 
-    for(let r=0; r<5; r++) {
-        if(grid2D[r].every(cell => cell.isHit)) {
-            return grid2D[r].map(cell => cell.idx);
-        }
-    }
-
-    for(let c=0; c<5; c++) {
-        let colHits = true;
-        let colCells = [];
-        for(let r=0; r<5; r++) {
-            colCells.push(grid2D[r][c]);
-            if(!grid2D[r][c].isHit) colHits = false;
-        }
-        if(colHits) {
-            return colCells.map(cell => cell.idx);
+    For(let r=0; r<5; r++) {
+        If(grid2D[r].every(cell => cell.isHit)) {
+            Return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    let diag1Hits = true, diag2Hits = true;
-    let diag1Cells = [], diag2Cells = [];
-    for(let i=0; i<5; i++) {
-        diag1Cells.push(grid2D[i][i]);
-        diag2Cells.push(grid2D[i][4-i]);
-        if(!grid2D[i][i].isHit) diag1Hits = false;
-        if(!grid2D[i][4-i].isHit) diag2Hits = false;
-    }
-    if(diag1Hits) return diag1Cells.map(cell => cell.idx);
-    if(diag2Hits) return diag2Cells.map(cell => cell.idx);
-
-    if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
-        return [0, 4, 20, 24];
+    For(let c=0; c<5; c++) {
+        Let colHits = true;
+        Let colCells = [];
+        For(let r=0; r<5; r++) {
+            ColCells.push(grid2D[r][c]);
+            If(!grid2D[r][c].isHit) colHits = false;
+        }
+        If(colHits) {
+            Return colCells.map(cell => cell.idx);
+        }
     }
 
-    let fallbackMatched = [];
-    grid2D.forEach(row => {
-        row.forEach(cell => {
-            if (cell.isHit) fallbackMatched.push(cell.idx);
+    Let diag1Hits = true, diag2Hits = true;
+    Let diag1Cells = [], diag2Cells = [];
+    For(let i=0; i<5; i++) {
+        Diag1Cells.push(grid2D[i][i]);
+        Diag2Cells.push(grid2D[i][4-i]);
+        If(!grid2D[i][i].isHit) diag1Hits = false;
+        If(!grid2D[i][4-i].isHit) diag2Hits = false;
+    }
+    If(diag1Hits) return diag1Cells.map(cell => cell.idx);
+    If(diag2Hits) return diag2Cells.map(cell => cell.idx);
+
+    If(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+        Return [0, 4, 20, 24];
+    }
+
+    Let fallbackMatched = [];
+    Grid2D.forEach(row => {
+        Row.forEach(cell => {
+            If (cell.isHit) fallbackMatched.push(cell.idx);
         });
     });
-    return fallbackMatched;
+    Return fallbackMatched;
 }
 
 function getRealisticBotsCount(realCount) {
-    const now = new Date();
-    let utcHours = now.getUTCHours();
-    let utcMinutes = now.getUTCMinutes();
-    let ethiopianHour = (utcHours + 3) % 24; 
-    let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
-    let maxDurationMinutes = 8 * 60;
-    let calculated = 95;
+    Const now = new Date();
+    Let utcHours = now.getUTCHours();
+    Let utcMinutes = now.getUTCMinutes();
+    Let ethiopianHour = (utcHours + 3) % 24; 
+    Let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
+    Let maxDurationMinutes = 8 * 60;
+    Let calculated = 95;
 
-    if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        calculated = 45 + Math.floor(Math.random() * 15);
+    If (ethiopianHour >= 6 && ethiopianHour < 12) {
+        Calculated = 45 + Math.floor(Math.random() * 15);
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        calculated = 70 + Math.floor(Math.random() * 20);
+        Calculated = 70 + Math.floor(Math.random() * 20);
     } else {
-        let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
-        calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
+        Let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
+        Calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
     }
 
-    let smallDelta = Math.floor(Math.random() * 7) - 3; 
-    let finalCount = calculated + smallDelta;
-    if (finalCount < 40) finalCount = 40;
-    if (finalCount > 250) finalCount = 250;
-    return finalCount;
+    Let smallDelta = Math.floor(Math.random() * 7) - 3; 
+    Let finalCount = calculated + smallDelta;
+    If (finalCount < 40) finalCount = 40;
+    If (finalCount > 250) finalCount = 250;
+    Return finalCount;
 }
 
 function refreshTakenCardsList() {
-    let allTaken = [];
+    Let allTaken = [];
     Object.values(globalRoom.playerRoundCards).forEach(p => {
-        if (p.cards) allTaken.push(...p.cards);
+        If (p.cards) allTaken.push(...p.cards);
     });
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
-        if (cards) allTaken.push(...cards);
+        If (cards) allTaken.push(...cards);
     });
-    globalRoom.takenCards = Array.from(new Set(allTaken));
-    io.emit('updateTakenCards', globalRoom.takenCards);
+    GlobalRoom.takenCards = Array.from(new Set(allTaken));
+    Io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
 function simulateBotCardSelections() {
-    if (globalRoom.gameActive) return;
-    let available = [];
-    for(let i = 1; i <= 500; i++) {
-        if(!globalRoom.takenCards.includes(i)) available.push(i);
+    If (globalRoom.gameActive) return;
+    Let available = [];
+    For(let i = 1; i <= 500; i++) {
+        If(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    let botPicksCount = Math.floor(Math.random() * 15) + 10;
-    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
-        let randIdx = Math.floor(Math.random() * available.length);
-        let cardToTake = available.splice(randIdx, 1)[0];
-        if(!globalRoom.takenCards.includes(cardToTake)) {
-            globalRoom.takenCards.push(cardToTake);
+    Let botPicksCount = Math.floor(Math.random() * 15) + 10;
+    For(let i = 0; i < botPicksCount && available.length > 0; i++) {
+        Let randIdx = Math.floor(Math.random() * available.length);
+        Let cardToTake = available.splice(randIdx, 1)[0];
+        If(!globalRoom.takenCards.includes(cardToTake)) {
+            GlobalRoom.takenCards.push(cardToTake);
         }
     }
-    io.emit('updateTakenCards', globalRoom.takenCards);
+    Io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
 setInterval(simulateBotCardSelections, 6000);
 
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
-    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
+    If (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
+    Let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+    Try {
+        Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            Chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
         });
     } catch (error) {}
 }
 
 function startMainGameLoop() {
-    if (gameInterval) clearInterval(gameInterval);
-    globalRoom.gameStartTime = Date.now() + 60000;
+    If (gameInterval) clearInterval(gameInterval);
+    GlobalRoom.gameStartTime = Date.now() + 60000;
 
-    gameInterval = setInterval(() => {
-        let timeLeft = globalRoom.gameStartTime - Date.now();
+    GameInterval = setInterval(() => {
+        Let timeLeft = globalRoom.gameStartTime - Date.now();
 
-        if (timeLeft <= 0 && !globalRoom.gameActive) {
-            globalRoom.gameActive = true;
-            globalRoom.calledNumbers = [];
-            globalRoom.lastCalledNumber = null;
+        If (timeLeft <= 0 && !globalRoom.gameActive) {
+            GlobalRoom.gameActive = true;
+            GlobalRoom.calledNumbers = [];
+            GlobalRoom.lastCalledNumber = null;
             
-            let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
-            let currentWinnerType = forcedNextWinner;
-            forcedNextWinner = null; 
+            Let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
+            Let currentWinnerType = forcedNextWinner;
+            ForcedNextWinner = null; 
 
-            let winningUsernamesArr = [];
-            let winningSocketData = []; 
-            let winnersCount = 1; 
-            let winningCardNums = [];
+            Let winningUsernamesArr = [];
+            Let winningSocketData = []; 
+            Let winnersCount = 1; 
+            Let winningCardNums = [];
 
-            let targetRealCount = 0;
-            let targetBotCount = 1;
+            // **ጥብቅ ሎጂክ: አድሚን ካላዘዘ በስተቀር ሪያል ዩዘር አያሸንፍም (Strict Admin/Bot Control)**
+            Let isForcedRealWin = (currentWinnerType === 'real_user' || currentWinnerType === 'single_real' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3');
 
-            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
-                targetRealCount = 3;
-                targetBotCount = 0;
-                winnersCount = 3;
-            } else if (currentWinnerType === 'dual_bot') {
-                targetRealCount = 0;
-                targetBotCount = 2;
-                winnersCount = 2;
-            } else if (currentWinnerType === 'bot') {
-                targetRealCount = 0;
-                targetBotCount = 1;
-                winnersCount = 1;
-            } else if (currentWinnerType === 'real_user' || currentWinnerType === 'single_real') {
-                targetRealCount = 1;
-                targetBotCount = 1;
-                winnersCount = 2;
-            } else {
-                targetRealCount = 0;
-                winnersCount = Math.random() < 0.5 ? 1 : 2;
-                targetBotCount = winnersCount;
-            }
-
-            if (targetRealCount > 0 && activeRealEntries.length > 0) {
-                let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
-                let chosenReal = shuffledReal.slice(0, targetRealCount);
-                chosenReal.forEach(item => {
-                    winningUsernamesArr.push(item[1].username);
-                    winningSocketData.push({ socketId: item[0], isBot: false });
-                    winningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
+            If (isForcedRealWin && activeRealEntries.length > 0) {
+                // አድሚን ሪያል ዩዘር እንዲያሸንፍ ሲያዝ
+                Let targetRealCount = (currentWinnerType.includes('3') ? 3 : 1);
+                Let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                Let chosenReal = shuffledReal.slice(0, targetRealCount);
+                ChosenReal.forEach(item => {
+                    WinningUsernamesArr.push(item[1].username);
+                    WinningSocketData.push({ socketId: item[0], isBot: false });
+                    WinningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
                 });
+                WinnersCount = winningUsernamesArr.length;
+            } else {
+                // በነባሪ ጨዋታ ቦቶች ብቻ እንዲያሸንፉ ይደረጋል (ሪያል ዩዘሮች በምንም ተአምር በራሳቸው አያሸንፉም)
+                Let targetBotCount = (currentWinnerType === 'dual_bot' ? 2 : 1);
+                For (let i = 0; i < targetBotCount; i++) {
+                    Let bName = getRandomBotNames(1)[0];
+                    WinningUsernamesArr.push(bName);
+                    WinningSocketData.push({ socketId: null, isBot: true });
+                    WinningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                }
+                WinnersCount = targetBotCount;
             }
 
-            while (winningUsernamesArr.length < winnersCount) {
-                let bName = getRandomBotNames(1)[0];
-                winningUsernamesArr.push(bName);
-                winningSocketData.push({ socketId: null, isBot: true });
-                winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-            }
-
-            winnersCount = winningUsernamesArr.length;
-            globalRoom.forcedWinningCardNums = winningCardNums;
+            GlobalRoom.forcedWinningCardNums = winningCardNums;
             
-            let rotationPool = [
+            Let rotationPool = [
                 12, 13, 14, 15, 16, 17, 18, 18, 18, 19, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29, 30,
                 35, 36, 37
             ];
-            let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
+            Let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
 
-            let possiblePatterns = [
+            Let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
                 [0,6,12,18,24], [4,8,12,16,20],
                 [0,4,20,24]
             ];
 
-            let perWinnerConfigs = winningCardNums.map(cNum => {
-                let cList = getCartelaNumbers(cNum);
-                let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
-                return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
+            Let perWinnerConfigs = winningCardNums.map(cNum => {
+                Let cList = getCartelaNumbers(cNum);
+                Let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+                Let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
+                Return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
             });
 
-            let interleavedWinningNumbers = [];
-            let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
+            Let interleavedWinningNumbers = [];
+            Let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
-            for (let i = 0; i < maxLength; i++) {
-                perWinnerConfigs.forEach(cfg => {
-                    if (cfg.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
-                        interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
+            For (let i = 0; i < maxLength; i++) {
+                PerWinnerConfigs.forEach(cfg => {
+                    If (cfg.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
+                        InterleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
             }
 
-            if (interleavedWinningNumbers.length > targetCallCount) {
-                interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
+            If (interleavedWinningNumbers.length > targetCallCount) {
+                InterleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
 
-            let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            Let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
-            io.emit('gameStarted', { calledNumbers: [] });
-            io.emit('gameStartedBroadcast');
+            Io.emit('gameStarted', { calledNumbers: [] });
+            Io.emit('gameStartedBroadcast');
 
-            if (numberCallInterval) clearInterval(numberCallInterval);
+            If (numberCallInterval) clearInterval(numberCallInterval);
             
-            let winNumQueue = [...interleavedWinningNumbers];
+            Let winNumQueue = [...interleavedWinningNumbers];
 
-            numberCallInterval = setInterval(() => {
-                if (!globalRoom.gameActive) {
-                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                    return;
+            NumberCallInterval = setInterval(() => {
+                If (!globalRoom.gameActive) {
+                    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    Return;
                 }
 
-                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount);
+                Let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount);
                 
-                let realUserCompleted = false;
-                if (targetRealCount > 0) {
-                    perWinnerConfigs.forEach((cfg, idx) => {
-                        let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
-                        let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                        if (!winningSocketData[idx].isBot && isPatternDone) {
-                            realUserCompleted = true;
+                Let realUserCompleted = false;
+                If (isForcedRealWin) {
+                    PerWinnerConfigs.forEach((cfg, idx) => {
+                        Let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
+                        Let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                        If (!winningSocketData[idx].isBot && isPatternDone) {
+                            RealUserCompleted = true;
                         }
                     });
                 }
                 
-                let shouldTriggerWin = (reachedTargetLimit || (targetRealCount > 0 && realUserCompleted) || (targetRealCount === 0 && reachedTargetLimit));
+                Let shouldTriggerWin = (reachedTargetLimit || (isForcedRealWin && realUserCompleted));
                 
-                if (shouldTriggerWin) {
-                    let totalPot = (globalRoom.playersCount || 140) * 10;
-                    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+                If (shouldTriggerWin) {
+                    Let totalPot = (globalRoom.playersCount || 140) * 10;
+                    Let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
-                    let primaryCardNum = winningCardNums[0];
-                    let winningCardNumbers = getCartelaNumbers(primaryCardNum);
-                    let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
+                    Let primaryCardNum = winningCardNums[0];
+                    Let winningCardNumbers = getCartelaNumbers(primaryCardNum);
+                    Let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
-                    let winnerNamesStr = winningUsernamesArr.join(', ');
-                    let hasRealWinner = winningSocketData.some(i => !i.isBot);
+                    Let winnerNamesStr = winningUsernamesArr.join(', ');
+                    Let hasRealWinner = winningSocketData.some(i => !i.isBot);
                     
-                    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
+                    SendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
-                    winningSocketData.forEach(item => {
-                        if (!item.isBot && item.socketId) {
-                            let targetSocket = io.sockets.sockets.get(item.socketId);
-                            if (targetSocket) {
-                                targetSocket.emit('rewardPrize', { prize: prizePerWinner });
+                    WinningSocketData.forEach(item => {
+                        If (!item.isBot && item.socketId) {
+                            Let targetSocket = io.sockets.sockets.get(item.socketId);
+                            If (targetSocket) {
+                                TargetSocket.emit('rewardPrize', { prize: prizePerWinner });
                             }
                         }
                     });
 
-                    io.emit('bingoWinner', {
-                        username: winnerNamesStr,
-                        userId: winningSocketData.find(i => !i.isBot)?.socketId || null,
-                        cardNum: primaryCardNum,
-                        prize: prizePerWinner,
-                        calledNumbers: globalRoom.calledNumbers,
-                        matchedIndices: matchedIndices,
-                        winnersCount: winnersCount,
-                        playersCount: globalRoom.playersCount
+                    Io.emit('bingoWinner', {
+                        Username: winnerNamesStr,
+                        UserId: winningSocketData.find(i => !i.isBot)?.socketId || null,
+                        CardNum: primaryCardNum,
+                        Prize: prizePerWinner,
+                        CalledNumbers: globalRoom.calledNumbers,
+                        MatchedIndices: matchedIndices,
+                        WinnersCount: winnersCount,
+                        PlayersCount: globalRoom.playersCount
                     });
 
-                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                     
-                    setTimeout(() => { endRoundAndRestart(); }, 6000);
-                    return;
+                    SetTimeout(() => { endRoundAndRestart(); }, 6000);
+                    Return;
                 }
 
-                let calledNum;
-                if (winNumQueue.length > 0) {
-                    calledNum = Number(winNumQueue.shift());
-                    let availIdx = availableNumbers.indexOf(calledNum);
-                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
+                Let calledNum;
+                If (winNumQueue.length > 0) {
+                    CalledNum = Number(winNumQueue.shift());
+                    Let availIdx = availableNumbers.indexOf(calledNum);
+                    If (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
-                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                    calledNum = availableNumbers.splice(randIdx, 1)[0];
+                    Let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                    CalledNum = availableNumbers.splice(randIdx, 1)[0];
                 }
 
-                if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    globalRoom.calledNumbers.push(Number(calledNum));
-                    globalRoom.lastCalledNumber = Number(calledNum);
+                If (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    GlobalRoom.calledNumbers.push(Number(calledNum));
+                    GlobalRoom.lastCalledNumber = Number(calledNum);
 
-                    io.emit('numberCalled', {
-                        number: Number(calledNum),
-                        calledNumbers: globalRoom.calledNumbers
+                    Io.emit('numberCalled', {
+                        Number: Number(calledNum),
+                        CalledNumbers: globalRoom.calledNumbers
                     });
-                    io.emit('numberCalledBroadcast', Number(calledNum));
+                    Io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
             }, 4000); 
@@ -435,97 +418,94 @@ function startMainGameLoop() {
 }
 
 function endRoundAndRestart() {
-    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-    globalRoom.gameActive = false;
-    globalRoom.calledNumbers = [];
-    globalRoom.lastCalledNumber = null;
-    globalRoom.playerRoundCards = {}; 
-    globalRoom.gameStartTime = Date.now() + 60000;
-    globalRoom.forcedWinningCardNums = [];
+    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    GlobalRoom.gameActive = false;
+    GlobalRoom.calledNumbers = [];
+    GlobalRoom.lastCalledNumber = null;
+    GlobalRoom.playerRoundCards = {}; 
+    GlobalRoom.gameStartTime = Date.now() + 60000;
+    GlobalRoom.forcedWinningCardNums = [];
     
-    io.emit('roundEnded', { nextGameIn: 60000 });
-    io.emit('gameEndedBroadcast');
-    refreshTakenCardsList();
+    Io.emit('roundEnded', { nextGameIn: 60000 });
+    Io.emit('gameEndedBroadcast');
+    RefreshTakenCardsList();
 }
 
-startMainGameLoop();
+StartMainGameLoop();
 
-let telegramOffset = 0;
+Let telegramOffset = 0;
 async function pollTelegramUpdates() {
-    if (!TELEGRAM_BOT_TOKEN) return;
-    try {
-        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
-            params: { offset: telegramOffset, timeout: 30 }
+    If (!TELEGRAM_BOT_TOKEN) return;
+    Try {
+        Let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            Params: { offset: telegramOffset, timeout: 30 }
         });
-        if (response.data && response.data.ok) {
-            let updates = response.data.result;
-            for (let update of updates) {
-                telegramOffset = update.update_id + 1;
+        If (response.data && response.data.ok) {
+            Let updates = response.data.result;
+            For (let update of updates) {
+                TelegramOffset = update.update_id + 1;
                 
-                // 🧹 የድሮ (ከ 24 ሰዓት በላይ የሆናቸው) పెንዲንግ ጥያቄዎችን በራስ ሰር ማጽዳት
-                let nowTs = Date.now();
+                Let nowTs = Date.now();
                 Object.keys(pendingRequests).forEach(k => {
-                    if (nowTs - pendingRequests[k].timestamp > 86400000) {
-                        delete pendingRequests[k];
+                    If (nowTs - pendingRequests[k].timestamp > 86400000) {
+                        Delete pendingRequests[k];
                     }
                 });
 
-                if (update.callback_query) {
-                    let callbackQuery = update.callback_query;
-                    let data = callbackQuery.data; 
-                    let chatId = callbackQuery.message.chat.id;
-                    let messageId = callbackQuery.message.message_id;
+                If (update.callback_query) {
+                    Let callbackQuery = update.callback_query;
+                    Let data = callbackQuery.data; 
+                    Let chatId = callbackQuery.message.chat.id;
+                    Let messageId = callbackQuery.message.message_id;
                     
-                    let parts = data.split('_');
-                    let action = parts[0]; 
-                    let requestId = parts.slice(1).join('_');
-                    let reqData = pendingRequests[requestId];
+                    Let parts = data.split('_');
+                    Let action = parts[0]; 
+                    Let requestId = parts.slice(1).join('_');
+                    Let reqData = pendingRequests[requestId];
 
-                    if (reqData) {
-                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                        if (action === 'app') {
-                            if (targetSocket) {
-                                let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
-                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount, adjustedAmount: finalAmountForClient });
+                    If (reqData) {
+                        Let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                        If (action === 'app') {
+                            If (targetSocket) {
+                                Let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
+                                TargetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount, adjustedAmount: finalAmountForClient });
                             }
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                Chat_id: chatId, message_id: messageId,
+                                Text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
-                            if (targetSocket) { 
-                                targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); 
+                            If (targetSocket) { 
+                                TargetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); 
                             }
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                Chat_id: chatId, message_id: messageId,
+                                Text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
-                        // 🛑 ጥያቄው አንዴ ከተሰራ በኋላ ከሰርቨር ማህደረ ትውስታ ይሰረዛል
-                        delete pendingRequests[requestId]; 
+                        Delete pendingRequests[requestId]; 
                     }
-                    try { 
-                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
+                    Try { 
+                        Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
                     } catch (e) {}
                 }
             }
         }
     } catch (err) {}
-    setTimeout(pollTelegramUpdates, 1000);
+    SetTimeout(pollTelegramUpdates, 1000);
 }
 setTimeout(pollTelegramUpdates, 2000);
 
-// 🎯 **የተደራረቡ (Multiple) የገንዘብ ጥያቄዎችን በደህንነት የሚያስተናግድ ሎጂክ**
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
-    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
-    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
-            reply_markup: { 
-                inline_keyboard: [
+    If (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    Let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    Let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    If (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    Try {
+        Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            Chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
+            Reply_markup: { 
+                Inline_keyboard: [
                     [
                         { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
                         { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
@@ -536,89 +516,88 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     } catch (error) {}
 }
 
-let connectedRealPlayers = [];
+Let connectedRealPlayers = [];
 
-io.on('connection', (socket) => {
-    connectedRealPlayers.push(socket.id);
-    let realCount = connectedRealPlayers.length;
-    let currentBotsCount = getRealisticBotsCount(realCount);
-    globalRoom.playersCount = currentBotsCount + realCount; 
-    io.emit('updatePlayersCount', globalRoom.playersCount);
-    socket.emit('syncGameState', globalRoom);
-    refreshTakenCardsList();
+Io.on('connection', (socket) => {
+    ConnectedRealPlayers.push(socket.id);
+    Let realCount = connectedRealPlayers.length;
+    Let currentBotsCount = getRealisticBotsCount(realCount);
+    GlobalRoom.playersCount = currentBotsCount + realCount; 
+    Io.emit('updatePlayersCount', globalRoom.playersCount);
+    Socket.emit('syncGameState', globalRoom);
+    RefreshTakenCardsList();
 
-    socket.on('registerRealUser', (userData) => {
-        if (userData && userData.userId) {
-            let userId = String(userData.userId);
-            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
-            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+    Socket.on('registerRealUser', (userData) => {
+        If (userData && userData.userId) {
+            Let userId = String(userData.userId);
+            OnlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            OnlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
         }
     });
 
-    socket.on('getAdminRealUsers', () => {
-        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    Socket.on('getAdminRealUsers', () => {
+        Socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    socket.on('tempSelectCards', (cards) => {
-        if (Array.isArray(cards)) {
-            globalRoom.playerTemporaryCards[socket.id] = cards;
-            refreshTakenCardsList();
+    Socket.on('tempSelectCards', (cards) => {
+        If (Array.isArray(cards)) {
+            GlobalRoom.playerTemporaryCards[socket.id] = cards;
+            RefreshTakenCardsList();
         }
     });
 
-    socket.on('confirmCards', (data) => {
-        if (data && data.cards && Array.isArray(data.cards)) {
-            globalRoom.playerRoundCards[socket.id] = {
+    Socket.on('confirmCards', (data) => {
+        If (data && data.cards && Array.isArray(data.cards)) {
+            GlobalRoom.playerRoundCards[socket.id] = {
                 cards: data.cards,
                 username: data.username || 'ተጫዋች',
                 userId: data.userId || 'unknown'
             };
-            if (globalRoom.playerTemporaryCards[socket.id]) {
-                delete globalRoom.playerTemporaryCards[socket.id];
+            If (globalRoom.playerTemporaryCards[socket.id]) {
+                Delete globalRoom.playerTemporaryCards[socket.id];
             }
-            refreshTakenCardsList();
-            socket.emit('cardSelectionSuccess');
+            RefreshTakenCardsList();
+            Socket.emit('cardSelectionSuccess');
         }
     });
 
-    socket.on('adminSetNextWinner', (data) => {
-        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
-        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+    Socket.on('adminSetNextWinner', (data) => {
+        ForcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        Socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
     });
 
-    socket.on('financialRequest', async (data) => {
-        data.type = data.type || 'deposit';
-        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
+    Socket.on('financialRequest', async (data) => {
+        Data.type = data.type || 'deposit';
+        Let { type, amount, username, userId, currentBalance, phone, receipt } = data;
         
-        // 🆔 ልዩ የሆነ ሪኩዌስት ID (ከሶኬት እናከ ራንደም ቁጥር ጋር በመዋቀር መደራረብን ይከላከላል)
-        let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        Let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
-        pendingRequests[requestId] = { 
-            userId, 
-            type, 
-            amount, 
-            username, 
-            socketId: socket.id, 
-            timestamp: Date.now() // ለእድሜ ገደብ (24 ሰዓት) ክትትል የሚሆን
+        PendingRequests[requestId] = { 
+            UserId, 
+            Type, 
+            Amount, 
+            Username, 
+            SocketId: socket.id, 
+            Timestamp: Date.now() 
         };
 
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        Await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        Socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    socket.on('disconnect', () => {
-        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
-        delete globalRoom.playerRoundCards[socket.id];
-        delete globalRoom.playerTemporaryCards[socket.id];
-        refreshTakenCardsList();
-        let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
-        io.emit('updatePlayersCount', globalRoom.playersCount);
+    Socket.on('disconnect', () => {
+        ConnectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        OnlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        Delete globalRoom.playerRoundCards[socket.id];
+        Delete globalRoom.playerTemporaryCards[socket.id];
+        RefreshTakenCardsList();
+        Let realCount = connectedRealPlayers.length;
+        GlobalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+        Io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
 
-const PORT = process.env.PORT || 3000;
+Const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log("AZ Bingo Server running on port " + PORT);
+    Console.log("AZ Bingo Server running on port " + PORT);
 });
