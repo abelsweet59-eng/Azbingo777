@@ -1,1124 +1,591 @@
-<!DOCTYPE html>
-<html lang="am">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AZ Bingo - Professional Synchronized Multiplayer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; background-color: #0b0317; color: white; }
-        .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.7); border-radius: 4px; }
-        @keyframes pulseGlow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
-            50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
-        }
-        .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
-        @keyframes softBlink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.65; transform: scale(0.98); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
-        }
-        .blink-btn { animation: softBlink 1.2s infinite ease-in-out; }
-        @keyframes countdownPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
-        .billiard-ball {
-            position: relative;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset -3px -3px 8px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.5);
-        }
-        .billiard-inner-circle {
-            background-color: #ffffff;
-            border-radius: 9999px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #000000;
-            font-weight: 900;
-            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3);
-        }
-    </style>
-</head>
-<body class="min-h-screen flex justify-center items-center sm:p-2">
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const axios = require('axios');
 
-    <div class="w-full max-w-[430px] h-screen sm:h-[850px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] flex flex-col justify-between shadow-2xl sm:rounded-2xl border border-white/10 overflow-hidden relative">
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-        <!-- Top Header -->
-        <header class="flex justify-between items-center px-3 py-2 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
-            <div class="text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap">
-                AZ Bingo
-            </div>
-            <div class="flex items-center gap-2">
-                <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
-                <button id="admin-nav-btn" onclick="openAdminPanel()" class="hidden text-xs bg-red-900/80 text-red-200 px-2.5 py-1 rounded-lg border border-red-400/40 font-bold whitespace-nowrap shadow">🛡️ አድሚን</button>
-            </div>
-        </header>
+app.express = express;
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-        <!-- Stats Bar -->
-        <section class="grid grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
-            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[7px] text-gray-400 uppercase">Game ID</div>
-                <div id="stat-gameid" class="text-[9px] font-bold text-amber-400 font-mono truncate">BBO6YYIW</div>
-            </div>
-            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[7px] text-gray-300">ተጫዋች</div>
-                <div id="stat-players" class="text-[9px] font-bold text-amber-400">140</div>
-            </div>
-            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[7px] text-gray-400 uppercase">ቤት (Bet)</div>
-                <div id="stat-bet" class="text-[9px] font-bold text-amber-400">10</div>
-            </div>
-            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[7px] text-gray-300">ደራሽ</div>
-                <div id="stat-derash" class="text-[9px] font-bold text-amber-400">1260</div>
-            </div>
-            <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
-                <div class="text-[7px] text-gray-400 uppercase">ጥሪ (Called)</div>
-                <div id="stat-called-count" class="text-[9px] font-bold text-amber-400">0</div>
-            </div>
-        </section>
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
-        <!-- TABS CONTAINER -->
-        <div id="tab-container" class="flex-1 overflow-hidden relative flex flex-col">
+app.use(express.static(path.join(__dirname, 'public')));
+
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
+
+const ETHIOPIAN_BOT_NAMES = [
+    "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
+    "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
+    "Nimo", "Šà¥¢ø Qü€€ñ", "Beki", "syf", "Time Of",
+    "§mrĕţ", "L F U", "sosi", "Megdi", "Sittina",
+    "Ibra", "Abebaw", "Frew", "Quarezma", "Dibora",
+    "Osmhen", "Chala", "Surafel", "Zehara", "Worku",
+    "Fiyorina", "Kirra", "Bilal", "Pilatos", "Merlin",
+    "Osmehin", "Denver", "Belew", "Jilalu", "Gizachew Kassahun",
+    "bereket dagne", "Mesfin", "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "🦋Meklit🦋",
+    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ",
+    "Goyta Miraw ጣምራው", "0919091129", "Gdg", "Lai", "Sintayehu Getachew",
+    "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝",
+    "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Aman yi", "Ahmed Basher",
+    "Wenda last King", "Abonesh Kinfu", "Lij yalfex jinka 🫅", "Big Boss 💪", "Firde Nigus",
+    "ANIE X YUKKI", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim", "Asbada Abubakar",
+    "Ebrahim M/d Ebrahim", "Abdu Shekna", "Abdujalil Ahmed Detolale", "urjii 🥷", "Amoo",
+    "Assistant 2", "Anu 28", "ማኅበል", "Yd", "Girmay Nigus",
+    "Yohannes", "H 5", "አበነህ 💕💕💕", "Tolosa", "Kejelcha Mamo",
+    "Ashagre", "Ed", "Gedefaw Aseffa", "D 7", "Getachew",
+    "Tamirat Girma", "Ashenafi", "Dada", "Demsash", "ድር ድር",
+    "አፒው", "Ahadi Ahemed", "skat mamaniyø", "tamirat", "kasu",
+    "PPP✌️🔥😋69", "Ad la", "Astu Bast", "getesh aresenal", "WALEX JOSEF",
+    "Habet", "♠[$]♠", "Ratum yasın", "ˋHEER X MUSICˎ", "Alemayehu Tesema",
+    "habtu moges", "‖꧁Tame꧂‖", "Alexs Kebede", "Dagna King", "Haileyesus Geremew",
+    "Chicken Road", "nal", "Wase", "Y@imam", "Current thing",
+    "Wizzy", "weyn Ter", "Tedi", "Tame 😍", "Fenaan Fenaan Barbaadi",
+    "Fire Tesfaye", "Samii", "Tesfaye Asnake", "Teg 0920", "Mitiku57 Kibatu",
+    "yohannes online", "Melkamnew", "L14", "Terryson Cruzman", "Teddy",
+    "kefle birhane", "Abushi 💀💀", "Yonase Tesema", "Mulugeta Fantahun", "Kifle Møk",
+    "Pro max", "Nscros", "የማርያም", "አቤል", "Tloya",
+    "ተሜ", "bakle", "ናቲና", "Dj", "wanaw",
+    "Falcon", "Dawit_B", "Ermias_99", "Solomon_K", "Bethel_M",
+    "Miki_Bingo", "Hanna_T", "Natnael_X", "Kidist_L", "Bereket_P",
+    "Samson_G", "Yordanos_K", "Feven_A", "Henok_Z", "Meron_W",
+    "Rediet_S", "Abel_T", "Tsion_M", "Brook_H", "Lidya_D",
+    "Michael_B", "Nahom_V", "Rut_K", "Robel_M", "Tigist_Y",
+    "Biniyam_C", "Kalkidan_F", "Ephrem_G", "Rahel_N", "Yonas_P", "Semhar_L"
+];
+
+function getRandomBotNames(count) {
+    let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+}
+
+let globalRoom = {
+    gameActive: false,
+    calledNumbers: [],
+    gameStartTime: Date.now() + 60000,
+    playersCount: 140,
+    takenCards: [],
+    playerRoundCards: {},
+    playerTemporaryCards: {},
+    lastCalledNumber: null,
+    targetWinCallCount: 25,
+    forcedWinningCardNums: []
+};
+
+let forcedNextWinner = null; 
+let onlineRealUsers = [];
+let pendingRequests = {};
+let gameInterval = null;
+let numberCallInterval = null;
+
+function getCartelaNumbers(cardNum) {
+    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+    let cols = ['B', 'I', 'N', 'G', 'O'];
+
+    cols.forEach((col, colIdx) => {
+        let range = colRanges[col];
+        let pool = [];
+        for (let n = range[0]; n <= range[1]; n++) pool.push(n);
+
+        let seed = (cardNum * 7919) + (colIdx * 104729);
+        for (let i = pool.length - 1; i > 0; i--) {
+            seed = (seed * 9301 + 49297) % 233280;
+            let rnd = seed / 233280;
+            let j = Math.floor(rnd * (i + 1));
+            let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+        }
+        cardNumbersByCol[col] = pool.slice(0, 5);
+    });
+
+    let flatList = [];
+    for (let r = 0; r < 5; r++) {
+        cols.forEach(col => {
+            if (r === 2 && col === 'N') flatList.push("FREE");
+            else flatList.push(cardNumbersByCol[col][r]);
+        });
+    }
+    return flatList;
+}
+
+function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
+    let grid2D = [];
+    let cleanCalled = (calledNumbers || []).map(n => Number(n));
+    
+    for(let r=0; r<5; r++) {
+        let row = [];
+        for(let c=0; c<5; c++) {
+            let idx = r * 5 + c;
+            let val = winningCardNumbers[idx];
+            let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
+            row.push({ idx, isHit, val });
+        }
+        grid2D.push(row);
+    }
+
+    for(let r=0; r<5; r++) {
+        if(grid2D[r].every(cell => cell.isHit)) {
+            return grid2D[r].map(cell => cell.idx);
+        }
+    }
+
+    for(let c=0; c<5; c++) {
+        let colHits = true;
+        let colCells = [];
+        for(let r=0; r<5; r++) {
+            colCells.push(grid2D[r][c]);
+            if(!grid2D[r][c].isHit) colHits = false;
+        }
+        if(colHits) {
+            return colCells.map(cell => cell.idx);
+        }
+    }
+
+    let diag1Hits = true, diag2Hits = true;
+    let diag1Cells = [], diag2Cells = [];
+    for(let i=0; i<5; i++) {
+        diag1Cells.push(grid2D[i][i]);
+        diag2Cells.push(grid2D[i][4-i]);
+        if(!grid2D[i][i].isHit) diag1Hits = false;
+        if(!grid2D[i][4-i].isHit) diag2Hits = false;
+    }
+    if(diag1Hits) return diag1Cells.map(cell => cell.idx);
+    if(diag2Hits) return diag2Cells.map(cell => cell.idx);
+
+    if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+        return [0, 4, 20, 24];
+    }
+
+    let fallbackMatched = [];
+    grid2D.forEach(row => {
+        row.forEach(cell => {
+            if (cell.isHit) fallbackMatched.push(cell.idx);
+        });
+    });
+    return fallbackMatched;
+}
+
+function getRealisticBotsCount(realCount) {
+    const now = new Date();
+    let utcHours = now.getUTCHours();
+    let utcMinutes = now.getUTCMinutes();
+    let ethiopianHour = (utcHours + 3) % 24; 
+    let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
+    let maxDurationMinutes = 8 * 60;
+    let calculated = 95;
+
+    if (ethiopianHour >= 6 && ethiopianHour < 12) {
+        calculated = 45 + Math.floor(Math.random() * 15);
+    } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
+        calculated = 70 + Math.floor(Math.random() * 20);
+    } else {
+        let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
+        calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
+    }
+
+    let smallDelta = Math.floor(Math.random() * 7) - 3; 
+    let finalCount = calculated + smallDelta;
+    if (finalCount < 40) finalCount = 40;
+    if (finalCount > 250) finalCount = 250;
+    return finalCount;
+}
+
+function refreshTakenCardsList() {
+    let allTaken = [];
+    Object.values(globalRoom.playerRoundCards).forEach(p => {
+        if (p.cards) allTaken.push(...p.cards);
+    });
+    Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
+        if (cards) allTaken.push(...cards);
+    });
+    globalRoom.takenCards = Array.from(new Set(allTaken));
+    io.emit('updateTakenCards', globalRoom.takenCards);
+}
+
+function simulateBotCardSelections() {
+    if (globalRoom.gameActive) return;
+    let available = [];
+    for(let i = 1; i <= 500; i++) {
+        if(!globalRoom.takenCards.includes(i)) available.push(i);
+    }
+    let botPicksCount = Math.floor(Math.random() * 15) + 10;
+    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
+        let randIdx = Math.floor(Math.random() * available.length);
+        let cardToTake = available.splice(randIdx, 1)[0];
+        if(!globalRoom.takenCards.includes(cardToTake)) {
+            globalRoom.takenCards.push(cardToTake);
+        }
+    }
+    io.emit('updateTakenCards', globalRoom.takenCards);
+}
+
+setInterval(simulateBotCardSelections, 6000);
+
+async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
+        });
+    } catch (error) {}
+}
+
+function startMainGameLoop() {
+    if (gameInterval) clearInterval(gameInterval);
+    globalRoom.gameStartTime = Date.now() + 60000;
+
+    gameInterval = setInterval(() => {
+        let timeLeft = globalRoom.gameStartTime - Date.now();
+
+        if (timeLeft <= 0 && !globalRoom.gameActive) {
+            globalRoom.gameActive = true;
+            globalRoom.calledNumbers = [];
+            globalRoom.lastCalledNumber = null;
             
-            <!-- TAB 1: GAME -->
-            <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
-                
-                <!-- Card Selection Section -->
-                <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
-                    <div class="flex justify-between items-center text-xs bg-purple-900/40 p-2 rounded-lg border border-purple-500/20">
-                        <div>
-                            <div id="user-welcome-info" class="text-gray-300 font-bold text-xs">ሰላም ተጫዋች</div>
-                            <div class="text-[10px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
-                        </div>
-                        <div class="text-right">
-                            <div id="reg-status-badge" class="text-[10px] font-black text-amber-400">60 ሰከንድ ይቀረዋል</div>
-                        </div>
-                    </div>
+            let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
+            let currentWinnerType = forcedNextWinner;
+            forcedNextWinner = null; 
 
-                    <div class="flex-1 min-h-[220px] max-h-[340px] overflow-y-auto custom-scroll bg-black/40 p-2.5 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+            let winningUsernamesArr = [];
+            let winningSocketData = []; 
+            let winnersCount = 1;
+            let isRealUserWin = false;
+            let winningCardNums = [];
 
-                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-3.5 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
-                        <div class="flex items-center gap-3">
-                            <div class="w-11 h-11 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-xl shadow-inner pulse-ball">
-                                ⏳
-                            </div>
-                            <div>
-                                <div class="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">መጫዎቻው ሊጀመር የሚቀረው ጊዜ</div>
-                                <div class="text-[9px] text-gray-300">እባክዎ ፈጣን በመሆን ካርድዎን ይምረጡ!</div>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <div id="big-countdown-timer" class="text-3xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
-                                60s
-                            </div>
-                        </div>
-                    </div>
+            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
+                let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
+                winnersCount = requiredCount;
 
-                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
-                        <div>
-                            <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
-                            <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
-                        </div>
-                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md transition-all">
-                            ካርድ አረጋግጥ
-                        </button>
-                    </div>
-                </div>
+                if (activeRealEntries.length > 0) {
+                    isRealUserWin = true;
+                    let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                    let chosenReal = shuffledReal.slice(0, requiredCount);
+                    
+                    chosenReal.forEach(item => {
+                        winningUsernamesArr.push(item[1].username);
+                        winningSocketData.push({ socketId: item[0], isBot: false });
+                        if (item[1].cards && item[1].cards.length > 0) {
+                            winningCardNums.push(item[1].cards[0]);
+                        }
+                    });
 
-                <!-- LIVE GAME SECTION -->
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1.5 pb-1 overflow-y-auto custom-scroll">
-                    <div class="grid grid-cols-12 gap-1.5 flex-1">
-                        
-                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
-                        <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
-                            <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
-                                <div class="bg-blue-600 rounded text-white py-0.5">B</div>
-                                <div class="bg-purple-600 rounded text-white py-0.5">I</div>
-                                <div class="bg-pink-600 rounded text-white py-0.5">N</div>
-                                <div class="bg-emerald-600 rounded text-white py-0.5">G</div>
-                                <div class="bg-amber-600 rounded text-white py-0.5">O</div>
-                            </div>
-                            <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
-                        </div>
-
-                        <!-- ቀኝ በኩል (ካርዶች የሚታዩበት ቦታ) -->
-                        <div class="col-span-7 flex flex-col space-y-1.5">
-                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
-                                <div class="flex justify-between items-center">
-                                    <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center"></div>
-                                    <button onclick="toggleAudioMute()" class="text-gray-300 text-xs">🔊</button>
-                                </div>
-
-                                <div id="live-display-area" class="relative flex items-center justify-center my-1">
-                                    <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold">የተጠራ ቁጥር</div>
-                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">በመጠበቅ ላይ</div>
-                                    </div>
-
-                                    <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
-                                        <div class="billiard-inner-circle w-12 h-12 text-sm" id="main-ball-inner">
-                                            <span id="ball-letter" class="text-[8px] leading-none uppercase">B</span>
-                                            <span id="ball-num" class="text-sm font-black leading-tight">5</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex justify-between items-center bg-black/40 px-2 py-0.5 rounded-lg border border-white/5">
-                                    <span class="text-[8px] text-gray-300" id="mode-label">አውቶማቲክ</span>
-                                    <label class="relative inline-flex items-center cursor-pointer scale-75">
-                                        <input type="checkbox" id="auto-daub-toggle" checked class="sr-only peer" onchange="toggleDaubMode()">
-                                        <div class="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div id="right-side-dynamic-area" class="bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1.5"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: WALLET -->
-            <div id="tab-wallet" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll">
-                <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
-                    <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
-                    <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">0.00 <span class="text-sm text-white">ብር</span></div>
-                    <div class="text-[11px] text-amber-200/80">⚠️ ዝቅተኛው የዲፖዚት እና ዊዝድሮዋል ገደብ 100 ብር ነው።</div>
-                    <div class="flex gap-2.5 pt-2">
-                        <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2.5 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
-                        <button onclick="openWithdrawModal()" class="flex-1 bg-white/10 py-2.5 rounded-xl text-xs font-bold border border-white/10 shadow">ገንዘብ አውጣ (Withdraw)</button>
-                    </div>
-                </div>
-
-                <div class="bg-[#180a29] p-3 rounded-2xl border border-purple-500/30 space-y-2">
-                    <div class="flex justify-between items-center border-b border-white/10 pb-1.5">
-                        <h3 class="text-xs font-bold text-amber-400">📜 የሂሳብ እንቅስቃሴ ታሪክ (History)</h3>
-                        <span class="text-[9px] text-gray-400">ገቢ / ወጪ</span>
-                    </div>
-                    <div id="transaction-history-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-[10px]">
-                        <div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: GAME RULES (🎯 ሙሉ መመሪያ ከግራፊክ ምስሎች ጋር) -->
-            <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
-                <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <h2 class="text-sm font-bold text-amber-400">📖 🎮 AZ Bingo - የጨዋታ እና የገንዘብ አጠቃቀም መመሪያ</h2>
-                </div>
-
-                <div class="space-y-3">
-                    <!-- 1. 🎯 ጨዋታውን እንዴት ይጀምራሉ? -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">1. 🎯 ጨዋታውን እንዴት ይጀምራሉ?</h3>
-                        <ul class="list-disc list-inside text-gray-300 space-y-1 text-[11px]">
-                            <li>በየዙሩ ከ 1 እስከ 500 ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ።</li>
-                            <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
-                            <li>1 ደቂቃ (60 ሰከንድ) ቆጥሮ ጨዋታው ሲጀመር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
-                            <li>አውቶማቲክ ዳብ (Auto Daub) በመጠቀም ቁጥሮቹ በራሳቸው ይሞላሉ፤ ወይም ደግሞ ማኑዋል (Manual) በማድረግ በራስዎ እጅ እየነኩ (እየመረጡ) መጫወት ይችላሉ።</li>
-                        </ul>
-                    </div>
-
-                    <!-- 2. 🏆 የማሸነፊያ ህጎች ከምስል (ግራፊክስ) ጋር -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህጎች (የድል ቅጦች)</h3>
-                        <p class="text-gray-300 text-[11px]">የሚከተሉትን የማሸነፊያ ቅጦች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል፡</p>
-                        
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <!-- Horizontal -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ አግድም ረድፍ ሲሞላ</div>
-                            </div>
-
-                            <!-- Vertical -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">ቁመት (Vertical)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ ቁመታዊ ረድፍ ሲሞላ</div>
-                            </div>
-
-                            <!-- Diagonal -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 relative flex items-center justify-center">
-                                        <div class="absolute w-10 h-1 bg-emerald-500 rotate-45 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">ሰያፍ (Diagonal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">ሰያፍ መስመር ሲሞላ</div>
-                            </div>
-
-                            <!-- Four Corners -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 col-start-1 row-start-1 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-5 row-start-1 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-1 row-start-5 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-5 row-start-5 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">አራቱ ማዕዘኖች (4 Corners)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አራቱ ማዕዘኖች ሲሞሉ።</div>
-                            </div>
-                        </div>
-
-                        <div class="text-[10px] text-amber-400 font-bold mt-2 bg-black/40 p-1.5 rounded border border-amber-500/20 text-center">
-                            📌 ማስታወሻ: ከአንድ በላይ አሸናፊዎች ከሆኑ የሽልማት መጠኑ በእኩል ይከፋፈላል!
-                        </div>
-                    </div>
-
-                    <!-- 3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል። ከዚያም ወደ ቴሌብር በመሄድ ማስገባት የሚፈልጉትን የገንዘብ መጠን ወደዚህ ቁጥር ያስተላልፉ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ገንዘቡን ከላኩ በኋላ በቴሌብር በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው፤ ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 100 ብር ነው።)</p>
-                        </div>
-                    </div>
-
-                    <!-- 4. 🏧 ገንዘብ የማወጫ መመሪያ -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">4. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉትን ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉትን የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል።</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 4: ADMIN PANEL -->
-            <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
-                <div class="flex justify-between items-center border-b border-white/10 pb-2">
-                    <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
-                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
-                </div>
-                
-                <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
-                    <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ</div>
-                    <div class="grid grid-cols-1 gap-2 pt-1">
-                        <button onclick="adminSetWinner('bot')" class="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2 rounded text-xs shadow">🤖 ቦት ያሸንፍ</button>
-                        <button onclick="adminSetWinner('random_real')" class="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-2 rounded text-xs shadow">🎲 ራንደም ሪል ዩዘር ያሸንፍ</button>
-                        <button onclick="adminSetWinner('random_3_real')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 3 ሪል ዩዘሮች በአንድ ላይ ያሸንፉ</button>
-                        <button onclick="adminSetWinner('dual_bot')" class="w-full bg-pink-700 hover:bg-pink-600 text-white font-bold py-2 rounded text-xs shadow">🤖🤖 2 ቦቶች በአንድ ላይ ያሸንፉ</button>
-                    </div>
-                    <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
-                </div>
-
-                <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <div class="font-bold text-amber-300">👥 ኦንላይን ያሉ እውነተኛ ተጠቃሚዎች</div>
-                        <button onclick="requestRealUsersList()" class="text-[9px] bg-amber-500 text-black px-2 py-0.5 rounded font-bold">አድስ (Refresh)</button>
-                    </div>
-                    <div id="admin-real-users-list" class="space-y-1 max-h-40 overflow-y-auto custom-scroll text-[10px]">
-                        <div class="text-center text-gray-400 py-2">ምንም እውነተኛ ተጠቃሚ የለም</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- WINNING MODAL -->
-        <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2">
-            <div class="bg-[#1c1032] border border-amber-500/50 rounded-2xl p-3 w-full max-w-[320px] space-y-2 shadow-2xl text-center relative">
-                <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">👑</div>
-                <div>
-                    <h2 class="text-amber-400 font-extrabold text-base tracking-wider">BINGO!</h2>
-                    <div id="winner-title-badge" class="text-amber-200 text-xs font-black mt-1">🎉 አሸናፊዎች ተገኝተዋል!</div>
-                    <div id="winner-badges-container" class="flex flex-wrap gap-1.5 justify-center items-center my-2"></div>
-
-                    <div class="mt-2 bg-black/40 p-2 rounded-xl border border-white/10 text-center space-y-1">
-                        <div class="text-[9px] font-bold text-amber-300" id="winning-cartela-title">🏆 Winning Cartela</div>
-                        <div id="winning-cartela-grid" class="grid grid-cols-5 gap-0.5 bg-[#140826] p-1 rounded border border-purple-500/30"></div>
-                    </div>
-                    <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center font-bold" id="winner-banner-text">
-                        የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">980 ብር</span>
-                    </div>
-                    <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ ቀጣዩ ዙር በቅርቡ ይጀምራል
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- DEPOSIT MODAL -->
-        <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
-            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer" onclick="copyAdminPhone()">
-                    <div class="text-[10px] text-gray-300">ቁጥር (ለመቅዳት ይጫኑ)፡</div>
-                    <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
-                    <div id="copy-status-msg" class="text-[9px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
-                </div>
-                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
-                    <button onclick="submitFinancialRequest('deposit')" class="flex-1 bg-emerald-600 py-2 rounded-xl font-bold">ጥያቄ ላክ</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- WITHDRAW MODAL -->
-        <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
-            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <input type="number" id="withdraw-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <div class="flex gap-2">
-                    <button onclick="document.getElementById('withdraw-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
-                    <button onclick="submitFinancialRequest('withdraw')" class="flex-1 bg-red-600 py-2 rounded-xl font-bold">ማውጫ ላክ</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- BOTTOM NAV -->
-        <nav class="grid grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-2 px-3 z-20 gap-2">
-            <button onclick="switchTab('game', this)" class="nav-btn flex items-center justify-center gap-1 text-purple-400 bg-purple-950/50 py-2 rounded-xl border border-purple-500/30 shadow transition-all">
-                <span class="text-[11px] font-black tracking-wide">🎮 ጨዋታ</span>
-            </button>
-            <button onclick="switchTab('wallet', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-2 rounded-xl border border-white/10 shadow transition-all">
-                <span class="text-[11px] font-bold tracking-wide">💰 ቦርሳ</span>
-            </button>
-            <button onclick="switchTab('rules', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-2 rounded-xl border border-white/10 shadow transition-all">
-                <span class="text-[11px] font-bold tracking-wide">📖 የጨዋታ ህግ</span>
-            </button>
-        </nav>
-    </div>
-
-    <script>
-        const socket = io();
-
-        const ADMIN_TELEGRAM_ID = "371093083";
-        let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
-        let userFullName = "ተጫዋች"; 
-        let userUsername = "guest_user";
-        let isAdmin = false;
-
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-                if (window.Telegram.WebApp.initDataUnsafe.user.id) {
-                    telegramUserId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
+                    if (winningUsernamesArr.length < requiredCount) {
+                        let neededBots = requiredCount - winningUsernamesArr.length;
+                        let botNames = getRandomBotNames(neededBots);
+                        botNames.forEach(bName => {
+                            winningUsernamesArr.push(bName);
+                            winningSocketData.push({ socketId: null, isBot: true });
+                            winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                        });
+                    }
+                } else {
+                    isRealUserWin = false;
+                    let botNames = getRandomBotNames(requiredCount);
+                    botNames.forEach(bName => {
+                        winningUsernamesArr.push(bName);
+                        winningSocketData.push({ socketId: null, isBot: true });
+                        winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                    });
                 }
-                if (window.Telegram.WebApp.initDataUnsafe.user.first_name) {
-                    userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
-                }
-                if (window.Telegram.WebApp.initDataUnsafe.user.username) {
-                    userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
+            } else if (currentWinnerType === 'dual_bot') {
+                let twoBots = getRandomBotNames(2);
+                winnersCount = 2;
+                twoBots.forEach(bName => {
+                    winningUsernamesArr.push(bName);
+                    winningSocketData.push({ socketId: null, isBot: true });
+                    winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                });
+                isRealUserWin = false;
+            } else if (currentWinnerType === 'bot') {
+                let botName = getRandomBotNames(1)[0];
+                winnersCount = 1;
+                winningUsernamesArr.push(botName);
+                winningSocketData.push({ socketId: null, isBot: true });
+                winningCardNums.push(Math.floor(Math.random() * 500) + 1);
+                isRealUserWin = false;
+            } else {
+                if (activeRealEntries.length > 0 && Math.random() > 0.3) {
+                    let randEntry = activeRealEntries[Math.floor(Math.random() * activeRealEntries.length)];
+                    winningSocketData.push({ socketId: randEntry[0], isBot: false });
+                    winningUsernamesArr.push(randEntry[1].username);
+                    if (randEntry[1].cards && randEntry[1].cards.length > 0) {
+                        winningCardNums.push(randEntry[1].cards[0]);
+                    }
+                    isRealUserWin = true;
+                    winnersCount = 1;
+                } else {
+                    let botName = getRandomBotNames(1)[0];
+                    winningUsernamesArr.push(botName);
+                    winningSocketData.push({ socketId: null, isBot: true });
+                    winningCardNums.push(Math.floor(Math.random() * 500) + 1);
+                    winnersCount = 1;
+                    isRealUserWin = false;
                 }
             }
-        }
 
-        if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
+            globalRoom.forcedWinningCardNums = winningCardNums;
+            
+            // 🎯 **Strict Simultaneous Multi-Winner Synchronization:**
+            // የሁሉም አሸናፊዎች ካርዶች የድል መስመር ቁጥሮች በአንድ ላይ ተሰብስበው፣ በጨዋታው ውስጥ ተመጣጥረው እንዲጠሩ ይደረጋል።
+            let possiblePatterns = [
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
+                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ
+                [0,4,20,24] // ማዕዘኖች
+            ];
 
-        let walletBalance = 0.00;
-        let transactionHistory = [];
-
-        const userLocalStorageKey = `az_bingo_wallet_v11_${telegramUserId}`;
-        const userHistoryKey = `az_bingo_history_v11_${telegramUserId}`;
-        const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
-        const userCurrentRoundPaidKey = `az_bingo_round_paid_${telegramUserId}`;
-
-        if (localStorage.getItem(userLocalStorageKey) !== null) {
-            walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
-        } else {
-            walletBalance = 0.00;
-            localStorage.setItem(userLocalStorageKey, "0.00");
-            localStorage.setItem(userCurrentRoundPaidKey, "0");
-        }
-
-        if (localStorage.getItem(userHistoryKey)) {
-            try { transactionHistory = JSON.parse(localStorage.getItem(userHistoryKey)) || []; } catch(e) { transactionHistory = []; }
-        }
-
-        let userSelectedCards = [];
-        let confirmedCards = []; 
-        let totalPaidForCurrentRound = parseFloat(localStorage.getItem(userCurrentRoundPaidKey)) || 0;
-
-        if (localStorage.getItem(userSavedCardsKey)) {
-            try {
-                confirmedCards = JSON.parse(localStorage.getItem(userSavedCardsKey)) || [];
-                if (confirmedCards.length > 0) userSelectedCards = [...confirmedCards];
-            } catch(e) { confirmedCards = []; }
-        }
-
-        let takenCardsByOthers = []; 
-        let calledNumbersList = [];
-        let gameStartTimeServer = Date.now() + 60000;
-        let manualDaubedNumbers = {};
-        let amharicVoice = null;
-        let isAudioMuted = false;
-
-        function loadVoices() {
-            let voices = window.speechSynthesis.getVoices();
-            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET')) || voices[0];
-        }
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-            loadVoices();
-        }
-
-        function getColumnBgColor(num) {
-            if (num <= 15) return "bg-blue-600";
-            if (num <= 30) return "bg-purple-600";
-            if (num <= 45) return "bg-pink-600";
-            if (num <= 60) return "bg-emerald-600";
-            return "bg-amber-600";
-        }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-                    let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
-                    if (realTgId) telegramUserId = realTgId;
-                    if (window.Telegram.WebApp.initDataUnsafe.user.first_name) userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
-                    if (window.Telegram.WebApp.initDataUnsafe.user.username) userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
-                }
-                if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
-
-                const adminBtn = document.getElementById('admin-nav-btn');
-                if (adminBtn && isAdmin) adminBtn.classList.remove('hidden');
-                document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
-            }, 300);
-
-            document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
-            updateWalletUI();
-            renderHistoryUI();
-            generate500CardGrid();
-            startClientTimer();
-            renderPlayerDualCards();
-
-            socket.on('connect', () => {
-                document.getElementById('connection-status').innerText = 'Connected';
-                document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
-                
-                socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
-
-                if (confirmedCards.length > 0) {
-                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
-                } else if (userSelectedCards.length > 0) {
-                    socket.emit('tempSelectCards', userSelectedCards);
-                }
+            let combinedWinningNumbers = [];
+            winningCardNums.forEach(cNum => {
+                let cList = getCartelaNumbers(cNum);
+                let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+                let pNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
+                combinedWinningNumbers.push(...pNums);
             });
+            let uniqueWinningNumbers = Array.from(new Set(combinedWinningNumbers));
 
-            socket.on('rewardPrize', (data) => {
-                walletBalance += data.prize;
-                updateWalletUI();
-                addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
-            });
+            let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            
+            io.emit('gameStarted', { calledNumbers: [] });
+            io.emit('gameStartedBroadcast');
 
-            socket.on('adminRealUsersListUpdate', (usersList) => {
-                const listEl = document.getElementById('admin-real-users-list');
-                if (!listEl) return;
-                if (!usersList || usersList.length === 0) {
-                    listEl.innerHTML = `<div class="text-center text-gray-400 py-2">ምንም እውነተኛ ተጠቃሚ የለም</div>`;
+            if (numberCallInterval) clearInterval(numberCallInterval);
+            
+            let callStep = 0;
+            let winNumQueue = [...uniqueWinningNumbers];
+
+            numberCallInterval = setInterval(() => {
+                if (!globalRoom.gameActive) {
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                     return;
                 }
-                listEl.innerHTML = '';
-                usersList.forEach(u => {
-                    const row = document.createElement('div');
-                    row.className = "flex justify-between items-center bg-black/40 p-1.5 rounded border border-white/5 text-[10px]";
-                    row.innerHTML = `<div><span class="text-amber-400 font-bold">${u.fullName}</span> <span class="text-gray-300">(${u.username})</span></div><div class="text-gray-400 font-mono">ID: ${u.userId}</div>`;
-                    listEl.appendChild(row);
-                });
-            });
 
-            socket.on('updateTakenCards', (takenList) => {
-                takenCardsByOthers = takenList;
-                generate500CardGrid();
-            });
+                callStep++;
+                let calledNum;
 
-            socket.on('syncGameState', (room) => {
-                if (room.gameStartTime) gameStartTimeServer = room.gameStartTime;
-                if (room.playersCount) {
-                    document.getElementById('stat-players').innerText = room.playersCount;
-                    let totalPot = room.playersCount * 10;
-                    document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
-                }
-                if (room.gameActive) {
-                    calledNumbersList = room.calledNumbers || [];
-                    if (calledNumbersList.length > 0) {
-                        displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
-                        document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                    }
-                    document.getElementById('card-selection-section').classList.add('hidden');
-                    document.getElementById('live-game-section').classList.remove('hidden');
-                    renderVerticalBoard();
-                    renderPlayerDualCards();
+                if (winNumQueue.length > 0) {
+                    calledNum = Number(winNumQueue.shift());
+                    let availIdx = availableNumbers.indexOf(calledNum);
+                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
-                    calledNumbersList = [];
-                    manualDaubedNumbers = {};
-                    document.getElementById('stat-called-count').innerText = "0";
-                    document.getElementById('card-selection-section').classList.remove('hidden');
-                    document.getElementById('live-game-section').classList.add('hidden');
-                    renderVerticalBoard();
-                    generate500CardGrid();
+                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                    calledNum = availableNumbers.splice(randIdx, 1)[0];
                 }
-            });
 
-            socket.on('gameStarted', (data) => {
-                document.getElementById('card-selection-section').classList.add('hidden');
-                document.getElementById('live-game-section').classList.remove('hidden');
-                renderPlayerDualCards();
-            });
+                if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    globalRoom.calledNumbers.push(Number(calledNum));
+                    globalRoom.lastCalledNumber = Number(calledNum);
 
-            socket.on('numberCalled', (data) => {
-                let num = data.number;
-                if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
-                displayCalledBall(num);
-                document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                renderVerticalBoard();
-                renderPlayerDualCards();
-                if (!isAudioMuted) speakCalledNumber(num);
-            });
+                    io.emit('numberCalled', {
+                        number: Number(calledNum),
+                        calledNumbers: globalRoom.calledNumbers
+                    });
+                    io.emit('numberCalledBroadcast', Number(calledNum));
+                }
 
-            socket.on('roundEnded', (data) => {
-                gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
-                resetPlayerSelectionForNewRound();
-            });
-
-            socket.on('cardSelectionSuccess', () => {
-                document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል!";
-                localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
-                localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
+                // 🎯 **Simultaneous Multi-Winner Trigger:** 
+                // የሁሉም አሸናፊዎች ቁጥሮች በሙሉ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) ጨዋታው በአንድ ጊዜ ይጠናቀቃል!
+                let shouldTriggerWin = (winNumQueue.length === 0);
                 
-                const confirmBtn = document.getElementById('confirm-card-btn');
-                confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
-                confirmBtn.classList.add('bg-red-600', 'text-white');
-                confirmBtn.innerText = "ካርድ ተረጋግጧል ✔";
+                if (shouldTriggerWin) {
+                    let totalPot = (globalRoom.playersCount || 140) * 10;
+                    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
-                renderPlayerDualCards();
-            });
+                    let primaryCardNum = winningCardNums[0];
+                    let winningCardNumbers = getCartelaNumbers(primaryCardNum);
+                    let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
 
-            socket.on('cardSelectionError', (msg) => { alert(msg); });
+                    let winnerNamesStr = winningUsernamesArr.join(', ');
+                    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, isRealUserWin);
 
-            socket.on('bingoWinner', (data) => {
-                const winnerModal = document.getElementById('winner-modal');
-                const titleBadge = document.getElementById('winner-title-badge');
-                const badgesContainer = document.getElementById('winner-badges-container');
-                const bannerText = document.getElementById('winner-banner-text');
-                const cartelaGrid = document.getElementById('winning-cartela-grid');
-                
-                let winnersCount = data.winnersCount || 1;
-                let usernamesList = String(data.username).split(',').map(s => s.trim());
-
-                if (winnersCount > 1 || usernamesList.length > 1) {
-                    titleBadge.innerHTML = `🎉 ${winnersCount} players won!`;
-                } else {
-                    titleBadge.innerHTML = `🎉 አሸናፊ:`;
-                }
-
-                badgesContainer.innerHTML = '';
-                usernamesList.forEach((uname, index) => {
-                    let badgeItem = document.createElement('div');
-                    badgeItem.className = "bg-white/10 border border-white/20 rounded-full px-3 py-1 flex items-center gap-1.5 text-xs shadow";
-                    let firstLetter = uname.charAt(0).toUpperCase();
-                    let cardDisplayNum = Number(data.cardNum) + index * 50; 
-                    badgeItem.innerHTML = `
-                        <span class="w-5 h-5 rounded-full bg-amber-500 text-black font-black text-[10px] flex items-center justify-center">${firstLetter}</span>
-                        <span class="font-bold text-amber-200">${uname}</span>
-                        <span class="text-[9px] text-gray-400 font-mono">#${cardDisplayNum}</span>
-                    `;
-                    badgesContainer.appendChild(badgeItem);
-                });
-
-                bannerText.innerHTML = `የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">${data.prize} ብር</span>`;
-                
-                cartelaGrid.innerHTML = '';
-                let winningCardNumbers = getCartelaNumbers(data.cardNum);
-                
-                let finalCalledList = (data.calledNumbers || calledNumbersList || []).map(n => Number(n));
-                let matchedIndices = data.matchedIndices || [];
-
-                winningCardNumbers.forEach((cn, idx) => {
-                    const cell = document.createElement('div');
-                    
-                    let isWinningPatternCell = matchedIndices.includes(idx);
-                    let isCalled = (cn === "FREE" || finalCalledList.includes(Number(cn)));
-
-                    if (cn === "FREE") {
-                        cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded shadow";
-                        cell.innerText = "★";
-                    } else if (isWinningPatternCell || isCalled) {
-                        cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
-                        cell.innerText = cn;
-                    } else {
-                        cell.className = "h-5 bg-purple-950/60 text-gray-400 text-[9px] font-medium flex items-center justify-center rounded";
-                        cell.innerText = cn;
-                    }
-                    cartelaGrid.appendChild(cell);
-                });
-
-                winnerModal.classList.remove('hidden');
-                setTimeout(() => {
-                    winnerModal.classList.add('hidden');
-                }, 6000);
-            });
-
-            socket.on('updatePlayersCount', (count) => {
-                document.getElementById('stat-players').innerText = count;
-                let totalPot = count * 10;
-                document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
-            });
-
-            socket.on('financialApproved', (data) => {
-                if (data.type === 'deposit') {
-                    walletBalance += data.amount;
-                    updateWalletUI();
-                    addTransactionHistory('ቴሌብር ዲፖዚት (ጸድቋል)', data.amount, 'income');
-                    alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
-                } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
-                    walletBalance -= data.amount;
-                    updateWalletUI();
-                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
-                    alert(`✅ የ ${data.amount} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
-                }
-            });
-
-            socket.on('financialRejected', (data) => {
-                alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
-            });
-        });
-
-        function requestRealUsersList() {
-            if (!isAdmin) return;
-            socket.emit('getAdminRealUsers');
-        }
-
-        function adminSetWinner(type) {
-            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
-            socket.emit('adminSetNextWinner', { winnerType: type });
-            let msgEl = document.getElementById('admin-winner-status-msg');
-            msgEl.innerText = "✅ አሸናፊው ተስተካክሏል!";
-            msgEl.classList.remove('hidden');
-            setTimeout(() => msgEl.classList.add('hidden'), 3000);
-        }
-
-        function copyAdminPhone() {
-            let phoneNum = document.getElementById('admin-telebirr-number').innerText;
-            navigator.clipboard.writeText(phoneNum).then(() => {
-                let msgEl = document.getElementById('copy-status-msg');
-                msgEl.classList.remove('hidden');
-                setTimeout(() => msgEl.classList.add('hidden'), 2000);
-            });
-        }
-
-        function toggleAudioMute() {
-            isAudioMuted = !isAudioMuted;
-            alert(isAudioMuted ? "ድምፅ ጠፍቷል (Muted)" : "ድምፅ በርቷል");
-        }
-
-        function addTransactionHistory(title, amount, type) {
-            let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            transactionHistory.unshift({ title, amount, type, time: timeNow });
-            if (transactionHistory.length > 120) transactionHistory.pop();
-            localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
-            renderHistoryUI();
-        }
-
-        function renderHistoryUI() {
-            const listEl = document.getElementById('transaction-history-list');
-            if (!listEl) return;
-            if (transactionHistory.length === 0) {
-                listEl.innerHTML = `<div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>`;
-                return;
-            }
-            listEl.innerHTML = '';
-            transactionHistory.forEach(tx => {
-                const item = document.createElement('div');
-                item.className = "flex justify-between items-center bg-black/40 p-2 rounded border border-white/5";
-                let amtColor = tx.type === 'income' ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
-                let sign = tx.type === 'income' ? '+' : '-';
-                item.innerHTML = `<div><div class="text-white font-medium">${tx.title}</div><div class="text-[8px] text-gray-400">${tx.time}</div></div><div class="${amtColor}">${sign}${tx.amount} ብር</div>`;
-                listEl.appendChild(item);
-            });
-        }
-
-        function startClientTimer() {
-            setInterval(() => {
-                let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
-                let regBadge = document.getElementById('reg-status-badge');
-                let bigTimerEl = document.getElementById('big-countdown-timer');
-
-                if (regBadge && !confirmedCards.length) {
-                    regBadge.innerText = `${timeLeft} ሰከንድ ይቀረዋል`;
-                }
-                if (bigTimerEl) {
-                    bigTimerEl.innerText = `${timeLeft}s`;
-                }
-            }, 1000);
-        }
-
-        function speakCalledNumber(num) {
-            let letter = num <= 15 ? "ቢ" : num <= 30 ? "አይ" : num <= 45 ? "ኤን" : num <= 60 ? "ጂ" : "ኦ";
-            let speechText = `${letter} ${num}`;
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET'; 
-                utterance.rate = 0.85; 
-                utterance.pitch = 1.0;
-                if (amharicVoice) {
-                    utterance.voice = amharicVoice;
-                }
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function displayCalledBall(num) {
-            const countdownBox = document.getElementById('in-place-countdown-box');
-            const mainBall = document.getElementById('main-called-ball');
-            countdownBox.classList.add('hidden');
-            mainBall.classList.remove('hidden');
-
-            let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
-            let bgClass = getColumnBgColor(num);
-            
-            mainBall.className = `w-24 h-24 billiard-ball ${bgClass} pulse-ball mx-auto`;
-            document.getElementById('ball-letter').innerText = letter;
-            document.getElementById('ball-num').innerText = num;
-            renderRecentBalls();
-        }
-
-        function renderRecentBalls() {
-            const container = document.getElementById('recent-balls-container');
-            container.innerHTML = '';
-            let recent = calledNumbersList.slice(-5);
-            
-            recent.forEach((num, index) => {
-                let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
-                let isLatest = (index === recent.length - 1);
-                let bgClass = getColumnBgColor(num);
-
-                const pill = document.createElement('div');
-                pill.className = `${bgClass} billiard-ball shadow ${isLatest ? 'w-8 h-8' : 'w-7 h-7 opacity-75'}`;
-                
-                const inner = document.createElement('div');
-                inner.className = `billiard-inner-circle ${isLatest ? 'w-4.5 h-4.5 text-[8px]' : 'w-4 h-4 text-[7px]'}`;
-                inner.innerHTML = `<span style="font-size: 6px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
-                
-                pill.appendChild(inner);
-                container.appendChild(pill);
-            });
-        }
-
-        function getCartelaNumbers(cardNum) {
-            let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-            let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-            let cols = ['B', 'I', 'N', 'G', 'O'];
-
-            cols.forEach((col, colIdx) => {
-                let range = colRanges[col];
-                let pool = [];
-                for (let n = range[0]; n <= range[1]; n++) pool.push(n);
-
-                let seed = (cardNum * 7919) + (colIdx * 104729);
-                for (let i = pool.length - 1; i > 0; i--) {
-                    seed = (seed * 9301 + 49297) % 233280;
-                    let rnd = seed / 233280;
-                    let j = Math.floor(rnd * (i + 1));
-                    let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
-                }
-                cardNumbersByCol[col] = pool.slice(0, 5);
-            });
-
-            let flatList = [];
-            for (let r = 0; r < 5; r++) {
-                cols.forEach(col => {
-                    if (r === 2 && col === 'N') flatList.push("FREE");
-                    else flatList.push(cardNumbersByCol[col][r]);
-                });
-            }
-            return flatList;
-        }
-
-        function resetPlayerSelectionForNewRound() {
-            userSelectedCards = [];
-            confirmedCards = [];
-            totalPaidForCurrentRound = 0;
-            calledNumbersList = [];
-            manualDaubedNumbers = {};
-            localStorage.removeItem(userSavedCardsKey);
-            localStorage.setItem(userCurrentRoundPaidKey, "0");
-            document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-
-            const confirmBtn = document.getElementById('confirm-card-btn');
-            confirmBtn.classList.remove('bg-red-600', 'text-white');
-            confirmBtn.classList.add('blink-btn', 'bg-gradient-to-r', 'from-amber-500', 'to-orange-600');
-            confirmBtn.innerText = "ካርድ አረጋግጥ";
-
-            document.getElementById('stat-called-count').innerText = "0";
-            
-            const grid = document.getElementById('card-grid-500');
-            if (grid) grid.innerHTML = `<div class="col-span-8 text-center text-amber-400 text-xs py-10 font-bold">አዲስ ዙር ካርዶች እየተዘጋጁ ነው...</div>`;
-
-            setTimeout(() => {
-                document.getElementById('card-selection-section').classList.remove('hidden');
-                document.getElementById('live-game-section').classList.add('hidden');
-                generate500CardGrid();
-            }, 1000);
-
-            renderVerticalBoard();
-            renderRecentBalls();
-            renderPlayerDualCards();
-        }
-
-        function updateWalletUI() {
-            document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
-            localStorage.setItem(userLocalStorageKey, walletBalance.toString());
-        }
-
-        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
-
-        function submitFinancialRequest(type) {
-            let amount, phone = "ቴሌብር", receipt = "";
-            if (type === 'deposit') {
-                amount = parseFloat(document.getElementById('dep-amount-input').value);
-                receipt = document.getElementById('dep-receipt-input').value.trim();
-                if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
-                if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
-                document.getElementById('deposit-modal').classList.add('hidden');
-            } else {
-                phone = document.getElementById('withdraw-phone-input').value.trim();
-                amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-                if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ ያስገቡ!"); return; }
-                if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
-                document.getElementById('withdraw-modal').classList.add('hidden');
-            }
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
-        }
-
-        function generate500CardGrid() {
-            const grid = document.getElementById('card-grid-500');
-            if (!grid) return;
-            grid.innerHTML = '';
-            
-            for(let i = 1; i <= 500; i++) {
-                const btn = document.createElement('button');
-                let isSelectedByMe = userSelectedCards.includes(i);
-                let isConfirmedByMe = confirmedCards.includes(i);
-                let isTakenByOther = takenCardsByOthers.includes(i);
-
-                if (isConfirmedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-2 rounded shadow";
-                } else if (isSelectedByMe) {
-                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-2 rounded border border-amber-300 shadow";
-                } else if (isTakenByOther) {
-                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-2 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
-                    btn.disabled = true;
-                } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[11px] py-2 rounded border border-white/5";
-                }
-                btn.innerText = String(i);
-
-                btn.onclick = () => {
-                    if (isTakenByOther && !userSelectedCards.includes(i)) return;
-                    if(userSelectedCards.includes(i)) {
-                        userSelectedCards = userSelectedCards.filter(c => c !== i);
-                    } else {
-                        if(userSelectedCards.length >= 2) { alert("ከ 2 ካርድ በላይ መምረጥ አይችሉም!"); return; }
-                        userSelectedCards.push(i);
-                    }
-                    document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
-                    socket.emit('tempSelectCards', userSelectedCards);
-                    generate500CardGrid();
-                };
-                grid.appendChild(btn);
-            }
-        }
-
-        function confirmCardSelection() {
-            if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
-            
-            let desiredTotalCardsCount = userSelectedCards.length; 
-            let desiredTotalCost = desiredTotalCardsCount * 10;    
-            
-            let amountToDeduct = desiredTotalCost - totalPaidForCurrentRound;
-
-            if (amountToDeduct > 0 && walletBalance < amountToDeduct) { 
-                alert("በቂ ሂሳብ የለዎትም! እባክዎ አካውንትዎ ላይ ገንዘብ ያስገቡ።"); 
-                return; 
-            }
-            
-            if (amountToDeduct > 0) {
-                walletBalance -= amountToDeduct;
-                updateWalletUI();
-                addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense');
-                totalPaidForCurrentRound = desiredTotalCost;
-            } else if (amountToDeduct < 0) {
-                let refundAmount = Math.abs(amountToDeduct);
-                walletBalance += refundAmount;
-                updateWalletUI();
-                addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income');
-                totalPaidForCurrentRound = desiredTotalCost;
-            }
-
-            confirmedCards = [...userSelectedCards];
-            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
-        }
-
-        function renderVerticalBoard() {
-            const board = document.getElementById('vertical-board-75');
-            board.innerHTML = '';
-            let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
-            for(let r = 1; r <= 15; r++) {
-                let colsData = [r, r + 15, r + 30, r + 45, r + 60];
-                colsData.forEach(num => {
-                    const isCalled = calledNumbersList.includes(num);
-                    const isLatest = (num === lastCalledNum);
-                    const cell = document.createElement('div');
-                    
-                    if (isLatest) {
-                        cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-1 border border-white animate-pulse shadow-lg flex items-center justify-center';
-                    } else if (isCalled) {
-                        let colColor = getColumnBgColor(num);
-                        cell.className = `${colColor} text-white font-bold text-[10px] rounded py-1 shadow flex items-center justify-center`;
-                    } else {
-                        cell.className = 'bg-white/5 text-gray-300 text-[10px] rounded py-1 font-medium flex items-center justify-center';
-                    }
-                    cell.innerText = num;
-                    board.appendChild(cell);
-                });
-            }
-        }
-
-        function toggleDaubMode() {
-            const autoToggle = document.getElementById('auto-daub-toggle');
-            document.getElementById('mode-label').innerText = autoToggle.checked ? "አውቶማቲክ" : "ማኑዋል";
-            renderPlayerDualCards();
-        }
-
-        function renderPlayerDualCards() {
-            const container = document.getElementById('right-side-dynamic-area');
-            const autoToggle = document.getElementById('auto-daub-toggle');
-            let isAutoMode = autoToggle ? autoToggle.checked : true;
-            container.innerHTML = '';
-
-            if (confirmedCards.length === 0) {
-                container.className = "bg-[#180a29] rounded-xl p-3 border border-purple-500/30 flex flex-col justify-center items-center text-center";
-                container.innerHTML = `
-                    <div class="text-white font-bold text-sm mb-1">Watching Only</div>
-                    <div class="text-gray-400 text-[9px] leading-relaxed">
-                        የዚህ ዙር ጨዋታ ተጀምሯል።<br>አዲስ ዙር እስከሚጀምር እዚህ ይጠብቁ።
-                    </div>
-                `;
-                return;
-            }
-
-            container.className = "bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-1.5";
-
-            confirmedCards.forEach((cardNum) => {
-                if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
-                const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/40 flex flex-col space-y-1 w-full max-w-[210px] shadow-md";
-                
-                const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
-                cardHeader.innerText = `ካርድ #${cardNum}`;
-                cardWrapper.appendChild(cardHeader);
-
-                const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-1 text-center font-bold text-[8px] text-white";
-                ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
-                    const hCell = document.createElement('div');
-                    hCell.className = idx === 0 ? "bg-blue-600 rounded py-0.5" : idx === 1 ? "bg-purple-600 rounded py-0.5" : idx === 2 ? "bg-pink-600 rounded py-0.5" : idx === 3 ? "bg-emerald-600 rounded py-0.5" : "bg-amber-600 rounded py-0.5";
-                    hCell.innerText = l;
-                    headersGrid.appendChild(hCell);
-                });
-                cardWrapper.appendChild(headersGrid);
-
-                const miniGrid = document.createElement('div');
-                miniGrid.className = "grid grid-cols-5 gap-1 text-center";
-                let numbers = getCartelaNumbers(cardNum);
-
-                numbers.forEach(cellNum => {
-                    const isFreeCenter = (cellNum === "FREE");
-                    const isCalled = calledNumbersList.includes(cellNum);
-                    const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
-
-                    const cell = document.createElement('div');
-                    cell.style.height = "20px";
-                    
-                    if (isFreeCenter) {
-                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-extrabold text-[10px] rounded flex items-center justify-center shadow-lg border border-amber-300";
-                        cell.innerText = "★";
-                    } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
-                        let colColorClass = getColumnBgColor(cellNum);
-                        cell.className = `${colColorClass} text-white font-extrabold text-[9px] rounded flex items-center justify-center shadow`;
-                        cell.innerText = cellNum;
-                    } else {
-                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded flex items-center justify-center cursor-pointer";
-                        cell.innerText = cellNum;
-                        
-                        if (!isAutoMode) {
-                            cell.onclick = () => {
-                                if (isCalled) {
-                                    if (!manualDaubedNumbers[cardNum].includes(cellNum)) {
-                                        manualDaubedNumbers[cardNum].push(cellNum);
-                                        renderPlayerDualCards();
-                                    }
-                                } else {
-                                    alert("⚠️ ገና ያልተጠራ ቁጥር ላይ ምልክት ማድረግ አይችሉም!");
-                                }
-                            };
+                    winningSocketData.forEach(item => {
+                        if (!item.isBot && item.socketId) {
+                            let targetSocket = io.sockets.sockets.get(item.socketId);
+                            if (targetSocket) {
+                                targetSocket.emit('rewardPrize', { prize: prizePerWinner });
+                            }
                         }
+                    });
+
+                    io.emit('bingoWinner', {
+                        username: winnerNamesStr,
+                        userId: winningSocketData.find(i => !i.isBot)?.socketId || null,
+                        cardNum: primaryCardNum,
+                        prize: prizePerWinner,
+                        calledNumbers: globalRoom.calledNumbers,
+                        matchedIndices: matchedIndices,
+                        winnersCount: winnersCount,
+                        playersCount: globalRoom.playersCount
+                    });
+
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    
+                    setTimeout(() => { endRoundAndRestart(); }, 6000);
+                    return;
+                }
+
+            }, 4000); 
+        }
+    }, 1000);
+}
+
+function endRoundAndRestart() {
+    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    globalRoom.gameActive = false;
+    globalRoom.calledNumbers = [];
+    globalRoom.lastCalledNumber = null;
+    globalRoom.playerRoundCards = {}; 
+    globalRoom.gameStartTime = Date.now() + 60000;
+    globalRoom.forcedWinningCardNums = [];
+    
+    io.emit('roundEnded', { nextGameIn: 60000 });
+    io.emit('gameEndedBroadcast');
+    refreshTakenCardsList();
+}
+
+startMainGameLoop();
+
+let telegramOffset = 0;
+async function pollTelegramUpdates() {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            params: { offset: telegramOffset, timeout: 30 }
+        });
+        if (response.data && response.data.ok) {
+            let updates = response.data.result;
+            for (let update of updates) {
+                telegramOffset = update.update_id + 1;
+                if (update.callback_query) {
+                    let callbackQuery = update.callback_query;
+                    let data = callbackQuery.data; 
+                    let chatId = callbackQuery.message.chat.id;
+                    let messageId = callbackQuery.message.message_id;
+                    let parts = data.split('_');
+                    let action = parts[0]; 
+                    let requestId = parts.slice(1).join('_');
+                    let reqData = pendingRequests[requestId];
+
+                    if (reqData) {
+                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                        if (action === 'app') {
+                            if (targetSocket) {
+                                let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
+                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount, adjustedAmount: finalAmountForClient });
+                            }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            });
+                        } else {
+                            if (targetSocket) { targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_message_id: messageId, parse_mode: 'Markdown'
+                            });
+                        }
+                        delete pendingRequests[requestId]; 
                     }
-                    miniGrid.appendChild(cell);
-                });
-                cardWrapper.appendChild(miniGrid);
-                container.appendChild(cardWrapper);
-            });
-        }
-
-        function openAdminPanel() {
-            if (!isAdmin) { alert("⚠️ ይቅርታ! ፈቃድ የለዎትም!"); return; }
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-admin-panel').classList.remove('hidden');
-            requestRealUsersList();
-        }
-
-        function switchTab(tabId, btn) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => {
-                b.classList.remove('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
-                b.classList.add('text-gray-400', 'bg-white/5', 'border-white/10');
-            });
-            if(btn) {
-                btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
-                btn.classList.add('text-purple-400', 'bg-purple-950/50', 'border-purple-500/30');
+                    try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
+                }
             }
         }
-    </script>
-</body>
-</html>
+    } catch (err) {}
+    setTimeout(pollTelegramUpdates, 1000);
+}
+setTimeout(pollTelegramUpdates, 2000);
+
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: [[{ text: "✅ አጽድቅ", callback_data: "app_" + requestId }, { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }]] }
+        });
+    } catch (error) {}
+}
+
+let connectedRealPlayers = [];
+
+io.on('connection', (socket) => {
+    connectedRealPlayers.push(socket.id);
+    let realCount = connectedRealPlayers.length;
+    let currentBotsCount = getRealisticBotsCount(realCount);
+    globalRoom.playersCount = currentBotsCount + realCount; 
+    io.emit('updatePlayersCount', globalRoom.playersCount);
+    socket.emit('syncGameState', globalRoom);
+    refreshTakenCardsList();
+
+    socket.on('registerRealUser', (userData) => {
+        if (userData && userData.userId) {
+            let userId = String(userData.userId);
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+        }
+    });
+
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    });
+
+    socket.on('tempSelectCards', (cards) => {
+        if (Array.isArray(cards)) {
+            globalRoom.playerTemporaryCards[socket.id] = cards;
+            refreshTakenCardsList();
+        }
+    });
+
+    socket.on('confirmCards', (data) => {
+        if (data && data.cards && Array.isArray(data.cards)) {
+            globalRoom.playerRoundCards[socket.id] = {
+                cards: data.cards,
+                username: data.username || 'ተጫዋች',
+                userId: data.userId || 'unknown'
+            };
+            if (globalRoom.playerTemporaryCards[socket.id]) {
+                delete globalRoom.playerTemporaryCards[socket.id];
+            }
+            refreshTakenCardsList();
+            socket.emit('cardSelectionSuccess');
+        }
+    });
+
+    socket.on('adminSetNextWinner', (data) => {
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+    });
+
+    socket.on('financialRequest', async (data) => {
+        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
+        let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
+        pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+    });
+
+    socket.on('disconnect', () => {
+        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        delete globalRoom.playerRoundCards[socket.id];
+        delete globalRoom.playerTemporaryCards[socket.id];
+        refreshTakenCardsList();
+        let realCount = connectedRealPlayers.length;
+        globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
