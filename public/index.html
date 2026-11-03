@@ -212,108 +212,10 @@
                 </div>
             </div>
 
-            <!-- TAB 3: GAME RULES (🎯 ሙሉ መመሪያ ከግራፊክ ምስሎች ጋር) -->
+            <!-- TAB 3: GAME RULES -->
             <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">📖 🎮 AZ Bingo - የጨዋታ እና የገንዘብ አጠቃቀም መመሪያ</h2>
-                </div>
-
-                <div class="space-y-3">
-                    <!-- 1. 🎯 ጨዋታውን እንዴት ይጀምራሉ? -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">1. 🎯 ጨዋታውን እንዴት ይጀምራሉ?</h3>
-                        <ul class="list-disc list-inside text-gray-300 space-y-1 text-[11px]">
-                            <li>በየዙሩ ከ 1 እስከ 500 ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ።</li>
-                            <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
-                            <li>1 ደቂቃ (60 ሰከንድ) ቆጥሮ ጨዋታው ሲጀመር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
-                            <li>አውቶማቲክ ዳብ (Auto Daub) በመጠቀም ቁጥሮቹ በራሳቸው ይሞላሉ፤ ወይም ደግሞ ማኑዋል (Manual) በማድረግ በራስዎ እጅ እየነኩ (እየመረጡ) መጫወት ይችላሉ።</li>
-                        </ul>
-                    </div>
-
-                    <!-- 2. 🏆 የማሸነፊያ ህጎች ከምስል (ግራፊክስ) ጋር -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህጎች (የድል ቅጦች)</h3>
-                        <p class="text-gray-300 text-[11px]">የሚከተሉትን የማሸነፊያ ቅጦች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል፡</p>
-                        
-                        <div class="grid grid-cols-2 gap-2 pt-1">
-                            <!-- Horizontal -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ አግድም ረድፍ ሲሞላ</div>
-                            </div>
-
-                            <!-- Vertical -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                        <div class="bg-purple-950 h-full rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">ቁመት (Vertical)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ ቁመታዊ ረድፍ ሲሞላ</div>
-                            </div>
-
-                            <!-- Diagonal -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 relative flex items-center justify-center">
-                                        <div class="absolute w-10 h-1 bg-emerald-500 rotate-45 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">ሰያፍ (Diagonal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">ሰያፍ መስመር ሲሞላ</div>
-                            </div>
-
-                            <!-- Four Corners -->
-                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
-                                <div class="flex justify-center">
-                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
-                                        <div class="bg-emerald-500 col-start-1 row-start-1 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-5 row-start-1 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-1 row-start-5 rounded"></div>
-                                        <div class="bg-emerald-500 col-start-5 row-start-5 rounded"></div>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-amber-300 text-[10px]">አራቱ ማዕዘኖች (4 Corners)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አራቱ ማዕዘኖች ሲሞሉ።</div>
-                            </div>
-                        </div>
-
-                        <div class="text-[10px] text-amber-400 font-bold mt-2 bg-black/40 p-1.5 rounded border border-amber-500/20 text-center">
-                            📌 ማስታወሻ: ከአንድ በላይ አሸናፊዎች ከሆኑ የሽልማት መጠኑ በእኩል ይከፋፈላል!
-                        </div>
-                    </div>
-
-                    <!-- 3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል። ከዚያም ወደ ቴሌብር በመሄድ ማስገባት የሚፈልጉትን የገንዘብ መጠን ወደዚህ ቁጥር ያስተላልፉ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ገንዘቡን ከላኩ በኋላ በቴሌብር በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው፤ ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 100 ብር ነው።)</p>
-                        </div>
-                    </div>
-
-                    <!-- 4. 🏧 ገንዘብ የማወጫ መመሪያ -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">4. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉትን ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉትን የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል።</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -619,8 +521,8 @@
                 renderPlayerDualCards();
             });
 
-            socket.on('cardSelectionError', (msg) => { alert(msg); });
-
+            // 🎯 **Strict Synchronized Popup Handler:**
+            // ፖፕ አፑ የሚመጣው ሰርቨሩ በሰዓቱ ቁጥሮቹን ጠርቶ ሲጨርስ ብቻ በአንድ ጊዜ ለሁሉም (በተመሳሳይ ሰዓት) ይከፈታል።
             socket.on('bingoWinner', (data) => {
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -632,7 +534,7 @@
                 let usernamesList = String(data.username).split(',').map(s => s.trim());
 
                 if (winnersCount > 1 || usernamesList.length > 1) {
-                    titleBadge.innerHTML = `🎉 ${winnersCount} players won!`;
+                    titleBadge.innerHTML = `🎉 ${winnersCount} አሸናፊዎች በአንድ ጊዜ አሸነፉ!`;
                 } else {
                     titleBadge.innerHTML = `🎉 አሸናፊ:`;
                 }
