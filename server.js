@@ -297,8 +297,12 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            let possibleCallCounts = [12, 17, 18, 25, 28, 32, 35, 37];
-            let targetCallCount = possibleCallCounts[Math.floor(Math.random() * possibleCallCounts.length)];
+            // 🎯 **Dynamic Rotation Call Count Pool (እንደ እርስዎ ምሳሌ ከ 12 እስከ 30 ሮቴት የሚያደርግ፣ 18/19/28 በብዛት የሚወጡበት እና አልፎ አልፎ እስከ 35-37 የሚደርስ)**
+            let rotationPool = [
+                12, 13, 14, 15, 16, 17, 18, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 29, 30,
+                35, 37 // አልፎ አልፎ (Rare)
+            ];
+            let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
@@ -330,6 +334,10 @@ function startMainGameLoop() {
                 if (!interleavedWinningNumbers.includes(extraRandNum)) {
                     interleavedWinningNumbers.push(extraRandNum);
                 }
+            }
+
+            if (interleavedWinningNumbers.length > targetCallCount) {
+                interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
@@ -369,18 +377,16 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Instant Real-User Win Trigger (ሪል ዩዘሩ መስመሩን እንዳጠናቀቀ ወዲያውኑ ጨዋታው እንዲቆም ማድረግ)**
+                // 🎯 **Instant Real-User & Simultaneous Win Trigger**
                 let realUserCompleted = false;
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    // winningSocketData[idx] ሪል ዩዘር ከሆነ ወይም ሁሉም ሲጨርሱ
                     if (!winningSocketData[idx].isBot && isPatternDone) {
                         realUserCompleted = true;
                     }
                 });
 
-                // እንዲሁም የሁሉም ካርዶች ሁኔታ
                 let allCardsCompleted = true;
                 perWinnerConfigs.forEach(cfg => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
@@ -390,7 +396,6 @@ function startMainGameLoop() {
                     }
                 });
 
-                // ሪል ዩዘሩ ከጨረሰ (ወይም ኪዩው አልቆ ሁሉም ከጨረሱ) ወዲያውኑ ዊን ይላል!
                 let shouldTriggerWin = (realUserCompleted || (winNumQueue.length === 0 && allCardsCompleted));
                 
                 if (shouldTriggerWin) {
