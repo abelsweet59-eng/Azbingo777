@@ -297,13 +297,14 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Dynamic Rotation Call Count Pool (12 እስከ 30፣ 18/19/28 በብዛት፣ ሬር 35-37)**
+            // 🎯 **Strict Rotation Call Count (ከ 12 እስከ 30፣ 18/19/28 በብዛት፣ ሬር 35-37 — ከዚህ በጭራሽ አያልፍም)**
             let rotationPool = [
-                12, 13, 14, 15, 16, 17, 18, 18, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 29, 30,
-                35, 37
+                12, 13, 14, 15, 16, 17, 18, 18, 18, 19, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29, 30,
+                35, 36, 37
             ];
             let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
 
+            // አሸናፊዎቹ በ targetCallCount ውስጥ እንዲጨርሱ የሚያስፈልጉ ቁጥሮችን በቅደም ተከተል ማዘጋጀት
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -329,13 +330,7 @@ function startMainGameLoop() {
                 });
             }
 
-            while (interleavedWinningNumbers.length < targetCallCount) {
-                let extraRandNum = Math.floor(Math.random() * 75) + 1;
-                if (!interleavedWinningNumbers.includes(extraRandNum)) {
-                    interleavedWinningNumbers.push(extraRandNum);
-                }
-            }
-
+            // የሚጠሩት ቁጥሮች ከ targetCallCount እንዳያልፉ በጥብቅ መቁረጥ
             if (interleavedWinningNumbers.length > targetCallCount) {
                 interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
@@ -355,29 +350,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let calledNum;
-
-                if (winNumQueue.length > 0) {
-                    calledNum = Number(winNumQueue.shift());
-                    let availIdx = availableNumbers.indexOf(calledNum);
-                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
-                } else {
-                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                    calledNum = availableNumbers.splice(randIdx, 1)[0];
-                }
-
-                if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    globalRoom.calledNumbers.push(Number(calledNum));
-                    globalRoom.lastCalledNumber = Number(calledNum);
-
-                    io.emit('numberCalled', {
-                        number: Number(calledNum),
-                        calledNumbers: globalRoom.calledNumbers
-                    });
-                    io.emit('numberCalledBroadcast', Number(calledNum));
-                }
-
-                // 🎯 **Instant Real-User & Simultaneous Win Trigger**
+                // 🎯 **የቁጥር ጥሪው ብዛት (targetCallCount) ላይ ሲደርስ ወይም ሪል ዩዘር ሲጨርስ በግድ ቆሞ ዊን ይላል!**
                 let realUserCompleted = false;
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
@@ -387,18 +360,9 @@ function startMainGameLoop() {
                     }
                 });
 
-                let allCardsCompleted = true;
-                perWinnerConfigs.forEach(cfg => {
-                    let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
-                    let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (!isPatternDone) {
-                        allCardsCompleted = false;
-                    }
-                });
-
-                let shouldTriggerWin = (realUserCompleted || (winNumQueue.length === 0 && allCardsCompleted));
+                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount);
                 
-                if (shouldTriggerWin) {
+                if (realUserCompleted || reachedTargetLimit) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
                     let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
@@ -433,6 +397,27 @@ function startMainGameLoop() {
                     
                     setTimeout(() => { endRoundAndRestart(); }, 6000);
                     return;
+                }
+
+                let calledNum;
+                if (winNumQueue.length > 0) {
+                    calledNum = Number(winNumQueue.shift());
+                    let availIdx = availableNumbers.indexOf(calledNum);
+                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
+                } else {
+                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                    calledNum = availableNumbers.splice(randIdx, 1)[0];
+                }
+
+                if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    globalRoom.calledNumbers.push(Number(calledNum));
+                    globalRoom.lastCalledNumber = Number(calledNum);
+
+                    io.emit('numberCalled', {
+                        number: Number(calledNum),
+                        calledNumbers: globalRoom.calledNumbers
+                    });
+                    io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
             }, 4000); 
