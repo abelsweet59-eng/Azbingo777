@@ -181,7 +181,7 @@ function getRealisticBotsCount(realCount) {
     let maxDurationMinutes = 8 * 60;
     let calculated = 95;
 
-    if (ethiopianHour >= 6 && ethiopianHour < 12) {
+    if (ethiopianHour >= 6 && ethionHour < 12) {
         calculated = 45 + Math.floor(Math.random() * 15);
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         calculated = 70 + Math.floor(Math.random() * 20);
@@ -256,90 +256,40 @@ function startMainGameLoop() {
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = 1;
+            let winnersCount = 3; // ሁልጊዜ 3 አሸናፊዎች (2 ቦቶች + 1 ሪል ዩዘር)
             let isRealUserWin = false;
             let winningCardNums = [];
 
-            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
-                let requiredCount = (currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') ? 3 : 1;
-                winnersCount = requiredCount;
+            // 🎯 **Fixed 2 Bots + 1 Real User Logic (2 ቦት እና 1 እውነተኛ ተጫዋች)**
+            isRealUserWin = true;
+            let chosenRealSocketId = null;
+            let chosenRealUsername = "ተጫዋች";
 
-                if (activeRealEntries.length > 0) {
-                    isRealUserWin = true;
-                    let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
-                    let chosenReal = shuffledReal.slice(0, requiredCount);
-                    
-                    chosenReal.forEach(item => {
-                        winningUsernamesArr.push(item[1].username);
-                        winningSocketData.push({ socketId: item[0], isBot: false });
-                        if (item[1].cards && item[1].cards.length > 0) {
-                            winningCardNums.push(item[1].cards[0]);
-                        } else {
-                            winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-                        }
-                    });
-
-                    if (winningUsernamesArr.length < requiredCount) {
-                        let neededCount = requiredCount - winningUsernamesArr.length;
-                        let botNames = getRandomBotNames(neededCount);
-                        botNames.forEach(bName => {
-                            winningUsernamesArr.push(bName);
-                            winningSocketData.push({ socketId: null, isBot: true });
-                            winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-                        });
-                    }
-                } else {
-                    isRealUserWin = false;
-                    let botNames = getRandomBotNames(requiredCount);
-                    botNames.forEach(bName => {
-                        winningUsernamesArr.push(bName);
-                        winningSocketData.push({ socketId: null, isBot: true });
-                        winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-                    });
-                }
-            } else if (currentWinnerType === 'dual_bot') {
-                let twoBots = getRandomBotNames(2);
-                winnersCount = 2;
-                twoBots.forEach(bName => {
-                    winningUsernamesArr.push(bName);
-                    winningSocketData.push({ socketId: null, isBot: true });
-                    winningCardNums.push(Math.floor(Math.random() * 450) + 1);
-                });
-                isRealUserWin = false;
-            } else if (currentWinnerType === 'bot') {
-                let botName = getRandomBotNames(1)[0];
-                winnersCount = 1;
-                winningUsernamesArr.push(botName);
-                winningSocketData.push({ socketId: null, isBot: true });
-                winningCardNums.push(Math.floor(Math.random() * 500) + 1);
-                isRealUserWin = false;
+            if (activeRealEntries.length > 0) {
+                let randReal = activeRealEntries[Math.floor(Math.random() * activeRealEntries.length)];
+                chosenRealSocketId = randReal[0];
+                chosenRealUsername = randReal[1].username;
+                winningCardNums.push(randReal[1].cards && randReal[1].cards.length > 0 ? randReal[1].cards[0] : Math.floor(Math.random() * 450) + 1);
             } else {
-                if (activeRealEntries.length > 0 && Math.random() > 0.3) {
-                    let randEntry = activeRealEntries[Math.floor(Math.random() * activeRealEntries.length)];
-                    winningSocketData.push({ socketId: randEntry[0], isBot: false });
-                    winningUsernamesArr.push(randEntry[1].username);
-                    if (randEntry[1].cards && randEntry[1].cards.length > 0) {
-                        winningCardNums.push(randEntry[1].cards[0]);
-                    } else {
-                        winningCardNums.push(Math.floor(Math.random() * 500) + 1);
-                    }
-                    isRealUserWin = true;
-                    winnersCount = 1;
-                } else {
-                    let botName = getRandomBotNames(1)[0];
-                    winningUsernamesArr.push(botName);
-                    winningSocketData.push({ socketId: null, isBot: true });
-                    winningCardNums.push(Math.floor(Math.random() * 500) + 1);
-                    winnersCount = 1;
-                    isRealUserWin = false;
-                }
+                let dummyBotExtra = getRandomBotNames(1)[0];
+                winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                chosenRealUsername = dummyBotExtra; 
             }
+
+            winningUsernamesArr.push(chosenRealUsername);
+            winningSocketData.push({ socketId: chosenRealSocketId, isBot: (activeRealEntries.length === 0) });
+
+            // 2 ቦቶችን ጨምርበት
+            let twoBots = getRandomBotNames(2);
+            twoBots.forEach(bName => {
+                winningUsernamesArr.push(bName);
+                winningSocketData.push({ socketId: null, isBot: true });
+                winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+            });
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **True Perfect Synchronized Zig-Zag & Simultaneous Convergence Logic:**
-            // የሁሉም አሸናፊዎች (የሪል ዩዘሮች እና የቦቱ) የማሸነፊያ ቁጥሮች በፍጹም ዚግዛግ ተቀላቅለው፣
-            // በመጨረሻው ጥሪ ላይ ማንም ሳይዘገይ **በተመሳሳይ ሰዓት** ተሞልተው ጨዋታው እንዲያልቅ ይደረጋል።
+            // 🎯 **Zig-Zag Interleaved Queue with 100% Validation:**
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -350,16 +300,16 @@ function startMainGameLoop() {
             let perWinnerNumArrays = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                return p.map(idx => cList[idx]).filter(n => n !== "FREE");
+                return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: p.map(idx => cList[idx]).filter(n => n !== "FREE") };
             });
 
             let interleavedWinningNumbers = [];
-            let maxLength = Math.max(...perWinnerNumArrays.map(arr => arr.length));
+            let maxLength = Math.max(...perWinnerNumArrays.map(item => item.requiredNumbers.length));
             
             for (let i = 0; i < maxLength; i++) {
-                perWinnerNumArrays.forEach(arr => {
-                    if (arr[i] !== undefined && !interleavedWinningNumbers.includes(arr[i])) {
-                        interleavedWinningNumbers.push(arr[i]);
+                perWinnerNumArrays.forEach(item => {
+                    if (item.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(item.requiredNumbers[i])) {
+                        interleavedWinningNumbers.push(item.requiredNumbers[i]);
                     }
                 });
             }
@@ -401,10 +351,17 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Strict Instant Simultaneous Convergence Trigger:**
-                // የዚግዛግ ቁጥሮች ተራ በተራ ተጠርተው ሲያልቁ፣ የቦቱንም ሆነ የሪል ዩዘሮችን ካርዶች ማሸነፊያ 
-                // በዚሁ ሰዓት (በተመሳሳይ ሰዓት) አሟልቶ ፖፕ አፑን ወዲያውኑ ይከፍታል።
-                let shouldTriggerWin = (winNumQueue.length === 0);
+                // 🎯 **Strict Verification: 3ቱም አሸናፊዎች ካርዳቸው ሙሉ በሙሉ ሲሞላ ብቻ**
+                let allCardsCompleted = true;
+                perWinnerNumArrays.forEach(item => {
+                    let matchedIdxs = getWinningMatchedIndices(item.cartelaList, globalRoom.calledNumbers);
+                    let isPatternDone = item.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                    if (!isPatternDone) {
+                        allCardsCompleted = false;
+                    }
+                });
+
+                let shouldTriggerWin = (winNumQueue.length === 0 && allCardsCompleted);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
@@ -449,4 +406,155 @@ function startMainGameLoop() {
 }
 
 function endRoundAndRestart() {
-    if (numberCallInterval) { clearInterval(numberCallInterval
+    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    globalRoom.gameActive = false;
+    globalRoom.calledNumbers = [];
+    globalRoom.lastCalledNumber = null;
+    globalRoom.playerRoundCards = {}; 
+    globalRoom.gameStartTime = Date.now() + 60000;
+    globalRoom.forcedWinningCardNums = [];
+    
+    io.emit('roundEnded', { nextGameIn: 60000 });
+    io.emit('gameEndedBroadcast');
+    refreshTakenCardsList();
+}
+
+startMainGameLoop();
+
+let telegramOffset = 0;
+async function pollTelegramUpdates() {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            params: { offset: telegramOffset, timeout: 30 }
+        });
+        if (response.data && response.data.ok) {
+            let updates = response.data.result;
+            for (let update of updates) {
+                telegramOffset = update.update_id + 1;
+                if (update.callback_query) {
+                    let callbackQuery = update.callback_query;
+                    let data = callbackQuery.data; 
+                    let chatId = callbackQuery.message.chat.id;
+                    let messageId = callbackQuery.message.message_id;
+                    let parts = data.split('_');
+                    let action = parts[0]; 
+                    let requestId = parts.slice(1).join('_');
+                    let reqData = pendingRequests[requestId];
+
+                    if (reqData) {
+                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                        if (action === 'app') {
+                            if (targetSocket) {
+                                let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
+                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount, adjustedAmount: finalAmountForClient });
+                            }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            });
+                        } else {
+                            if (targetSocket) { targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_message_id: messageId, parse_mode: 'Markdown'
+                            });
+                        }
+                        delete pendingRequests[requestId]; 
+                    }
+                    try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
+                }
+            }
+        }
+    } catch (err) {}
+    setTimeout(pollTelegramUpdates, 1000);
+}
+setTimeout(pollTelegramUpdates, 2000);
+
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: [[{ text: "✅ አጽድቅ", callback_data: "app_" + requestId }, { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }]] }
+        });
+    } catch (error) {}
+}
+
+let connectedRealPlayers = [];
+
+io.on('connection', (socket) => {
+    connectedRealPlayers.push(socket.id);
+    let realCount = connectedRealPlayers.length;
+    let currentBotsCount = getRealisticBotsCount(realCount);
+    globalRoom.playersCount = currentBotsCount + realCount; 
+    io.emit('updatePlayersCount', globalRoom.playersCount);
+    socket.emit('syncGameState', globalRoom);
+    refreshTakenCardsList();
+
+    socket.on('registerRealUser', (userData) => {
+        if (userData && userData.userId) {
+            let userId = String(userData.userId);
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+        }
+    });
+
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    });
+
+    socket.on('tempSelectCards', (cards) => {
+        if (Array.isArray(cards)) {
+            globalRoom.playerTemporaryCards[socket.id] = cards;
+            refreshTakenCardsList();
+        }
+    });
+
+    socket.on('confirmCards', (data) => {
+        if (data && data.cards && Array.isArray(data.cards)) {
+            globalRoom.playerRoundCards[socket.id] = {
+                cards: data.cards,
+                username: data.username || 'ተጫዋች',
+                userId: data.userId || 'unknown'
+            };
+            if (globalRoom.playerTemporaryCards[socket.id]) {
+                delete globalRoom.playerTemporaryCards[socket.id];
+            }
+            refreshTakenCardsList();
+            socket.emit('cardSelectionSuccess');
+        }
+    });
+
+    socket.on('adminSetNextWinner', (data) => {
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+    });
+
+    socket.on('financialRequest', async (data) => {
+        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
+        let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
+        pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+    });
+
+    socket.on('disconnect', () => {
+        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        delete globalRoom.playerRoundCards[socket.id];
+        delete globalRoom.playerTemporaryCards[socket.id];
+        refreshTakenCardsList();
+        let realCount = connectedRealPlayers.length;
+        globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Bingo Server running on port " + PORT);
+});
