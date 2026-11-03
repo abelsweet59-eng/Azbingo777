@@ -228,7 +228,6 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-// 🎯 **ቦቶች ሲያሸንፉ ወደ ቴሌግራም ኖቲፊኬሽን እንዳይላክ ተደርጓል (ሪል ዩዘር ሲያሸንፍ ብቻ ይልካል)**
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
     let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
@@ -381,7 +380,6 @@ function startMainGameLoop() {
                     let winnerNamesStr = winningUsernamesArr.join(', ');
                     let hasRealWinner = winningSocketData.some(i => !i.isBot);
                     
-                    // 🎯 **ኖቲፊኬሽኑ የሚላከው ሪል ዩዘር ሲያሸንፍ ብቻ ነው!**
                     sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
                     winningSocketData.forEach(item => {
@@ -463,11 +461,21 @@ async function pollTelegramUpdates() {
             let updates = response.data.result;
             for (let update of updates) {
                 telegramOffset = update.update_id + 1;
+                
+                // 🧹 የድሮ (ከ 24 ሰዓት በላይ የሆናቸው) పెንዲንግ ጥያቄዎችን በራስ ሰር ማጽዳት
+                let nowTs = Date.now();
+                Object.keys(pendingRequests).forEach(k => {
+                    if (nowTs - pendingRequests[k].timestamp > 86400000) {
+                        delete pendingRequests[k];
+                    }
+                });
+
                 if (update.callback_query) {
                     let callbackQuery = update.callback_query;
                     let data = callbackQuery.data; 
                     let chatId = callbackQuery.message.chat.id;
                     let messageId = callbackQuery.message.message_id;
+                    
                     let parts = data.split('_');
                     let action = parts[0]; 
                     let requestId = parts.slice(1).join('_');
@@ -483,17 +491,22 @@ async function pollTelegramUpdates() {
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
-                            });
+                            }).catch(() => {});
                         } else {
-                            if (targetSocket) { targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); }
+                            if (targetSocket) { 
+                                targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); 
+                            }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_message_id: messageId, parse_mode: 'Markdown'
-                            });
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            }).catch(() => {});
                         }
+                        // 🛑 ጥያቄው አንዴ ከተሰራ በኋላ ከሰርቨር ማህደረ ትውስታ ይሰረዛል
                         delete pendingRequests[requestId]; 
                     }
-                    try { await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); } catch (e) {}
+                    try { 
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
+                    } catch (e) {}
                 }
             }
         }
@@ -502,6 +515,7 @@ async function pollTelegramUpdates() {
 }
 setTimeout(pollTelegramUpdates, 2000);
 
+// 🎯 **የተደራረቡ (Multiple) የገንዘብ ጥያቄዎችን በደህንነት የሚያስተናግድ ሎጂክ**
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
@@ -510,7 +524,14 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     try {
         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
             chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
-            reply_markup: { inline_keyboard: [[{ text: "✅ አጽድቅ", callback_data: "app_" + requestId }, { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }]] }
+            reply_markup: { 
+                inline_keyboard: [
+                    [
+                        { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                        { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                    ]
+                ] 
+            }
         });
     } catch (error) {}
 }
@@ -568,8 +589,19 @@ io.on('connection', (socket) => {
     socket.on('financialRequest', async (data) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt } = data;
-        let requestId = 'req_' + Math.floor(Math.random() * 10000000) + '_' + Date.now();
-        pendingRequests[requestId] = { userId, type, amount, username, socketId: socket.id, timestamp: Date.now() };
+        
+        // 🆔 ልዩ የሆነ ሪኩዌስት ID (ከሶኬት እናከ ራንደም ቁጥር ጋር በመዋቀር መደራረብን ይከላከላል)
+        let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        
+        pendingRequests[requestId] = { 
+            userId, 
+            type, 
+            amount, 
+            username, 
+            socketId: socket.id, 
+            timestamp: Date.now() // ለእድሜ ገደብ (24 ሰዓት) ክትትል የሚሆን
+        };
+
         await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
