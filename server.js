@@ -181,7 +181,7 @@ function getRealisticBotsCount(realCount) {
     let maxDurationMinutes = 8 * 60;
     let calculated = 95;
 
-    if (ethiopianHour >= 6 && ethionHour < 12) {
+    if (ethiopianHour >= 6 && ethiopianHour < 12) {
         calculated = 45 + Math.floor(Math.random() * 15);
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         calculated = 70 + Math.floor(Math.random() * 20);
@@ -251,17 +251,13 @@ function startMainGameLoop() {
             globalRoom.lastCalledNumber = null;
             
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
-            let currentWinnerType = forcedNextWinner;
-            forcedNextWinner = null; 
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = 3; // ሁልጊዜ 3 አሸናፊዎች (2 ቦቶች + 1 ሪል ዩዘር)
-            let isRealUserWin = false;
+            let winnersCount = 3; 
+            let isRealUserWin = true;
             let winningCardNums = [];
 
-            // 🎯 **Fixed 2 Bots + 1 Real User Logic (2 ቦት እና 1 እውነተኛ ተጫዋች)**
-            isRealUserWin = true;
             let chosenRealSocketId = null;
             let chosenRealUsername = "ተጫዋች";
 
@@ -279,7 +275,6 @@ function startMainGameLoop() {
             winningUsernamesArr.push(chosenRealUsername);
             winningSocketData.push({ socketId: chosenRealSocketId, isBot: (activeRealEntries.length === 0) });
 
-            // 2 ቦቶችን ጨምርበት
             let twoBots = getRandomBotNames(2);
             twoBots.forEach(bName => {
                 winningUsernamesArr.push(bName);
@@ -289,7 +284,6 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Zig-Zag Interleaved Queue with 100% Validation:**
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -297,19 +291,20 @@ function startMainGameLoop() {
                 [0,4,20,24]
             ];
 
-            let perWinnerNumArrays = winningCardNums.map(cNum => {
+            let perWinnerConfigs = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: p.map(idx => cList[idx]).filter(n => n !== "FREE") };
+                let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
+                return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
             });
 
             let interleavedWinningNumbers = [];
-            let maxLength = Math.max(...perWinnerNumArrays.map(item => item.requiredNumbers.length));
+            let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
             for (let i = 0; i < maxLength; i++) {
-                perWinnerNumArrays.forEach(item => {
-                    if (item.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(item.requiredNumbers[i])) {
-                        interleavedWinningNumbers.push(item.requiredNumbers[i]);
+                perWinnerConfigs.forEach(cfg => {
+                    if (cfg.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
+                        interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
             }
@@ -351,11 +346,10 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Strict Verification: 3ቱም አሸናፊዎች ካርዳቸው ሙሉ በሙሉ ሲሞላ ብቻ**
                 let allCardsCompleted = true;
-                perWinnerNumArrays.forEach(item => {
-                    let matchedIdxs = getWinningMatchedIndices(item.cartelaList, globalRoom.calledNumbers);
-                    let isPatternDone = item.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                perWinnerConfigs.forEach(cfg => {
+                    let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
+                    let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
                     if (!isPatternDone) {
                         allCardsCompleted = false;
                     }
