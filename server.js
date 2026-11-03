@@ -337,9 +337,7 @@ function startMainGameLoop() {
 
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 **Interleaved & Alternating Queue Generation (ቁጥሮቹን እየቀያየረ እና እያቀላቀለ ማቀናጀት):**
-            // ለአንደኛው ጨርሶ ከመስጠት ይልቅ፣ የሁሉም አሸናፊዎች የማሸነፊያ ቁጥሮች (Patterns) ተቀላቅለው (Interleaved) 
-            // በየተራ እየተጠሩ በመጨረሻ ላይ በአንድ ሰዓት እንዲያልቁ ይደረጋል።
+            // 🎯 **Perfect Synchronized Interleaved Zig-Zag Queue (የቦቱንም ሆነ የሪል ዩዘሮችን ቁጥሮች በእኩል ሰዓት የሚያቀላቅል ፍጹም ኪዩው):**
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
@@ -353,6 +351,7 @@ function startMainGameLoop() {
                 return p.map(idx => cList[idx]).filter(n => n !== "FREE");
             });
 
+            // ቁጥሮቹን እንደ ዚግዛግ (Zig-zag / Interleaved) በየተራ እናቀላቅላቸዋለን (ለሪል ዩዘርም ለቦቱም እኩል እንዲሰጥ)
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerNumArrays.map(arr => arr.length));
             
@@ -401,9 +400,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-                // 🎯 **Simultaneous Alternated Win Trigger:**
-                // ቁጥሮቹ ተራ በተራ እየተፈራረቁ ተጠርተው ሲያልቁ (winNumQueue ባዶ ሲሆን) 
-                // ሁሉም ተጫዋቾች በተመሳሳይ ሰዓት መስመራቸውን ጨርሰው ፖፕ አፑ በአንድ ጊዜ ይወጣል።
+                // 🎯 **Strict Synchronized Final Trigger (ቦቱንም ሆነ ዩዘሮቹን በአንድ ሰዓት የሚያስጨርሰው ትእዛዝ):**
                 let shouldTriggerWin = (winNumQueue.length === 0);
                 
                 if (shouldTriggerWin) {
