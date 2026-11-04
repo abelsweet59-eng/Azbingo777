@@ -604,6 +604,14 @@
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
             socket.on('bingoWinner', (data) => {
+                // 🔊 አሸናፊ ሲወጣ የሚጫወተው የድል ድምፅ ማጫወቻ
+                try {
+                    const winSound = new Audio('/bingo_win.mp3');
+                    winSound.play().catch(e => console.log("Audio play blocked:", e));
+                } catch (err) {
+                    console.log("Audio error:", err);
+                }
+
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
                 const badgesContainer = document.getElementById('winner-badges-container');
