@@ -187,7 +187,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return fallbackMatched;
 }
 
-// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር መሠረት (Base Count) + በካርድ መምረጫው ላይ ብቻ የሚሰራ ለስላሳ ሎጂክ (±1 እስከ ±5)
 let lastSmoothCount = 95; 
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
@@ -208,11 +207,9 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
         targetBase = Math.floor(100 + (progress * 100));
     }
 
-    // 🛑 ጨዋታው (Game) ከተጀመረ ፍሎቱ (Fluctuation) ቆሞ ትክክለኛውን የሰዓት ታርጌት ብቻ ይዞ ይቆማል!
     if (isGameActive) {
         lastSmoothCount = targetBase;
     } else {
-        // በካርድ መምረጫው (Lobby / Card Selection) ላይ እያሉ ብቻ በ ±1 እስከ ±5 ለስላሳ ለውጥ ያሳያል
         let step = Math.floor(Math.random() * 5) + 1; 
         if (lastSmoothCount < targetBase) {
             lastSmoothCount += step;
@@ -232,7 +229,6 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     return lastSmoothCount;
 }
 
-// 🔄 ተጠቃሚዎች ቁጥር መምረጫው (Game Inactive) ላይ እያሉ ብቻ በየ 4 ሰከንዱ የሚለዋወጥ ሉፕ
 setInterval(() => {
     if (!globalRoom.gameActive) {
         let realCount = connectedRealPlayers.length;
@@ -294,7 +290,6 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🛑 ጨዋታው ሲጀመር (Game Board ውስጥ ሲገቡ) የሰዓቱን ትክክለኛ ቁጥር ይዞ ይቆማል (Fluctuation ይቆማል)
             let realCount = connectedRealPlayers.length;
             globalRoom.playersCount = getRealisticBotsCount(realCount, true) + realCount;
             io.emit('updatePlayersCount', globalRoom.playersCount);
@@ -587,6 +582,17 @@ async function pollTelegramUpdates() {
                                 text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
+                            // ❌ ሪጀክት (ሰርዝ) ሲደረግ ተጫዋቹ የላከው መረጃ ስህተት መሆኑን እና አስተካክሎ እንዲልክ በቴሌግራም ቦት በኩል ማሳወቂያ መላክ
+                            if (reqData.chatId) {
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ **ምክንያት:** ያስገቡት መረጃ ወይም ደረሰኝ ትክክል አይደለም። እባክዎ ትክክለኛውን መረጃ አረጋግጠው በድጋሚ ጥያቄ ያስገቡ። 🙏`;
+                                
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                    chat_id: reqData.chatId,
+                                    text: rejectMsg,
+                                    parse_mode: 'Markdown'
+                                }).catch(() => {});
+                            }
+
                             if (targetSocket) { 
                                 targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
@@ -694,12 +700,13 @@ io.on('connection', (socket) => {
 
     socket.on('financialRequest', async (data) => {
         data.type = data.type || 'deposit';
-        let { type, amount, username, userId, currentBalance, phone, receipt } = data;
+        let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
             userId: String(userId || 'unknown'), 
+            chatId: telegramChatId || userId, // አውቶማቲካሊ ሪጀክት ሲደረግ መልዕክት እንዲደርሰው Chat ID ይያዛል
             type, 
             amount, 
             username, 
