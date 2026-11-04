@@ -458,7 +458,7 @@
 
         function loadVoices() {
             let voices = window.speechSynthesis.getVoices();
-            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET') || v.lang.toLowerCase().includes('amharic')) || voices[0];
+            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET') || v.name.toLowerCase().includes('amharic')) || voices[0];
         }
 
         if ('speechSynthesis' in window) {
@@ -579,7 +579,7 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
                 
-                // 🌟 ቁጥር ሲጠራ ሚውት ካልሆነ በአማርኛ በድምፅ እንዲነበብ ማድረግ
+                // 🌟 ቁጥር ሲጠራ ሚውት ካልሆነ ፊደሉን እና ቁጥሩን በአማርኛ በድምፅ እንዲነበብ ማድረግ
                 if (!isAudioMuted) speakCalledNumber(num);
             });
 
@@ -777,21 +777,32 @@
             }, 1000);
         }
 
-        // 🌟 ቁጥሮችን በአማርኛ ፊደል እና ቁጥር በግልጽ በድምፅ (SpeechSynthesis am-ET) መጥራት
+        // 🌟 ፊደሉን እና ቁጥሩን አንድ ላይ በአማርኛ በድምፅ (SpeechSynthesis) ከኳሱ መምጣት ጋር በተቀናጀ መልኩ የሚጠራ ፋንክሽን
         function speakCalledNumber(num) {
             if (isAudioMuted) return;
 
-            let speechText = `ቁጥር ${num}`;
+            let letterAmharic = "";
+            if (num <= 15) letterAmharic = "ቢ";
+            else if (num <= 30) letterAmharic = "አይ";
+            else if (num <= 45) letterAmharic = "ኤን";
+            else if (num <= 60) letterAmharic = "ጂ";
+            else letterAmharic = "ኦ";
+
+            let speechText = `${letterAmharic} ${num}`;
             
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET'; // ፍጹም የሆነ የአማርኛ ቋንቋ ኮድ
-                utterance.rate = 0.9;     // ግልጽ እንዲሆን የንባብ ፍጥነት
+                utterance.lang = 'am-ET';
+                utterance.rate = 0.85;
                 utterance.pitch = 1.0;
-                if (amharicVoice) {
-                    utterance.voice = amharicVoice;
+                
+                let voices = window.speechSynthesis.getVoices();
+                let targetVoice = voices.find(v => v.lang === 'am-ET' || v.lang.toLowerCase().includes('am') || v.name.toLowerCase().includes('amharic'));
+                if (targetVoice) {
+                    utterance.voice = targetVoice;
                 }
+
                 window.speechSynthesis.speak(utterance);
             }
         }
