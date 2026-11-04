@@ -484,8 +484,15 @@ async function pollTelegramUpdates() {
                         let targetSocket = io.sockets.sockets.get(reqData.socketId);
                         if (action === 'app') {
                             if (targetSocket) {
-                                let finalAmountForClient = (reqData.type === 'withdraw' || reqData.type === 'withdrawal') ? -Math.abs(reqData.amount) : reqData.amount;
-                                targetSocket.emit('financialApproved', { type: reqData.type, amount: reqData.amount, adjustedAmount: finalAmountForClient });
+                                let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
+                                let rawAmount = Number(reqData.amount) || 0;
+                                let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
+                                targetSocket.emit('financialApproved', { 
+                                    type: reqData.type, 
+                                    amount: rawAmount, 
+                                    adjustedAmount: finalAmountForClient 
+                                });
                             }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
