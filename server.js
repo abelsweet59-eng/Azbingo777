@@ -21,9 +21,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
-// 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ ቦነስ የወሰዱትን ዩዘሮች ለመያዝ (Memory Storage / Database Mapping)
+// 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ ቦነስ የወሰዱትን ዩዘሮች ለመያዝ
 const claimedWelcomeBonusUsers = new Set();
-const userWallets = {}; // የተጠቃሚዎች የዋሌት ቀሪ ሂሳብ መያዣ
+const userWallets = {}; 
+
+// 🔄 ዋናዎቹ ቁጥሮች በቅደም ተከተል ሉፕ እያደረጉ የሚወጡበት አሰላለፍ
+const customNumberFlowSequence = [
+    18, 18, 19, 23, 22, 27, 19, 17, 22, 30, 12, 19, 25, 24, 22, 18, 19, 23, 22, 15, 16, 18, 19, 22, 22, 23, 27, 28, 18, 18, 19, 24, 24, 19, 15, 14, 18, 15, 16, 25, 22, 19, 19, 30, 19, 16, 12, 23, 17, 26, 23, 19, 18, 22, 16, 19, 22, 18, 27, 30, 21, 21, 19
+];
+let sequenceIndex = 0;
+
+// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል (ለምሳሌ ከ 10 ጌም አንዴ ወይም በዘፈቀደ ዕድል)
+const rareRotationPool = [10, 11, 33, 34, 36];
 
 const ETHIOPIAN_BOT_NAMES = [
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
@@ -305,11 +314,14 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            let rotationPool = [
-                12, 13, 14, 15, 16, 17, 18, 18, 18, 19, 19, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 28, 28, 29, 30,
-                35, 36, 37
-            ];
-            let targetCallCount = rotationPool[Math.floor(Math.random() * rotationPool.length)];
+            // 🔄 ዋናዎቹ ቁጥሮች በቅደም ተከተል ሉፕ እያደረጉ ይወጣሉ
+            let targetCallCount = customNumberFlowSequence[sequenceIndex];
+            sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
+
+            // 🌟 አልፎ አልፎ (Rare) ከብዙ ጌም አንዴ (ለምሳሌ በ 15% ዕድል) የ rareRotationPool ቁጥሮች እንዲተኩ ይደረጋል
+            if (Math.random() < 0.15) { 
+                targetCallCount = rareRotationPool[Math.floor(Math.random() * rareRotationPool.length)];
+            }
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
@@ -600,11 +612,9 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
-            // 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ የ20 ብር ቦነስ አሰራር (One-time Welcome Bonus)
+            // 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ የ20 ብር ቦነስ አሰራር
             if (!claimedWelcomeBonusUsers.has(userId)) {
                 claimedWelcomeBonusUsers.add(userId);
-                
-                // ለተጠቃሚው 20 ብር ቦነስ ገቢ መደረጉን ወደ ክላይንት መላክ
                 socket.emit('welcomeBonusGranted', { 
                     amount: 20, 
                     message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
