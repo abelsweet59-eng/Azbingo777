@@ -521,4 +521,212 @@ function endRoundAndRestart() {
 
 startMainGameLoop();
 
-// (ቀጣዩ የቴሌግራም ፖሊንግ እና የሶኬት ክፍሎች እንዳሉ ይቀጥላሉ...)
+let telegramOffset = 0;
+async function pollTelegramUpdates() {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            params: { offset: telegramOffset, timeout: 30 }
+        });
+        if (response.data && response.data.ok) {
+            let updates = response.data.result;
+            for (let update of updates) {
+                telegramOffset = update.update_id + 1;
+                
+                let nowTs = Date.now();
+                Object.keys(pendingRequests).forEach(k => {
+                    if (nowTs - pendingRequests[k].timestamp > 86400000) {
+                        delete pendingRequests[k];
+                    }
+                });
+
+                if (update.callback_query) {
+                    let callbackQuery = update.callback_query;
+                    let data = callbackQuery.data; 
+                    let chatId = callbackQuery.message.chat.id;
+                    let messageId = callbackQuery.message.message_id;
+                    
+                    let parts = data.split('_');
+                    let action = parts[0]; 
+                    let requestId = parts.slice(1).join('_');
+                    let reqData = pendingRequests[requestId];
+
+                    if (reqData) {
+                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                        let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
+                        let rawAmount = Number(reqData.amount) || 0;
+                        let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+
+                        if (action === 'app') {
+                            if (targetSocket) {
+                                targetSocket.emit('financialApproved', { 
+                                    type: reqData.type, 
+                                    amount: rawAmount, 
+                                    adjustedAmount: finalAmountForClient 
+                                });
+                            } else {
+                                if (!offlineApprovedQueue[reqData.userId]) {
+                                    offlineApprovedQueue[reqData.userId] = [];
+                                }
+                                offlineApprovedQueue[reqData.userId].push({
+                                    type: reqData.type,
+                                    amount: rawAmount,
+                                    adjustedAmount: finalAmountForClient
+                                });
+                            }
+
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        } else {
+                            if (reqData.chatId) {
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ **ምክንያት:** ያስገቡት መረጃ ወይም ደረሰኝ ትክክል አይደለም። እባክዎ ትክክለኛውን መረጃ አረጋግጠው በድጋሚ ጥያቄ ያስገቡ። 🙏`;
+                                
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                    chat_id: reqData.chatId,
+                                    text: rejectMsg,
+                                    parse_mode: 'Markdown'
+                                }).catch(() => {});
+                            }
+
+                            if (targetSocket) { 
+                                targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
+                            }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                chat_id: chatId, message_id: messageId,
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        }
+                        delete pendingRequests[requestId]; 
+                    }
+                    try { 
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
+                    } catch (e) {}
+                }
+            }
+        }
+    } catch (err) {}
+    setTimeout(pollTelegramUpdates, 1000);
+}
+setTimeout(pollTelegramUpdates, 2000);
+
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    try {
+        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
+            reply_markup: { 
+                inline_keyboard: [
+                    [
+                        { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                        { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                    ]
+                ] 
+            }
+        });
+    } catch (error) {}
+}
+
+io.on('connection', (socket) => {
+    connectedRealPlayers.push(socket.id);
+    let realCount = connectedRealPlayers.length;
+    let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
+    globalRoom.playersCount = currentBotsCount + realCount; 
+    io.emit('updatePlayersCount', globalRoom.playersCount);
+    socket.emit('syncGameState', globalRoom);
+    refreshTakenCardsList();
+
+    socket.on('registerRealUser', (userData) => {
+        if (userData && userData.userId) {
+            let userId = String(userData.userId);
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+            
+            if (!claimedWelcomeBonusUsers.has(userId)) {
+                claimedWelcomeBonusUsers.add(userId);
+                socket.emit('welcomeBonusGranted', { 
+                    amount: 20, 
+                    message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
+                });
+            }
+
+            if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
+                offlineApprovedQueue[userId].forEach(item => {
+                    socket.emit('financialApproved', item);
+                });
+                delete offlineApprovedQueue[userId];
+            }
+        }
+    });
+
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    });
+
+    socket.on('tempSelectCards', (cards) => {
+        if (Array.isArray(cards)) {
+            globalRoom.playerTemporaryCards[socket.id] = cards;
+            refreshTakenCardsList();
+        }
+    });
+
+    socket.on('confirmCards', (data) => {
+        if (data && data.cards && Array.isArray(data.cards)) {
+            globalRoom.playerRoundCards[socket.id] = {
+                cards: data.cards,
+                username: data.username || 'ተጫዋች',
+                userId: data.userId || 'unknown'
+            };
+            if (globalRoom.playerTemporaryCards[socket.id]) {
+                delete globalRoom.playerTemporaryCards[socket.id];
+            }
+            refreshTakenCardsList();
+            socket.emit('cardSelectionSuccess');
+        }
+    });
+
+    socket.on('adminSetNextWinner', (data) => {
+        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
+        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+    });
+
+    socket.on('financialRequest', async (data) => {
+        data.type = data.type || 'deposit';
+        let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
+        
+        let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        
+        pendingRequests[requestId] = { 
+            userId: String(userId || 'unknown'), 
+            chatId: telegramChatId || userId, 
+            type, 
+            amount, 
+            username, 
+            socketId: socket.id, 
+            timestamp: Date.now() 
+        };
+
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+    });
+
+    socket.on('disconnect', () => {
+        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        delete globalRoom.playerRoundCards[socket.id];
+        delete globalRoom.playerTemporaryCards[socket.id];
+        refreshTakenCardsList();
+        let realCount = connectedRealPlayers.length;
+        globalRoom.playersCount = getRealisticBotsCount(realCount, globalRoom.gameActive) + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Server running on port " + PORT);
+});
