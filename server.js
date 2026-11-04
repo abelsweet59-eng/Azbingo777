@@ -25,9 +25,9 @@ const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🔄 ዋናዎቹ ቁጥሮች በቅደም ተከተል ሉፕ እያደረጉ የሚወጡበት አሰላለፍ
+// 🔄 የቁጥሮች ፍሰት ቅደም ተከተል (ለተረጋጋ እና ፈሳሽ ጨዋታ የተስተካከለ)
 const customNumberFlowSequence = [
-    18, 18, 19, 23, 22, 27, 19, 17, 22, 30, 12, 19, 25, 24, 22, 18, 19, 23, 22, 15, 16, 18, 19, 22, 22, 23, 27, 28, 18, 18, 19, 24, 24, 19, 15, 14, 18, 15, 16, 25, 22, 19, 19, 30, 19, 16, 12, 23, 17, 26, 23, 19, 18, 22, 16, 19, 22, 18, 27, 30, 21, 21, 19
+    22, 24, 26, 28, 30, 32, 25, 27, 29, 31, 26, 28, 33, 35, 24, 27, 30, 28, 32, 26
 ];
 let sequenceIndex = 0;
 
@@ -88,7 +88,7 @@ let globalRoom = {
     playerRoundCards: {},
     playerTemporaryCards: {},
     lastCalledNumber: null,
-    targetWinCallCount: 25,
+    targetWinCallCount: 28,
     forcedWinningCardNums: []
 };
 
@@ -312,14 +312,13 @@ function startMainGameLoop() {
                     winnersCount = targetRealCount;
                 } else {
                     targetRealCount = 1;
-                    winnersCount = 1; // 1 ሪል ዩዘር ብቻውን እንዲያሸንፍ ሲጠየቅ
+                    winnersCount = 1; 
                 }
             } else {
                 targetRealCount = 0;
                 winnersCount = Math.random() < 0.5 ? 1 : 2;
             }
 
-            // 1) ሪል ዩዘሮችን መምረጥ
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
                 let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
                 let chosenReal = shuffledReal.slice(0, targetRealCount);
@@ -330,7 +329,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // 2) ካልበቁ በቦቶች ማሟላት (እስከ targetWinners ብዛት)
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -348,21 +346,23 @@ function startMainGameLoop() {
                 targetCallCount = rareRotationPool[Math.floor(Math.random() * rareRotationPool.length)];
             }
 
+            // 🎲 የተለያዩ የማሸነፊያ ቅጦች (Patterns) ዝርዝር፦ አግድም፣ ቁመት፣ ሰያፍ (X), እና አራቱ ማዕዘኖች
             let possiblePatterns = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-                [0,6,12,18,24], [4,8,12,16,20],
-                [0,4,20,24]
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም (Rows)
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት (Columns)
+                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ (Diagonals / X)
+                [0,4,20,24] // አራቱ ማዕዘኖች (4 Corners)
             ];
 
             let perWinnerConfigs = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
+                // ሁልጊዜ አንድ አይነት ፓተርን እንዳይሆን በዘፈቀደ ከተዘረዘሩት ውስጥ ይመረጣል
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
                 let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
             });
 
-            // 🔄 ቁጥሮችን በቅደም ተከተል (Interleaved Queue) ለሁሉም አሸናፊዎች በእኩል ደረጃ ማዋሃድ
+            // 🔄 ቁጥሮችን በቅደም ተከተል በማዋሃድ ጨዋታው እንዲዘገይ እና ተጫዋቹ በጉጉት እንዲጠብቅ ይደረጋል
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -500,7 +500,7 @@ function startMainGameLoop() {
                     io.emit('numberCalledBroadcast', Number(calledNum));
                 }
 
-            }, 4000); 
+            }, 4500); // ⏱️ የጥሪው ፍጥነት ትንሽ እንዲዘገይ (ከ 4 ሰከንድ ወደ 4.5 ሰከንድ) ተደርጓል
         }
     }, 1000);
 }
