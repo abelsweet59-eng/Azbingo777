@@ -31,7 +31,7 @@ const customNumberFlowSequence = [
 ];
 let sequenceIndex = 0;
 
-// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል (ለምሳሌ ከ 10 ጌም አንዴ ወይም በዘፈቀደ ዕድል)
+// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል
 const rareRotationPool = [10, 11, 33, 34, 36];
 
 const ETHIOPIAN_BOT_NAMES = [
@@ -186,6 +186,7 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return fallbackMatched;
 }
 
+// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር ሎጂክ (Base Count) እንደነበረው ሆኖ...
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -204,8 +205,11 @@ function getRealisticBotsCount(realCount) {
         calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
     }
 
-    let smallDelta = Math.floor(Math.random() * 7) - 3; 
-    let finalCount = calculated + smallDelta;
+    // 🔀 ከአንድ ጌም ወደ ቀጣይ ጌም ሲሸጋገር ከ 1 እስከ 5 ያሉ ሰዎች በዘፈቀደ እንዲቀነሱ ወይም እንዲጨምሩ (Fluctuation between 1 and 5)
+    let randomDelta = Math.floor(Math.random() * 5) + 1; // 1 እስከ 5
+    let sign = Math.random() < 0.5 ? 1 : -1; // ፕላስ ወይም ማይነስ
+    let finalCount = calculated + (randomDelta * sign);
+
     if (finalCount < 40) finalCount = 40;
     if (finalCount > 250) finalCount = 250;
     return finalCount;
@@ -264,6 +268,11 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
+            // 🔄 ጌሙ ሲጀምር የተጫዋቾች ቁጥር በየጌሙ ከ 1 እስከ 5 በዘፈቀደ እንዲቀየር ወይም እንዲጨምር ማዘመን
+            let realCount = connectedRealPlayers.length;
+            globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+            io.emit('updatePlayersCount', globalRoom.playersCount);
+
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
@@ -318,7 +327,7 @@ function startMainGameLoop() {
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
             sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
 
-            // 🌟 አልፎ አልፎ (Rare) ከብዙ ጌም አንዴ (ለምሳሌ በ 15% ዕድል) የ rareRotationPool ቁጥሮች እንዲተኩ ይደረጋል
+            // 🌟 አልፎ አልፎ (Rare) ከብዙ ጌም አንዴ የ rareRotationPool ቁጥሮች እንዲተኩ ይደረጋል
             if (Math.random() < 0.15) { 
                 targetCallCount = rareRotationPool[Math.floor(Math.random() * rareRotationPool.length)];
             }
