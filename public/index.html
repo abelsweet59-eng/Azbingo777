@@ -212,14 +212,13 @@
                 </div>
             </div>
 
-            <!-- TAB 3: GAME RULES (🎯 ሙሉ መመሪያ ከግራፊክ ምስሎች ጋር) -->
+            <!-- TAB 3: GAME RULES -->
             <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">📖 🎮 AZ Bingo - የጨዋታ እና የገንዘብ አጠቃቀም መመሪያ</h2>
                 </div>
 
                 <div class="space-y-3">
-                    <!-- 1. 🎯 ጨዋታውን እንዴት ይጀምራሉ? -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">1. 🎯 ጨዋታውን እንዴት ይጀምራሉ?</h3>
                         <ul class="list-disc list-inside text-gray-300 space-y-1 text-[11px]">
@@ -230,13 +229,11 @@
                         </ul>
                     </div>
 
-                    <!-- 2. 🏆 የማሸነፊያ ህጎች ከምስል (ግራፊክስ) ጋር -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህጎች (የድል ቅጦች)</h3>
                         <p class="text-gray-300 text-[11px]">የሚከተሉትን የማሸነፊያ ቅጦች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል፡</p>
                         
                         <div class="grid grid-cols-2 gap-2 pt-1">
-                            <!-- Horizontal -->
                             <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
                                 <div class="flex justify-center">
                                     <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
@@ -248,10 +245,8 @@
                                     </div>
                                 </div>
                                 <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ አግድም ረድፍ ሲሞላ</div>
                             </div>
 
-                            <!-- Vertical -->
                             <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
                                 <div class="flex justify-center">
                                     <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
@@ -263,10 +258,8 @@
                                     </div>
                                 </div>
                                 <div class="font-bold text-amber-300 text-[10px]">ቁመት (Vertical)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አንድ ሙሉ ቁመታዊ ረድፍ ሲሞላ</div>
                             </div>
 
-                            <!-- Diagonal -->
                             <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
                                 <div class="flex justify-center">
                                     <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 relative flex items-center justify-center">
@@ -274,10 +267,8 @@
                                     </div>
                                 </div>
                                 <div class="font-bold text-amber-300 text-[10px]">ሰያፍ (Diagonal)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">ሰያፍ መስመር ሲሞላ</div>
                             </div>
 
-                            <!-- Four Corners -->
                             <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
                                 <div class="flex justify-center">
                                     <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
@@ -288,31 +279,13 @@
                                     </div>
                                 </div>
                                 <div class="font-bold text-amber-300 text-[10px]">አራቱ ማዕዘኖች (4 Corners)</div>
-                                <div class="text-[9px] text-gray-300 leading-tight">አራቱ ማዕዘኖች ሲሞሉ።</div>
                             </div>
                         </div>
-
-                        <div class="text-[10px] text-amber-400 font-bold mt-2 bg-black/40 p-1.5 rounded border border-amber-500/20 text-center">
-                            📌 ማስታወሻ: ከአንድ በላይ አሸናፊዎች ከሆኑ የሽልማት መጠኑ በእኩል ይከፋፈላል!
-                        </div>
                     </div>
 
-                    <!-- 3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ይደረጋል። ከዚያም ወደ ቴሌብር በመሄድ ማስገባት የሚፈልጉትን የገንዘብ መጠን ወደዚህ ቁጥር ያስተላልፉ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ገንዘቡን ከላኩ በኋላ በቴሌብር በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው፤ ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 100 ብር ነው።)</p>
-                        </div>
-                    </div>
-
-                    <!-- 4. 🏧 ገንዘብ የማወጫ መመሪያ -->
-                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">4. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
-                        <div class="space-y-1.5 text-gray-300 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉትን ትክክለኛ የቴሌብር ስልክ ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉትን የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል።</p>
-                        </div>
+                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ</h3>
+                        <p class="text-gray-300 text-[11px]">ቁጥሩን በመንካት ኮፒ በማድረግ ገንዘብ ከላኩ በኋላ የደረሰኝ SMS እና መጠኑን ጽፈው ጥያቄ በመላክ ወዲያውኑ ገቢ ማድረግ ይቻላል።</p>
                     </div>
                 </div>
             </div>
@@ -362,9 +335,6 @@
                     </div>
                     <div class="text-white text-[10px] mt-2 bg-purple-950/80 p-2 rounded-xl border border-purple-500/40 text-center font-bold" id="winner-banner-text">
                         የተጣራ ሽልማት: <span class="text-emerald-400 text-xs">980 ብር</span>
-                    </div>
-                    <div class="mt-2 text-[10px] text-amber-400 font-bold" id="auto-start-timer-msg">
-                        ⏳ ቀጣዩ ዙር በቅርቡ ይጀምራል
                     </div>
                 </div>
             </div>
@@ -524,7 +494,7 @@
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
 
                 if (confirmedCards.length > 0) {
-                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
+                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
@@ -915,7 +885,7 @@
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt });
+            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt, telegramChatId: telegramUserId });
         }
 
         function generate500CardGrid() {
@@ -984,7 +954,7 @@
             }
 
             confirmedCards = [...userSelectedCards];
-            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName });
+            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
         }
 
         function renderVerticalBoard() {
@@ -1067,17 +1037,18 @@
                     const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                     const cell = document.createElement('div');
-                    cell.style.height = "20px";
+                    // 🌟 የቁጥር ሴሎችን ቁመት እና የፊደል መጠን ጎላ/ጥርት እንዲሉ በማስተካከል ላይ
+                    cell.style.height = "22px";
                     
                     if (isFreeCenter) {
-                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-extrabold text-[10px] rounded flex items-center justify-center shadow-lg border border-amber-300";
+                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-black text-[11px] rounded flex items-center justify-center shadow-lg border border-amber-300";
                         cell.innerText = "★";
                     } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
                         let colColorClass = getColumnBgColor(cellNum);
-                        cell.className = `${colColorClass} text-white font-extrabold text-[9px] rounded flex items-center justify-center shadow`;
+                        cell.className = `${colColorClass} text-white font-black text-[11px] rounded flex items-center justify-center shadow`;
                         cell.innerText = cellNum;
                     } else {
-                        cell.className = "bg-white/5 text-gray-200 text-[9px] font-semibold rounded flex items-center justify-center cursor-pointer";
+                        cell.className = "bg-white/5 text-white font-extrabold text-[11px] rounded flex items-center justify-center cursor-pointer";
                         cell.innerText = cellNum;
                         
                         if (!isAutoMode) {
