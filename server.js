@@ -82,7 +82,7 @@ let globalRoom = {
 let forcedNextWinner = null; 
 let onlineRealUsers = [];
 let pendingRequests = {};
-let offlineApprovedQueue = {}; // ተጠቃሚው ከመስመር ውጭ ቢሆንም ጸድቆ የሚቀመጥበት ማህደረ ትውስታ
+let offlineApprovedQueue = {}; 
 let gameInterval = null;
 let numberCallInterval = null;
 
@@ -263,22 +263,19 @@ function startMainGameLoop() {
             let targetRealCount = 0;
             let targetBotCount = 1;
 
-            if (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3') {
-                targetRealCount = 3;
-                targetBotCount = 0;
-                winnersCount = 3;
-            } else if (currentWinnerType === 'dual_bot') {
-                targetRealCount = 0;
-                targetBotCount = 2;
-                winnersCount = 2;
-            } else if (currentWinnerType === 'bot') {
-                targetRealCount = 0;
-                targetBotCount = 1;
-                winnersCount = 1;
-            } else if (currentWinnerType === 'real_user' || currentWinnerType === 'single_real') {
-                targetRealCount = 1;
-                targetBotCount = 1;
-                winnersCount = 2;
+            // 🛑 ትክክለኛ ጥብቅ ቁጥጥር፡ አድሚኑ በግልጽ ካላዘዘ በስተቀር (እንደ random_real, single_real ወዘተ) ሪል ዩዘሮች በጭራሽ አሸናፊ አይሆኑም (ቦቶች ብቻ ያሸንፋሉ)
+            let explicitRealForced = (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
+
+            if (explicitRealForced && activeRealEntries.length > 0) {
+                if (currentWinnerType.includes('3')) {
+                    targetRealCount = Math.min(3, activeRealEntries.length);
+                    winnersCount = targetRealCount;
+                } else {
+                    targetRealCount = 1;
+                    winnersCount = 2;
+                }
+                targetBotCount = winnersCount - targetRealCount;
+                if (targetBotCount < 0) targetBotCount = 0;
             } else {
                 targetRealCount = 0;
                 winnersCount = Math.random() < 0.5 ? 1 : 2;
@@ -420,6 +417,42 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    // 🛡️ ጥብቅ ማጣሪያ (Strict Real User Protection): 
+                    // አድሚኑ በልዩ ሁኔታ ካላዘዘ በስተቀር (targetRealCount === 0) በሚጠሩት ቁጥሮች መካከል የሪል ተጠቃሚዎች ካርድ አግድም፣ 
+                    // ቀጥ ያለ ወይም አራት ማዕዘን (Pattern) ሙሉ በሙሉ ሞልቶ እንዳያሸንፍ (ቁጥሮቹ እንዳይሟሉ) ሆን ተብሎ ቁጥሮቹ ይጣራሉ.
+                    if (targetRealCount === 0) {
+                        let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
+                        let isAccidentalRealWin = false;
+                        
+                        activeRealEntriesCheck.forEach(playerData => {
+                            if (playerData.cards) {
+                                playerData.cards.forEach(cNum => {
+                                    let cList = getCartelaNumbers(cNum);
+                                    let tempCalled = [...globalRoom.calledNumbers, Number(calledNum)];
+                                    let matched = getWinningMatchedIndices(cList, tempCalled);
+                                    
+                                    let possiblePatterns = [
+                                        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                                        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                                        [0,6,12,18,24], [4,8,12,16,20], [0,4,20,24]
+                                    ];
+                                    
+                                    possiblePatterns.forEach(pat => {
+                                        if (pat.every(pIdx => matched.includes(pIdx))) {
+                                            isAccidentalRealWin = true;
+                                        }
+                                    });
+                                });
+                            }
+                        });
+
+                        // 🛑 የሪል ተጠቃሚው በአጋጣሚ እንዳያሸንፍ ቁጥሩ መስመር የሚፈጥር ከሆነ ሌላ ቁጥር በምትኩ እንመርጣለን
+                        if (isAccidentalRealWin && availableNumbers.length > 0) {
+                            let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
+                            calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
+                        }
+                    }
+
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
 
@@ -488,7 +521,6 @@ async function pollTelegramUpdates() {
                         let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                         if (action === 'app') {
-                            // ተጠቃሚው ኦንላይን ከሆነ ወዲያው እንልክለታለን፤ ከኦንላይን ወጥቶ ከሆነ ግን በ userId መዝገብ ላይ እናስቀምጠዋለን
                             if (targetSocket) {
                                 targetSocket.emit('financialApproved', { 
                                     type: reqData.type, 
@@ -569,7 +601,6 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
-            // 💡 ተጠቃሚው ከኦንላይን ወጥቶ ከነበረና አድሚኑ አፕሩቭ አድርጎ ከቆየ፣ ሲመለስ ያንን ማሳወቂያ በራስ-ሰር እንልክለታለን
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
                     socket.emit('financialApproved', item);
