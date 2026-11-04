@@ -44,7 +44,7 @@ const ETHIOPIAN_BOT_NAMES = [
     "Fiyorina", "Kirra", "Bilal", "Pilatos", "Merlin",
     "Osmehin", "Denver", "Belew", "Jilalu", "Gizachew Kassahun",
     "bereket dagne", "Mesfin", "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "🦋Meklit🦋",
-    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ",
+    "Abel x", "Farhewot Yashtla", "🅖ⓞⓞッド🌹", "YO", "እያሱ",
     "Goyta Miraw ጣምራው", "0919091129", "Gdg", "Lai", "Sintayehu Getachew",
     "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝",
     "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Aman yi", "Ahmed Basher",
@@ -98,6 +98,7 @@ let pendingRequests = {};
 let offlineApprovedQueue = {}; 
 let gameInterval = null;
 let numberCallInterval = null;
+let connectedRealPlayers = [];
 
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -186,7 +187,7 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return fallbackMatched;
 }
 
-// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር ሎጂክ (Base Count) እንደነበረው ሆኖ...
+// 🕒 የኢትዮጵያ ሰዓት አቆጣጠር ሎጂክ (Base Count) + የቀጥታ ፍሎት ማስተካከያ
 function getRealisticBotsCount(realCount) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -205,15 +206,23 @@ function getRealisticBotsCount(realCount) {
         calculated = Math.floor(100 + (progress * 130) + (Math.sin(Date.now() / 3000) * 15));
     }
 
-    // 🔀 ከአንድ ጌም ወደ ቀጣይ ጌም ሲሸጋገር ከ 1 እስከ 5 ያሉ ሰዎች በዘፈቀደ እንዲቀነሱ ወይም እንዲጨምሩ (Fluctuation between 1 and 5)
-    let randomDelta = Math.floor(Math.random() * 5) + 1; // 1 እስከ 5
-    let sign = Math.random() < 0.5 ? 1 : -1; // ፕላስ ወይም ማይነስ
+    // 🔀 ከ 1 እስከ 5 ያሉ ሰዎች ገባ/ወጣ እያሉ የቀጥታ ስሜት እንዲፈጥሩ
+    let randomDelta = Math.floor(Math.random() * 5) + 1; 
+    let sign = Math.random() < 0.5 ? 1 : -1; 
     let finalCount = calculated + (randomDelta * sign);
 
     if (finalCount < 40) finalCount = 40;
     if (finalCount > 250) finalCount = 250;
     return finalCount;
 }
+
+// 🔄 ተጠቃሚዎች ገና ቁጥር መምረጫው ላይ እያሉ በየ 4 ሰከንዱ ተጫዋቾች ገባ/ወጣ እያሉ አፕዴት የሚያደርግ Loop
+setInterval(() => {
+    let realCount = connectedRealPlayers.length;
+    globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
+    // ለሁሉም ተጠቃሚዎች (ካርድ መምረጫ ላይ ላሉትም ጭምር) የቀጥታ የተጫዋቾች ቁጥር ስራጭ
+    io.emit('updatePlayersCount', globalRoom.playersCount);
+}, 4000);
 
 function refreshTakenCardsList() {
     let allTaken = [];
@@ -268,11 +277,6 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            // 🔄 ጌሙ ሲጀምር የተጫዋቾች ቁጥር በየጌሙ ከ 1 እስከ 5 በዘፈቀደ እንዲቀየር ወይም እንዲጨምር ማዘመን
-            let realCount = connectedRealPlayers.length;
-            globalRoom.playersCount = getRealisticBotsCount(realCount) + realCount;
-            io.emit('updatePlayersCount', globalRoom.playersCount);
-
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
@@ -604,8 +608,6 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     } catch (error) {}
 }
 
-let connectedRealPlayers = [];
-
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     let realCount = connectedRealPlayers.length;
@@ -686,7 +688,7 @@ io.on('connection', (socket) => {
         };
 
         await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልቋል!" });
     });
 
     socket.on('disconnect', () => {
