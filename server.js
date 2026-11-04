@@ -21,6 +21,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 
+// 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ ቦነስ የወሰዱትን ዩዘሮች ለመያዝ (Memory Storage / Database Mapping)
+const claimedWelcomeBonusUsers = new Set();
+const userWallets = {}; // የተጠቃሚዎች የዋሌት ቀሪ ሂሳብ መያዣ
+
 const ETHIOPIAN_BOT_NAMES = [
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
@@ -263,7 +267,6 @@ function startMainGameLoop() {
             let targetRealCount = 0;
             let targetBotCount = 1;
 
-            // 🛑 ትክክለኛ ጥብቅ ቁጥጥር፡ አድሚኑ በግልጽ ካላዘዘ በስተቀር (እንደ random_real, single_real ወዘተ) ሪል ዩዘሮች በጭራሽ አሸናፊ አይሆኑም (ቦቶች ብቻ ያሸንፋሉ)
             let explicitRealForced = (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
 
             if (explicitRealForced && activeRealEntries.length > 0) {
@@ -417,9 +420,6 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    // 🛡️ ጥብቅ ማጣሪያ (Strict Real User Protection): 
-                    // አድሚኑ በልዩ ሁኔታ ካላዘዘ በስተቀር (targetRealCount === 0) በሚጠሩት ቁጥሮች መካከል የሪል ተጠቃሚዎች ካርድ አግድም፣ 
-                    // ቀጥ ያለ ወይም አራት ማዕዘን (Pattern) ሙሉ በሙሉ ሞልቶ እንዳያሸንፍ (ቁጥሮቹ እንዳይሟሉ) ሆን ተብሎ ቁጥሮቹ ይጣራሉ.
                     if (targetRealCount === 0) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
@@ -446,7 +446,6 @@ function startMainGameLoop() {
                             }
                         });
 
-                        // 🛑 የሪል ተጠቃሚው በአጋጣሚ እንዳያሸንፍ ቁጥሩ መስመር የሚፈጥር ከሆነ ሌላ ቁጥር በምትኩ እንመርጣለን
                         if (isAccidentalRealWin && availableNumbers.length > 0) {
                             let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
                             calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
@@ -601,6 +600,17 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
+            // 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ የ20 ብር ቦነስ አሰራር (One-time Welcome Bonus)
+            if (!claimedWelcomeBonusUsers.has(userId)) {
+                claimedWelcomeBonusUsers.add(userId);
+                
+                // ለተጠቃሚው 20 ብር ቦነስ ገቢ መደረጉን ወደ ክላይንት መላክ
+                socket.emit('welcomeBonusGranted', { 
+                    amount: 20, 
+                    message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
+                });
+            }
+
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
                     socket.emit('financialApproved', item);
@@ -674,5 +684,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log("AZ ሸ Server running on port " + PORT);
+    console.log("AZ Server running on port " + PORT);
 });
