@@ -82,6 +82,7 @@ let globalRoom = {
 let forcedNextWinner = null; 
 let onlineRealUsers = [];
 let pendingRequests = {};
+let offlineApprovedQueue = {}; // ተጠቃሚው ከመስመር ውጭ ቢሆንም ጸድቆ የሚቀመጥበት ማህደረ ትውስታ
 let gameInterval = null;
 let numberCallInterval = null;
 
@@ -482,25 +483,36 @@ async function pollTelegramUpdates() {
 
                     if (reqData) {
                         let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                        if (action === 'app') {
-                            if (targetSocket) {
-                                let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
-                                let rawAmount = Number(reqData.amount) || 0;
-                                let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+                        let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
+                        let rawAmount = Number(reqData.amount) || 0;
+                        let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
+                        if (action === 'app') {
+                            // ተጠቃሚው ኦንላይን ከሆነ ወዲያው እንልክለታለን፤ ከኦንላይን ወጥቶ ከሆነ ግን በ userId መዝገብ ላይ እናስቀምጠዋለን
+                            if (targetSocket) {
                                 targetSocket.emit('financialApproved', { 
                                     type: reqData.type, 
                                     amount: rawAmount, 
                                     adjustedAmount: finalAmountForClient 
                                 });
+                            } else {
+                                if (!offlineApprovedQueue[reqData.userId]) {
+                                    offlineApprovedQueue[reqData.userId] = [];
+                                }
+                                offlineApprovedQueue[reqData.userId].push({
+                                    type: reqData.type,
+                                    amount: rawAmount,
+                                    adjustedAmount: finalAmountForClient
+                                });
                             }
+
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
                             if (targetSocket) { 
-                                targetSocket.emit('financialRejected', { type: reqData.type, amount: reqData.amount }); 
+                                targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
@@ -556,6 +568,14 @@ io.on('connection', (socket) => {
             let userId = String(userData.userId);
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+            
+            // 💡 ተጠቃሚው ከኦንላይን ወጥቶ ከነበረና አድሚኑ አፕሩቭ አድርጎ ከቆየ፣ ሲመለስ ያንን ማሳወቂያ በራስ-ሰር እንልክለታለን
+            if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
+                offlineApprovedQueue[userId].forEach(item => {
+                    socket.emit('financialApproved', item);
+                });
+                delete offlineApprovedQueue[userId];
+            }
         }
     });
 
@@ -597,7 +617,7 @@ io.on('connection', (socket) => {
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
-            userId, 
+            userId: String(userId || 'unknown'), 
             type, 
             amount, 
             username, 
