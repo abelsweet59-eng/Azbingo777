@@ -202,7 +202,8 @@
                 <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
                     <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
                     <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">0.00 <span class="text-sm text-white">ብር</span></div>
-                    <div class="text-[11px] text-amber-200/80">⚠️ ዝቅተኛው የዲፖዚት እና ዊዝድሮዋል ገደብ 100 ብር ነው።</div>
+                    <!-- 🌟 ዲፖዚት ቢያንስ 20 ብር, ዊዝድሮዋል 100 ብር ሆኖ ተስተካክሏል -->
+                    <div class="text-[11px] text-amber-200/80">⚠️ ዲፖዚት ቢያንስ 20 ብር፣ ዊዝድሮዋል ቢያንስ 100 ብር ነው።</div>
                     <div class="flex gap-2.5 pt-2">
                         <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2.5 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
                         <button onclick="openWithdrawModal()" class="flex-1 bg-white/10 py-2.5 rounded-xl text-xs font-bold border border-white/10 shadow">ገንዘብ አውጣ (Withdraw)</button>
@@ -220,7 +221,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: GAME RULES (ሙሉ በሙሉ ተመልሷል!) -->
+            <!-- TAB 3: GAME RULES -->
             <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">📖 🎮 AZ Bingo - የጨዋታ እና የገንዘብ አጠቃቀም መመሪያ</h2>
@@ -355,7 +356,8 @@
                     <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
                     <div id="copy-status-msg" class="text-[9px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                 </div>
-                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 100)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <!-- 🌟 ዲፖዚት ቢያንስ 20 ብር እንዲሆን በፕሌስሆልደር ተስተካክሏል -->
+                <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 20)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
@@ -453,7 +455,6 @@
         let manualDaubedNumbers = {};
         let amharicVoice = null;
         
-        // 🌟 ድምፁ በዲፎልት ሚውት ሆኖ እንዲገባ (Muted)
         let isAudioMuted = true;
 
         function loadVoices() {
@@ -579,7 +580,6 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
                 
-                // 🌟 ቁጥር ሲጠራ ሚውት ካልሆነ ፊደሉን እና ቁጥሩን በአማርኛ በድምፅ እንዲነበብ ማድረግ
                 if (!isAudioMuted) speakCalledNumber(num);
             });
 
@@ -714,7 +714,6 @@
             });
         }
 
-        // 🌟 ድምፁን ማብራት እና ማጥፋት (Mute/Unmute Toggle)
         function toggleAudioMute() {
             isAudioMuted = !isAudioMuted;
             updateAudioButtonUI();
@@ -777,7 +776,6 @@
             }, 1000);
         }
 
-        // 🌟 ፊደሉን እና ቁጥሩን አንድ ላይ በአማርኛ በድምፅ (SpeechSynthesis) ከኳሱ መምጣት ጋር በተቀናጀ መልኩ የሚጠራ ፋንክሽን
         function speakCalledNumber(num) {
             if (isAudioMuted) return;
 
@@ -918,13 +916,15 @@
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
-                if (isNaN(amount) || amount < 100) { alert("⚠️ ዝቅተኛው 100 ብር ነው።"); return; }
+                // 🌟 የዲፖዚት ዝቅተኛ ገደብ ወደ 20 ብር ተስተካክሏል
+                if (isNaN(amount) || amount < 20) { alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); return; }
                 if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
                 document.getElementById('deposit-modal').classList.add('hidden');
             } else {
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-                if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ ያስገቡ!"); return; }
+                // 🌟 የዊዝድሮዋል ዝቅተኛ ገደብ 100 ብር ሆኖ እንዳለ ቀጥሏል
+                if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ እና ቢያንስ 100 ብር ያስገቡ!"); return; }
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
