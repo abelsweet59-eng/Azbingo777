@@ -141,13 +141,11 @@
                     
                     <!-- 🌟 ጎላ ያለ የድምፅ መቆጣጠሪያ እና የአውቶማቲክ ዳብ (Auto-Daub) መቆጣጠሪያ ባር -->
                     <div class="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 px-3 py-2 rounded-xl border border-amber-500/40 flex justify-between items-center shadow-lg">
-                        <!-- Mute / Unmute Button (ጎላ ያለ) -->
                         <button onclick="toggleAudioMute()" id="audio-mute-btn" class="flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-amber-400/50 text-amber-300 text-xs font-bold shadow-inner">
                             <span id="audio-icon" class="text-base">🔇</span>
                             <span id="audio-text">ድምፅ (Muted)</span>
                         </button>
 
-                        <!-- Auto Daub Toggle (ጎላ ያለ) -->
                         <div class="flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-lg border border-purple-400/40">
                             <span class="text-xs font-bold text-gray-200" id="mode-label">አውቶማቲክ</span>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -222,7 +220,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: GAME RULES -->
+            <!-- TAB 3: GAME RULES (ሙሉ በሙሉ ተመልሷል!) -->
             <div id="tab-rules" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624] text-xs">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">📖 🎮 AZ Bingo - የጨዋታ እና የገንዘብ አጠቃቀም መመሪያ</h2>
@@ -237,6 +235,65 @@
                             <li>1 ደቂቃ (60 ሰከንድ) ቆጥሮ ጨዋታው ሲጀመር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
                             <li>አውቶማቲክ ዳብ (Auto Daub) በመጠቀም ቁጥሮቹ በራሳቸው ይሞላሉ፤ ወይም ደግሞ ማኑዋል (Manual) በማድረግ በራስዎ እጅ እየነኩ (እየመረጡ) መጫወት ይችላሉ።</li>
                         </ul>
+                    </div>
+
+                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
+                        <h3 class="font-bold text-amber-300 text-xs">2. 🏆 የማሸነፊያ ህጎች (የድል ቅጦች)</h3>
+                        <p class="text-gray-300 text-[11px]">የሚከተሉትን የማሸነፊያ ቅጦች በመጀመሪያ ማሟላት የቻለ አሸናፊ ይሆናል፡</p>
+                        
+                        <div class="grid grid-cols-2 gap-2 pt-1">
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                        <div class="bg-purple-950 col-span-5 h-1.5 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">አግድም (Horizontal)</div>
+                            </div>
+
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                        <div class="bg-purple-950 h-full rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">ቁመት (Vertical)</div>
+                            </div>
+
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 relative flex items-center justify-center">
+                                        <div class="absolute w-10 h-1 bg-emerald-500 rotate-45 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">ሰያፍ (Diagonal)</div>
+                            </div>
+
+                            <div class="bg-black/40 p-2 rounded-lg border border-purple-500/20 text-center space-y-1">
+                                <div class="flex justify-center">
+                                    <div class="w-12 h-12 bg-purple-900/60 rounded border border-purple-400/30 grid grid-cols-5 grid-rows-5 gap-0.5 p-1">
+                                        <div class="bg-emerald-500 col-start-1 row-start-1 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-5 row-start-1 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-1 row-start-5 rounded"></div>
+                                        <div class="bg-emerald-500 col-start-5 row-start-5 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-amber-300 text-[10px]">አራቱ ማዕዘኖች (4 Corners)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
+                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ</h3>
+                        <p class="text-gray-300 text-[11px]">ቁጥሩን በመንካት ኮፒ በማድረግ ገንዘብ ከላኩ በኋላ የደረሰኝ SMS እና መጠኑን ጽፈው ጥያቄ በመላክ ወዲያውኑ ገቢ ማድረግ ይቻላል።</p>
                     </div>
                 </div>
             </div>
@@ -396,12 +453,12 @@
         let manualDaubedNumbers = {};
         let amharicVoice = null;
         
-        // 🌟 1. የዲፎልት ሚውት (Mute) ሎጂክ፡ በዲፎልት ድምፁ ዝግ (true) ሆኖ ይገባል
+        // 🌟 ድምፁ በዲፎልት ሚውት ሆኖ እንዲገባ (Muted)
         let isAudioMuted = true;
 
         function loadVoices() {
             let voices = window.speechSynthesis.getVoices();
-            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET')) || voices[0];
+            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET') || v.lang.toLowerCase().includes('amharic')) || voices[0];
         }
 
         if ('speechSynthesis' in window) {
@@ -522,7 +579,7 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
                 
-                // 🌟 2. ቁጥር ሲጠራ በአማርኛ በድምፅ እንዲናገር ማድረግ (ሚውት ካልሆነ)
+                // 🌟 ቁጥር ሲጠራ ሚውት ካልሆነ በአማርኛ በድምፅ እንዲነበብ ማድረግ
                 if (!isAudioMuted) speakCalledNumber(num);
             });
 
@@ -657,7 +714,7 @@
             });
         }
 
-        // 🌟 3. ድምፁን ማብራት እና ማጥፋት (Mute / Unmute Toggle)
+        // 🌟 ድምፁን ማብራት እና ማጥፋት (Mute/Unmute Toggle)
         function toggleAudioMute() {
             isAudioMuted = !isAudioMuted;
             updateAudioButtonUI();
@@ -720,17 +777,16 @@
             }, 1000);
         }
 
-        // 🌟 4. ቁጥሮችን በአማርኛ ፊደል እና ቁጥር በግልጽ በድምፅ (SpeechSynthesis am-ET) መጥራት
+        // 🌟 ቁጥሮችን በአማርኛ ፊደል እና ቁጥር በግልጽ በድምፅ (SpeechSynthesis am-ET) መጥራት
         function speakCalledNumber(num) {
             if (isAudioMuted) return;
 
-            let letter = num <= 15 ? "ቢ" : num <= 30 ? "አይ" : num <= 45 ? "ኤን" : num <= 60 ? "ጂ" : "ኦ";
             let speechText = `ቁጥር ${num}`;
             
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET'; // ፍጹም የሆነ የአማርኛ ኮድ
+                utterance.lang = 'am-ET'; // ፍጹም የሆነ የአማርኛ ቋንቋ ኮድ
                 utterance.rate = 0.9;     // ግልጽ እንዲሆን የንባብ ፍጥነት
                 utterance.pitch = 1.0;
                 if (amharicVoice) {
