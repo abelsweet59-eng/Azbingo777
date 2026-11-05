@@ -178,7 +178,7 @@
 
                                 <div id="live-display-area" class="relative flex items-center justify-center my-1">
                                     <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold">የተጠራ ቁጥር</div>
+                                        <div class="text-[8px] text-amber-300 uppercase font-bold" id="center-status-label">የተጠራ ቁጥር</div>
                                         <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">በመጠበቅ ላይ</div>
                                     </div>
 
@@ -513,6 +513,12 @@
             renderPlayerDualCards();
             updateAudioButtonUI();
 
+            // 🌟 ካርዱን አስቀድሞ ይዞ ከነበረ በቀጥታ ወደ ጌሙ ሜኑ እናስገባዋለን
+            if (confirmedCards.length > 0) {
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
+            }
+
             socket.on('connect', () => {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
@@ -571,13 +577,15 @@
                     renderVerticalBoard();
                     renderPlayerDualCards();
                 } else {
-                    calledNumbersList = [];
-                    manualDaubedNumbers = {};
-                    document.getElementById('stat-called-count').innerText = "0";
-                    document.getElementById('card-selection-section').classList.remove('hidden');
-                    document.getElementById('live-game-section').classList.add('hidden');
-                    renderVerticalBoard();
-                    generate500CardGrid();
+                    if (confirmedCards.length === 0) {
+                        calledNumbersList = [];
+                        manualDaubedNumbers = {};
+                        document.getElementById('stat-called-count').innerText = "0";
+                        document.getElementById('card-selection-section').classList.remove('hidden');
+                        document.getElementById('live-game-section').classList.add('hidden');
+                        renderVerticalBoard();
+                        generate500CardGrid();
+                    }
                 }
             });
 
@@ -608,10 +616,9 @@
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
                 
-                const confirmBtn = document.getElementById('confirm-card-btn');
-                confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
-                confirmBtn.classList.add('bg-red-600', 'text-white');
-                confirmBtn.innerText = "ካርድ ተረጋግጧል ✔";
+                // 🌟 "ካርድ አረጋግጥ" ሲጫን ወዲያውኑ ወደ ጌሙ ሜኑ ይገባል
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
 
                 renderPlayerDualCards();
             });
@@ -795,6 +802,16 @@
                 if (bigTimerEl) {
                     bigTimerEl.innerText = `${timeLeft}s`;
                 }
+
+                // 🌟 ጨዋታው ገና ሳይጀምር በጌሙ ሜኑ ውስጥ ሆነው ሰዓቱን እንዲከታተሉ
+                if (calledNumbersList.length === 0) {
+                    const countdownNumEl = document.getElementById('in-place-countdown-num');
+                    const centerLabelEl = document.getElementById('center-status-label');
+                    if (countdownNumEl && centerLabelEl) {
+                        centerLabelEl.innerText = "መጀመርያ የሚቀረው";
+                        countdownNumEl.innerText = `${timeLeft}s`;
+                    }
+                }
             }, 1000);
         }
 
@@ -938,7 +955,6 @@
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
-                // 🌟 ዝቅተኛው የዲፖዚት መጠን 20 ብር ሆኖ ተስተካክሏል
                 if (isNaN(amount) || amount < 20) { alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); return; }
                 if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
                 document.getElementById('deposit-modal').classList.add('hidden');
