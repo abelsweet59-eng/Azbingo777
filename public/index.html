@@ -177,9 +177,9 @@
                                 </div>
 
                                 <div id="live-display-area" class="relative flex items-center justify-center my-1">
-                                    <!-- 🌟 እዚህ ጋር ነው የ 60 ሰከንድ ቆጣሪው በቀጥታ በኳሱ ቦታ እንዲታይ የተደረገው -->
+                                    <!-- 🌟 እዚህ ጋር "ጨዋታውን ለመጀመር የሚቀረው" ተብሎ ተስተካክሏል[span_1](start_span)[span_1](end_span) -->
                                     <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold" id="center-status-label">መጀመርያ የሚቀረው</div>
+                                        <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር የሚቀረው</div>
                                         <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
@@ -809,7 +809,7 @@
                     const countdownNumEl = document.getElementById('in-place-countdown-num');
                     const centerLabelEl = document.getElementById('center-status-label');
                     if (countdownNumEl && centerLabelEl) {
-                        centerLabelEl.innerText = "መጀመርያ የሚቀረው";
+                        centerLabelEl.innerText = "ጨዋታውን ለመጀመር የሚቀረው";
                         countdownNumEl.innerText = `${timeLeft}s`;
                     }
                 }
