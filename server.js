@@ -316,7 +316,8 @@ function startMainGameLoop() {
                 }
             } else {
                 targetRealCount = 0;
-                winnersCount = Math.random() < 0.5 ? 1 : 2;
+                // 🌟 ቦቶቹ ብቻ ሲያሸንፉ 80% ዕድል 1 ቦት፣ 20% ዕድል 2 ቦቶች እንዲሆኑ ተደረገ
+                winnersCount = Math.random() < 0.80 ? 1 : 2;
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
