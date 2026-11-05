@@ -177,9 +177,10 @@
                                 </div>
 
                                 <div id="live-display-area" class="relative flex items-center justify-center my-1">
+                                    <!-- 🌟 እዚህ ጋር ነው የ 60 ሰከንድ ቆጣሪው በቀጥታ በኳሱ ቦታ እንዲታይ የተደረገው -->
                                     <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold" id="center-status-label">የተጠራ ቁጥር</div>
-                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">በመጠበቅ ላይ</div>
+                                        <div class="text-[8px] text-amber-300 uppercase font-bold" id="center-status-label">መጀመርያ የሚቀረው</div>
+                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
                                     <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
@@ -803,7 +804,7 @@
                     bigTimerEl.innerText = `${timeLeft}s`;
                 }
 
-                // 🌟 ጨዋታው ገና ሳይጀምር በጌሙ ሜኑ ውስጥ ሆነው ሰዓቱን እንዲከታተሉ
+                // 🌟 ጨዋታው እስኪጀመር ድረስ ቆጣሪውን በቀጥታ በኳሱ ቦታ ማሳየት
                 if (calledNumbersList.length === 0) {
                     const countdownNumEl = document.getElementById('in-place-countdown-num');
                     const centerLabelEl = document.getElementById('center-status-label');
@@ -948,7 +949,7 @@
         }
 
         function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.add('hidden'); }
 
         function submitFinancialRequest(type) {
             let amount, phone = "ቴሌብር", receipt = "";
@@ -1157,7 +1158,7 @@
             requestRealUsersList();
         }
 
-        function switchTab(tabId, btn) {
+        switchTab = function(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => {
