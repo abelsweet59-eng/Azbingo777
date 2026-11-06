@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -35,6 +35,12 @@ let sequenceIndex = 0;
 const rareRotationPool = [10, 11, 33, 34, 36];
 
 const ETHIOPIAN_BOT_NAMES = [
+    // 🌟 አዲሶቹ የተጨመሩ ስሞች
+    "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
+    "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
+    "Dawit Mohamed", "sani", "eyobeyob", "0947151407", "halal", "ebrahim ebra",
+    
+    // ቀደም ሲል የነበሩት ስሞች
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
     "Nimo", "Šà¥¢ø Qü€€ñ", "Beki", "syf", "Time Of",
@@ -316,7 +322,6 @@ function startMainGameLoop() {
                 }
             } else {
                 targetRealCount = 0;
-                // 🌟 ቦቶቹ ብቻ ሲያሸንፉ 80% ዕድል 1 ቦት፣ 20% ዕድል 2 ቦቶች እንዲሆኑ ተደረገ
                 winnersCount = Math.random() < 0.80 ? 1 : 2;
             }
 
@@ -355,7 +360,6 @@ function startMainGameLoop() {
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
                 let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
 
-                // 🌟 ተጨማሪ ጣል ጣል የሚሉ (Scattered) ቁጥሮች በካርዱ ላይ ከሌሎች ቦታዎች እንዲኖሩ ይደረጋል
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
                 let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
                 let extraNums = shuffledExtra.map(idx => cList[idx]).filter(n => n !== "FREE");
@@ -365,7 +369,6 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            // 🔄 ቁጥሮችን ከ 10 እስከ 13 ባሉት ጥሪዎች ውስጥ ተራ በተራ እንዲያዝ ተደርጓል
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
