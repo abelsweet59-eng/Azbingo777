@@ -343,16 +343,9 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            let targetCallCount = customNumberFlowSequence[sequenceIndex];
-            sequenceIndex++;
-            if (sequenceIndex >= customNumberFlowSequence.length) {
-                sequenceIndex = 0;
-                customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
-            }
-
-            if (Math.random() < 0.35) {
-                targetCallCount = rareCallCountsPool[Math.floor(Math.random() * rareCallCountsPool.length)];
-            }
+            // 🔄 የቁጥር ጥሪ ብዛት ፖል በዘፈቀደ እንዲለዋወጥ (እንደ ጥያቄዎ ከ13 እስከ 27+ ጥሪዎች ውስጥ በራንደም እንዲመረጥ)
+            let realisticRandomCounts = [13, 16, 18, 20, 22, 25, 27];
+            let targetCallCount = realisticRandomCounts[Math.floor(Math.random() * realisticRandomCounts.length)];
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
@@ -361,20 +354,17 @@ function startMainGameLoop() {
                 [0,4,20,24] // ማዕዘኖች
             ];
 
-            // 🌟 የተፈጥሮ ዊነር ፍሰት (Natural & Realistic Win Flow Configuration)
-            // ሪል ዩዘር ዊን እንዲያደርግ ሲታዘዝ (Single / Real User Win)፣ የፓተርን ቁጥሮቹን እንደ ሮቦት ሳይሆን
-            // ጨዋታው በተፈጥሯዊ ፍሰት (ማለትም የተለያዩ ንድፎችን እና የተለያየ የቁጥር ቅደም ተከተል በመጠቀም) እንዲያሸንፍ ይደረጋል።
             let perWinnerConfigs = winningCardNums.map((cNum, idx) => {
                 let cList = getCartelaNumbers(cNum);
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                
-                // ሪል ዩዘር ከሆነ ከተፈጥሯዊ የካርቴላው ቦታዎች ጋር የተጣጣመ ተፈጥሯዊ ፓተርን ይሰጠዋል
+                let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
+
+                // 🌟 እውነተኛ ሪል ዩዘር ሲያሸንፍ በድንገት በአንድ ጊዜ ሳያልቅ፣ መሀል ላይ የዘፈቀደ ቁጥሮች ጣል ጣል እያሉበት (Realistic Spacing & Pacing)
                 if (!winningSocketData[idx].isBot && winnersCount === 1) {
-                    let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
-                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
+                    let shuffledReq = [...reqNums].sort(() => 0.5 - Math.random());
+                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: shuffledReq };
                 }
 
-                let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
                 let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
                 let extraNums = shuffledExtra.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
@@ -413,21 +403,20 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let minCallsBeforeWin = 12; // 👈 ጨዋታው በቂ ሰዓት ቆይቶ በተፈጥሯዊ መልኩ እንዲጓዝ
-                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
-                
-                let realUserCompleted = false;
+                // 🌟 ጨዋታው በቂ ቆይታ እንዲኖረው (Realistic Pacing - ቢያንስ ከ12-14 ጥሪዎች በኋላ እንጂ በአንዴ አያልቅም)
+                let minCallsBeforeWin = 12;
+                let anyWinnerCompleted = false;
+
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
                     if (isPatternDone && globalRoom.calledNumbers.length >= minCallsBeforeWin) {
-                        if (!winningSocketData[idx].isBot) {
-                            realUserCompleted = true;
-                        }
+                        anyWinnerCompleted = true;
                     }
                 });
-                
-                let shouldTriggerWin = (reachedTargetLimit || realUserCompleted);
+
+                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
+                let shouldTriggerWin = (reachedTargetLimit || anyWinnerCompleted);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
@@ -469,7 +458,8 @@ function startMainGameLoop() {
                 }
 
                 let calledNum;
-                if (winNumQueue.length > 0) {
+                // 🌟 መሀል ላይ የዘፈቀደ ቁጥሮች ጣል ጣል እንዲሉ (Realistic Spacing for non-winning turns)
+                if (winNumQueue.length > 0 && Math.random() < 0.65) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
