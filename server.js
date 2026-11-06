@@ -25,14 +25,15 @@ const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🔄 የቁጥሮች ፍሰት ቅደም ተከተል (ጨዋታው ከ 10 እስከ 13 ጥሪዎች ውስጥ በተፈጥሮአዊ መንገድ እንዲያልቅ)
-const customNumberFlowSequence = [
-    10, 11, 12, 13, 11, 12, 10, 13, 12, 11
+// 🔄 እርስዎ የላኳቸው የቁጥር ጥሪ ብዛት ፖል (በየራውንዱ በራንደም ሉፕ እያደረገ የሚሰራ)
+const baseNumberFlowSequence = [
+    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
+let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
 let sequenceIndex = 0;
 
-// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል
-const rareRotationPool = [10, 11, 33, 34, 36];
+// 🌟 አልፎ አልፎ (Rare) እስከ 35 ቁጥሮች የሚጠሩበት የሮቴሽን ፖል
+const rareCallCountsPool = [10, 35, 34, 35, 37, 36, 30, 32, 33, 35];
 
 const ETHIOPIAN_BOT_NAMES = [
     // 🌟 ያነሷቸው አዲሶቹ የተጨመሩ ስሞች
@@ -345,8 +346,18 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🔄 ሉፕ እና ራንደም ሮቴሽን ቁጥር አወጣጥ (Looping & Rotating Custom Number Flow)
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
-            sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
+            sequenceIndex++;
+            if (sequenceIndex >= customNumberFlowSequence.length) {
+                sequenceIndex = 0;
+                customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
+            }
+
+            // 🌟 ሬር (Rare) ቁጥሮች እስከ 35 ወዘተ እንዲወጡ አልፎ አልፎ መምረጥ
+            if (Math.random() < 0.35) {
+                targetCallCount = rareCallCountsPool[Math.floor(Math.random() * rareCallCountsPool.length)];
+            }
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም (Rows)
