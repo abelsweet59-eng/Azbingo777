@@ -25,16 +25,20 @@ const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🔄 የቁጥሮች ፍሰት ቅደም ተከተል (ጨዋታው ከ 10 እስከ 13 ጥሪዎች ውስጥ በተፈጥሮአዊ መንገድ እንዲያልቅ)
-const customNumberFlowSequence = [
-    10, 11, 12, 13, 11, 12, 10, 13, 12, 11
+// 🔄 እርስዎ የላኳቸው የቁጥር ጥሪ ብዛት ፖል (በየራውንዱ በራንደም ሉፕ እያደረገ የሚሰራ)
+const baseNumberFlowSequence = [
+    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
+let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
 let sequenceIndex = 0;
 
-// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል
-const rareRotationPool = [10, 11, 33, 34, 36];
+// 🌟 አልፎ አልፎ (Rare) እስከ 35 ቁጥሮች የሚጠሩበት የሮቴሽን ፖል
+const rareCallCountsPool = [10, 35, 34, 35, 37, 36, 30, 32, 33, 35];
 
 const ETHIOPIAN_BOT_NAMES = [
+    "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
+    "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
+    "Dawit Mohamed", "sani", "eyobeyob", "0947151407", "halal", "ebrahim ebra",
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
     "Nimo", "Šà¥¢ø Qü€€ñ", "Beki", "syf", "Time Of",
@@ -309,14 +313,14 @@ function startMainGameLoop() {
             if (explicitRealForced && activeRealEntries.length > 0) {
                 if (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real') {
                     targetRealCount = Math.min(3, activeRealEntries.length);
-                    winnersCount = targetRealCount;
+                    winnersCount = 3; // 👈 3 ሪል ዩዘር ይብላ ሲባል ሪል ባይኖሩም በቦቶች ተሞልቶ ጠቅላላ 3 አሸናፊዎች እንዲሆኑ ይደረጋል
                 } else {
                     targetRealCount = 1;
                     winnersCount = 1; 
                 }
             } else {
                 targetRealCount = 0;
-                winnersCount = Math.random() < 0.5 ? 1 : 2;
+                winnersCount = Math.random() < 0.80 ? 1 : 2;
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -329,6 +333,7 @@ function startMainGameLoop() {
                 });
             }
 
+            // 🌟 ሪል ዩዘሮች ከ 3 ካነሱ (ለምሳሌ 1 ወይም 2 ብቻ ከሆኑ) የቀሩትን በቦቶች በመሙላት በትክክል 3 አሸናፊ እንዲደርሱ ማድረግ
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -339,22 +344,33 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🔄 የቁጥር ጥሪ ፍሰት (Looping & Rotating Custom Number Flow)
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
-            sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
+            sequenceIndex++;
+            if (sequenceIndex >= customNumberFlowSequence.length) {
+                sequenceIndex = 0;
+                customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
+            }
+
+            if (Math.random() < 0.35) {
+                targetCallCount = rareCallCountsPool[Math.floor(Math.random() * rareCallCountsPool.length)];
+            }
 
             let possiblePatterns = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም (Rows)
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት (Columns)
-                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ (Diagonals / X)
-                [0,4,20,24] // አራቱ ማዕዘኖች (4 Corners)
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
+                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ
+                [0,4,20,24] // ማዕዘኖች
             ];
+
+            // 🌟 የተወሰነ የጋራ ፓተርን (Shared Winning Pattern) ለሁሉም አሸናፊዎች ማዘጋጀት (እኩል ሰዓት ዊን እንዲያደርጉ)
+            let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
 
             let perWinnerConfigs = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
-                let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+                let p = sharedPattern; // 👈 ሁሉም አሸናፊዎች (ሪልም ይሁን ቦት) ተመሳሳይ ፓተርን ይጋራሉ
                 let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
 
-                // 🌟 ተጨማሪ ጣል ጣል የሚሉ (Scattered) ቁጥሮች በካርዱ ላይ ከሌሎች ቦታዎች እንዲኖሩ ይደረጋል
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
                 let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
                 let extraNums = shuffledExtra.map(idx => cList[idx]).filter(n => n !== "FREE");
@@ -364,7 +380,7 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            // 🔄 ቁጥሮችን ከ 10 እስከ 13 ባሉት ጥሪዎች ውስጥ ተራ በተራ እንዲያዝ ተደርጓል
+            // 🌟 ሁሉም አሸናፊዎች በተመሳሳይ ጊዜ እንዲጨርሱ የቁጥሮቹን ቅደም ተከተል ማስተካከል (Synchronized Win Queue)
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
