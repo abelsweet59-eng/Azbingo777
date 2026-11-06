@@ -25,20 +25,16 @@ const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🔄 እርስዎ የላኳቸው የቁጥር ጥሪ ብዛት ፖል (በየራውንዱ በራንደም ሉፕ እያደረገ የሚሰራ)
-const baseNumberFlowSequence = [
-    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
+// 🔄 የቁጥሮች ፍሰት ቅደም ተከተል (ጨዋታው ከ 10 እስከ 13 ጥሪዎች ውስጥ በተፈጥሮአዊ መንገድ እንዲያልቅ)
+const customNumberFlowSequence = [
+    10, 11, 12, 13, 11, 12, 10, 13, 12, 11
 ];
-let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
 let sequenceIndex = 0;
 
-// 🌟 አልፎ አልፎ (Rare) እስከ 35 ቁጥሮች የሚጠሩበት የሮቴሽን ፖል
-const rareCallCountsPool = [10, 35, 34, 35, 37, 36, 30, 32, 33, 35];
+// 🌟 አልፎ አልፎ (Rare) የሚወጡ ልዩ የ RAR ቁጥሮች ፖል
+const rareRotationPool = [10, 11, 33, 34, 36];
 
 const ETHIOPIAN_BOT_NAMES = [
-    "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
-    "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
-    "Dawit Mohamed", "sani", "eyobeyob", "0947151407", "halal", "ebrahim ebra",
     "Henok", "Dani", "Simret Getachew", "Anwar", "Naughty By nature",
     "Ñãtåñ......", "kali", "Mohammedsani Sulitan", "Wubamlak Belste", "Lina Habtamu",
     "Nimo", "Šà¥¢ø Qü€€ñ", "Beki", "syf", "Time Of",
@@ -313,14 +309,14 @@ function startMainGameLoop() {
             if (explicitRealForced && activeRealEntries.length > 0) {
                 if (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real') {
                     targetRealCount = Math.min(3, activeRealEntries.length);
-                    winnersCount = 3; 
+                    winnersCount = targetRealCount;
                 } else {
                     targetRealCount = 1;
                     winnersCount = 1; 
                 }
             } else {
                 targetRealCount = 0;
-                winnersCount = Math.random() < 0.80 ? 1 : 2;
+                winnersCount = Math.random() < 0.5 ? 1 : 2;
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -343,34 +339,32 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🔄 ከ 10 እስከ 35 ባሉት ጥሪዎች ውስጥ በራንደም እንዲመረጥ ማድረግ (እንደ ጥያቄዎ)
-            let targetCallCount = Math.floor(Math.random() * 26) + 10; // ከ 10 እስከ 35
+            let targetCallCount = customNumberFlowSequence[sequenceIndex];
+            sequenceIndex = (sequenceIndex + 1) % customNumberFlowSequence.length;
 
             let possiblePatterns = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት
-                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ
-                [0,4,20,24] // ማዕዘኖች
+                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም (Rows)
+                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24], // ቁመት (Columns)
+                [0,6,12,18,24], [4,8,12,16,20], // ሰያፍ (Diagonals / X)
+                [0,4,20,24] // አራቱ ማዕዘኖች (4 Corners)
             ];
 
-            let perWinnerConfigs = winningCardNums.map((cNum, idx) => {
+            let perWinnerConfigs = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-                let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
+                let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
 
-                // ሪል ዩዘር ሲሆን ዊን ለማድረግ የሚያስፈልጉትን ቁጥሮች በተፈጥሯዊ ፍሰት በቅደም ተከተል እናዘጋጃለን
-                if (!winningSocketData[idx].isBot && winnersCount === 1) {
-                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
-                }
-
+                // 🌟 ተጨማሪ ጣል ጣል የሚሉ (Scattered) ቁጥሮች በካርዱ ላይ ከሌሎች ቦታዎች እንዲኖሩ ይደረጋል
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
                 let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
-                let extraNums = shuffledExtra.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
+                let extraNums = shuffledExtra.map(idx => cList[idx]).filter(n => n !== "FREE");
+
                 let combinedRequired = [...new Set([...reqNums, ...extraNums])];
 
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
+            // 🔄 ቁጥሮችን ከ 10 እስከ 13 ባሉት ጥሪዎች ውስጥ ተራ በተራ እንዲያዝ ተደርጓል
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -380,6 +374,10 @@ function startMainGameLoop() {
                         interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
+            }
+
+            if (interleavedWinningNumbers.length > targetCallCount) {
+                interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
@@ -397,19 +395,21 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🌟 ፈጣን እና ትክክለኛ የዊን ቼኪንግ (Immediate & Strict Win Checking):
-                // ልክ የታዘዘው አሸናፊ ፓተርኑን ሙሉ በሙሉ ሲያሟላ ጨዋታው በዚያው ሰዓት ቆሞ ዊን ያደርጋል።
-                let shouldTriggerWin = false;
-
+                let minCallsBeforeWin = 10;
+                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
+                
+                let realUserCompleted = false;
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (isPatternDone) {
-                        if (!winningSocketData[idx].isBot || targetRealCount > 0) {
-                            shouldTriggerWin = true;
+                    if (isPatternDone && globalRoom.calledNumbers.length >= minCallsBeforeWin) {
+                        if (!winningSocketData[idx].isBot) {
+                            realUserCompleted = true;
                         }
                     }
                 });
+                
+                let shouldTriggerWin = (reachedTargetLimit || realUserCompleted);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
@@ -451,8 +451,7 @@ function startMainGameLoop() {
                 }
 
                 let calledNum;
-                // 🌟 ቁጥሮች በቀስታ እና በተፈጥሯዊ ፍሰት ጣል ጣል እያሉ እንዲጠሩ ማድረግ
-                if (winNumQueue.length > 0 && Math.random() < 0.65) {
+                if (winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
@@ -462,7 +461,6 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    
                     if (targetRealCount === 0) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
@@ -481,7 +479,7 @@ function startMainGameLoop() {
                                     ];
                                     
                                     possiblePatterns.forEach(pat => {
-                                        if (pat.every(pIdx => matched.includes(pIdx))) {
+                                        if (pat.every(pIdx => matched.includes(pIdx)) && globalRoom.calledNumbers.length >= 10) {
                                             isAccidentalRealWin = true;
                                         }
                                     });
