@@ -313,7 +313,7 @@ function startMainGameLoop() {
             if (explicitRealForced && activeRealEntries.length > 0) {
                 if (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real') {
                     targetRealCount = Math.min(3, activeRealEntries.length);
-                    winnersCount = 3; // 👈 3 ሪል ዩዘር ይብላ ሲባል ሪል ባይኖሩም በቦቶች ተሞልቶ ጠቅላላ 3 አሸናፊዎች እንዲሆኑ ይደረጋል
+                    winnersCount = 3; 
                 } else {
                     targetRealCount = 1;
                     winnersCount = 1; 
@@ -333,7 +333,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // 🌟 ሪል ዩዘሮች ከ 3 ካነሱ (ለምሳሌ 1 ወይም 2 ብቻ ከሆኑ) የቀሩትን በቦቶች በመሙላት በትክክል 3 አሸናፊ እንዲደርሱ ማድረግ
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -344,7 +343,6 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🔄 የቁጥር ጥሪ ፍሰት (Looping & Rotating Custom Number Flow)
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
             sequenceIndex++;
             if (sequenceIndex >= customNumberFlowSequence.length) {
@@ -363,24 +361,28 @@ function startMainGameLoop() {
                 [0,4,20,24] // ማዕዘኖች
             ];
 
-            // 🌟 የተወሰነ የጋራ ፓተርን (Shared Winning Pattern) ለሁሉም አሸናፊዎች ማዘጋጀት (እኩል ሰዓት ዊን እንዲያደርጉ)
-            let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-
-            let perWinnerConfigs = winningCardNums.map(cNum => {
+            // 🌟 የተፈጥሮ ዊነር ፍሰት (Natural & Realistic Win Flow Configuration)
+            // ሪል ዩዘር ዊን እንዲያደርግ ሲታዘዝ (Single / Real User Win)፣ የፓተርን ቁጥሮቹን እንደ ሮቦት ሳይሆን
+            // ጨዋታው በተፈጥሯዊ ፍሰት (ማለትም የተለያዩ ንድፎችን እና የተለያየ የቁጥር ቅደም ተከተል በመጠቀም) እንዲያሸንፍ ይደረጋል።
+            let perWinnerConfigs = winningCardNums.map((cNum, idx) => {
                 let cList = getCartelaNumbers(cNum);
-                let p = sharedPattern; // 👈 ሁሉም አሸናፊዎች (ሪልም ይሁን ቦት) ተመሳሳይ ፓተርን ይጋራሉ
-                let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
+                let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+                
+                // ሪል ዩዘር ከሆነ ከተፈጥሯዊ የካርቴላው ቦታዎች ጋር የተጣጣመ ተፈጥሯዊ ፓተርን ይሰጠዋል
+                if (!winningSocketData[idx].isBot && winnersCount === 1) {
+                    let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
+                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
+                }
 
+                let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
                 let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
-                let extraNums = shuffledExtra.map(idx => cList[idx]).filter(n => n !== "FREE");
-
+                let extraNums = shuffledExtra.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
                 let combinedRequired = [...new Set([...reqNums, ...extraNums])];
 
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            // 🌟 ሁሉም አሸናፊዎች በተመሳሳይ ጊዜ እንዲጨርሱ የቁጥሮቹን ቅደም ተከተል ማስተካከል (Synchronized Win Queue)
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -411,7 +413,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let minCallsBeforeWin = 10;
+                let minCallsBeforeWin = 12; // 👈 ጨዋታው በቂ ሰዓት ቆይቶ በተፈጥሯዊ መልኩ እንዲጓዝ
                 let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
                 
                 let realUserCompleted = false;
