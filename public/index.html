@@ -436,7 +436,8 @@
     <script>
         const socket = io();
 
-        const ADMIN_TELEGRAM_ID = "371093083";
+        // 🛡️ የሁለቱም አድሚኖች ዩዘር ID እዚህ ተካተዋል
+        const ADMIN_TELEGRAM_IDS = ["371093083", "8648229637"];
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
         let userUsername = "guest_user";
@@ -457,7 +458,8 @@
             }
         }
 
-        if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
+        // 🛡️ ከተፈቀዱት አድሚኖች አንዱ መሆኑን ማረጋገጫ
+        if (ADMIN_TELEGRAM_IDS.includes(telegramUserId)) isAdmin = true;
 
         let walletBalance = 0.00;
         let transactionHistory = [];
@@ -524,12 +526,16 @@
                     if (window.Telegram.WebApp.initDataUnsafe.user.first_name) userFullName = window.Telegram.WebApp.initDataUnsafe.user.first_name;
                     if (window.Telegram.WebApp.initDataUnsafe.user.username) userUsername = "@" + window.Telegram.WebApp.initDataUnsafe.user.username;
                 }
-                if (telegramUserId === ADMIN_TELEGRAM_ID) isAdmin = true;
+                if (ADMIN_TELEGRAM_IDS.includes(telegramUserId)) isAdmin = true;
 
                 const adminBtn = document.getElementById('admin-nav-btn');
                 if (adminBtn && isAdmin) adminBtn.classList.remove('hidden');
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
+
+            // አስቀድሞም አድሚን መሆኑን ካረጋገጠ የናቪጌሽን አዝራሩ እንዲታይ ይደረጋል
+            const adminBtnInit = document.getElementById('admin-nav-btn');
+            if (adminBtnInit && isAdmin) adminBtnInit.classList.remove('hidden');
 
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             updateWalletUI();
@@ -725,7 +731,6 @@
                 document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
             });
 
-            // 🌟 ዩዘሩ ዲፖዚት ወይም Az ቦነስ ሲጸድቅለት በትክክል እንዲቀበል የተስተካከለ ክፍል
             socket.on('financialApproved', (data) => {
                 if (data.type === 'deposit') {
                     walletBalance += data.amount;
@@ -749,7 +754,6 @@
                 alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
             });
 
-            // 🎁 ከአድሚን ፓነል ቦነስ ሲላክ የሚመጣ ምላሽ መቀበያ
             socket.on('adminBonusResponse', (data) => {
                 const statusMsg = document.getElementById('admin-bonus-status-msg');
                 if (statusMsg) {
@@ -774,7 +778,6 @@
             setTimeout(() => msgEl.classList.add('hidden'), 3000);
         }
 
-        // 🎁 ከአድሚን ፓነል ቦነስ ለመላክ የሚያስችል ተግባር (Function)
         function sendAdminBonus(amount) {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             const userIdInput = document.getElementById('admin-bonus-userid');
@@ -1209,7 +1212,7 @@
             requestRealUsersList();
         }
 
-        switchTab = function(tabId, btn) {
+        let switchTab = function(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => {
