@@ -35,7 +35,7 @@ let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math
 let sequenceIndex = 0;
 
 // 🌟 አልፎ አልፎ (Rare) እስከ 35 ቁጥሮች የሚጠሩበት የሮቴሽን ፖል
-const rareCallCountsPool = [10, 35, 34, 35, 37, 36, 30, 32, 33, 35];
+const rareCallCountsPool = [10, 31, 10, 35, 30, 31, 10, 32, 30, 32];
 
 const ETHIOPIAN_BOT_NAMES = [
     "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
