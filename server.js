@@ -569,14 +569,16 @@ async function pollTelegramUpdates() {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
                             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
                             
+                            let bonusPayload = {
+                                type: 'bonus',
+                                amount: bonusAmount,
+                                adjustedAmount: bonusAmount
+                            };
+
                             if (targetUserSocketObj) {
                                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                                 if (targetSocket) {
-                                    targetSocket.emit('financialApproved', {
-                                        type: 'deposit',
-                                        amount: bonusAmount,
-                                        adjustedAmount: bonusAmount
-                                    });
+                                    targetSocket.emit('financialApproved', bonusPayload);
                                     await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                         chat_id: ADMIN_CHAT_ID,
                                         text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (ኦንላይን ነው)`,
@@ -587,11 +589,7 @@ async function pollTelegramUpdates() {
                                 if (!offlineApprovedQueue[targetUserId]) {
                                     offlineApprovedQueue[targetUserId] = [];
                                 }
-                                offlineApprovedQueue[targetUserId].push({
-                                    type: 'deposit',
-                                    amount: bonusAmount,
-                                    adjustedAmount: bonusAmount
-                                });
+                                offlineApprovedQueue[targetUserId].push(bonusPayload);
 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: ADMIN_CHAT_ID,
@@ -730,32 +728,30 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // 🎁 ከዌብ አድሚን ፓነል ሆኖ በቀጥታ ለተወሰነ ዩዘር ID ቦነስ ለመላክ (socket event)
+    // 🎁 ከአድሚን ፓነል ሆኖ በቀጥታ ለተወሰነ ዩዘር ID ቦነስ ለመላክ (type: 'bonus' ተደርጓል)
     socket.on('adminSendBonus', (data) => {
-        if (socket.id) { // እዚህ ጋር እንደ ፍላጎትዎ የአድሚን ማረጋገጫ ማከል ይችላሉ
+        if (socket.id) {
             let targetUserId = String(data.targetUserId).trim();
             let bonusAmount = Number(data.amount) || 20;
+
+            let bonusPayload = {
+                type: 'bonus',
+                amount: bonusAmount,
+                adjustedAmount: bonusAmount
+            };
 
             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
             if (targetUserSocketObj) {
                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                 if (targetSocket) {
-                    targetSocket.emit('financialApproved', {
-                        type: 'deposit',
-                        amount: bonusAmount,
-                        adjustedAmount: bonusAmount
-                    });
+                    targetSocket.emit('financialApproved', bonusPayload);
                     socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኳል!` });
                 }
             } else {
                 if (!offlineApprovedQueue[targetUserId]) {
                     offlineApprovedQueue[targetUserId] = [];
                 }
-                offlineApprovedQueue[targetUserId].push({
-                    type: 'deposit',
-                    amount: bonusAmount,
-                    adjustedAmount: bonusAmount
-                });
+                offlineApprovedQueue[targetUserId].push(bonusPayload);
                 socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ ይገባለታል!` });
             }
         }
