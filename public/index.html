@@ -304,7 +304,7 @@
                         <h3 class="font-bold text-amber-300 text-xs">2. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
                         <div class="text-gray-300 space-y-1.5 text-[11px]">
                             <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉበትን ትክክለኛ Account ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
+                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርطه/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
                         </div>
                     </div>
                 </div>
@@ -325,6 +325,17 @@
                         <button onclick="adminSetWinner('random_3_real')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold py-2 rounded text-xs shadow">👥 3 ሪል ዩዘሮች በአንድ ላይ ያሸንፉ</button>
                     </div>
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
+                </div>
+
+                <!-- 🎁 እዚህ ጋር አዲስ የተጨመረው ከአድሚን ፓነል ቦነስ መላኪያ ክፍል -->
+                <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
+                    <div class="font-bold text-amber-300">🎁 ተጠቃሚዎች ላይ ቦነስ መላኪያ</div>
+                    <input type="text" id="admin-bonus-userid" placeholder="የቴሌግራም ዩዘር ID (Telegram ID)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
+                    <div class="flex gap-2">
+                        <button onclick="sendAdminBonus(20)" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 rounded text-xs shadow">20 ብር ቦነስ ላክ</button>
+                        <button onclick="sendAdminBonus(50)" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 rounded text-xs shadow">50 ብር ቦነስ ላክ</button>
+                    </div>
+                    <div id="admin-bonus-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center"></div>
                 </div>
 
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
@@ -731,6 +742,16 @@
             socket.on('financialRejected', (data) => {
                 alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
             });
+
+            // 🎁 ከአድሚን ፓነል ቦነስ ሲላክ የሚመጣ ምላሽ መቀበያ
+            socket.on('adminBonusResponse', (data) => {
+                const statusMsg = document.getElementById('admin-bonus-status-msg');
+                if (statusMsg) {
+                    statusMsg.innerText = data.message;
+                    statusMsg.classList.remove('hidden');
+                    setTimeout(() => statusMsg.classList.add('hidden'), 4000);
+                }
+            });
         });
 
         function requestRealUsersList() {
@@ -745,6 +766,18 @@
             msgEl.innerText = "✅ አሸናፊው ተስተካክሏል!";
             msgEl.classList.remove('hidden');
             setTimeout(() => msgEl.classList.add('hidden'), 3000);
+        }
+
+        // 🎁 ከአድሚን ፓነል ቦነስ ለመላክ የሚያስችል ተግባር (Function)
+        function sendAdminBonus(amount) {
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
+            const userIdInput = document.getElementById('admin-bonus-userid');
+            let targetUserId = userIdInput ? userIdInput.value.trim() : '';
+            if (!targetUserId) {
+                alert("⚠️ እባክዎ ትክክለኛ የዩዘር ID ያስገቡ!");
+                return;
+            }
+            socket.emit('adminSendBonus', { targetUserId: targetUserId, amount: amount });
         }
 
         function copyAccountInfo(accountNum, msgId) {
