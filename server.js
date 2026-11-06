@@ -19,7 +19,9 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
-const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || "371093083";
+// ሁለቱም አድሚኖች እንዲኖሩ የተደረገበት ክፍል (የቀድሞው እና አዲሱ ዩዘር ID በ Array ተካትቷል)
+const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
+const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0]; // ለተቀሩት የቦት ክፍሎች የመጀመሪያው አድሚን እንዲሆን
 
 // 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ ቦነስ የወሰዱትን ዩዘሮች ለመያዝ
 const claimedWelcomeBonusUsers = new Set();
@@ -273,13 +275,17 @@ function simulateBotCardSelections() {
 setInterval(simulateBotCardSelections, 6000);
 
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID || !isRealUser) return;
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
     let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown'
-        });
-    } catch (error) {}
+    
+    // ለሁለቱም አድሚኖች ማሳወቂያ እንዲደርስ Loop ይደረጋል
+    for (let adminChatId of ADMIN_CHAT_IDS) {
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId, text: message, parse_mode: 'Markdown'
+            });
+        } catch (error) {}
+    }
 }
 
 function startMainGameLoop() {
@@ -560,7 +566,8 @@ async function pollTelegramUpdates() {
                     let msgText = update.message.text.trim();
                     let senderChatId = String(update.message.chat.id);
                     
-                    if (senderChatId === String(ADMIN_CHAT_ID)) {
+                    // ከማናቸውም የተፈቀዱ አድሚኖች አንዱ መሆኑን ማረጋገጫ
+                    if (ADMIN_CHAT_IDS.includes(senderChatId)) {
                         let parts = msgText.split(' ');
                         let cmd = parts[0].toLowerCase();
                         let targetUserId = parts[1] ? String(parts[1]).trim() : null;
@@ -579,11 +586,15 @@ async function pollTelegramUpdates() {
                                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                                 if (targetSocket) {
                                     targetSocket.emit('financialApproved', bonusPayload);
-                                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                        chat_id: ADMIN_CHAT_ID,
-                                        text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (ኦንላይን ነው)`,
-                                        parse_mode: 'Markdown'
-                                    }).catch(() => {});
+                                    
+                                    // ለሁሉም አድሚኖች ማሳወቂያ መላክ ይቻላል (ወይም መልእክቱን ላከው አካል)
+                                    for (let adminChatId of ADMIN_CHAT_IDS) {
+                                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                            chat_id: adminChatId,
+                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (ኦንላይን ነው)`,
+                                            parse_mode: 'Markdown'
+                                        }).catch(() => {});
+                                    }
                                 }
                             } else {
                                 if (!offlineApprovedQueue[targetUserId]) {
@@ -591,11 +602,13 @@ async function pollTelegramUpdates() {
                                 }
                                 offlineApprovedQueue[targetUserId].push(bonusPayload);
 
-                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                    chat_id: ADMIN_CHAT_ID,
-                                    text: `📌 ዩዘር ID: \`${targetUserId}\` አሁን ኦንላይን አይደለም። አፕሊኬሽኑን ሲከፍት የ **${bonusAmount} ብር** ቦነሱ በራስ-ሰር ይገባለታል!`,
-                                    parse_mode: 'Markdown'
-                                }).catch(() => {});
+                                for (let adminChatId of ADMIN_CHAT_IDS) {
+                                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                        chat_id: adminChatId,
+                                        text: `📌 ዩዘር ID: \`${targetUserId}\` አሁን ኦንላይን አይደለም። አፕሊኬሽኑን ሲከፍት የ **${bonusAmount} ብር** ቦነሱ በራስ-ሰር ይገባለታል!`,
+                                        parse_mode: 'Markdown'
+                                    }).catch(() => {});
+                                }
                             }
                         }
                     }
@@ -673,23 +686,27 @@ async function pollTelegramUpdates() {
 setTimeout(pollTelegramUpdates, 2000);
 
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_ID) return;
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
     let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
     if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
-    try {
-        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            chat_id: ADMIN_CHAT_ID, text: message, parse_mode: 'Markdown',
-            reply_markup: { 
-                inline_keyboard: [
-                    [
-                        { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
-                        { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
-                    ]
-                ] 
-            }
-        });
-    } catch (error) {}
+    
+    // ጥያቄው ለሁለቱም አድሚኖች በ Loop ይላካል
+    for (let adminChatId of ADMIN_CHAT_IDS) {
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId, text: message, parse_mode: 'Markdown',
+                reply_markup: { 
+                    inline_keyboard: [
+                        [
+                            { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                            { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                        ]
+                    ] 
+                }
+            });
+        } catch (error) {}
+    }
 }
 
 io.on('connection', (socket) => {
