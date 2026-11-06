@@ -730,6 +730,37 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
+    // 🎁 ከዌብ አድሚን ፓነል ሆኖ በቀጥታ ለተወሰነ ዩዘር ID ቦነስ ለመላክ (socket event)
+    socket.on('adminSendBonus', (data) => {
+        if (socket.id) { // እዚህ ጋር እንደ ፍላጎትዎ የአድሚን ማረጋገጫ ማከል ይችላሉ
+            let targetUserId = String(data.targetUserId).trim();
+            let bonusAmount = Number(data.amount) || 20;
+
+            let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
+            if (targetUserSocketObj) {
+                let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
+                if (targetSocket) {
+                    targetSocket.emit('financialApproved', {
+                        type: 'deposit',
+                        amount: bonusAmount,
+                        adjustedAmount: bonusAmount
+                    });
+                    socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኳል!` });
+                }
+            } else {
+                if (!offlineApprovedQueue[targetUserId]) {
+                    offlineApprovedQueue[targetUserId] = [];
+                }
+                offlineApprovedQueue[targetUserId].push({
+                    type: 'deposit',
+                    amount: bonusAmount,
+                    adjustedAmount: bonusAmount
+                });
+                socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ ይገባለታል!` });
+            }
+        }
+    });
+
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
             globalRoom.playerTemporaryCards[socket.id] = cards;
