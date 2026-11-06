@@ -178,8 +178,8 @@
 
                                 <div id="live-display-area" class="relative flex items-center justify-center my-1">
                                     <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[8px] text-amber-300 uppercase font-bold">የተጠራ ቁጥር</div>
-                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">በመጠበቅ ላይ</div>
+                                        <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር የሚቀረው</div>
+                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
                                     <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
@@ -202,7 +202,6 @@
                 <div class="bg-gradient-to-br from-purple-900 to-indigo-950 p-4 rounded-2xl border border-purple-400/30 shadow-xl space-y-3">
                     <div class="text-xs text-purple-200">የእርስዎ ሂሳብ (Balance)</div>
                     <div class="text-3xl font-black text-amber-400 font-mono" id="wallet-balance">0.00 <span class="text-sm text-white">ብር</span></div>
-                    <!-- 🌟 ዲፖዚት ቢያንስ 20 ብር, ዊዝድሮዋል 100 ብር ሆኖ ተስተካክሏል -->
                     <div class="text-[11px] text-amber-200/80">⚠️ ዲፖዚት ቢያንስ 20 ብር፣ ዊዝድሮዋል ቢያንስ 100 ብር ነው።</div>
                     <div class="flex gap-2.5 pt-2">
                         <button onclick="openDepositModal()" class="flex-1 bg-emerald-600 py-2.5 rounded-xl text-xs font-bold shadow">ገንዘብ አስገባ (Deposit)</button>
@@ -292,9 +291,21 @@
                         </div>
                     </div>
 
+                    <!-- 🌟 የታዘዘው አዲሱ የዲፖዚት እና ዊዝድሮዋል መመሪያ -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
-                        <h3 class="font-bold text-amber-300 text-xs">3. 💳 ገንዘብ ገቢ የማድረጊያ መመሪያ</h3>
-                        <p class="text-gray-300 text-[11px]">ቁጥሩን በመንካት ኮፒ በማድረግ ገንዘብ ከላኩ በኋላ የደረሰኝ SMS እና መጠኑን ጽፈው ጥያቄ በመላክ ወዲያውኑ ገቢ ማድረግ ይቻላል።</p>
+                        <h3 class="font-bold text-amber-300 text-xs">💳 1. ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
+                        <div class="text-gray-300 space-y-1.5 text-[11px]">
+                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ያደረጋሉ። በመቀጠል ገቢ ያደርጋሉ</p>
+                            <p><b>2ኛ ደረጃ:</b> ገንዘቡን ከላኩ በኋላ በቴሌብር or Account በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው፤ ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 20 ብር ነው።)</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
+                        <h3 class="font-bold text-amber-300 text-xs">2. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
+                        <div class="text-gray-300 space-y-1.5 text-[11px]">
+                            <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉበትን ትክክለኛ Account ቁጥር ያስገቡ።</p>
+                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -351,14 +362,33 @@
         <!-- DEPOSIT MODAL -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <div class="bg-black/60 p-2.5 rounded-lg border border-amber-500/30 text-center space-y-1 cursor-pointer" onclick="copyAdminPhone()">
-                    <div class="text-[10px] text-gray-300">ቁጥር (ለመቅዳት ይጫኑ)፡</div>
-                    <div class="text-amber-400 font-black text-sm tracking-wider" id="admin-telebirr-number">0940272544</div>
-                    <div id="copy-status-msg" class="text-[9px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
+                
+                <!-- 🌟 የታዘዙት 3 የባንክ እና የቴሌብር አማራጮች ከኮፒ አሰራር ጋር -->
+                <div class="space-y-2">
+                    <!-- ቴሌብር -->
+                    <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0940272544', 'telebirr-copy-msg')">
+                        <div class="text-[9px] text-sky-400 font-bold">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
+                        <div class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
+                        <div id="telebirr-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
+                    </div>
+
+                    <!-- Cbebirr -->
+                    <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0960281356', 'cbe-copy-msg')">
+                        <div class="text-[9px] text-purple-400 font-bold">Cbebirr ብር ብቻ (ለመቅዳት ይጫኑ)</div>
+                        <div class="text-amber-400 font-black text-xs tracking-wider">0960281356</div>
+                        <div id="cbe-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
+                    </div>
+
+                    <!-- አቢሲኒያ -->
+                    <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('141245732', 'abyssinia-copy-msg')">
+                        <div class="text-[9px] text-emerald-400 font-bold">አቢሲኒያ (ለመቅዳት ይጫኑ)</div>
+                        <div class="text-amber-400 font-black text-xs tracking-wider">141245732</div>
+                        <div id="abyssinia-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
+                    </div>
                 </div>
-                <!-- 🌟 ዲፖዚት ቢያንስ 20 ብር እንዲሆን በፕሌስሆልደር ተስተካክሏል -->
+
                 <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 20)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
+                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ወይም የባንክ ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
                     <button onclick="submitFinancialRequest('deposit')" class="flex-1 bg-emerald-600 py-2 rounded-xl font-bold">ጥያቄ ላክ</button>
@@ -369,7 +399,7 @@
         <!-- WITHDRAW MODAL -->
         <div id="withdraw-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
-                <input type="text" id="withdraw-phone-input" placeholder="ስልክ ቁጥር (09xxxxxxxx)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
+                <input type="text" id="withdraw-phone-input" placeholder="የሂሳብ/ስልክ ቁጥር (Account)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <input type="number" id="withdraw-amount-input" placeholder="የብር መጠን (ከ 100 በላይ)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
                 <div class="flex gap-2">
                     <button onclick="document.getElementById('withdraw-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
@@ -498,6 +528,11 @@
             renderPlayerDualCards();
             updateAudioButtonUI();
 
+            if (confirmedCards.length > 0) {
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
+            }
+
             socket.on('connect', () => {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
@@ -556,13 +591,15 @@
                     renderVerticalBoard();
                     renderPlayerDualCards();
                 } else {
-                    calledNumbersList = [];
-                    manualDaubedNumbers = {};
-                    document.getElementById('stat-called-count').innerText = "0";
-                    document.getElementById('card-selection-section').classList.remove('hidden');
-                    document.getElementById('live-game-section').classList.add('hidden');
-                    renderVerticalBoard();
-                    generate500CardGrid();
+                    if (confirmedCards.length === 0) {
+                        calledNumbersList = [];
+                        manualDaubedNumbers = {};
+                        document.getElementById('stat-called-count').innerText = "0";
+                        document.getElementById('card-selection-section').classList.remove('hidden');
+                        document.getElementById('live-game-section').classList.add('hidden');
+                        renderVerticalBoard();
+                        generate500CardGrid();
+                    }
                 }
             });
 
@@ -593,10 +630,8 @@
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
                 
-                const confirmBtn = document.getElementById('confirm-card-btn');
-                confirmBtn.classList.remove('blink-btn', 'from-amber-500', 'to-orange-600');
-                confirmBtn.classList.add('bg-red-600', 'text-white');
-                confirmBtn.innerText = "ካርድ ተረጋግጧል ✔";
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
 
                 renderPlayerDualCards();
             });
@@ -604,7 +639,6 @@
             socket.on('cardSelectionError', (msg) => { alert(msg); });
 
             socket.on('bingoWinner', (data) => {
-                // 🔊 አሸናፊ ሲወጣ የሚጫወተው የድል ድምፅ ማጫወቻ
                 try {
                     const winSound = new Audio('/bingo_win.mp3');
                     winSound.play().catch(e => console.log("Audio play blocked:", e));
@@ -684,12 +718,12 @@
                 if (data.type === 'deposit') {
                     walletBalance += data.amount;
                     updateWalletUI();
-                    addTransactionHistory('ቴሌብር ዲፖዚት (ጸድቋል)', data.amount, 'income');
+                    addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
                     alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
                     walletBalance -= data.amount;
                     updateWalletUI();
-                    addTransactionHistory('ቴሌብር ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
+                    addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
                     alert(`✅ የ ${data.amount} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
                 }
             });
@@ -713,12 +747,13 @@
             setTimeout(() => msgEl.classList.add('hidden'), 3000);
         }
 
-        function copyAdminPhone() {
-            let phoneNum = document.getElementById('admin-telebirr-number').innerText;
-            navigator.clipboard.writeText(phoneNum).then(() => {
-                let msgEl = document.getElementById('copy-status-msg');
-                msgEl.classList.remove('hidden');
-                setTimeout(() => msgEl.classList.add('hidden'), 2000);
+        function copyAccountInfo(accountNum, msgId) {
+            navigator.clipboard.writeText(accountNum).then(() => {
+                let msgEl = document.getElementById(msgId);
+                if(msgEl) {
+                    msgEl.classList.remove('hidden');
+                    setTimeout(() => msgEl.classList.add('hidden'), 2000);
+                }
             });
         }
 
@@ -780,6 +815,15 @@
                 }
                 if (bigTimerEl) {
                     bigTimerEl.innerText = `${timeLeft}s`;
+                }
+
+                if (calledNumbersList.length === 0) {
+                    const countdownNumEl = document.getElementById('in-place-countdown-num');
+                    const centerLabelEl = document.getElementById('center-status-label');
+                    if (countdownNumEl && centerLabelEl) {
+                        centerLabelEl.innerText = "ጨዋታውን ለመጀመር የሚቀረው";
+                        countdownNumEl.innerText = `${timeLeft}s`;
+                    }
                 }
             }, 1000);
         }
@@ -924,14 +968,12 @@
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
                 receipt = document.getElementById('dep-receipt-input').value.trim();
-                // 🌟 የዲፖዚት ዝቅተኛ ገደብ ወደ 20 ብር ተስተካክሏል
                 if (isNaN(amount) || amount < 20) { alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); return; }
                 if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
                 document.getElementById('deposit-modal').classList.add('hidden');
             } else {
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
-                // 🌟 የዊዝድሮዋል ዝቅተኛ ገደብ 100 ብር ሆኖ እንዳለ ቀጥሏል
                 if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ እና ቢያንስ 100 ብር ያስገቡ!"); return; }
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
@@ -1128,7 +1170,7 @@
             requestRealUsersList();
         }
 
-        function switchTab(tabId, btn) {
+        switchTab = function(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => {
