@@ -343,7 +343,6 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🔄 የቁጥር ጥሪ ብዛት ፖል በዘፈቀደ እንዲለዋወጥ (እንደ ጥያቄዎ ከ13 እስከ 27+ ጥሪዎች ውስጥ በራንደም እንዲመረጥ)
             let realisticRandomCounts = [13, 16, 18, 20, 22, 25, 27];
             let targetCallCount = realisticRandomCounts[Math.floor(Math.random() * realisticRandomCounts.length)];
 
@@ -359,7 +358,6 @@ function startMainGameLoop() {
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
                 let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
 
-                // 🌟 እውነተኛ ሪል ዩዘር ሲያሸንፍ በድንገት በአንድ ጊዜ ሳያልቅ፣ መሀል ላይ የዘፈቀደ ቁጥሮች ጣል ጣል እያሉበት (Realistic Spacing & Pacing)
                 if (!winningSocketData[idx].isBot && winnersCount === 1) {
                     let shuffledReq = [...reqNums].sort(() => 0.5 - Math.random());
                     return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: shuffledReq };
@@ -403,20 +401,20 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🌟 ጨዋታው በቂ ቆይታ እንዲኖረው (Realistic Pacing - ቢያንስ ከ12-14 ጥሪዎች በኋላ እንጂ በአንዴ አያልቅም)
                 let minCallsBeforeWin = 12;
-                let anyWinnerCompleted = false;
+                let shouldTriggerWin = false;
 
+                // 🌟 የተመረጠው አሸናፊ (Winner) ብቻ ፓተርኑ ሲሞላለት ዊን እንዲያደርግ ማድረግ
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
                     if (isPatternDone && globalRoom.calledNumbers.length >= minCallsBeforeWin) {
-                        anyWinnerCompleted = true;
+                        // ሪል ዩዘር ሲሆን ወይም የታዘዘው አሸናፊ ሲሆን ብቻ ዊን ይደረጋል
+                        if (!winningSocketData[idx].isBot || targetRealCount > 0) {
+                            shouldTriggerWin = true;
+                        }
                     }
                 });
-
-                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
-                let shouldTriggerWin = (reachedTargetLimit || anyWinnerCompleted);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 140) * 10;
@@ -458,7 +456,6 @@ function startMainGameLoop() {
                 }
 
                 let calledNum;
-                // 🌟 መሀል ላይ የዘፈቀደ ቁጥሮች ጣል ጣል እንዲሉ (Realistic Spacing for non-winning turns)
                 if (winNumQueue.length > 0 && Math.random() < 0.65) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
@@ -469,6 +466,10 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    
+                    // 🌟 ጥብቅ ማጣሪያ (Strict Guardrail): 
+                    // አድሚኑ "ሪል ዩዘር እንዲያሸንፍ" ካላዘዘ በቀር (ማለትም targetRealCount === 0 በሆነ ጊዜ) 
+                    // ማንም ሌላ ሪል ዩዘር በአጋጣሚ ሙሉ ፓተርን አሟልቶ እንዳያሸንፍ እንከለክላለን።
                     if (targetRealCount === 0) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
@@ -495,6 +496,7 @@ function startMainGameLoop() {
                             }
                         });
 
+                        // ሌላ ሪል ዩዘር በአጋጣሚ እንዳያሸንፍ ቁጥሩን እንለውጣለን
                         if (isAccidentalRealWin && availableNumbers.length > 0) {
                             let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
                             calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
