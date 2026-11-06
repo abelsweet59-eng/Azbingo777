@@ -343,9 +343,8 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🔄 ተፈጥሯዊ የጥሪ ብዛት (Realistic Pacing: ከ14 እስከ 26 ጥሪዎች ውስጥ በሂደት እንዲሞላ)
-            let realisticRandomCounts = [14, 17, 19, 22, 24, 26];
-            let targetCallCount = realisticRandomCounts[Math.floor(Math.random() * realisticRandomCounts.length)];
+            // 🔄 ከ 10 እስከ 35 ባሉት ጥሪዎች ውስጥ በራንደም እንዲመረጥ ማድረግ (እንደ ጥያቄዎ)
+            let targetCallCount = Math.floor(Math.random() * 26) + 10; // ከ 10 እስከ 35
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24], // አግድም
@@ -359,10 +358,9 @@ function startMainGameLoop() {
                 let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
                 let reqNums = p.map(cellIdx => cList[cellIdx]).filter(n => n !== "FREE");
 
-                // 🌟 ሪል ዩዘር ሲያሸንፍ ቁጥሮቹን በሂደት (በተፈጥሯዊ ቅደም ተከተል ጣል ጣል እያሉ) እንዲያሟላ ማድረግ
+                // ሪል ዩዘር ሲሆን ዊን ለማድረግ የሚያስፈልጉትን ቁጥሮች በተፈጥሯዊ ፍሰት በቅደም ተከተል እናዘጋጃለን
                 if (!winningSocketData[idx].isBot && winnersCount === 1) {
-                    let shuffledReq = [...reqNums].sort(() => 0.5 - Math.random());
-                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: shuffledReq };
+                    return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: reqNums };
                 }
 
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
@@ -384,10 +382,6 @@ function startMainGameLoop() {
                 });
             }
 
-            if (interleavedWinningNumbers.length > targetCallCount) {
-                interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
-            }
-
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             
             io.emit('gameStarted', { calledNumbers: [] });
@@ -403,16 +397,14 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🌟 ትክክለኛ የዊን ቼኪንግ ሎጂክ (Precise & Immediate Win Trigger):
-                // ጨዋታው በቂ ቆይታ (ቢያንስ 10 ጥሪዎች) አድርጎ፣ ልክ የታዘዘው አሸናፊ ፓተርኑን ሙሉ በሙሉ ሲጨርስ 
-                // ጨዋታው ሳይዘገይ ወዲያውኑ ቆሞ ፖፕ-አፕ ያሳያል።
-                let minCallsBeforeWin = 10;
+                // 🌟 ፈጣን እና ትክክለኛ የዊን ቼኪንግ (Immediate & Strict Win Checking):
+                // ልክ የታዘዘው አሸናፊ ፓተርኑን ሙሉ በሙሉ ሲያሟላ ጨዋታው በዚያው ሰዓት ቆሞ ዊን ያደርጋል።
                 let shouldTriggerWin = false;
 
                 perWinnerConfigs.forEach((cfg, idx) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (isPatternDone && globalRoom.calledNumbers.length >= minCallsBeforeWin) {
+                    if (isPatternDone) {
                         if (!winningSocketData[idx].isBot || targetRealCount > 0) {
                             shouldTriggerWin = true;
                         }
@@ -459,8 +451,8 @@ function startMainGameLoop() {
                 }
 
                 let calledNum;
-                // 🌟 ቁጥሮች በሂደት (በተፈጥሯዊ የጊዜ ክፍተት) ጣል ጣል እያሉ እንዲጠሩ ማድረግ
-                if (winNumQueue.length > 0 && Math.random() < 0.60) {
+                // 🌟 ቁጥሮች በቀስታ እና በተፈጥሯዊ ፍሰት ጣል ጣል እያሉ እንዲጠሩ ማድረግ
+                if (winNumQueue.length > 0 && Math.random() < 0.65) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
@@ -489,7 +481,7 @@ function startMainGameLoop() {
                                     ];
                                     
                                     possiblePatterns.forEach(pat => {
-                                        if (pat.every(pIdx => matched.includes(pIdx)) && globalRoom.calledNumbers.length >= 10) {
+                                        if (pat.every(pIdx => matched.includes(pIdx))) {
                                             isAccidentalRealWin = true;
                                         }
                                     });
