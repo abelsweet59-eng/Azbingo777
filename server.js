@@ -366,9 +366,13 @@ function startMainGameLoop() {
                 [0,4,20,24] // አራቱ ማዕዘኖች (4 Corners)
             ];
 
+            // 🌟 የተወሰነ የጋራ ፓተርን (Shared Winning Pattern) ለሁሉም አሸናፊዎች ማዘጋጀት
+            // በዚህም ሁሉም አሸናፊዎች (ሪል ዩዘሮችም ይሁን ቦቶች) በትክክል እኩል ሰዓት / እኩል ቁጥር ሲጠራ ዊን ያደርጋሉ!
+            let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+
             let perWinnerConfigs = winningCardNums.map(cNum => {
                 let cList = getCartelaNumbers(cNum);
-                let p = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+                let p = sharedPattern; // 👈 ሁሉም አሸናፊዎች ተመሳሳይ ፓተርን እንዲኖራቸው ይደረጋል
                 let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
 
                 let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
@@ -734,7 +738,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u =>.socketId !== socket.id);
         delete globalRoom.playerRoundCards[socket.id];
         delete globalRoom.playerTemporaryCards[socket.id];
         refreshTakenCardsList();
