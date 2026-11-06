@@ -1,4 +1,4 @@
-Const express = require('express');
+const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -35,7 +35,7 @@ let sequenceIndex = 0;
 const rareRotationPool = [10, 11, 33, 34, 36];
 
 const ETHIOPIAN_BOT_NAMES = [
-    // 🌟 አዲሶቹ የተጨመሩ ስሞች
+    // 🌟 ያነሷቸው አዲሶቹ የተጨመሩ ስሞች
     "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
     "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
     "Dawit Mohamed", "sani", "eyobeyob", "0947151407", "halal", "ebrahim ebra",
