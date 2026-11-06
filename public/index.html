@@ -304,7 +304,7 @@
                         <h3 class="font-bold text-amber-300 text-xs">2. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
                         <div class="text-gray-300 space-y-1.5 text-[11px]">
                             <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉበትን ትክክለኛ Account ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርطه/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
+                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
                         </div>
                     </div>
                 </div>
@@ -725,12 +725,18 @@
                 document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
             });
 
+            // 🌟 ዩዘሩ ዲፖዚት ወይም Az ቦነስ ሲጸድቅለት በትክክል እንዲቀበል የተስተካከለ ክፍል
             socket.on('financialApproved', (data) => {
                 if (data.type === 'deposit') {
                     walletBalance += data.amount;
                     updateWalletUI();
                     addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
                     alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                } else if (data.type === 'bonus') {
+                    walletBalance += data.amount;
+                    updateWalletUI();
+                    addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income');
+                    alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር Az ቦነስ ተሰጥቶዎታል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
                     walletBalance -= data.amount;
                     updateWalletUI();
