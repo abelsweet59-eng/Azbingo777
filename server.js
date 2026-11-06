@@ -584,7 +584,6 @@ async function pollTelegramUpdates() {
                                     }).catch(() => {});
                                 }
                             } else {
-                                // ዩዘሩ ኦንላይን ካልሆነ (Offline Queue) ላይ ያስቀምጣል
                                 if (!offlineApprovedQueue[targetUserId]) {
                                     offlineApprovedQueue[targetUserId] = [];
                                 }
@@ -739,7 +738,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('confirmCards', (data) => {
-        .data && data.cards && Array.isArray(data.cards)
         if (data && data.cards && Array.isArray(data.cards)) {
             globalRoom.playerRoundCards[socket.id] = {
                 cards: data.cards,
