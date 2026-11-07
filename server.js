@@ -474,10 +474,19 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                    
+                    // 🛡️ [እዚህ ጋር ተስተካከለ]: አድሚኑ ሪያል ዩዘር እንዲያሸንፍ ካላዘዘ (ማለትም targetRealCount === 0 በሆነ ጊዜ)
+                    // ማንኛውም ሪያል ተጫዋች በአጋጣሚ መስመር ሞልቶ እንዳያሸንፍ (Accidental Win እንዳይፈጠር) ቁጥሮችን ከማውጣቱ በፊት ጥብቅ ማጣሪያ ይደረጋል።
                     if (targetRealCount === 0) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
                         
+                        let possiblePatternsCheck = [
+                            [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+                            [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+                            [0,6,12,18,24], [4,8,12,16,20], [0,4,20,24]
+                        ];
+
                         activeRealEntriesCheck.forEach(playerData => {
                             if (playerData.cards) {
                                 playerData.cards.forEach(cNum => {
@@ -485,14 +494,9 @@ function startMainGameLoop() {
                                     let tempCalled = [...globalRoom.calledNumbers, Number(calledNum)];
                                     let matched = getWinningMatchedIndices(cList, tempCalled);
                                     
-                                    let possiblePatterns = [
-                                        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-                                        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-                                        [0,6,12,18,24], [4,8,12,16,20], [0,4,20,24]
-                                    ];
-                                    
-                                    possiblePatterns.forEach(pat => {
-                                        if (pat.every(pIdx => matched.includes(pIdx)) && globalRoom.calledNumbers.length >= 10) {
+                                    possiblePatternsCheck.forEach(pat => {
+                                        // ሪያል ተጫዋቹ አድሚኑ ሳያዘው አራቱን ነጥቦች / መስመር ሞልቶ እንዳያሸንፍ እንከለክለዋለን
+                                        if (pat.every(pIdx => matched.includes(pIdx))) {
                                             isAccidentalRealWin = true;
                                         }
                                     });
@@ -500,6 +504,7 @@ function startMainGameLoop() {
                             }
                         });
 
+                        // አደጋ ካለ (ሪያል ዩዘር በአጋጣሚ ሊያሸንፍ ሲቃረብ) ያንን ቁጥር በመተው ከሌሎች ቁጥሮች እንመርጣለን
                         if (isAccidentalRealWin && availableNumbers.length > 0) {
                             let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
                             calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
@@ -527,7 +532,6 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
     
-    // 🛠️ 1. ራውንዱ ሲያልቅ የሁሉንም ተጫዋቾች የካርድ ምርጫዎች እና የተያዙ ካርዶች ዝርዝር ሙሉ በሙሉ እናጸዳለን
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -718,7 +722,6 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🛠️ 2. ተጫዋቹ ሲገባ የድሮ የነበሩበትን የካርድ ምርጫዎች እናስወግዳለን (በተለይ አዲስ socket ላይ ሆነው ከቀድሞ ዩዘር ID ጋር ሲገናኙ)
             Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                 if (globalRoom.playerRoundCards[sId].userId === userId) {
                     delete globalRoom.playerRoundCards[sId];
@@ -830,7 +833,6 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛠️ 3. ተጫዋቹ ጨዋታውን አቋርጦ ሲወጣ ወይም ሎጋው ሲል (Disconnect) የያዛቸው ካርዶች ሙሉ በሙሉ ከማህደረ ትውስታ ይሰረዛሉ
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
