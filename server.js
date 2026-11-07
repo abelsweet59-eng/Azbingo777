@@ -527,7 +527,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
     
-    // 🛠️ 1. ራውንዱ ሲያልቅ የሁሉንም ተጫዋቾች ካርዶች ሙሉ በሙሉ እናጸዳለን (በነፃ እንዳይቀጥሉ)
+    // 🛠️ 1. ራውንዱ ሲያልቅ የሁሉንም ተጫዋቾች የካርድ ምርጫዎች እና የተያዙ ካርዶች ዝርዝር ሙሉ በሙሉ እናጸዳለን
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -717,6 +717,19 @@ io.on('connection', (socket) => {
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
+            
+            // 🛠️ 2. ተጫዋቹ ሲገባ የድሮ የነበሩበትን የካርድ ምርጫዎች እናስወግዳለን (በተለይ አዲስ socket ላይ ሆነው ከቀድሞ ዩዘር ID ጋር ሲገናኙ)
+            Object.keys(globalRoom.playerRoundCards).forEach(sId => {
+                if (globalRoom.playerRoundCards[sId].userId === userId) {
+                    delete globalRoom.playerRoundCards[sId];
+                }
+            });
+            Object.keys(globalRoom.playerTemporaryCards).forEach(sId => {
+                if (sId === socket.id) {
+                    delete globalRoom.playerTemporaryCards[sId];
+                }
+            });
+
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
@@ -734,6 +747,7 @@ io.on('connection', (socket) => {
                 });
                 delete offlineApprovedQueue[userId];
             }
+            refreshTakenCardsList();
         }
     });
 
@@ -816,12 +830,11 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛠️ 2. ተጫዋቹ ጨዋታውን አቋርጦ ሲወጣ (Disconnect) ወይም አፕ ሲዘጋ ያዛቸው ካርዶች ሙሉ በሙሉ እንዲሰረዙ እና እንዲለቀቁ ተደርጓል
+    // 🛠️ 3. ተጫዋቹ ጨዋታውን አቋርጦ ሲወጣ ወይም ሎጋው ሲል (Disconnect) የያዛቸው ካርዶች ሙሉ በሙሉ ከማህደረ ትውስታ ይሰረዛሉ
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        // የዚህን ተጫዋች ካርዶች ከሮሙ ላይ እናስወግዳለን
         delete globalRoom.playerRoundCards[socket.id];
         delete globalRoom.playerTemporaryCards[socket.id];
         
