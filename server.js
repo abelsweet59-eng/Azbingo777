@@ -531,7 +531,12 @@ function endRoundAndRestart() {
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
+    
+    // 🛠️ የድሮው ራውንድ ካርዶች እና የተያዙ ካርዶች ዝርዝር ሙሉ በሙሉ እንዲጸዱ ተደርጓል (ተጫዋቾች በነፃ እንዳይቀጥሉ)
     globalRoom.playerRoundCards = {}; 
+    globalRoom.playerTemporaryCards = {};
+    globalRoom.takenCards = [];
+
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
     
