@@ -19,22 +19,18 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
-// ሁለቱም አድሚኖች እንዲኖሩ የተደረገበት ክፍል (የቀድሞው እና አዲሱ ዩዘር ID በ Array ተካትቷል)
 const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
-const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0]; // ለተቀሩት የቦት ክፍሎች የመጀመሪያው አድሚን እንዲሆን
+const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 
-// 🎁 ለአዲስ ተመዝጋቢዎች የአንድ ጊዜ ቦነስ የወሰዱትን ዩዘሮች ለመያዝ
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🔄 እርስዎ የላኳቸው የቁጥር ጥሪ ብዛት ፖል (በየራውንዱ በራንደም ሉፕ እያደረገ የሚሰራ)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
 let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
 let sequenceIndex = 0;
 
-// 🌟 አልፎ አልፎ (Rare) እስከ 35 ቁጥሮች የሚጠሩበት የሮቴሽን ፖል
 const rareCallCountsPool = [10, 31, 10, 35, 30, 31, 10, 32, 30, 32];
 
 const ETHIOPIAN_BOT_NAMES = [
@@ -278,7 +274,6 @@ async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWi
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
     let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
     
-    // ለሁለቱም አድሚኖች ማሳወቂያ እንዲደርስ Loop ይደረጋል
     for (let adminChatId of ADMIN_CHAT_IDS) {
         try {
             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -532,7 +527,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
     
-    // 🛠️ የድሮው ራውንድ ካርዶች እና የተያዙ ካርዶች ዝርዝር ሙሉ በሙሉ እንዲጸዱ ተደርጓል (ተጫዋቾች በነፃ እንዳይቀጥሉ)
+    // 🛠️ 1. ራውንዱ ሲያልቅ የሁሉንም ተጫዋቾች ካርዶች ሙሉ በሙሉ እናጸዳለን (በነፃ እንዳይቀጥሉ)
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -566,12 +561,10 @@ async function pollTelegramUpdates() {
                     }
                 });
 
-                // 🎁 የቴሌግራም አድሚን ቦት ትዕዛዞች (/bonus20 እና /bonus50)
                 if (update.message && update.message.text) {
                     let msgText = update.message.text.trim();
                     let senderChatId = String(update.message.chat.id);
                     
-                    // ከማናቸውም የተፈቀዱ አድሚኖች አንዱ መሆኑን ማረጋገጫ
                     if (ADMIN_CHAT_IDS.includes(senderChatId)) {
                         let parts = msgText.split(' ');
                         let cmd = parts[0].toLowerCase();
@@ -592,7 +585,6 @@ async function pollTelegramUpdates() {
                                 if (targetSocket) {
                                     targetSocket.emit('financialApproved', bonusPayload);
                                     
-                                    // ለሁሉም አድሚኖች ማሳወቂያ መላክ ይቻላል (ወይም መልእክቱን ላከው አካል)
                                     for (let adminChatId of ADMIN_CHAT_IDS) {
                                         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                             chat_id: adminChatId,
@@ -696,7 +688,6 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
     if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
     
-    // ጥያቄው ለሁለቱም አድሚኖች በ Loop ይላካል
     for (let adminChatId of ADMIN_CHAT_IDS) {
         try {
             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -750,7 +741,6 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // 🎁 ከአድሚን ፓነል ሆኖ በቀጥታ ለተወሰነ ዩዘር ID ቦነስ ለመላክ (type: 'bonus' ተደርጓል)
     socket.on('adminSendBonus', (data) => {
         if (socket.id) {
             let targetUserId = String(data.targetUserId).trim();
@@ -826,11 +816,15 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
+    // 🛠️ 2. ተጫዋቹ ጨዋታውን አቋርጦ ሲወጣ (Disconnect) ወይም አፕ ሲዘጋ ያዛቸው ካርዶች ሙሉ በሙሉ እንዲሰረዙ እና እንዲለቀቁ ተደርጓል
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+        
+        // የዚህን ተጫዋች ካርዶች ከሮሙ ላይ እናስወግዳለን
         delete globalRoom.playerRoundCards[socket.id];
         delete globalRoom.playerTemporaryCards[socket.id];
+        
         refreshTakenCardsList();
         let realCount = connectedRealPlayers.length;
         globalRoom.playersCount = getRealisticBotsCount(realCount, globalRoom.gameActive) + realCount;
