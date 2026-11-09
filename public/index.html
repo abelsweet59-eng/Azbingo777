@@ -453,11 +453,10 @@
         let walletBalance = 0.00;
         let transactionHistory = [];
 
-const userLocalStorageKey = `az_bingo_wallet_v15_${telegramUserId}`;
-const userHistoryKey = `az_bingo_history_v15_${telegramUserId}`;
-const userSavedCardsKey = `az_bingo_saved_cards_v15_${telegramUserId}`;
-const userCurrentRoundPaidKey = `az_bingo_round_paid_v15_${telegramUserId}`;
-
+        const userLocalStorageKey = `az_bingo_wallet_v16_${telegramUserId}`;
+        const userHistoryKey = `az_bingo_history_v16_${telegramUserId}`;
+        const userSavedCardsKey = `az_bingo_saved_cards_v16_${telegramUserId}`;
+        const userCurrentRoundPaidKey = `az_bingo_round_paid_v16_${telegramUserId}`;
 
         if (localStorage.getItem(userLocalStorageKey) !== null) {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
@@ -586,7 +585,14 @@ const userCurrentRoundPaidKey = `az_bingo_round_paid_v15_${telegramUserId}`;
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                if (!room.gameActive) {
+                // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ንቁ (gameActive == true) ከሆነ ተጫዋቹ ሪኮኔክት ሲያደርግ የድሮው ካርድ እንዳይጫን ሙሉ በሙሉ እናጸዳለን
+                if (room.gameActive) {
+                    localStorage.removeItem(userSavedCardsKey);
+                    localStorage.removeItem(userCurrentRoundPaidKey);
+                    confirmedCards = [];
+                    userSelectedCards = [];
+                    totalPaidForCurrentRound = 0;
+                } else {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && myData.cards) {
@@ -624,6 +630,12 @@ const userCurrentRoundPaidKey = `az_bingo_round_paid_v15_${telegramUserId}`;
             });
 
             socket.on('gameStarted', (data) => {
+                localStorage.removeItem(userSavedCardsKey);
+                localStorage.removeItem(userCurrentRoundPaidKey);
+                confirmedCards = [];
+                userSelectedCards = [];
+                totalPaidForCurrentRound = 0;
+
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
                 renderPlayerDualCards();
@@ -640,7 +652,6 @@ const userCurrentRoundPaidKey = `az_bingo_round_paid_v15_${telegramUserId}`;
                 if (!isAudioMuted) speakCalledNumber(num);
             });
 
-            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ሲያልቅ (Round End) LocalStorage እና የካርድ ማህደረ ትውስታ ሙሉ በሙሉ ይጸዳሉ
             socket.on('roundEnded', (data) => {
                 gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
                 
