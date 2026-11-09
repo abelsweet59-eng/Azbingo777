@@ -197,21 +197,14 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     let ethiopianHour = (utcHours + 3) % 24; 
     let targetBase = 95;
 
-    // 1. ከጠዋቱ 12 ሰዓት እስከ ቀኑ 6 ሰዓት (6 - 12) ➔ ከ 50 አካባቢ
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
         targetBase = 50 + Math.floor(Math.random() * 10); 
-    } 
-    // 2. ከቀኑ 6 ሰዓት እስከ ማምሻው 1 ሰዓት (12 - 19) ➔ ከ 60 እስከ 80
-    else if (ethiopianHour >= 12 && ethiopianHour < 19) {
+    } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         let progress = (ethiopianHour - 12) / 7; 
         targetBase = Math.floor(60 + (progress * 20) + Math.random() * 5); 
-    } 
-    // 3. ከማታ 1 ሰዓት እስከ ሌሊት 6 ሰዓት (19 - 3) ➔ ከ 120 - 250
-    else if (ethiopianHour >= 19 || ethiopianHour < 3) {
+    } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
         targetBase = 120 + Math.floor(Math.random() * 131); 
-    } 
-    // 4. ከሌሊት 6 ሰዓት እስከ ንጋት 12 ሰዓት (3 - 6) ➔ ከ 90 - 60
-    else {
+    } else {
         targetBase = 60 + Math.floor(Math.random() * 31); 
     }
 
@@ -528,7 +521,6 @@ function startMainGameLoop() {
     }, 1000);
 }
 
-// 🛡️ [የተስተካከለ]: ዙሩ ሲጠናቀቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
@@ -725,16 +717,25 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            Object.keys(globalRoom.playerRoundCards).forEach(sId => {
-                if (globalRoom.playerRoundCards[sId].userId === userId) {
-                    delete globalRoom.playerRoundCards[sId];
-                }
-            });
-            Object.keys(globalRoom.playerTemporaryCards).forEach(sId => {
-                if (sId === socket.id) {
-                    delete globalRoom.playerTemporaryCards[sId];
-                }
-            });
+            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ተጫዋቹ መልሶ ሲገባ የያዘውን ካርድ እንዲይዝ እናደርጋለን። 
+            // ነገር ግን ጨዋታው ቀድሞውኑ ጀምሮ ከነበረ (gameActive == true) የድሮውን ካርድ እናጸዳዋለን።
+            if (globalRoom.gameActive) {
+                Object.keys(globalRoom.playerRoundCards).forEach(sId => {
+                    if (globalRoom.playerRoundCards[sId].userId === userId) {
+                        delete globalRoom.playerRoundCards[sId];
+                    }
+                });
+            } else {
+                Object.keys(globalRoom.playerRoundCards).forEach(sId => {
+                    if (globalRoom.playerRoundCards[sId].userId === userId) {
+                        let existingData = globalRoom.playerRoundCards[sId];
+                        delete globalRoom.playerRoundCards[sId];
+                        globalRoom.playerRoundCards[socket.id] = existingData;
+                    }
+                });
+            }
+
+            delete globalRoom.playerTemporaryCards[socket.id];
 
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
@@ -754,6 +755,7 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
             refreshTakenCardsList();
+            socket.emit('syncGameState', globalRoom);
         }
     });
 
@@ -836,12 +838,14 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛡️ [የተስተካከለ]: ተጫዋቹ ሲወጣ (Disconnect ሲያደርግ) የያዛቸው ካርዶች ወዲያውኑ ይሰረዛሉ
+    // 🛡️ [የተስተካከለ ዲስኮኔክት ሎጂክ]: ጨዋታው በቆጠራ ሰዓት ላይ ከሆነ ካርዱ እንዳይጠፋ ይቆያል (ሪኮኔክት ሲያደርግ እንዲመለስ)። ጨዋታው ከጀመረ ግን ወዲያውኑ ይሰረዛል።
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        delete globalRoom.playerRoundCards[socket.id];
+        if (globalRoom.gameActive) {
+            delete globalRoom.playerRoundCards[socket.id];
+        }
         delete globalRoom.playerTemporaryCards[socket.id];
         
         refreshTakenCardsList();
