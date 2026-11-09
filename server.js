@@ -521,17 +521,19 @@ function startMainGameLoop() {
     }, 1000);
 }
 
+// 🛡️ [የተስተካከለ የጨዋታ ማብቂያ እና የካርድ ማጽጃ ሎጂክ]:
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
     
+    // የሁሉም ተጫዋቾች የካርድ ምርጫዎች ሙሉ በሙሉ ይጸዳሉ (ለቀጣዩ ዙር ንጹህ ፕላትፎርም ይሆናል)
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
 
-    globalRoom.gameStartTime = Date.now() + 60000;
+    globalRoom.gameStartTime = Date.now() + 60000; // ለአዲስ ዙር የ 60 ሰከንድ ቆጠራ
     globalRoom.forcedWinningCardNums = [];
     
     io.emit('roundEnded', { nextGameIn: 60000 });
@@ -717,7 +719,8 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ጀምሮ ከሆነ የድሮውን ካርድ እናጸዳለን፣ በቆጠራ ሰዓት ላይ ከሆነ ግን ተጫዋቹ የያዘው ካርድ እንዲጠበቅ እናደርጋለን።
+            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ብቻ ተጫዋቹ ሪኮኔክት ሲያደርግ ካርዱ እንዲመለስ ይደረጋል፤ 
+            // ጨዋታው አልቆ ከሆነ ግን ከላይ በ endRoundAndRestart ስለጸዳ አዲስ ካርድ መምረጥ ይችላሉ።
             if (!globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
@@ -831,7 +834,6 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛡️ [የተስተካከለ ዲስኮኔክት ሎጂክ]: ጨዋታው እየተጫወተ ከሆነ (gameActive == true) ብቻ የካርድ መረጃው ይሰረዛል። በቆጠራ ሰዓት ላይ ከሆነ ግን ተጫዋቹ ሪኮኔክት ሲያደርግ ካርዱ እንዲመለስ ይቆያል።
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
