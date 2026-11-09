@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -717,15 +717,8 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ተጫዋቹ መልሶ ሲገባ የያዘውን ካርድ እንዲይዝ እናደርጋለን። 
-            // ነገር ግን ጨዋታው ቀድሞውኑ ጀምሮ ከነበረ (gameActive == true) የድሮውን ካርድ እናጸዳዋለን።
-            if (globalRoom.gameActive) {
-                Object.keys(globalRoom.playerRoundCards).forEach(sId => {
-                    if (globalRoom.playerRoundCards[sId].userId === userId) {
-                        delete globalRoom.playerRoundCards[sId];
-                    }
-                });
-            } else {
+            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ጀምሮ ከሆነ የድሮውን ካርድ እናጸዳለን፣ በቆጠራ ሰዓት ላይ ከሆነ ግን ተጫዋቹ የያዘው ካርድ እንዲጠበቅ እናደርጋለን።
+            if (!globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         let existingData = globalRoom.playerRoundCards[sId];
@@ -838,7 +831,7 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛡️ [የተስተካከለ ዲስኮኔክት ሎጂክ]: ጨዋታው በቆጠራ ሰዓት ላይ ከሆነ ካርዱ እንዳይጠፋ ይቆያል (ሪኮኔክት ሲያደርግ እንዲመለስ)። ጨዋታው ከጀመረ ግን ወዲያውኑ ይሰረዛል።
+    // 🛡️ [የተስተካከለ ዲስኮኔክት ሎጂክ]: ጨዋታው እየተጫወተ ከሆነ (gameActive == true) ብቻ የካርድ መረጃው ይሰረዛል። በቆጠራ ሰዓት ላይ ከሆነ ግን ተጫዋቹ ሪኮኔክት ሲያደርግ ካርዱ እንዲመለስ ይቆያል።
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
