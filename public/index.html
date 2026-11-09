@@ -139,7 +139,6 @@
                 <!-- LIVE GAME SECTION -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1.5 pb-1 overflow-y-auto custom-scroll">
                     
-                    <!-- 🌟 ጎላ ያለ የድምፅ መቆጣጠሪያ እና የአውቶማቲክ ዳብ (Auto-Daub) መቆጣጠሪያ ባር -->
                     <div class="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 px-3 py-2 rounded-xl border border-amber-500/40 flex justify-between items-center shadow-lg">
                         <button onclick="toggleAudioMute()" id="audio-mute-btn" class="flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-amber-400/50 text-amber-300 text-xs font-bold shadow-inner">
                             <span id="audio-icon" class="text-base">🔇</span>
@@ -157,7 +156,6 @@
 
                     <div class="grid grid-cols-12 gap-1.5 flex-1">
                         
-                        <!-- ግራ ቦርድ (75 ቁጥሮች) -->
                         <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
@@ -169,7 +167,6 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <!-- ቀኝ በኩል (ካርዶች የሚታዩበት ቦታ) -->
                         <div class="col-span-7 flex flex-col space-y-1.5">
                             <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
                                 <div class="flex justify-start items-center">
@@ -291,7 +288,6 @@
                         </div>
                     </div>
 
-                    <!-- 🌟 የታዘዘው አዲሱ የዲፖዚት እና ዊዝድሮዋል መመሪያ -->
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">💳 1. ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
                         <div class="text-gray-300 space-y-1.5 text-[11px]">
@@ -327,7 +323,6 @@
                     <div id="admin-winner-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center">✅ አሸናፊው ተስተካክሏል!</div>
                 </div>
 
-                <!-- 🎁 እዚህ ጋር አዲስ የተጨመረው ከአድሚን ፓነል ቦነስ መላኪያ ክፍል -->
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
                     <div class="font-bold text-amber-300">🎁 ተጠቃሚዎች ላይ ቦነስ መላኪያ</div>
                     <input type="text" id="admin-bonus-userid" placeholder="የቴሌግራም ዩዘር ID (Telegram ID)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
@@ -374,23 +369,19 @@
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
                 
-                <!-- 🌟 የታዘዙት 3 የባንክ እና የቴሌብር አማራጮች ከኮፒ አሰራር ጋር -->
                 <div class="space-y-2">
-                    <!-- ቴሌብር -->
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0940272544', 'telebirr-copy-msg')">
                         <div class="text-[9px] text-sky-400 font-bold">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
                         <div class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
                         <div id="telebirr-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                     </div>
 
-                    <!-- Cbebirr -->
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0960281356', 'cbe-copy-msg')">
                         <div class="text-[9px] text-purple-400 font-bold">Cbebirr ብር ብቻ (ለመቅዳት ይጫኑ)</div>
                         <div class="text-amber-400 font-black text-xs tracking-wider">0960281356</div>
                         <div id="cbe-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                     </div>
 
-                    <!-- አቢሲኒያ -->
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('141245732', 'abyssinia-copy-msg')">
                         <div class="text-[9px] text-emerald-400 font-bold">አቢሲኒያ (ለመቅዳት ይጫኑ)</div>
                         <div class="text-amber-400 font-black text-xs tracking-wider">141245732</div>
@@ -436,7 +427,6 @@
     <script>
         const socket = io();
 
-        // 🛡️ የሁለቱም አድሚኖች ዩዘር ID እዚህ ተካተዋል
         const ADMIN_TELEGRAM_IDS = ["371093083", "8648229637"];
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
@@ -458,7 +448,6 @@
             }
         }
 
-        // 🛡️ ከተፈቀዱት አድሚኖች አንዱ መሆኑን ማረጋገጫ
         if (ADMIN_TELEGRAM_IDS.includes(telegramUserId)) isAdmin = true;
 
         let walletBalance = 0.00;
@@ -497,7 +486,6 @@
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let amharicVoice = null;
-        
         let isAudioMuted = true;
 
         function loadVoices() {
@@ -533,7 +521,6 @@
                 document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
             }, 300);
 
-            // አስቀድሞም አድሚን መሆኑን ካረጋገጠ የናቪጌሽን አዝራሩ እንዲታይ ይደረጋል
             const adminBtnInit = document.getElementById('admin-nav-btn');
             if (adminBtnInit && isAdmin) adminBtnInit.classList.remove('hidden');
 
@@ -597,6 +584,22 @@
                     let totalPot = room.playersCount * 10;
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
+
+                // 🛡️ [የተስተካከለ ሪኮኔክሽን ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ተጠቃሚው የያዘውን ካርድ በሰርቨር በኩል ካለ እናገኛለን
+                if (!room.gameActive) {
+                    if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
+                        let myData = room.playerRoundCards[socket.id];
+                        if (myData && myData.cards) {
+                            confirmedCards = myData.cards;
+                            userSelectedCards = [...confirmedCards];
+                            localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
+                            document.getElementById('card-selection-section').classList.add('hidden');
+                            document.getElementById('live-game-section').classList.remove('hidden');
+                            renderPlayerDualCards();
+                        }
+                    }
+                }
+
                 if (room.gameActive) {
                     calledNumbersList = room.calledNumbers || [];
                     if (calledNumbersList.length > 0) {
