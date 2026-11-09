@@ -585,7 +585,6 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                // 🛡️ [የተስተካከለ ሪኮኔክሽን ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ተጠቃሚው የያዘውን ካርድ በሰርቨር በኩል ካለ እናገኛለን
                 if (!room.gameActive) {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
@@ -640,8 +639,16 @@
                 if (!isAudioMuted) speakCalledNumber(num);
             });
 
+            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ሲያልቅ (Round End) LocalStorage እና የካርድ ማህደረ ትውስታ ሙሉ በሙሉ ይጸዳሉ
             socket.on('roundEnded', (data) => {
                 gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
+                
+                localStorage.removeItem(userSavedCardsKey);
+                localStorage.removeItem(userCurrentRoundPaidKey);
+                confirmedCards = [];
+                userSelectedCards = [];
+                totalPaidForCurrentRound = 0;
+
                 resetPlayerSelectionForNewRound();
             });
 
