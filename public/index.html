@@ -585,13 +585,9 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ንቁ (gameActive == true) ከሆነ ተጫዋቹ ሪኮኔክት ሲያደርግ የድሮው ካርድ እንዳይጫን ሙሉ በሙሉ እናጸዳለን
+                // 🛡️ [የተስተካከለ ሎጂክ]: ተጠቃሚው አፑ ውስጥ ሳለ ጨዋታው ሲጀምር ካርዱ እንዳይጠፋ (ነገር ግን አፑን ዘግቶ ወጥቶ ሲመለስ እና ጌሙ ንቁ ከሆነ ብቻ እንዲጸዳ)
                 if (room.gameActive) {
-                    localStorage.removeItem(userSavedCardsKey);
-                    localStorage.removeItem(userCurrentRoundPaidKey);
-                    confirmedCards = [];
-                    userSelectedCards = [];
-                    totalPaidForCurrentRound = 0;
+                    // አፕ ውስጥ ቆይቶ ጌሙ በራሱ ሰዓት ከጀመረ confirmedCards እንዲጠበቁ እናደርጋለን
                 } else {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
@@ -630,12 +626,7 @@
             });
 
             socket.on('gameStarted', (data) => {
-                localStorage.removeItem(userSavedCardsKey);
-                localStorage.removeItem(userCurrentRoundPaidKey);
-                confirmedCards = [];
-                userSelectedCards = [];
-                totalPaidForCurrentRound = 0;
-
+                // አፕ ውስጥ ሳለ ጌሙ ሲጀምር ካርዱ እንዳይጠፋ እዚህ ጋር የነበረውን localStorage ማጥፊያ ኮድ አንስተነዋል
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
                 renderPlayerDualCards();
