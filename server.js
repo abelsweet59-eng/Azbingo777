@@ -191,7 +191,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
 
 let lastSmoothCount = 95; 
 
-// 🛡️ [የተስተካከለ አዲሱ የቦቶች ሰዓት እና ቁጥር ስርጭት ሎጂክ]
 function getRealisticBotsCount(realCount, isGameActive = false) {
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -202,7 +201,7 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
         targetBase = 50 + Math.floor(Math.random() * 10); 
     } 
-    // 2. ከቀኑ 6 ሰዓት እስከ ማምሻው 1 ሰዓት (12 - 19) ➔ ከ 60 እስከ 80 እያለ ከፍ ይላል
+    // 2. ከቀኑ 6 ሰዓት እስከ ማምሻው 1 ሰዓት (12 - 19) ➔ ከ 60 እስከ 80
     else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         let progress = (ethiopianHour - 12) / 7; 
         targetBase = Math.floor(60 + (progress * 20) + Math.random() * 5); 
@@ -211,7 +210,7 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     else if (ethiopianHour >= 19 || ethiopianHour < 3) {
         targetBase = 120 + Math.floor(Math.random() * 131); 
     } 
-    // 4. ከሌሊት 6 ሰዓት እስከ ንጋት 12 ሰዓት (3 - 6) ➔ እየቀነሰ ከ 90 - 60
+    // 4. ከሌሊት 6 ሰዓት እስከ ንጋት 12 ሰዓት (3 - 6) ➔ ከ 90 - 60
     else {
         targetBase = 60 + Math.floor(Math.random() * 31); 
     }
@@ -837,7 +836,7 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    // 🛡️ [የተስተካከለ]: ተጫዋቹ ጌሙን ዘግቶ ሲወጣ የያዛቸው ካርዶች ወዲያውኑ ይለቀቃሉ
+    // 🛡️ [የተስተካከለ]: ተጫዋቹ ሲወጣ (Disconnect ሲያደርግ) የያዛቸው ካርዶች ወዲያውኑ ይሰረዛሉ
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
