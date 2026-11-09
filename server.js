@@ -521,19 +521,17 @@ function startMainGameLoop() {
     }, 1000);
 }
 
-// 🛡️ [የተስተካከለ የጨዋታ ማብቂያ እና የካርድ ማጽጃ ሎጂክ]:
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
     
-    // የሁሉም ተጫዋቾች የካርድ ምርጫዎች ሙሉ በሙሉ ይጸዳሉ (ለቀጣዩ ዙር ንጹህ ፕላትፎርም ይሆናል)
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
 
-    globalRoom.gameStartTime = Date.now() + 60000; // ለአዲስ ዙር የ 60 ሰከንድ ቆጠራ
+    globalRoom.gameStartTime = Date.now() + 60000; 
     globalRoom.forcedWinningCardNums = [];
     
     io.emit('roundEnded', { nextGameIn: 60000 });
@@ -715,7 +713,7 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-        socket.on('registerRealUser', (userData) => {
+    socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
@@ -736,9 +734,6 @@ io.on('connection', (socket) => {
                     }
                 });
             }
-
-            delete globalRoom.playerTemporaryCards[socket.id];
-
 
             delete globalRoom.playerTemporaryCards[socket.id];
 
