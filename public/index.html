@@ -453,10 +453,17 @@
         let walletBalance = 0.00;
         let transactionHistory = [];
 
-        const userLocalStorageKey = `az_bingo_wallet_v16_${telegramUserId}`;
-        const userHistoryKey = `az_bingo_history_v16_${telegramUserId}`;
-        const userSavedCardsKey = `az_bingo_saved_cards_v16_${telegramUserId}`;
-        const userCurrentRoundPaidKey = `az_bingo_round_paid_v16_${telegramUserId}`;
+        const userLocalStorageKey = `az_bingo_wallet_v17_${telegramUserId}`;
+        const userHistoryKey = `az_bingo_history_v17_${telegramUserId}`;
+        const userSavedCardsKey = `az_bingo_saved_cards_v17_${telegramUserId}`;
+        const userCurrentRoundPaidKey = `az_bingo_round_paid_v17_${telegramUserId}`;
+
+        // 🛡️ [የተስተካከለ ሎጂክ]: ተጠቃሚው አፑን ከፈተ (ወጥቶ እንደ አዲስ ሲገባ) የድሮውን ካርድ በግዳጅ እናጸዳለን
+        if (sessionStorage.getItem('az_session_started') === null) {
+            localStorage.removeItem(userSavedCardsKey);
+            localStorage.removeItem(userCurrentRoundPaidKey);
+            sessionStorage.setItem('az_session_started', 'true');
+        }
 
         if (localStorage.getItem(userLocalStorageKey) !== null) {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
@@ -585,9 +592,8 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                // 🛡️ [የተስተካከለ ሎጂክ]: ተጠቃሚው አፑ ውስጥ ሳለ ጨዋታው ሲጀምር ካርዱ እንዳይጠፋ (ነገር ግን አፑን ዘግቶ ወጥቶ ሲመለስ እና ጌሙ ንቁ ከሆነ ብቻ እንዲጸዳ)
                 if (room.gameActive) {
-                    // አፕ ውስጥ ቆይቶ ጌሙ በራሱ ሰዓት ከጀመረ confirmedCards እንዲጠበቁ እናደርጋለን
+                    // ጨዋታው ንቁ ከሆነ እና ተጠቃሚው አዲስ ስፔስ ከከፈተ ካርዱ በ session በኩል ይጸዳል
                 } else {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
@@ -626,7 +632,6 @@
             });
 
             socket.on('gameStarted', (data) => {
-                // አፕ ውስጥ ሳለ ጌሙ ሲጀምር ካርዱ እንዳይጠፋ እዚህ ጋር የነበረውን localStorage ማጥፊያ ኮድ አንስተነዋል
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
                 renderPlayerDualCards();
