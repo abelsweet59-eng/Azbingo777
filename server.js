@@ -475,8 +475,6 @@ function startMainGameLoop() {
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
                     
-                    // 🛡️ [እዚህ ጋር ተስተካከለ]: አድሚኑ ሪያል ዩዘር እንዲያሸንፍ ካላዘዘ (ማለትም targetRealCount === 0 በሆነ ጊዜ)
-                    // ማንኛውም ሪያል ተጫዋች በአጋጣሚ መስመር ሞልቶ እንዳያሸንፍ (Accidental Win እንዳይፈጠር) ቁጥሮችን ከማውጣቱ በፊት ጥብቅ ማጣሪያ ይደረጋል።
                     if (targetRealCount === 0) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
@@ -495,7 +493,6 @@ function startMainGameLoop() {
                                     let matched = getWinningMatchedIndices(cList, tempCalled);
                                     
                                     possiblePatternsCheck.forEach(pat => {
-                                        // ሪያል ተጫዋቹ አድሚኑ ሳያዘው አራቱን ነጥቦች / መስመር ሞልቶ እንዳያሸንፍ እንከለክለዋለን
                                         if (pat.every(pIdx => matched.includes(pIdx))) {
                                             isAccidentalRealWin = true;
                                         }
@@ -504,7 +501,6 @@ function startMainGameLoop() {
                             }
                         });
 
-                        // አደጋ ካለ (ሪያል ዩዘር በአጋጣሚ ሊያሸንፍ ሲቃረብ) ያንን ቁጥር በመተው ከሌሎች ቁጥሮች እንመርጣለን
                         if (isAccidentalRealWin && availableNumbers.length > 0) {
                             let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
                             calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
@@ -526,6 +522,7 @@ function startMainGameLoop() {
     }, 1000);
 }
 
+// 🛡️ [የተስተካከለ]: ዙሩ ሲጠናቀቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ (ለቀጣይ ዙር ዳግም መምረጥ ይኖርባቸዋል)
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
@@ -833,6 +830,7 @@ io.on('connection', (socket) => {
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
+    // 🛡️ [የተስተካከለ]: ተጫዋቹ ጌሙን ዘግቶ ሲወጣ (Disconnect ሲያደርግ) የያዛቸው ካርዶች ወዲያውኑ ይሰረዛሉ (ለሌሎች ይለቀቃሉ)
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
