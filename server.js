@@ -715,13 +715,19 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-    socket.on('registerRealUser', (userData) => {
+        socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ብቻ ተጫዋቹ ሪኮኔክት ሲያደርግ ካርዱ እንዲመለስ ይደረጋል፤ 
-            // ጨዋታው አልቆ ከሆነ ግን ከላይ በ endRoundAndRestart ስለጸዳ አዲስ ካርድ መምረጥ ይችላሉ።
-            if (!globalRoom.gameActive) {
+            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ንቁ (gameActive == true) ከሆነ, ተጫዋቹ ሪኮኔክት ሲያደርግ የድሮው ካርዱ ይጸዳል (አይያዝም)። 
+            // ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ብቻ ካርዱ እንዲጠበቅ ይደረጋል።
+            if (globalRoom.gameActive) {
+                Object.keys(globalRoom.playerRoundCards).forEach(sId => {
+                    if (globalRoom.playerRoundCards[sId].userId === userId) {
+                        delete globalRoom.playerRoundCards[sId];
+                    }
+                });
+            } else {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         let existingData = globalRoom.playerRoundCards[sId];
@@ -730,6 +736,9 @@ io.on('connection', (socket) => {
                     }
                 });
             }
+
+            delete globalRoom.playerTemporaryCards[socket.id];
+
 
             delete globalRoom.playerTemporaryCards[socket.id];
 
