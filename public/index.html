@@ -453,10 +453,11 @@
         let walletBalance = 0.00;
         let transactionHistory = [];
 
-        const userLocalStorageKey = `az_bingo_wallet_v11_${telegramUserId}`;
-        const userHistoryKey = `az_bingo_history_v11_${telegramUserId}`;
-        const userSavedCardsKey = `az_bingo_saved_cards_${telegramUserId}`;
-        const userCurrentRoundPaidKey = `az_bingo_round_paid_${telegramUserId}`;
+        const userLocalStorageKey = `az_bingo_wallet_v14_${telegramUserId}`;
+        const userHistoryKey = `az_bingo_history_v14_${telegramUserId}`;
+        const userSavedCardsKey = `az_bingo_saved_cards_v14_${telegramUserId}`;
+        const userCurrentRoundPaidKey = `az_bingo_round_paid_v14_${telegramUserId}`;
+
 
         if (localStorage.getItem(userLocalStorageKey) !== null) {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
