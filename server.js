@@ -23,7 +23,7 @@ const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
 const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 
 const claimedWelcomeBonusUsers = new Set();
-const userWallets = {}; 
+const userWallets = {}; // 🎯 የዩዘሮች የኪስ ቦርሳ ቀሪ ሂሳብ ማከማቻ
 
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
@@ -134,7 +134,6 @@ function getCartelaNumbers(cardNum) {
 }
 
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
-    // የተጠሩ ቁጥሮች ባዶ ከሆኑ በፍጹም ማሸነፍ አይቻልም
     if (!calledNumbers || calledNumbers.length === 0) return null;
 
     let grid2D = [];
@@ -151,14 +150,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    // 1. አግድም
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
             return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    // 2. ቁመት
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -171,7 +168,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
-    // 3. ሰያፍ
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -183,12 +179,11 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     if(diag1Hits) return diag1Cells.map(cell => cell.idx);
     if(diag2Hits) return diag2Cells.map(cell => cell.idx);
 
-    // 4. አራቱ ማዕዘኖች
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         return [0, 4, 20, 24];
     }
 
-    return null; // እስካሁን ትክክለኛ የቢንጎ መስመር አልተሰራም
+    return null;
 }
 
 let lastSmoothCount = 95; 
@@ -311,7 +306,7 @@ function startMainGameLoop() {
 
         if (timeLeft <= 0 && !globalRoom.gameActive) {
             globalRoom.gameActive = true;
-            globalRoom.calledNumbers = []; // 🎯 አዲስ ዙር ሲጀምር የተጠሩ ቁጥሮች ይጸዳሉ
+            globalRoom.calledNumbers = []; 
             globalRoom.lastCalledNumber = null;
             
             updateRoomPlayersAndPot();
@@ -342,7 +337,6 @@ function startMainGameLoop() {
                         return;
                     }
 
-                    // 1. ቁጥር መጥራት
                     let calledNum = availableNumbers.shift();
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
@@ -353,14 +347,13 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', Number(calledNum));
 
-                    // 2. 🔍 ምንም የጥሪ ገደብ (Call Limit) የለም! ቁጥር በተጠራ ቁጥር ካርዶች ይፈተሻሉ
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
                         if (pData && pData.cards) {
                             pData.cards.forEach(cNum => {
                                 let cList = getCartelaNumbers(cNum);
                                 let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                                if (matched) { // አግድም፣ ቁመት፣ ሰያፍ ወይም 4 ማዕዘን ከሞላ
+                                if (matched) { 
                                     winningWinnersList.push({
                                         username: pData.username || 'ተጫዋች',
                                         socketId: socketId,
@@ -374,7 +367,6 @@ function startMainGameLoop() {
                         }
                     });
 
-                    // 3. አሸናፊ ከተገኘ በዚያው ቅጽበት BINGO ማወጅ
                     if (winningWinnersList.length > 0) {
                         let primaryWinner = winningWinnersList[0];
                         let winningPrimaryCardNum = primaryWinner.cardNum;
@@ -385,6 +377,13 @@ function startMainGameLoop() {
 
                         let totalPot = (globalRoom.playersCount || 1) * 10;
                         let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+
+                        // 🎯 አሸናፊውን ሽልማት ለኪስ ቦርሳ (Wallet) መጨመር
+                        winningWinnersList.forEach(w => {
+                            if (!w.isBot && w.userId) {
+                                userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
+                            }
+                        });
 
                         sendWinnerNotificationToAdmin(winnerNamesStr, winningPrimaryCardNum, prizePerWinner, true);
 
@@ -417,7 +416,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 መደበኛ የቦቶች ሞድ (Standard Bot Mode)
+            // 🤖 መደበኛ የቦቶች ሞድ
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -444,7 +443,7 @@ function startMainGameLoop() {
                 let chosenReal = shuffledReal.slice(0, targetRealCount);
                 chosenReal.forEach(item => {
                     winningUsernamesArr.push(item[1].username);
-                    winningSocketData.push({ socketId: item[0], isBot: false });
+                    winningSocketData.push({ socketId: item[0], userId: item[1].userId, isBot: false });
                     winningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
                 });
             }
@@ -452,7 +451,7 @@ function startMainGameLoop() {
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
-                winningSocketData.push({ socketId: null, isBot: true });
+                winningSocketData.push({ socketId: null, userId: null, isBot: true });
                 winningCardNums.push(Math.floor(Math.random() * 450) + 1);
             }
 
@@ -546,6 +545,12 @@ function startMainGameLoop() {
                     let winnerNamesStr = winningUsernamesArr.join(', ');
                     let hasRealWinner = winningSocketData.some(i => !i.isBot);
                     
+                    winningSocketData.forEach(item => {
+                        if (!item.isBot && item.userId) {
+                            userWallets[item.userId] = (userWallets[item.userId] || 0) + prizePerWinner;
+                        }
+                    });
+
                     sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
                     winningSocketData.forEach(item => {
@@ -685,12 +690,16 @@ async function pollTelegramUpdates() {
 
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
-                            let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
                             
+                            // 🎯 ቦነሱን በቀጥታ በሰቨር በኩል በዩዘር ID ማከማቸት (Wallet Update)
+                            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+
+                            let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
                             let bonusPayload = {
                                 type: 'bonus',
                                 amount: bonusAmount,
-                                adjustedAmount: bonusAmount
+                                adjustedAmount: bonusAmount,
+                                newBalance: userWallets[targetUserId]
                             };
 
                             if (targetUserSocketObj) {
@@ -701,7 +710,7 @@ async function pollTelegramUpdates() {
                                     for (let adminChatId of ADMIN_CHAT_IDS) {
                                         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                             chat_id: adminChatId,
-                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (ኦንላይን ነው)`,
+                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (አካውንቱ ላይ ገቢ ሆኗል)`,
                                             parse_mode: 'Markdown'
                                         }).catch(() => {});
                                     }
@@ -715,7 +724,7 @@ async function pollTelegramUpdates() {
                                 for (let adminChatId of ADMIN_CHAT_IDS) {
                                     await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                         chat_id: adminChatId,
-                                        text: `📌 ዩዘር ID: \`${targetUserId}\` አሁን ኦንላይን አይደለም። አፕሊኬሽኑን ሲከፍት የ **${bonusAmount} ብር** ቦነሱ በራስ-ሰር ይገባለታል!`,
+                                        text: `📌 ዩዘር ID: \`${targetUserId}\` ኦንላይን አይደለም። አፕ ሲከፍት ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!`,
                                         parse_mode: 'Markdown'
                                     }).catch(() => {});
                                 }
@@ -742,11 +751,19 @@ async function pollTelegramUpdates() {
                         let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                         if (action === 'app') {
+                            // 🎯 ዲፖዚት ወይም ገንዘብ ሲጸድቅ ኪስ ቦርሳው ላይ ማስተካከል
+                            if (reqType === 'deposit' || reqType === 'bonus') {
+                                userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                            } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
+                                userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
+                            }
+
                             if (targetSocket) {
                                 targetSocket.emit('financialApproved', { 
                                     type: reqData.type, 
                                     amount: rawAmount, 
-                                    adjustedAmount: finalAmountForClient 
+                                    adjustedAmount: finalAmountForClient,
+                                    newBalance: userWallets[reqData.userId]
                                 });
                             } else {
                                 if (!offlineApprovedQueue[reqData.userId]) {
@@ -755,7 +772,8 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[reqData.userId].push({
                                     type: reqData.type,
                                     amount: rawAmount,
-                                    adjustedAmount: finalAmountForClient
+                                    adjustedAmount: finalAmountForClient,
+                                    newBalance: userWallets[reqData.userId]
                                 });
                             }
 
@@ -765,7 +783,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         } else {
                             if (reqData.chatId) {
-                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ **ምክንያት:** ያስገቡት መረጃ ወይም ደረሰኝ ትክክል አይደለም። እባክዎ ትክክለኛውን መረጃ አረጋግጠው በድጋሚ ጥያቄ ያስገቡ። 🙏`;
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል። 🙏`;
                                 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
@@ -828,6 +846,10 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
+            if (!userWallets[userId]) {
+                userWallets[userId] = 0;
+            }
+
             if (globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
@@ -849,10 +871,13 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
+            // 🎯 የመጀመሪያ ዌልካም ቦነስ መስጠት እና በኪስ ቦርሳ ላይ መመዝገብ
             if (!claimedWelcomeBonusUsers.has(userId)) {
                 claimedWelcomeBonusUsers.add(userId);
+                userWallets[userId] += 20;
                 socket.emit('welcomeBonusGranted', { 
                     amount: 20, 
+                    balance: userWallets[userId],
                     message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
                 });
             }
@@ -863,6 +888,10 @@ io.on('connection', (socket) => {
                 });
                 delete offlineApprovedQueue[userId];
             }
+
+            // 🎯 የተጫዋቹን ወቅታዊ ቀሪ ሂሳብ ወደ ክላይንት መላክ
+            socket.emit('updateBalance', { balance: userWallets[userId] });
+
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
             socket.emit('syncGameState', globalRoom);
@@ -878,10 +907,13 @@ io.on('connection', (socket) => {
             let targetUserId = String(data.targetUserId).trim();
             let bonusAmount = Number(data.amount) || 20;
 
+            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+
             let bonusPayload = {
                 type: 'bonus',
                 amount: bonusAmount,
-                adjustedAmount: bonusAmount
+                adjustedAmount: bonusAmount,
+                balance: userWallets[targetUserId]
             };
 
             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
@@ -889,14 +921,14 @@ io.on('connection', (socket) => {
                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                 if (targetSocket) {
                     targetSocket.emit('financialApproved', bonusPayload);
-                    socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኳል!` });
+                    socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኮ አካውንቱ ላይ ገቢ ሆኗል!` });
                 }
             } else {
                 if (!offlineApprovedQueue[targetUserId]) {
                     offlineApprovedQueue[targetUserId] = [];
                 }
                 offlineApprovedQueue[targetUserId].push(bonusPayload);
-                socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ ይገባለታል!` });
+                socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!` });
             }
         }
     });
