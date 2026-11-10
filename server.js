@@ -841,7 +841,6 @@ io.on('connection', (socket) => {
             }
 
             // 🎯 ዩዘሩ አፕሊኬሽኑን ዘግቶ ወጥቶ በነቃ ጨዋታ (Active Game) ውስጥ ሲመለስ የነበረውን ካርድ እንዲያገኝ ማድረግ
-            // (ነገር ግን ጨዋታው ካልተጀመረ ወይም ራውንዱ ካለቀ የድሮው ካርድ ሙሉ በሙሉ ተሰርዟልና አዲስ መምረጥ አለበት)
             if (globalRoom.gameActive) {
                 let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
                 if (existingKey) {
@@ -933,6 +932,38 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 🎯 [አዲስ የተጨመረው ፊቸር] አድሚኑ ከዌብ ፓነል ሆኖ ማስታወቂያ (Broadcast) ሲልክ
+    socket.on('adminBroadcastMessage', async (data) => {
+        let messageText = data ? data.message : null;
+        
+        if (!messageText) {
+            socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
+            return;
+        }
+
+        let successCount = 0;
+        // ልዩ የሆኑ የዩዘር ID ዎችን (Telegram Chat IDs) መሰብሰብ
+        let uniqueUserIds = [...new Set(onlineRealUsers.map(u => u.userId))];
+
+        for (let uId of uniqueUserIds) {
+            try {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: uId,
+                    text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
+                    parse_mode: 'Markdown'
+                });
+                successCount++;
+                // ቴሌግራም ስፓም እንዳይለብብን ትንሽ ማቆም
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (e) {}
+        }
+
+        socket.emit('adminBroadcastResponse', { 
+            success: true, 
+            message: `✅ ማስታወቂያው በተሳካ ሁኔታ ለ *${successCount}* ተጠቃሚዎች ተልኳል!` 
+        });
+    });
+
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
             globalRoom.playerTemporaryCards[socket.id] = cards;
@@ -1008,9 +1039,6 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        // 🎯 ዩዘሩ ሲወጣ ጨዋታው እየተካሄደ ከሆነ፣ ጨዋታው እስኪያልቅ ድረስ የሱን ካርድ እንይዛለን 
-        // (ነገር ግን ጨዋታው ካለቀ በኋላ አዲስ ዙር ሲጀምር በ endRoundAndRestart() በኩል ሙሉ በሙሉ ይጠረጋል)።
-        // ጨዋታው ካልጀመረ ግን ወዲያውኑ እናጸዳዋለን።
         if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
         }
