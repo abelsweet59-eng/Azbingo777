@@ -332,7 +332,7 @@
                     </div>
                 </div>
 
-                <!-- 🎯 [አዲስ የተጨመረው ፊቸር] ለአድሚኑ ማስታወቂያ (Broadcast) መላኪያ ፎርም -->
+                <!-- 🎯 ለአድሚኑ ማስታወቂያ (Broadcast) መላኪያ ፎርም -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">📢 ለሁሉም ተጠቃሚዎች ማስታወቂያ መላኪያ (Broadcast)</div>
                     <textarea id="admin-broadcast-input" placeholder="ለተጠቃሚዎች የሚተላለፍ መልእክት እዚህ ይጻፉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs resize-none h-16"></textarea>
@@ -734,7 +734,6 @@
                 }
             });
 
-            // 🎯 [አዲስ] አድሚኑ ማስታወቂያ ሲልክ የሚመጣ መልስ
             socket.on('adminBroadcastResponse', (data) => {
                 let msgEl = document.getElementById('admin-broadcast-status-msg');
                 if(msgEl) {
@@ -802,7 +801,7 @@
                         cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
-                        cell.className = "h-5 bg-purple-950/60 text-gray-400 text-[9px] font-medium flex items-center justify-center rounded";
+                        cell.className = "h-5 bg-[#2d2b45] text-gray-300 text-[9px] font-medium flex items-center justify-center rounded";
                         cell.innerText = cn;
                     }
                     cartelaGrid.appendChild(cell);
@@ -853,7 +852,6 @@
             });
         });
 
-        // 🎯 [አዲስ] አድሚኑ ከዌብ ፓነል ሆኖ ማስታወቂያ (Broadcast) የሚልክበት ፈንክሽን
         function sendAdminBroadcast() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             const msgInput = document.getElementById('admin-broadcast-input');
@@ -1194,7 +1192,7 @@
                     btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-2 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
                 } else {
-                    btn.className = "bg-purple-950/60 hover:bg-purple-900 text-white font-medium text-[11px] py-2 rounded border border-white/5";
+                    btn.className = "bg-[#2d2b45] hover:bg-[#3d395c] text-white font-medium text-[11px] py-2 rounded border border-white/5 shadow-sm";
                 }
                 btn.innerText = String(i);
 
@@ -1261,7 +1259,7 @@
                         let colColor = getColumnBgColor(num);
                         cell.className = `${colColor} text-white font-bold text-[10px] rounded py-1 shadow flex items-center justify-center`;
                     } else {
-                        cell.className = 'bg-white/5 text-gray-300 text-[10px] rounded py-1 font-medium flex items-center justify-center';
+                        cell.className = 'bg-[#2d2b45] text-gray-300 text-[10px] rounded py-1 font-medium flex items-center justify-center shadow-sm';
                     }
                     cell.innerText = num;
                     board.appendChild(cell);
@@ -1297,7 +1295,7 @@
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826] p-1.5 rounded-lg border border-purple-500/40 flex flex-col space-y-1 w-full max-w-[210px] shadow-md";
+                cardWrapper.className = "bg-[#140826]/80 backdrop-blur-md p-1.5 rounded-lg border border-white/15 flex flex-col space-y-1 w-full max-w-[210px] shadow-xl";
                 
                 const cardHeader = document.createElement('div');
                 cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
@@ -1334,7 +1332,7 @@
                         cell.className = `${colColorClass} text-white font-black text-[12px] rounded flex items-center justify-center shadow`;
                         cell.innerText = cellNum;
                     } else {
-                        cell.className = "bg-white/5 text-white font-extrabold text-[12px] rounded flex items-center justify-center cursor-pointer";
+                        cell.className = "bg-white text-[#36103c] font-extrabold text-[12px] rounded flex items-center justify-center cursor-pointer shadow-inner border border-white/40";
                         cell.innerText = cellNum;
                         
                         if (!isAutoMode) {
