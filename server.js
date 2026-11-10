@@ -25,7 +25,7 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🎯 እርስዎ የላኩልኝ እና ጨዋታው በሱ እንዲያልቅ የጠየቁት ትክክለኛው የጥሪ ብዛት ሉፕ (Flow Sequence)
+// 🎯 የቦት ሞድ የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
@@ -313,7 +313,7 @@ function startMainGameLoop() {
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
-            // 🎯 [True Random Mode - ሪል ዩዘር ብቻ ሲሆን የሚሰራው ትክክለኛው ኦሪጅናል ሎጂክ]
+            // 🎯 [True Random / Real User Mode]
             if (enableOnlyRealUsersMode) {
                 let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
@@ -327,6 +327,17 @@ function startMainGameLoop() {
                     if (!globalRoom.gameActive) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         return;
+                    }
+
+                    // 🎯 ተጫዋች (ካርድ ያስያዘ) ከሌለ እስከ 75 ቁጥር ጠርቶ ሪስታርት እንዲያደርግ የተደረገበት ትክክለኛ ማረጋገጫ
+                    let currentActiveRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
+                    
+                    if (currentActiveRealEntries.length === 0) {
+                        if (availableNumbers.length === 0 || globalRoom.calledNumbers.length >= 75) {
+                            if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                            setTimeout(() => { endRoundAndRestart(); }, 3000);
+                            return;
+                        }
                     }
 
                     if (availableNumbers.length === 0) {
@@ -414,7 +425,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Default Bot Mode - ከእርስዎ በቀጥታ በተቀበልነው የ `baseNumberFlowSequence` አሰራር ሉፕ እያደረገ የሚሰራው]
+            // 🤖 [Default Bot Mode - በሰጡን የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence) የሚሰራው]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -453,11 +464,11 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 የጥሪ ብዛት ሉፕ (Flow Sequence) ከእርስዎ ዝርዝር ውስጥ በ ቅደም ተከተል እየተወሰደ እንዲጨርስ ተደረገ
+            // 🎯 የጥሪ ብዛት ሉፕ (Flow Sequence) ቅደም ተከተል
             let targetCallCount = baseNumberFlowSequence[sequenceIndex];
             sequenceIndex++;
             if (sequenceIndex >= baseNumberFlowSequence.length) {
-                sequenceIndex = 0; // ማብቂያ ላይ ሲደርስ በድጋሚ ከጅምሩ ሉፕ ይጀምራል
+                sequenceIndex = 0; 
             }
 
             let possiblePatterns = [
@@ -483,7 +494,6 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            // 🎯 አሸናፊዎቹ ቁጥሮች በቅደም ተከተል እንዲጠሩ እና ከtargetCallCount ጋር በትክክል እንዲመሳሰሉ መደረጉ
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -511,7 +521,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 ቁጥሩ ልክ targetCallCount ሲደርስ ወይም ኪዩዉ ሲያልቅ በድል እንዲጠናቀቅ የተደረገ አስተማማኝ ማረጋገጫ
                 let currentCalledLen = globalRoom.calledNumbers.length;
                 let shouldTriggerWin = (currentCalledLen >= targetCallCount) || (winNumQueue.length === 0 && currentCalledLen >= 10);
                 
