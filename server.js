@@ -416,7 +416,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 መደበኛ የቦቶች ሞድ
+            // 🤖 [መደበኛ የቦቶች ሞድ (Default Bot Mode)] - የቀደመው ኦሪጅናል ኮድ ሙሉ በሙሉ የተመለሰበት
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -750,7 +750,6 @@ async function pollTelegramUpdates() {
                         let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                         if (action === 'app') {
-                            // 🎯 [አስተማማኝ የኪስ ቦርሳ ማሻሻያ]: ዲፖዚት፣ ቦነስ ወይም ዊዝድሮዋል ሲጸድቅ በቀጥታ Wallet ላይ ይስተካከላል
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                             } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
@@ -877,7 +876,6 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // 🎯 [የ 24 ሰዓት የጠባቂ ኪው (Queue)]: ተጠቃሚው ኦንላይን ሲመጣ ያልተሰጡ አፕሩቭ የተደረጉ ጥያቄዎች ካሉ በአንድ ላይ ይገባሉ
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
                     socket.emit('financialApproved', item);
