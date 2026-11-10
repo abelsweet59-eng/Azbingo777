@@ -310,7 +310,7 @@ function startMainGameLoop() {
 
         if (timeLeft <= 0 && !globalRoom.gameActive) {
             globalRoom.gameActive = true;
-            globalRoom.calledNumbers = [];
+            globalRoom.calledNumbers = []; // 🎯 አዲስ ዙር ሲጀመር የተጠሩ ቁጥሮች ሙሉ በሙሉ ይጸዳሉ!
             globalRoom.lastCalledNumber = null;
             
             updateRoomPlayersAndPot();
@@ -630,10 +630,10 @@ function startMainGameLoop() {
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
-    globalRoom.calledNumbers = [];
+    globalRoom.calledNumbers = []; // 🎯 ዙሩ ሲጠናቀቅ የተጠሩ ቁጥሮች ይጸዳሉ
     globalRoom.lastCalledNumber = null;
     
-    globalRoom.playerRoundCards = {}; 
+    globalRoom.playerRoundCards = {}; // 🎯 የድሮው ዙር ካርዶች ሙሉ በሙሉ ይጸዳሉ (አዲስ ዙር በንጹህ ይጀምራል)
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
 
