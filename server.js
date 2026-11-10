@@ -319,10 +319,7 @@ function startMainGameLoop() {
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
-            // 🎯 [አዲስ ሎጂክ]: ሪል ዩዘሮች ብቻ (Real Users Only Mode) ሲበራ ወይም ቦቶች ሲኖሩ የሚለየው ክፍል
             if (enableOnlyRealUsersMode) {
-                // 🔹 እውነተኛ ሪል ዩዘሮች ብቻ ሲጫወቱ: ሙሉ በሙሉ ራንደም (True Random) በሆነ መልኩ ቁጥሮች ይጠራሉ። 
-                // ምንም አይነት ቅድመ-ዝግጅት የለም። ማንኛውም ካርድ ፓተርን ሲሰራ በራሱ ጊዜ ዊን ያደርጋል።
                 let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
@@ -353,7 +350,6 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', Number(calledNum));
 
-                    // 🔍 የማሸነፊያ ማረጋገጫ (True Random Winner Check ለሪል ዩዘሮች)
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
                         if (pData && pData.cards) {
@@ -413,10 +409,9 @@ function startMainGameLoop() {
 
                 }, 4500);
 
-                return; // ከዚህ በታች ያለው የቦቶች ሎጂክ እንዳይፈጸም ይቋረጣል
+                return;
             }
 
-            // 🔹 መደበኛ የቦቶች ሞድ (Standard Bot & Flow Mode) - የቀድሞው ኮድ
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -974,7 +969,7 @@ io.on('connection', (socket) => {
     });
 });
 
-The PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log("AZ Server running on port " + PORT);
 });
