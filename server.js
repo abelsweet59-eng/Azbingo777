@@ -841,6 +841,7 @@ io.on('connection', (socket) => {
             }
 
             // 🎯 ዩዘሩ አፕሊኬሽኑን ዘግቶ ወጥቶ በነቃ ጨዋታ (Active Game) ውስጥ ሲመለስ የነበረውን ካርድ እንዲያገኝ ማድረግ
+            // (ነገር ግን ጨዋታው ካልተጀመረ ወይም ራውንዱ ካለቀ የድሮው ካርድ ሙሉ በሙሉ ተሰርዟልና አዲስ መምረጥ አለበት)
             if (globalRoom.gameActive) {
                 let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
                 if (existingKey) {
@@ -849,7 +850,6 @@ io.on('connection', (socket) => {
                     globalRoom.playerRoundCards[socket.id] = existingData;
                 }
             } else {
-                // ጨዋታው ካልጀመረ (በመጠባበቂያ ሰዓት ላይ ከሆነ) የድሮውን ካርድ እናጸዳዋለን (አዲስ መምረጥ አለበት)
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         delete globalRoom.playerRoundCards[sId];
@@ -1008,9 +1008,9 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        // 🎯 ዩዘሩ ሲወጣ ጨዋታው እየተካሄደ ከሆነ ካርዱን ከ `playerRoundCards` ወዲያውኑ አንሰርዘውም 
-        // (በዚያው ጨዋታ ውስጥ መልሶ ከገባ እንዲቀጥልበት በሶኬት ID ምትክ በዩዘር ID ይያዛል)።
-        // ነገር ግን ጨዋታው ካልጀመረ (በመጠባበቂያ ሰዓት ላይ ከሆነ) temp ካርዱን እናጸዳዋለን።
+        // 🎯 ዩዘሩ ሲወጣ ጨዋታው እየተካሄደ ከሆነ፣ ጨዋታው እስኪያልቅ ድረስ የሱን ካርድ እንይዛለን 
+        // (ነገር ግን ጨዋታው ካለቀ በኋላ አዲስ ዙር ሲጀምር በ endRoundAndRestart() በኩል ሙሉ በሙሉ ይጠረጋል)።
+        // ጨዋታው ካልጀመረ ግን ወዲያውኑ እናጸዳዋለን።
         if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
         }
