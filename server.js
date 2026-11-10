@@ -428,7 +428,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Default Bot Mode with Strict Sequence Loop]
+            // 🤖 [Standard Bot Mode with Strict Sequence Loop]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -527,7 +527,9 @@ function startMainGameLoop() {
                 }
 
                 let currentCalledLen = globalRoom.calledNumbers.length;
-                let shouldTriggerWin = (currentCalledLen >= targetCallCount) || (winNumQueue.length === 0 && currentCalledLen >= 10);
+                
+                // 🎯 አስተካካይ፡ ጨዋታው የሚያልቀው በእርስዎ ሲክዌንስ (targetCallCount) ላይ ብቻ እንዲሆን ተደረገ
+                let shouldTriggerWin = (currentCalledLen >= targetCallCount);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 1) * 10;
