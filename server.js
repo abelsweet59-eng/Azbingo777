@@ -25,6 +25,9 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
+// 🎯 ሁሉንም አፕሊኬሽኑን የከፈቱ / የተመዘገቡ ዩዘሮች በቋሚነት ለመያዝ (ለ Broadcast)
+const allRegisteredUsers = new Set();
+
 // 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock/Unlock) ሁኔታዎች
 let isDepositLocked = false;
 let isWithdrawLocked = false;
@@ -89,7 +92,7 @@ let globalRoom = {
     gameStartTime: Date.now() + 60000,
     playersCount: 140,
     takenCards: [],
-    playerRoundCards: {}, // { socketId: { cards: [...], username, userId } }
+    playerRoundCards: {}, 
     playerTemporaryCards: {},
     lastCalledNumber: null,
     targetWinCallCount: 12,
@@ -317,7 +320,6 @@ function startMainGameLoop() {
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
-            // 🎯 [True Random / Real User Mode]
             if (enableOnlyRealUsersMode) {
                 let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
@@ -428,7 +430,6 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Standard Bot Mode with Strict Sequence Loop & Real User Protection]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -637,7 +638,6 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
-    // 🎯 ጨዋታው ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ሪሴት (Reset) ይደረጋሉ
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -829,18 +829,19 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
-    // 🎯 አዲስ ዩዘር ሲገባ የቆለፊያ ሁኔታዎችን መላክ
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
+            // 🎯 ዩዘሩ አፕሊኬሽኑን ሲከፍት በቋሚነት እንመዘግበዋለን (ለ ብሮድካስት እንዲመች)
+            allRegisteredUsers.add(userId);
+
             if (!userWallets[userId]) {
                 userWallets[userId] = 0;
             }
 
-            // 🎯 ዩዘሩ አፕሊኬሽኑን ዘግቶ ወጥቶ በነቃ ጨዋታ (Active Game) ውስጥ ሲመለስ የነበረውን ካርድ እንዲያገኝ ማድረግ
             if (globalRoom.gameActive) {
                 let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
                 if (existingKey) {
@@ -890,7 +891,6 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // 🎯 ከኮንትሮል ፓነል ሆነው ዲፖዚት ወይም ዊዝድሮዋል ሎክ/አንሎክ ሲያደርጉ
     socket.on('adminToggleLock', (data) => {
         if (data.type === 'deposit') {
             isDepositLocked = data.locked;
@@ -932,7 +932,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🎯 [አዲስ የተጨመረው ፊቸር] አድሚኑ ከዌብ ፓነል ሆኖ ማስታወቂያ (Broadcast) ሲልክ
+    // 🎯 [የተሻሻለ] ማስታወቂያ (Broadcast) ሲላክ ለሁሉም (ኦንላይን እና ኦፍላይን ለነበሩ) ተጠቃሚዎች በጀርባ ይደርሳል
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data ? data.message : null;
         
@@ -942,25 +942,27 @@ io.on('connection', (socket) => {
         }
 
         let successCount = 0;
-        // ልዩ የሆኑ የዩዘር ID ዎችን (Telegram Chat IDs) መሰብሰብ
-        let uniqueUserIds = [...new Set(onlineRealUsers.map(u => u.userId))];
+        let allUserIds = [...allRegisteredUsers];
 
-        for (let uId of uniqueUserIds) {
-            try {
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                    chat_id: uId,
-                    text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
-                    parse_mode: 'Markdown'
-                });
-                successCount++;
-                // ቴሌግራም ስፓም እንዳይለብብን ትንሽ ማቆም
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } catch (e) {}
-        }
+        // ዩዘሮች በሌሉበት በጀርባ (Async) በሰርቨሩ ላይ ያለምንም መጫናነቅ እንዲለቀቅ ይደረጋል
+        (async () => {
+            for (let uId of allUserIds) {
+                try {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: uId,
+                        text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
+                        parse_mode: 'Markdown'
+                    });
+                    successCount++;
+                    // ሰርቨሩ ላይ ስፓም ወይም መጫናነቅ እንዳይፈጥር 100 ሚሊሰከንድ አርፈው ይላካሉ
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (e) {}
+            }
+        })();
 
         socket.emit('adminBroadcastResponse', { 
             success: true, 
-            message: `✅ ማስታወቂያው በተሳካ ሁኔታ ለ *${successCount}* ተጠቃሚዎች ተልኳል!` 
+            message: `✅ ማስታወቂያው ለተጠቃሚዎች በሂደት ላይ ይላካል! (አጠቃላይ ተመዝጋቢዎች: ${allUserIds.length})` 
         });
     });
 
