@@ -357,6 +357,7 @@ function startMainGameLoop() {
                                     winningWinnersList.push({
                                         username: pData.username || 'ተጫዋች',
                                         socketId: socketId,
+                                        userId: pData.userId,
                                         isBot: false,
                                         cardNum: cNum,
                                         matched: matched,
@@ -378,7 +379,6 @@ function startMainGameLoop() {
                         let totalPot = (globalRoom.playersCount || 1) * 10;
                         let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
-                        // 🎯 አሸናፊውን ሽልማት ለኪስ ቦርሳ (Wallet) መጨመር
                         winningWinnersList.forEach(w => {
                             if (!w.isBot && w.userId) {
                                 userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
@@ -391,7 +391,7 @@ function startMainGameLoop() {
                             if (!w.isBot && w.socketId) {
                                 let targetSocket = io.sockets.sockets.get(w.socketId);
                                 if (targetSocket) {
-                                    targetSocket.emit('rewardPrize', { prize: prizePerWinner });
+                                    targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
                                 }
                             }
                         });
@@ -557,7 +557,7 @@ function startMainGameLoop() {
                         if (!item.isBot && item.socketId) {
                             let targetSocket = io.sockets.sockets.get(item.socketId);
                             if (targetSocket) {
-                                targetSocket.emit('rewardPrize', { prize: prizePerWinner });
+                                targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[item.userId] });
                             }
                         }
                     });
@@ -691,7 +691,6 @@ async function pollTelegramUpdates() {
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
                             
-                            // 🎯 ቦነሱን በቀጥታ በሰቨር በኩል በዩዘር ID ማከማቸት (Wallet Update)
                             userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
 
                             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
@@ -699,7 +698,7 @@ async function pollTelegramUpdates() {
                                 type: 'bonus',
                                 amount: bonusAmount,
                                 adjustedAmount: bonusAmount,
-                                newBalance: userWallets[targetUserId]
+                                balance: userWallets[targetUserId]
                             };
 
                             if (targetUserSocketObj) {
@@ -751,35 +750,32 @@ async function pollTelegramUpdates() {
                         let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                         if (action === 'app') {
-                            // 🎯 ዲፖዚት ወይም ገንዘብ ሲጸድቅ ኪስ ቦርሳው ላይ ማስተካከል
+                            // 🎯 [አስተማማኝ የኪስ ቦርሳ ማሻሻያ]: ዲፖዚት፣ ቦነስ ወይም ዊዝድሮዋል ሲጸድቅ በቀጥታ Wallet ላይ ይስተካከላል
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                             } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
                                 userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
                             }
 
+                            let successPayload = { 
+                                type: reqData.type, 
+                                amount: rawAmount, 
+                                adjustedAmount: finalAmountForClient,
+                                balance: userWallets[reqData.userId]
+                            };
+
                             if (targetSocket) {
-                                targetSocket.emit('financialApproved', { 
-                                    type: reqData.type, 
-                                    amount: rawAmount, 
-                                    adjustedAmount: finalAmountForClient,
-                                    newBalance: userWallets[reqData.userId]
-                                });
+                                targetSocket.emit('financialApproved', successPayload);
                             } else {
                                 if (!offlineApprovedQueue[reqData.userId]) {
                                     offlineApprovedQueue[reqData.userId] = [];
                                 }
-                                offlineApprovedQueue[reqData.userId].push({
-                                    type: reqData.type,
-                                    amount: rawAmount,
-                                    adjustedAmount: finalAmountForClient,
-                                    newBalance: userWallets[reqData.userId]
-                                });
+                                offlineApprovedQueue[reqData.userId].push(successPayload);
                             }
 
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
                             if (reqData.chatId) {
@@ -871,7 +867,6 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
-            // 🎯 የመጀመሪያ ዌልካም ቦነስ መስጠት እና በኪስ ቦርሳ ላይ መመዝገብ
             if (!claimedWelcomeBonusUsers.has(userId)) {
                 claimedWelcomeBonusUsers.add(userId);
                 userWallets[userId] += 20;
@@ -882,6 +877,7 @@ io.on('connection', (socket) => {
                 });
             }
 
+            // 🎯 [የ 24 ሰዓት የጠባቂ ኪው (Queue)]: ተጠቃሚው ኦንላይን ሲመጣ ያልተሰጡ አፕሩቭ የተደረጉ ጥያቄዎች ካሉ በአንድ ላይ ይገባሉ
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
                     socket.emit('financialApproved', item);
@@ -889,7 +885,6 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
-            // 🎯 የተጫዋቹን ወቅታዊ ቀሪ ሂሳብ ወደ ክላይንት መላክ
             socket.emit('updateBalance', { balance: userWallets[userId] });
 
             refreshTakenCardsList();
