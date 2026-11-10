@@ -483,6 +483,7 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
+            // 🎯 አሸናፊዎቹ ቁጥሮች በቅደም ተከተል እንዲጠሩ እና ከtargetCallCount ጋር በትክክል እንዲመሳሰሉ መደረጉ
             let interleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -492,10 +493,6 @@ function startMainGameLoop() {
                         interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
-            }
-
-            if (interleavedWinningNumbers.length > targetCallCount) {
-                interleavedWinningNumbers = interleavedWinningNumbers.slice(0, targetCallCount);
             }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
@@ -514,17 +511,9 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let minCallsBeforeWin = Math.min(8, targetCallCount); 
-                let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
-                
-                let allWinnersReady = true;
-                perWinnerConfigs.forEach((cfg) => {
-                    let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
-                    let isPatternDone = matchedIdxs && cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (!isPatternDone) allWinnersReady = false;
-                });
-                
-                let shouldTriggerWin = (reachedTargetLimit && allWinnersReady && globalRoom.calledNumbers.length >= minCallsBeforeWin);
+                // 🎯 ቁጥሩ ልክ targetCallCount ሲደርስ ወይም ኪዩዉ ሲያልቅ በድል እንዲጠናቀቅ የተደረገ አስተማማኝ ማረጋገጫ
+                let currentCalledLen = globalRoom.calledNumbers.length;
+                let shouldTriggerWin = (currentCalledLen >= targetCallCount) || (winNumQueue.length === 0 && currentCalledLen >= 10);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 1) * 10;
@@ -532,7 +521,7 @@ function startMainGameLoop() {
 
                     let primaryCardNum = winningCardNums[0];
                     let winningCardNumbers = getCartelaNumbers(primaryCardNum);
-                    let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers);
+                    let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers) || sharedPattern;
 
                     let winnerNamesStr = winningUsernamesArr.join(', ');
                     let hasRealWinner = winningSocketData.some(i => !i.isBot);
@@ -586,41 +575,6 @@ function startMainGameLoop() {
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    
-                    if (targetRealCount === 0) {
-                        let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
-                        let isAccidentalRealWin = false;
-                        
-                        let possiblePatternsCheck = [
-                            [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-                            [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-                            [0,6,12,18,24], [4,8,12,16,20], [0,4,20,24]
-                        ];
-
-                        activeRealEntriesCheck.forEach(playerData => {
-                            if (playerData.cards) {
-                                playerData.cards.forEach(cNum => {
-                                    let cList = getCartelaNumbers(cNum);
-                                    let tempCalled = [...globalRoom.calledNumbers, Number(calledNum)];
-                                    let matched = getWinningMatchedIndices(cList, tempCalled);
-                                    
-                                    if (matched) {
-                                        possiblePatternsCheck.forEach(pat => {
-                                            if (pat.every(pIdx => matched.includes(pIdx))) {
-                                                isAccidentalRealWin = true;
-                                            }
-                                        });
-                                    }
-                                });
-                            }
-                        });
-
-                        if (isAccidentalRealWin && availableNumbers.length > 0) {
-                            let alternativeRandIdx = Math.floor(Math.random() * availableNumbers.length);
-                            calledNum = availableNumbers.splice(alternativeRandIdx, 1)[0];
-                        }
-                    }
-
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
 
