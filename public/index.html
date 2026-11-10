@@ -291,7 +291,7 @@
                     <div class="bg-purple-950/40 p-2.5 rounded-xl border border-purple-500/30 space-y-2">
                         <h3 class="font-bold text-amber-300 text-xs">💳 1. ገንዘብ ገቢ የማድረጊያ መመሪያ (Deposit Rule)</h3>
                         <div class="text-gray-300 space-y-1.5 text-[11px]">
-                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ያደረጋሉ። በመቀጠል ገቢ ያደርጋሉ</p>
+                            <p><b>1ኛ ደረጃ:</b> በመጀመሪያ አፕሊኬሽኑ ላይ የሚታየውን የቴሌብር ስልክ ቁጥር አንድ ጊዜ ሲጫኑት ራሱ ኮፒ (Copy) ያደረጋሉ። በመቀጠል ገቢ ያደርጋሉ።</p>
                             <p><b>2ኛ ደረጃ:</b> ገንዘቡን ከላኩ በኋላ በቴሌብር or Account በኩል የሚደርሰውን አጭር የጽሁፍ መልእክት (SMS) ደረሰኝ ሙሉውን ኮፒ (Copy) አድርገው፤ ያስተላለፉትን የብር መጠን ጽፈው እና ደረሰኙን ፔስት (Paste) በማድረግ "ጥያቄ ላክ" የሚለውን ሲጫኑ ገንዘቡ ወዲያውኑ ገቢ ይሆናል (ዝቅተኛው የዲፖዚት ገደብ 20 ብር ነው።)</p>
                         </div>
                     </div>
@@ -313,6 +313,19 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
                 
+                <!-- አዲስ: የጨዋታ ሁነታ መቀየሪያ (ሪል ዩዘሮች ብቻ vs መደበኛ) -->
+                <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
+                    <div class="font-bold text-amber-300">⚙️ የጨዋታ ሁነታ መቆጣጠሪያ (Game Mode Switcher)</div>
+                    <div class="grid grid-cols-1 gap-2 pt-1">
+                        <button onclick="adminSetWinner('only_real_users_mode')" class="w-full bg-gradient-to-r from-emerald-700 to-teal-700 hover:opacity-90 text-white font-black py-2 rounded text-xs shadow flex items-center justify-center gap-1">
+                            👥 ሪል ዩዘሮች ብቻ እንዲጫወቱ አድርግ (Real-Only Mode)
+                        </button>
+                        <button onclick="adminSetWinner('standard_bot_mode')" class="w-full bg-gradient-to-r from-purple-800 to-indigo-800 hover:opacity-90 text-white font-black py-2 rounded text-xs shadow flex items-center justify-center gap-1">
+                            🤖 ወደ መደበኛው (ቦቶች + ሪል) ሁነታ መልስ (Standard Bot Mode)
+                        </button>
+                    </div>
+                </div>
+
                 <div class="text-xs text-gray-300 p-2 bg-purple-950/40 rounded border border-purple-500/30 space-y-2">
                     <div class="font-bold text-amber-300">👑 የዙር አሸናፊ መቆጣጠሪያ</div>
                     <div class="grid grid-cols-1 gap-2 pt-1">
@@ -458,7 +471,6 @@
         const userSavedCardsKey = `az_bingo_saved_cards_v17_${telegramUserId}`;
         const userCurrentRoundPaidKey = `az_bingo_round_paid_v17_${telegramUserId}`;
 
-        // 🛡️ [የተስተካከለ ሎጂክ]: ተጠቃሚው አፑን ከፈተ (ወጥቶ እንደ አዲስ ሲገባ) የድሮውን ካርድ በግዳጅ እናጸዳለን
         if (sessionStorage.getItem('az_session_started') === null) {
             localStorage.removeItem(userSavedCardsKey);
             localStorage.removeItem(userCurrentRoundPaidKey);
@@ -592,9 +604,7 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                if (room.gameActive) {
-                    // ጨዋታው ንቁ ከሆነ እና ተጠቃሚው አዲስ ስፔስ ከከፈተ ካርዱ በ session በኩል ይጸዳል
-                } else {
+                if (!room.gameActive) {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && myData.cards) {
@@ -672,6 +682,15 @@
             });
 
             socket.on('cardSelectionError', (msg) => { alert(msg); });
+
+            socket.on('adminWinnerResponse', (data) => {
+                let msgEl = document.getElementById('admin-winner-status-msg');
+                if(msgEl) {
+                    msgEl.innerText = data.message;
+                    msgEl.classList.remove('hidden');
+                    setTimeout(() => msgEl.classList.add('hidden'), 3000);
+                }
+            });
 
             socket.on('bingoWinner', (data) => {
                 try {
@@ -790,10 +809,6 @@
         function adminSetWinner(type) {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             socket.emit('adminSetNextWinner', { winnerType: type });
-            let msgEl = document.getElementById('admin-winner-status-msg');
-            msgEl.innerText = "✅ አሸናፊው ተስተካክሏል!";
-            msgEl.classList.remove('hidden');
-            setTimeout(() => msgEl.classList.add('hidden'), 3000);
         }
 
         function sendAdminBonus(amount) {
