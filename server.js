@@ -191,6 +191,34 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return null;
 }
 
+// 🎯 የተጠቃሚው ካርድ ሙሉ ለመሆን (Bingo ለማለት) ምን ያህል ቁጥሮች እንደቀሩት የሚቆጥር ሎጂክ
+function getRemainingCountForCard(winningCardNumbers, calledNumbers) {
+    let cleanCalled = new Set(calledNumbers.map(n => Number(n)));
+    cleanCalled.add("FREE");
+
+    let possiblePatterns = [
+        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
+        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
+        [0,6,12,18,24], [4,8,12,16,20],
+        [0,4,20,24]
+    ];
+
+    let minMissing = 999;
+    for (let p of possiblePatterns) {
+        let missingInPattern = 0;
+        for (let idx of p) {
+            let val = winningCardNumbers[idx];
+            if (val !== "FREE" && !cleanCalled.has(Number(val))) {
+                missingInPattern++;
+            }
+        }
+        if (missingInPattern < minMissing) {
+            minMissing = missingInPattern;
+        }
+    }
+    return minMissing;
+}
+
 let lastSmoothCount = 95; 
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
@@ -588,17 +616,25 @@ function startMainGameLoop() {
                             let wouldRealUserWin = false;
 
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
+                            
+                            // 🎯 [የተስተካከለ ጥበቃ] በ Standard Bot Mode ጊዜ እውነተኛው ተጠቃሚ 1 ቁጥር ብቻ ከቀረው (ወይም ፓተርኑን ሊጨርስ ሲቃረብ) ቦቱ በአጋጣሚ እንዳያሸንፍ/ቁጥሩ እንዳይጠራ ጥንቃቄ ይደረጋል
+                            let realUserCardDanger = false;
                             Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
                                         let cList = getCartelaNumbers(cNum);
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
                                         if (matched) wouldRealUserWin = true;
+
+                                        let remCount = getRemainingCountForCard(cList, tempCalled);
+                                        if (remCount === 1) {
+                                            realUserCardDanger = true;
+                                        }
                                     });
                                 }
                             });
 
-                            if (!wouldRealUserWin) {
+                            if (!wouldRealUserWin && !realUserCardDanger) {
                                 candidateIdx = i;
                                 candidateNum = testNum;
                                 break;
