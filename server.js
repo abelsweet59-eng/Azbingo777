@@ -95,6 +95,7 @@ let globalRoom = {
 };
 
 let forcedNextWinner = null; 
+let enableOnlyRealUsersMode = false; // አዲስ: ሪል ዩዘሮች ብቻ እንዲጫወቱ እና ደራሹ በነሱ ብቻ እንዲሰላ መቆጣጠሪያ
 let onlineRealUsers = [];
 let pendingRequests = {};
 let offlineApprovedQueue = {}; 
@@ -192,6 +193,11 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
 let lastSmoothCount = 95; 
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
+    if (enableOnlyRealUsersMode) {
+        // ሪል ዩዘሮች ብቻ ሲመረጡ ቦቶች 0 ይሆናሉ
+        return 0;
+    }
+
     const now = new Date();
     let utcHours = now.getUTCHours();
     let ethiopianHour = (utcHours + 3) % 24; 
@@ -230,11 +236,28 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     return lastSmoothCount;
 }
 
+function updateRoomPlayersAndPot() {
+    let realCount = connectedRealPlayers.length;
+    let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
+    
+    if (enableOnlyRealUsersMode) {
+        // ሪል ዩዘሮች ብቻ ሲሆኑ የተጫዋቾች ብዛት ካርድ የገዙት ትክክለኛ ሪል ዩዘሮች ብዛት (ወይም ደግሞ የተያዙ ካርዶች ብዛት / ኦንላይን ያሉ) ይሆናል
+        let uniqueRealCardsCount = 0;
+        activeRealEntries.forEach(([sId, data]) => {
+            if (data.cards) uniqueRealCardsCount += data.cards.length;
+        });
+        globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
+        if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
+    } else {
+        let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
+        globalRoom.playersCount = currentBotsCount + realCount; 
+    }
+    io.emit('updatePlayersCount', globalRoom.playersCount);
+}
+
 setInterval(() => {
     if (!globalRoom.gameActive) {
-        let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = getRealisticBotsCount(realCount, false) + realCount;
-        io.emit('updatePlayersCount', globalRoom.playersCount);
+        updateRoomPlayersAndPot();
     }
 }, 4000);
 
@@ -251,7 +274,7 @@ function refreshTakenCardsList() {
 }
 
 function simulateBotCardSelections() {
-    if (globalRoom.gameActive) return;
+    if (globalRoom.gameActive || enableOnlyRealUsersMode) return;
     let available = [];
     for(let i = 1; i <= 500; i++) {
         if(!globalRoom.takenCards.includes(i)) available.push(i);
@@ -294,9 +317,7 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
             
-            let realCount = connectedRealPlayers.length;
-            globalRoom.playersCount = getRealisticBotsCount(realCount, true) + realCount;
-            io.emit('updatePlayersCount', globalRoom.playersCount);
+            updateRoomPlayersAndPot();
 
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
@@ -308,15 +329,15 @@ function startMainGameLoop() {
             let winningCardNums = [];
 
             let targetRealCount = 0;
-            let explicitRealForced = (currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
+            let explicitRealForced = (enableOnlyRealUsersMode || currentWinnerType === 'only_real_users' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
 
             if (explicitRealForced && activeRealEntries.length > 0) {
-                if (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real') {
-                    targetRealCount = Math.min(3, activeRealEntries.length);
+                if ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
+                    targetRealCount = 3;
                     winnersCount = 3; 
                 } else {
-                    targetRealCount = 1;
-                    winnersCount = 1; 
+                    targetRealCount = Math.min(activeRealEntries.length, enableOnlyRealUsersMode ? activeRealEntries.length : 1);
+                    winnersCount = targetRealCount; 
                 }
             } else {
                 targetRealCount = 0;
@@ -333,14 +354,26 @@ function startMainGameLoop() {
                 });
             }
 
-            while (winningUsernamesArr.length < winnersCount) {
+            // ሪል ዩዘሮች ብቻ ሁነታ ላይ ከሆኑ እና ሪል ተጫዋች ከሌለ በስተቀር ቦት አይገባም
+            if (!enableOnlyRealUsersMode) {
+                while (winningUsernamesArr.length < winnersCount) {
+                    let bName = getRandomBotNames(1)[0];
+                    winningUsernamesArr.push(bName);
+                    winningSocketData.push({ socketId: null, isBot: true });
+                    winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                }
+            }
+
+            winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
+            if (winningUsernamesArr.length === 0) {
+                // ካልተገኘ በመደበኛ ቦት ይሞላል
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
                 winningSocketData.push({ socketId: null, isBot: true });
                 winningCardNums.push(Math.floor(Math.random() * 450) + 1);
+                winnersCount = 1;
             }
 
-            winnersCount = winningUsernamesArr.length;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
             let targetCallCount = customNumberFlowSequence[sequenceIndex];
@@ -424,7 +457,7 @@ function startMainGameLoop() {
                 let shouldTriggerWin = (reachedTargetLimit || realUserCompleted);
                 
                 if (shouldTriggerWin) {
-                    let totalPot = (globalRoom.playersCount || 140) * 10;
+                    let totalPot = (globalRoom.playersCount || 1) * 10;
                     let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
 
                     let primaryCardNum = winningCardNums[0];
@@ -474,7 +507,7 @@ function startMainGameLoop() {
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
                     
-                    if (targetRealCount === 0) {
+                    if (targetRealCount === 0 && !enableOnlyRealUsersMode) {
                         let activeRealEntriesCheck = Object.values(globalRoom.playerRoundCards);
                         let isAccidentalRealWin = false;
                         
@@ -706,10 +739,7 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
 
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
-    let realCount = connectedRealPlayers.length;
-    let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
-    globalRoom.playersCount = currentBotsCount + realCount; 
-    io.emit('updatePlayersCount', globalRoom.playersCount);
+    updateRoomPlayersAndPot();
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
@@ -717,8 +747,6 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🛡️ [የተስተካከለ ሎጂክ]: ጨዋታው ንቁ (gameActive == true) ከሆነ, ተጫዋቹ ሪኮኔክት ሲያደርግ የድሮው ካርዱ ይጸዳል (አይያዝም)። 
-            // ጨዋታው ገና በቆጠራ ሰዓት ላይ ከሆነ (gameActive == false) ብቻ ካርዱ እንዲጠበቅ ይደረጋል።
             if (globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
@@ -755,6 +783,7 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
             refreshTakenCardsList();
+            updateRoomPlayersAndPot();
             socket.emit('syncGameState', globalRoom);
         }
     });
@@ -809,13 +838,29 @@ io.on('connection', (socket) => {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
             refreshTakenCardsList();
+            updateRoomPlayersAndPot();
             socket.emit('cardSelectionSuccess');
         }
     });
 
+    // አዲስ: የአድሚን ሁነታ መቀየሪያ (ሪል ዩዘሮች ብቻ vs መደበኛ ቦቶች)
     socket.on('adminSetNextWinner', (data) => {
-        forcedNextWinner = data.winnerType ? String(data.winnerType).trim() : null;
-        socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+        let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
+        
+        if (winnerType === 'only_real_users_mode') {
+            enableOnlyRealUsersMode = true;
+            forcedNextWinner = 'random_real';
+            updateRoomPlayersAndPot();
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [ሪል ዩዘሮች ብቻ] ተቀይሯል!` });
+        } else if (winnerType === 'standard_bot_mode') {
+            enableOnlyRealUsersMode = false;
+            forcedNextWinner = null;
+            updateRoomPlayersAndPot();
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [መደበኛ (ቦቶች + ሪል)] ተመለሰ!` });
+        } else {
+            forcedNextWinner = winnerType;
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+        }
     });
 
     socket.on('financialRequest', async (data) => {
@@ -848,9 +893,7 @@ io.on('connection', (socket) => {
         delete globalRoom.playerTemporaryCards[socket.id];
         
         refreshTakenCardsList();
-        let realCount = connectedRealPlayers.length;
-        globalRoom.playersCount = getRealisticBotsCount(realCount, globalRoom.gameActive) + realCount;
-        io.emit('updatePlayersCount', globalRoom.playersCount);
+        updateRoomPlayersAndPot();
     });
 });
 
