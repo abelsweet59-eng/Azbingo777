@@ -17,11 +17,24 @@
             50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
-        @keyframes softBlink {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.65; transform: scale(0.98); box-shadow: 0 0 15px rgba(245, 158, 11, 0.6); }
+        
+        /* 🎯 [የተስተካከለ] እጅግ ደማቅ እና ቶሎ ቶሎ የሚያንጸባርቅ (Fast Flame/Blink) አኒሜሽን ለ "ካርድ አረጋግጥ" አዝራር */
+        @keyframes fastFlameGlow {
+            0%, 100% { 
+                transform: scale(1); 
+                background: linear-gradient(to right, #f59e0b, #ea580c);
+                box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), inset 0 0 5px rgba(255, 255, 255, 0.4);
+                border-color: rgba(255, 255, 255, 0.6);
+            }
+            50% { 
+                transform: scale(1.06); 
+                background: linear-gradient(to right, #fbbf24, #ef4444);
+                box-shadow: 0 0 25px rgba(239, 68, 68, 0.9), 0 0 40px rgba(245, 158, 11, 1), inset 0 0 12px rgba(255, 255, 255, 0.8);
+                border-color: #ffffff;
+            }
         }
-        .blink-btn { animation: softBlink 1.2s infinite ease-in-out; }
+        .blink-btn { animation: fastFlameGlow 0.6s infinite ease-in-out; }
+
         @keyframes countdownPop {
             0% { transform: scale(0.5); opacity: 0; }
             50% { transform: scale(1.2); opacity: 1; }
@@ -130,8 +143,9 @@
                             <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
                             <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
                         </div>
-                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg font-bold text-xs shadow-md transition-all">
-                            ካርድ አረጋግጥ
+                        <!-- 🎯 የ "ካርድ አረጋግጥ" አዝራር እጅግ ደማቅ እና ቶሎ ቶሎ የሚያንጸባርቅ (blink-btn) ስታይል -->
+                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300">
+                            ✨ ካርድ አረጋግጥ
                         </button>
                     </div>
                 </div>
@@ -313,7 +327,6 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
                 
-                <!-- 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock / Unlock Panel) -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">🔒 የዲፖዚት እና ዊዝድሮዋል መቆጣጠሪያ</div>
                     <div class="grid grid-cols-2 gap-2 pt-1">
@@ -332,7 +345,6 @@
                     </div>
                 </div>
 
-                <!-- 🎯 ለአድሚኑ ማስታወቂያ (Broadcast) መላኪያ ፎርም -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">📢 ለሁሉም ተጠቃሚዎች ማስታወቂያ መላኪያ (Broadcast)</div>
                     <textarea id="admin-broadcast-input" placeholder="ለተጠቃሚዎች የሚተላለፍ መልእክት እዚህ ይጻፉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs resize-none h-16"></textarea>
@@ -342,7 +354,6 @@
                     <div id="admin-broadcast-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center"></div>
                 </div>
 
-                <!-- የጨዋታ ሁነታ መቀየሪያ -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">⚙️ የጨዋታ ሁነታ መቆጣጠሪያ (Game Mode Switcher)</div>
                     <div class="grid grid-cols-1 gap-2 pt-1">
@@ -1105,9 +1116,8 @@
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
 
             const confirmBtn = document.getElementById('confirm-card-btn');
-            confirmBtn.classList.remove('bg-red-600', 'text-white');
-            confirmBtn.classList.add('blink-btn', 'bg-gradient-to-r', 'from-amber-500', 'to-orange-600');
-            confirmBtn.innerText = "ካርድ አረጋግጥ";
+            confirmBtn.className = "blink-btn text-white px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300";
+            confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
 
             document.getElementById('stat-called-count').innerText = "0";
             
