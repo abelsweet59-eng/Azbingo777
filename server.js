@@ -25,6 +25,10 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
+// 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock/Unlock) ሁኔታዎች
+let isDepositLocked = false;
+let isWithdrawLocked = false;
+
 // 🎯 የቦት ሞድ የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
@@ -329,7 +333,6 @@ function startMainGameLoop() {
                         return;
                     }
 
-                    // 🎯 ተጫዋች (ካርድ ያስያዘ) ከሌለ እስከ 75 ቁጥር ጠርቶ ሪስታርት እንዲያደርግ የተደረገበት ትክክለኛ ማረጋገጫ
                     let currentActiveRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
                     
                     if (currentActiveRealEntries.length === 0) {
@@ -425,7 +428,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Default Bot Mode - በሰጡን የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence) የሚሰራው]
+            // 🤖 [Default Bot Mode]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -464,7 +467,6 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 የጥሪ ብዛት ሉፕ (Flow Sequence) ቅደም ተከተል
             let targetCallCount = baseNumberFlowSequence[sequenceIndex];
             sequenceIndex++;
             if (sequenceIndex >= baseNumberFlowSequence.length) {
@@ -647,6 +649,41 @@ async function pollTelegramUpdates() {
                         let cmd = parts[0].toLowerCase();
                         let targetUserId = parts[1] ? String(parts[1]).trim() : null;
 
+                        // 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ ትዕዛዞች (Admin Commands)
+                        if (cmd === '/lockdep') {
+                            isDepositLocked = true;
+                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `🔒 **ዲፖዚት (Deposit)** በተን በአድሚን ተቆልፏል! ተጠቃሚዎች ሲሞክሩ ጥገና ላይ ነው ይላል።`,
+                                parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        } else if (cmd === '/unlockdep') {
+                            isDepositLocked = false;
+                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `🔓 **ዲፖዚት (Deposit)** በተን ተከፍቷል!`,
+                                parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        } else if (cmd === '/lockwith') {
+                            isWithdrawLocked = true;
+                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `🔒 **ዊዝድሮዋል (Withdraw)** በተን በአድሚን ተቆልፏል! ተጠቃሚዎች ሲሞክሩ ጥገና ላይ ነው ይላል።`,
+                                parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        } else if (cmd === '/unlockwith') {
+                            isWithdrawLocked = false;
+                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `🔓 **ዊዝድሮዋል (Withdraw)** በተን ተከፍቷል!`,
+                                parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        }
+
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
                             
@@ -796,6 +833,9 @@ io.on('connection', (socket) => {
     socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList();
 
+    // 🎯 አዲስ ዩዘር ሲገባ የቆለፊያ ሁኔታዎችን መላክ
+    socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
@@ -931,6 +971,16 @@ io.on('connection', (socket) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
+        // 🎯 ሰርቨር በኩል ሎክ መሆኑን ማረጋገጥ (Security check)
+        if (type === 'deposit' && isDepositLocked) {
+            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!" });
+            return;
+        }
+        if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
+            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!" });
+            return;
+        }
+
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
@@ -938,7 +988,7 @@ io.on('connection', (socket) => {
             chatId: telegramChatId || userId, 
             type, 
             amount, 
-            username, 
+username, 
             socketId: socket.id, 
             timestamp: Date.now() 
         };
