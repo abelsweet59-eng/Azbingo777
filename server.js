@@ -428,7 +428,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Standard Bot Mode with Strict Sequence Loop]
+            // 🤖 [Standard Bot Mode with Strict Sequence Loop & Real User Protection]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -467,10 +467,8 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 የሲክዌንስ ቁጥሩን በቅደም ተከተል መውሰድ
             let targetCallCount = baseNumberFlowSequence[sequenceIndex];
             
-            // 🎯 ሲክዌንሱ መጨረሻ ላይ ሲደርስ በራስ-ሰር ተመልሶ ወደ መጀመሪያው (Index 0) እንዲመለስ (Loop) ማድረግ
             sequenceIndex++;
             if (sequenceIndex >= baseNumberFlowSequence.length) {
                 sequenceIndex = 0; 
@@ -527,8 +525,6 @@ function startMainGameLoop() {
                 }
 
                 let currentCalledLen = globalRoom.calledNumbers.length;
-                
-                // 🎯 አስተካካይ፡ ጨዋታው የሚያልቀው በእርስዎ ሲክዌንስ (targetCallCount) ላይ ብቻ እንዲሆን ተደረገ
                 let shouldTriggerWin = (currentCalledLen >= targetCallCount);
                 
                 if (shouldTriggerWin) {
@@ -583,8 +579,38 @@ function startMainGameLoop() {
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
                     if (availableNumbers.length > 0) {
-                        let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                        calledNum = availableNumbers.splice(randIdx, 1)[0];
+                        // 🎯 Smart Protection: ሪል ዩዘሮች የሚያስፈልጋቸውን የማጠናቀቂያ ቁጥር እንዳያገኙ መከላከል
+                        let candidateIdx = -1;
+                        let candidateNum = null;
+
+                        for (let i = 0; i < availableNumbers.length; i++) {
+                            let testNum = availableNumbers[i];
+                            let wouldRealUserWin = false;
+
+                            let tempCalled = [...globalRoom.calledNumbers, testNum];
+                            Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
+                                if (pData && pData.cards) {
+                                    pData.cards.forEach(cNum => {
+                                        let cList = getCartelaNumbers(cNum);
+                                        let matched = getWinningMatchedIndices(cList, tempCalled);
+                                        if (matched) wouldRealUserWin = true;
+                                    });
+                                }
+                            });
+
+                            if (!wouldRealUserWin) {
+                                candidateIdx = i;
+                                candidateNum = testNum;
+                                break;
+                            }
+                        }
+
+                        if (candidateIdx > -1) {
+                            calledNum = availableNumbers.splice(candidateIdx, 1)[0];
+                        } else {
+                            let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                            calledNum = availableNumbers.splice(randIdx, 1)[0];
+                        }
                     } else {
                         calledNum = Math.floor(Math.random() * 75) + 1;
                     }
