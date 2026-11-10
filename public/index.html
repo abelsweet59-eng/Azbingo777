@@ -66,7 +66,7 @@
     <div class="w-full max-w-[430px] h-screen sm:h-[850px] bg-gradient-to-b from-[#1c0c33] via-[#120624] to-[#0a0216] flex flex-col justify-between shadow-2xl sm:rounded-2xl border border-white/10 overflow-hidden relative">
 
         <!-- Top Header -->
-        <header class="flex justify-between items-center px-3 py-2 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
+        <header class="flex justify-between items-center px-3 py-1.5 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
             <div class="text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap">
                 AZ Bingo
             </div>
@@ -104,7 +104,7 @@
         <div id="tab-container" class="flex-1 overflow-hidden relative flex flex-col">
             
             <!-- TAB 1: GAME -->
-            <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-2 overflow-y-auto custom-scroll">
+            <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-1.5 overflow-y-auto custom-scroll">
                 
                 <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-2">
@@ -120,56 +120,57 @@
 
                     <div class="flex-1 min-h-[220px] max-h-[340px] overflow-y-auto custom-scroll bg-black/40 p-2.5 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
 
-                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-3.5 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
+                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-3 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
                         <div class="flex items-center gap-3">
-                            <div class="w-11 h-11 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-xl shadow-inner pulse-ball">
+                            <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-lg shadow-inner pulse-ball">
                                 ⏳
                             </div>
                             <div>
-                                <div class="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider">መጫዎቻው ሊጀመር የሚቀረው ጊዜ</div>
+                                <div class="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider">መጫዎቻው ሊጀመር የሚቀረው ጊዜ</div>
                                 <div class="text-[9px] text-gray-300">እባክዎ ፈጣን በመሆን ካርድዎን ይምረጡ!</div>
                             </div>
                         </div>
                         <div class="text-right">
-                            <div id="big-countdown-timer" class="text-3xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
+                            <div id="big-countdown-timer" class="text-2xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
                                 60s
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex justify-between items-center text-xs">
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
                         <div>
                             <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
                             <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
                         </div>
-                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300">
+                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-4 py-2 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300">
                             ✨ ካርድ አረጋግጥ
                         </button>
                     </div>
                 </div>
 
                 <!-- LIVE GAME SECTION -->
-                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1.5 pb-1 overflow-y-auto custom-scroll">
+                <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1 pb-1 overflow-hidden">
                     
-                    <div class="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 px-3 py-2 rounded-xl border border-amber-500/40 flex justify-between items-center shadow-lg">
-                        <button onclick="toggleAudioMute()" id="audio-mute-btn" class="flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-amber-400/50 text-amber-300 text-xs font-bold shadow-inner">
-                            <span id="audio-icon" class="text-base">🔇</span>
+                    <!-- 🎯 የተስተካከለ፡ የድምፅ እና አውቶማቲክ ባር ቁመት እና ፓዲንግ አነሰ -->
+                    <div class="bg-gradient-to-r from-purple-950 via-purple-900 to-indigo-950 px-2.5 py-1.5 rounded-lg border border-amber-500/40 flex justify-between items-center shadow-md">
+                        <button onclick="toggleAudioMute()" id="audio-mute-btn" class="flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md border border-amber-400/50 text-amber-300 text-[11px] font-bold shadow-inner">
+                            <span id="audio-icon" class="text-sm">🔇</span>
                             <span id="audio-text">ድምፅ (Muted)</span>
                         </button>
 
-                        <div class="flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-lg border border-purple-400/40">
-                            <span class="text-xs font-bold text-gray-200" id="mode-label">አውቶማቲክ</span>
+                        <div class="flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-md border border-purple-400/40">
+                            <span class="text-[11px] font-bold text-gray-200" id="mode-label">አውቶማቲክ</span>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" id="auto-daub-toggle" checked class="sr-only peer" onchange="toggleDaubMode()">
-                                <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                                <div class="w-8 h-4 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
                             </label>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-12 gap-1.5 flex-1">
+                    <div class="grid grid-cols-12 gap-1.5 flex-1 overflow-hidden">
                         
-                        <div class="col-span-5 flex flex-col bg-[#180a29] p-1.5 rounded-xl border border-purple-500/30">
-                            <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-1">
+                        <div class="col-span-5 flex flex-col bg-[#180a29] p-1 rounded-lg border border-purple-500/30 overflow-hidden">
+                            <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-0.5">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-purple-600 rounded text-white py-0.5">I</div>
                                 <div class="bg-pink-600 rounded text-white py-0.5">N</div>
@@ -179,28 +180,29 @@
                             <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-mono flex-1 overflow-y-auto custom-scroll" id="vertical-board-75"></div>
                         </div>
 
-                        <div class="col-span-7 flex flex-col space-y-1.5">
-                            <div class="bg-[#180a29] rounded-xl p-2 border border-purple-500/40 text-center space-y-1.5 shadow-lg relative overflow-hidden">
+                        <!-- 🎯 የተስተካከለ፡ የኳስ ማሳያ ቦታ ግራና ቀኝ ባዶ ቦታ ቀንሶ ተጨማሪ ስፔስ ለካርዱ ሰጠ -->
+                        <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
+                            <div class="bg-[#180a29] rounded-lg p-1.5 border border-purple-500/40 text-center space-y-1 shadow-md relative">
                                 <div class="flex justify-start items-center">
-                                    <div id="recent-balls-container" class="flex flex-wrap gap-1.5 justify-start items-center"></div>
+                                    <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center"></div>
                                 </div>
 
-                                <div id="live-display-area" class="relative flex items-center justify-center my-1">
-                                    <div id="in-place-countdown-box" class="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-xl countdown-anim">
-                                        <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር የሚቀረው</div>
-                                        <div id="in-place-countdown-num" class="text-xl font-black text-amber-400 font-mono">60s</div>
+                                <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
+                                    <div id="in-place-countdown-box" class="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-purple-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim">
+                                        <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
+                                        <div id="in-place-countdown-num" class="text-lg font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
-                                    <div id="main-called-ball" class="hidden w-24 h-24 billiard-ball bg-purple-900 pulse-ball mx-auto">
-                                        <div class="billiard-inner-circle w-12 h-12 text-sm" id="main-ball-inner">
-                                            <span id="ball-letter" class="text-[8px] leading-none uppercase">B</span>
-                                            <span id="ball-num" class="text-sm font-black leading-tight">5</span>
+                                    <div id="main-called-ball" class="hidden w-20 h-20 billiard-ball bg-purple-900 pulse-ball mx-auto">
+                                        <div class="billiard-inner-circle w-10 h-10 text-xs" id="main-ball-inner">
+                                            <span id="ball-letter" class="text-[7px] leading-none uppercase">B</span>
+                                            <span id="ball-num" class="text-xs font-black leading-tight">5</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div id="right-side-dynamic-area" class="bg-[#180a29] rounded-xl p-1.5 border border-purple-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1.5"></div>
+                            <div id="right-side-dynamic-area" class="bg-[#180a29] rounded-lg p-1 border border-purple-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1 flex-1"></div>
                         </div>
                     </div>
                 </div>
@@ -462,14 +464,14 @@
         </div>
 
         <!-- BOTTOM NAV -->
-        <nav class="grid grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-2 px-3 z-20 gap-2">
-            <button onclick="switchTab('game', this)" class="nav-btn flex items-center justify-center gap-1 text-purple-400 bg-purple-950/50 py-2 rounded-xl border border-purple-500/30 shadow transition-all">
+        <nav class="grid grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-1.5 px-3 z-20 gap-2">
+            <button onclick="switchTab('game', this)" class="nav-btn flex items-center justify-center gap-1 text-purple-400 bg-purple-950/50 py-1.5 rounded-xl border border-purple-500/30 shadow transition-all">
                 <span class="text-[11px] font-black tracking-wide">🎮 ጨዋታ</span>
             </button>
-            <button onclick="switchTab('wallet', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-2 rounded-xl border border-white/10 shadow transition-all">
+            <button onclick="switchTab('wallet', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-1.5 rounded-xl border border-white/10 shadow transition-all">
                 <span class="text-[11px] font-bold tracking-wide">💰 ቦርሳ</span>
             </button>
-            <button onclick="switchTab('rules', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-2 rounded-xl border border-white/10 shadow transition-all">
+            <button onclick="switchTab('rules', this)" class="nav-btn flex items-center justify-center gap-1 text-gray-400 bg-white/5 py-1.5 rounded-xl border border-white/10 shadow transition-all">
                 <span class="text-[11px] font-bold tracking-wide">📖 የጨዋታ ህግ</span>
             </button>
         </nav>
@@ -804,13 +806,13 @@
                     let isCalled = (cn === "FREE" || finalCalledList.includes(Number(cn)));
 
                     if (cn === "FREE") {
-                        cell.className = "h-6 bg-amber-500 text-black text-[10px] font-black flex items-center justify-center rounded shadow";
+                        cell.className = "h-5 bg-amber-500 text-black text-[9px] font-black flex items-center justify-center rounded shadow";
                         cell.innerText = "★";
                     } else if (isWinningPatternCell || isCalled) {
-                        cell.className = "h-6 bg-emerald-500 text-black font-black text-[10px] flex items-center justify-center rounded shadow border border-emerald-300";
+                        cell.className = "h-5 bg-emerald-500 text-black font-black text-[9px] flex items-center justify-center rounded shadow border border-emerald-300";
                         cell.innerText = cn;
                     } else {
-                        cell.className = "h-6 bg-[#2d2b45] text-gray-300 text-[10px] font-medium flex items-center justify-center rounded";
+                        cell.className = "h-5 bg-[#2d2b45] text-gray-300 text-[9px] font-medium flex items-center justify-center rounded";
                         cell.innerText = cn;
                     }
                     cartelaGrid.appendChild(cell);
@@ -949,11 +951,11 @@
             if (isAudioMuted) {
                 iconEl.innerText = "🔇";
                 textEl.innerText = "ድምፅ (Muted)";
-                btnEl.className = "flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-red-500/50 text-red-300 text-xs font-bold shadow-inner";
+                btnEl.className = "flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md border border-red-500/50 text-red-300 text-[11px] font-bold shadow-inner";
             } else {
                 iconEl.innerText = "🔊";
                 textEl.innerText = "ድምፅ (ON)";
-                btnEl.className = "flex items-center gap-1.5 bg-black/60 px-3 py-1.5 rounded-lg border border-emerald-400/60 text-emerald-300 text-xs font-bold shadow-inner";
+                btnEl.className = "flex items-center gap-1 bg-black/60 px-2.5 py-1 rounded-md border border-emerald-400/60 text-emerald-300 text-[11px] font-bold shadow-inner";
             }
         }
 
@@ -1000,7 +1002,7 @@
                     const countdownNumEl = document.getElementById('in-place-countdown-num');
                     const centerLabelEl = document.getElementById('center-status-label');
                     if (countdownNumEl && centerLabelEl) {
-                        centerLabelEl.innerText = "ጨዋታውን ለመጀመር የሚቀረው";
+                        centerLabelEl.innerText = "ጨዋታውን ለመጀመር";
                         countdownNumEl.innerText = `${timeLeft}s`;
                     }
                 }
@@ -1045,7 +1047,7 @@
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             let bgClass = getColumnBgColor(num);
             
-            mainBall.className = `w-24 h-24 billiard-ball ${bgClass} pulse-ball mx-auto`;
+            mainBall.className = `w-20 h-20 billiard-ball ${bgClass} pulse-ball mx-auto`;
             document.getElementById('ball-letter').innerText = letter;
             document.getElementById('ball-num').innerText = num;
             renderRecentBalls();
@@ -1062,11 +1064,11 @@
                 let bgClass = getColumnBgColor(num);
 
                 const pill = document.createElement('div');
-                pill.className = `${bgClass} billiard-ball shadow ${isLatest ? 'w-8 h-8' : 'w-7 h-7 opacity-75'}`;
+                pill.className = `${bgClass} billiard-ball shadow ${isLatest ? 'w-7 h-7' : 'w-6 h-6 opacity-75'}`;
                 
                 const inner = document.createElement('div');
-                inner.className = `billiard-inner-circle ${isLatest ? 'w-4.5 h-4.5 text-[8px]' : 'w-4 h-4 text-[7px]'}`;
-                inner.innerHTML = `<span style="font-size: 6px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
+                inner.className = `billiard-inner-circle ${isLatest ? 'w-3.5 h-3.5 text-[7px]' : 'w-3.5 h-3.5 text-[6px]'}`;
+                inner.innerHTML = `<span style="font-size: 5px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
                 
                 pill.appendChild(inner);
                 container.appendChild(pill);
@@ -1114,7 +1116,7 @@
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
 
             const confirmBtn = document.getElementById('confirm-card-btn');
-            confirmBtn.className = "blink-btn text-white px-5 py-2.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300";
+            confirmBtn.className = "blink-btn text-white px-4 py-2 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300";
             confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
 
             document.getElementById('stat-called-count').innerText = "0";
@@ -1262,12 +1264,12 @@
                     const cell = document.createElement('div');
                     
                     if (isLatest) {
-                        cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-1 border border-white animate-pulse shadow-lg flex items-center justify-center';
+                        cell.className = 'bg-amber-400 text-black font-black text-[10px] rounded py-0.5 border border-white animate-pulse shadow-lg flex items-center justify-center';
                     } else if (isCalled) {
                         let colColor = getColumnBgColor(num);
-                        cell.className = `${colColor} text-white font-bold text-[10px] rounded py-1 shadow flex items-center justify-center`;
+                        cell.className = `${colColor} text-white font-bold text-[10px] rounded py-0.5 shadow flex items-center justify-center`;
                     } else {
-                        cell.className = 'bg-[#2d2b45] text-gray-300 text-[10px] rounded py-1 font-medium flex items-center justify-center shadow-sm';
+                        cell.className = 'bg-[#2d2b45] text-gray-300 text-[10px] rounded py-0.5 font-medium flex items-center justify-center shadow-sm';
                     }
                     cell.innerText = num;
                     board.appendChild(cell);
@@ -1288,7 +1290,7 @@
             container.innerHTML = '';
 
             if (confirmedCards.length === 0) {
-                container.className = "bg-[#180a29] rounded-xl p-3 border border-purple-500/30 flex flex-col justify-center items-center text-center";
+                container.className = "bg-[#180a29] rounded-lg p-3 border border-purple-500/30 flex flex-col justify-center items-center text-center flex-1";
                 container.innerHTML = `
                     <div class="text-white font-bold text-sm mb-1">Watching Only</div>
                     <div class="text-gray-400 text-[9px] leading-relaxed">
@@ -1298,30 +1300,30 @@
                 return;
             }
 
-            container.className = "bg-[#180a29] rounded-xl p-2 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-2";
+            container.className = "bg-[#180a29] rounded-lg p-1.5 border border-purple-500/30 flex flex-col justify-start items-center text-center overflow-y-auto custom-scroll space-y-1.5 flex-1";
 
             confirmedCards.forEach((cardNum) => {
                 if (!manualDaubedNumbers[cardNum]) manualDaubedNumbers[cardNum] = [];
                 const cardWrapper = document.createElement('div');
-                cardWrapper.className = "bg-[#140826]/90 backdrop-blur-md p-2 rounded-xl border border-white/20 flex flex-col space-y-1.5 w-full max-w-[230px] shadow-2xl";
+                cardWrapper.className = "bg-[#140826]/90 backdrop-blur-md p-1.5 rounded-lg border border-white/20 flex flex-col space-y-1 w-full max-w-[210px] shadow-xl";
                 
                 const cardHeader = document.createElement('div');
-                cardHeader.className = "text-[10px] font-bold text-amber-400 text-center";
+                cardHeader.className = "text-[9px] font-bold text-amber-400 text-center";
                 cardHeader.innerText = `ካርድ #${cardNum}`;
                 cardWrapper.appendChild(cardHeader);
 
                 const headersGrid = document.createElement('div');
-                headersGrid.className = "grid grid-cols-5 gap-1.5 text-center font-bold text-[9px] text-white";
+                headersGrid.className = "grid grid-cols-5 gap-1 text-center font-bold text-[8px] text-white";
                 ['B', 'I', 'N', 'G', 'O'].forEach((l, idx) => {
                     const hCell = document.createElement('div');
-                    hCell.className = idx === 0 ? "bg-blue-600 rounded py-1" : idx === 1 ? "bg-purple-600 rounded py-1" : idx === 2 ? "bg-pink-600 rounded py-1" : idx === 3 ? "bg-emerald-600 rounded py-1" : "bg-amber-600 rounded py-1";
+                    hCell.className = idx === 0 ? "bg-blue-600 rounded py-0.5" : idx === 1 ? "bg-purple-600 rounded py-0.5" : idx === 2 ? "bg-pink-600 rounded py-0.5" : idx === 3 ? "bg-emerald-600 rounded py-0.5" : "bg-amber-600 rounded py-0.5";
                     hCell.innerText = l;
                     headersGrid.appendChild(hCell);
                 });
                 cardWrapper.appendChild(headersGrid);
 
                 const miniGrid = document.createElement('div');
-                miniGrid.className = "grid grid-cols-5 gap-1.5 text-center";
+                miniGrid.className = "grid grid-cols-5 gap-1 text-center";
                 let numbers = getCartelaNumbers(cardNum);
 
                 numbers.forEach(cellNum => {
@@ -1330,17 +1332,17 @@
                     const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
 
                     const cell = document.createElement('div');
-                    cell.style.height = "32px";
+                    cell.style.height = "26px";
                     
                     if (isFreeCenter) {
-                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-black text-[14px] rounded flex items-center justify-center shadow-lg border border-amber-300";
+                        cell.className = "bg-gradient-to-br from-amber-500 to-yellow-600 text-black font-black text-[12px] rounded flex items-center justify-center shadow-lg border border-amber-300";
                         cell.innerText = "★";
                     } else if ((isAutoMode && isCalled) || (!isAutoMode && isManuallyDaubed)) {
                         let colColorClass = getColumnBgColor(cellNum);
-                        cell.className = `${colColorClass} text-white font-black text-[14px] rounded flex items-center justify-center shadow`;
+                        cell.className = `${colColorClass} text-white font-black text-[12px] rounded flex items-center justify-center shadow`;
                         cell.innerText = cellNum;
                     } else {
-                        cell.className = "bg-white text-[#36103c] font-black text-[14px] rounded flex items-center justify-center cursor-pointer shadow-md border border-white/50";
+                        cell.className = "bg-white text-[#36103c] font-black text-[12px] rounded flex items-center justify-center cursor-pointer shadow-md border border-white/50";
                         cell.innerText = cellNum;
                         
                         if (!isAutoMode) {
