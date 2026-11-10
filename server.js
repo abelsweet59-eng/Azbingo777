@@ -25,6 +25,14 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
+// 🎯 እርስዎ የሰጡትን ትክክለኛ የጥሪ ብዛት ሉፕ (Flow Sequence) እዚህ ላይ ተካቷል
+const baseNumberFlowSequence = [
+    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
+];
+let sequenceIndex = 0;
+
+const rareCallCountsPool = [10, 31, 10, 35, 30, 31, 10, 32, 30, 32];
+
 const ETHIOPIAN_BOT_NAMES = [
     "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
     "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
@@ -307,7 +315,7 @@ function startMainGameLoop() {
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
-            // 🎯 [True Random Bingo Mode ለሪል ዩዘሮች]
+            // 🎯 [True Random Bingo Mode ለሪል ዩዘሮች ብቻ]
             if (enableOnlyRealUsersMode) {
                 let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
@@ -408,10 +416,10 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [መደበኛ የቦቶች ሞድ (Default Bot Mode)] - ከ 12 እስከ 30 ባለው ጥሪ ሮቴት ሉፕ እየሆነ 1 ወይም 2 አሸናፊዎችን የሚያወጣው ኦሪጅናል ሎጂክ
+            // 🤖 [መደበኛ የቦቶች ሞድ (Default Bot Mode)] - በሰጡን የ `baseNumberFlowSequence` ቅደም ተከተል ሉፕ እየደረገ 1 ወይም 2 አሸናፊዎችን የሚያወጣው ትክክለኛው ሎጂክ
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = 1; 
+            let winnersCount = Math.random() < 0.75 ? 1 : 2; // 🎯 አንዳንዴ 1 አንዳንዴ 2 አሸናፊዎች (ቦቶች)
             let winningCardNums = [];
 
             let targetRealCount = 0;
@@ -425,9 +433,6 @@ function startMainGameLoop() {
                     targetRealCount = 1;
                     winnersCount = 1; 
                 }
-            } else {
-                targetRealCount = 0;
-                winnersCount = Math.random() < 0.80 ? 1 : 2; // 🎯 አንዳንዴ 1 አንዳንዴ 2 አሸናፊዎች
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -450,8 +455,12 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            // 🎯 ከ 12 እስከ 30 ባለው ክልል ውስጥ ሮቴት ሉፕ እንዲያደርግ የተደረገበት ትክክለኛው የጥሪ ብዛት ገደብ
-            let targetCallCount = Math.floor(Math.random() * (30 - 12 + 1)) + 12;
+            // 🎯 በሰጡን የጥሪ ሉፕ ቅደም ተከተል (Sequence) መሰረት ቀጣዩን የጥሪ ብዛት መውሰድ እና ሉፕ ማድረግ
+            let targetCallCount = baseNumberFlowSequence[sequenceIndex];
+            sequenceIndex++;
+            if (sequenceIndex >= baseNumberFlowSequence.length) {
+                sequenceIndex = 0; // ሉፕ እንደገና ከጅምሩ እንዲቀጥል
+            }
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
@@ -507,7 +516,7 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let minCallsBeforeWin = 12; 
+                let minCallsBeforeWin = 10; 
                 let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
                 
                 let allWinnersReady = true;
