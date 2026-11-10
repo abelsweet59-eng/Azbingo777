@@ -649,41 +649,6 @@ async function pollTelegramUpdates() {
                         let cmd = parts[0].toLowerCase();
                         let targetUserId = parts[1] ? String(parts[1]).trim() : null;
 
-                        // 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ ትዕዛዞች (Admin Commands)
-                        if (cmd === '/lockdep') {
-                            isDepositLocked = true;
-                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                chat_id: senderChatId,
-                                text: `🔒 **ዲፖዚት (Deposit)** በተን በአድሚን ተቆልፏል! ተጠቃሚዎች ሲሞክሩ ጥገና ላይ ነው ይላል።`,
-                                parse_mode: 'Markdown'
-                            }).catch(() => {});
-                        } else if (cmd === '/unlockdep') {
-                            isDepositLocked = false;
-                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                chat_id: senderChatId,
-                                text: `🔓 **ዲፖዚት (Deposit)** በተን ተከፍቷል!`,
-                                parse_mode: 'Markdown'
-                            }).catch(() => {});
-                        } else if (cmd === '/lockwith') {
-                            isWithdrawLocked = true;
-                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                chat_id: senderChatId,
-                                text: `🔒 **ዊዝድሮዋል (Withdraw)** በተን በአድሚን ተቆልፏል! ተጠቃሚዎች ሲሞክሩ ጥገና ላይ ነው ይላል።`,
-                                parse_mode: 'Markdown'
-                            }).catch(() => {});
-                        } else if (cmd === '/unlockwith') {
-                            isWithdrawLocked = false;
-                            io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                chat_id: senderChatId,
-                                text: `🔓 **ዊዝድሮዋል (Withdraw)** በተን ተከፍቷል!`,
-                                parse_mode: 'Markdown'
-                            }).catch(() => {});
-                        }
-
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
                             
@@ -894,6 +859,18 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
+    // 🎯 ከኮንትሮል ፓነል ሆነው ዲፖዚት ወይም ዊዝድሮዋል ሎክ/አንሎክ ሲያደርጉ
+    socket.on('adminToggleLock', (data) => {
+        if (data.type === 'deposit') {
+            isDepositLocked = data.locked;
+        } else if (data.type === 'withdraw') {
+            isWithdrawLocked = data.locked;
+        }
+        // ለሁሉም ተጠቃሚዎች አዲሱን የሎክ ስቴት ማሳወቅ
+        io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+        socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
+    });
+
     socket.on('adminSendBonus', (data) => {
         if (socket.id) {
             let targetUserId = String(data.targetUserId).trim();
@@ -971,13 +948,13 @@ io.on('connection', (socket) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
-        // 🎯 ሰርቨር በኩል ሎክ መሆኑን ማረጋገጥ (Security check)
+        // 🎯 ሰርቨር ሎክ መሆኑን ማረጋገጥ (Security check)
         if (type === 'deposit' && isDepositLocked) {
-            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!" });
+            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
             return;
         }
         if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
-            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!" });
+            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
             return;
         }
 
@@ -988,7 +965,7 @@ io.on('connection', (socket) => {
             chatId: telegramChatId || userId, 
             type, 
             amount, 
-username, 
+            username, 
             socketId: socket.id, 
             timestamp: Date.now() 
         };
