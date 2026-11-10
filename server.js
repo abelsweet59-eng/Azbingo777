@@ -95,7 +95,7 @@ let globalRoom = {
 };
 
 let forcedNextWinner = null; 
-let enableOnlyRealUsersMode = false; // አዲስ: ሪል ዩዘሮች ብቻ እንዲጫወቱ እና ደራሹ በነሱ ብቻ እንዲሰላ መቆጣጠሪያ
+let enableOnlyRealUsersMode = false; 
 let onlineRealUsers = [];
 let pendingRequests = {};
 let offlineApprovedQueue = {}; 
@@ -193,10 +193,7 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
 let lastSmoothCount = 95; 
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
-    if (enableOnlyRealUsersMode) {
-        // ሪል ዩዘሮች ብቻ ሲመረጡ ቦቶች 0 ይሆናሉ
-        return 0;
-    }
+    if (enableOnlyRealUsersMode) return 0;
 
     const now = new Date();
     let utcHours = now.getUTCHours();
@@ -241,7 +238,6 @@ function updateRoomPlayersAndPot() {
     let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
     
     if (enableOnlyRealUsersMode) {
-        // ሪል ዩዘሮች ብቻ ሲሆኑ የተጫዋቾች ብዛት ካርድ የገዙት ትክክለኛ ሪል ዩዘሮች ብዛት (ወይም ደግሞ የተያዙ ካርዶች ብዛት / ኦንላይን ያሉ) ይሆናል
         let uniqueRealCardsCount = 0;
         activeRealEntries.forEach(([sId, data]) => {
             if (data.cards) uniqueRealCardsCount += data.cards.length;
@@ -336,8 +332,8 @@ function startMainGameLoop() {
                     targetRealCount = 3;
                     winnersCount = 3; 
                 } else {
-                    targetRealCount = Math.min(activeRealEntries.length, enableOnlyRealUsersMode ? activeRealEntries.length : 1);
-                    winnersCount = targetRealCount; 
+                    targetRealCount = 1;
+                    winnersCount = 1; 
                 }
             } else {
                 targetRealCount = 0;
@@ -354,7 +350,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // ሪል ዩዘሮች ብቻ ሁነታ ላይ ከሆኑ እና ሪል ተጫዋች ከሌለ በስተቀር ቦት አይገባም
             if (!enableOnlyRealUsersMode) {
                 while (winningUsernamesArr.length < winnersCount) {
                     let bName = getRandomBotNames(1)[0];
@@ -366,7 +361,6 @@ function startMainGameLoop() {
 
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             if (winningUsernamesArr.length === 0) {
-                // ካልተገኘ በመደበኛ ቦት ይሞላል
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
                 winningSocketData.push({ socketId: null, isBot: true });
@@ -440,21 +434,17 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let minCallsBeforeWin = 10;
+                let minCallsBeforeWin = 12; // ጨዋታው ተፈጥሯዊ እንዲሆን ቢያንስ 12 ቁጥሮች ይጠበቃሉ
                 let reachedTargetLimit = (globalRoom.calledNumbers.length >= targetCallCount && globalRoom.calledNumbers.length >= minCallsBeforeWin);
                 
-                let realUserCompleted = false;
-                perWinnerConfigs.forEach((cfg, idx) => {
+                let allWinnersReady = true;
+                perWinnerConfigs.forEach((cfg) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
                     let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
-                    if (isPatternDone && globalRoom.calledNumbers.length >= minCallsBeforeWin) {
-                        if (!winningSocketData[idx].isBot) {
-                            realUserCompleted = true;
-                        }
-                    }
+                    if (!isPatternDone) allWinnersReady = false;
                 });
                 
-                let shouldTriggerWin = (reachedTargetLimit || realUserCompleted);
+                let shouldTriggerWin = (reachedTargetLimit && allWinnersReady && globalRoom.calledNumbers.length >= minCallsBeforeWin);
                 
                 if (shouldTriggerWin) {
                     let totalPot = (globalRoom.playersCount || 1) * 10;
@@ -843,7 +833,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // አዲስ: የአድሚን ሁነታ መቀየሪያ (ሪል ዩዘሮች ብቻ vs መደበኛ ቦቶች)
     socket.on('adminSetNextWinner', (data) => {
         let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
         
