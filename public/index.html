@@ -313,7 +313,7 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
                 
-                <!-- 🎯 አዲስ: የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock / Unlock Panel) -->
+                <!-- 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock / Unlock Panel) -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">🔒 የዲፖዚት እና ዊዝድሮዋል መቆጣጠሪያ</div>
                     <div class="grid grid-cols-2 gap-2 pt-1">
@@ -330,6 +330,16 @@
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- 🎯 [አዲስ የተጨመረው ፊቸር] ለአድሚኑ ማስታወቂያ (Broadcast) መላኪያ ፎርም -->
+                <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
+                    <div class="font-bold text-amber-300">📢 ለሁሉም ተጠቃሚዎች ማስታወቂያ መላኪያ (Broadcast)</div>
+                    <textarea id="admin-broadcast-input" placeholder="ለተጠቃሚዎች የሚተላለፍ መልእክት እዚህ ይጻፉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs resize-none h-16"></textarea>
+                    <button onclick="sendAdminBroadcast()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:opacity-90 text-white font-black py-2 rounded text-xs shadow">
+                        ማስታወቂያውን ላክ (Broadcast)
+                    </button>
+                    <div id="admin-broadcast-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center"></div>
                 </div>
 
                 <!-- የጨዋታ ሁነታ መቀየሪያ -->
@@ -465,7 +475,6 @@
         let userUsername = "guest_user";
         let isAdmin = false;
 
-        // 🎯 የሎክ ስቴቶች በክላይንት በኩል
         let isDepositLockedGlobal = false;
         let isWithdrawLockedGlobal = false;
 
@@ -592,7 +601,6 @@
                 }
             });
 
-            // 🎯 ከሰርቨር የሎክ ስቴቶችን መቀበል
             socket.on('financialLockStatus', (data) => {
                 isDepositLockedGlobal = data.isDepositLocked;
                 isWithdrawLockedGlobal = data.isWithdrawLocked;
@@ -726,6 +734,16 @@
                 }
             });
 
+            // 🎯 [አዲስ] አድሚኑ ማስታወቂያ ሲልክ የሚመጣ መልስ
+            socket.on('adminBroadcastResponse', (data) => {
+                let msgEl = document.getElementById('admin-broadcast-status-msg');
+                if(msgEl) {
+                    msgEl.innerText = data.message;
+                    msgEl.classList.remove('hidden');
+                    setTimeout(() => msgEl.classList.add('hidden'), 4000);
+                }
+            });
+
             socket.on('bingoWinner', (data) => {
                 try {
                     const winSound = new Audio('/bingo_win.mp3');
@@ -835,7 +853,19 @@
             });
         });
 
-        // 🎯 አድሚኑ ከፓነል ሆነው ሎክ/አንሎክ እንዲያደርጉ
+        // 🎯 [አዲስ] አድሚኑ ከዌብ ፓነል ሆኖ ማስታወቂያ (Broadcast) የሚልክበት ፈንክሽን
+        function sendAdminBroadcast() {
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
+            const msgInput = document.getElementById('admin-broadcast-input');
+            let msgText = msgInput ? msgInput.value.trim() : '';
+            if (!msgText) {
+                alert("⚠️ እባክዎ የሚላከውን ማስታወቂያ ጽሁፍ ይጻፉ!");
+                return;
+            }
+            socket.emit('adminBroadcastMessage', { message: msgText });
+            if (msgInput) msgInput.value = '';
+        }
+
         function toggleAdminLock(type) {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let currentLocked = (type === 'deposit') ? isDepositLockedGlobal : isWithdrawLockedGlobal;
@@ -1102,7 +1132,6 @@
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         }
 
-        // 🎯 ዲፖዚት ወይም ዊዝድሮዋል ሞዳል ሲከፈት ሎክ መሆኑን ማረጋገጥ
         function openDepositModal() { 
             if (isDepositLockedGlobal) {
                 alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!");
@@ -1120,7 +1149,6 @@
         }
 
         function submitFinancialRequest(type) {
-            // 🎯 ዳግም ማረጋገጫ (Frontend Check)
             if (type === 'deposit' && isDepositLockedGlobal) {
                 alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!");
                 return;
