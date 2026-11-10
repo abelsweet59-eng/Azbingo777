@@ -134,8 +134,11 @@ function getCartelaNumbers(cardNum) {
 }
 
 function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
+    // የተጠሩ ቁጥሮች ባዶ ከሆኑ በፍጹም ማሸነፍ አይቻልም
+    if (!calledNumbers || calledNumbers.length === 0) return null;
+
     let grid2D = [];
-    let cleanCalled = (calledNumbers || []).map(n => Number(n));
+    let cleanCalled = calledNumbers.map(n => Number(n));
     
     for(let r=0; r<5; r++) {
         let row = [];
@@ -148,12 +151,14 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
+    // 1. አግድም
     for(let r=0; r<5; r++) {
         if(grid2D[r].every(cell => cell.isHit)) {
             return grid2D[r].map(cell => cell.idx);
         }
     }
 
+    // 2. ቁመት
     for(let c=0; c<5; c++) {
         let colHits = true;
         let colCells = [];
@@ -166,6 +171,7 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         }
     }
 
+    // 3. ሰያፍ
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
     for(let i=0; i<5; i++) {
@@ -177,17 +183,12 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     if(diag1Hits) return diag1Cells.map(cell => cell.idx);
     if(diag2Hits) return diag2Cells.map(cell => cell.idx);
 
+    // 4. አራቱ ማዕዘኖች
     if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         return [0, 4, 20, 24];
     }
 
-    let fallbackMatched = [];
-    grid2D.forEach(row => {
-        row.forEach(cell => {
-            if (cell.isHit) fallbackMatched.push(cell.idx);
-        });
-    });
-    return fallbackMatched;
+    return null; // እስካሁን ትክክለኛ የቢንጎ መስመር አልተሰራም
 }
 
 let lastSmoothCount = 95; 
@@ -310,7 +311,7 @@ function startMainGameLoop() {
 
         if (timeLeft <= 0 && !globalRoom.gameActive) {
             globalRoom.gameActive = true;
-            globalRoom.calledNumbers = []; // 🎯 አዲስ ዙር ሲጀመር የተጠሩ ቁጥሮች ሙሉ በሙሉ ይጸዳሉ!
+            globalRoom.calledNumbers = []; // 🎯 አዲስ ዙር ሲጀምር የተጠሩ ቁጥሮች ይጸዳሉ
             globalRoom.lastCalledNumber = null;
             
             updateRoomPlayersAndPot();
@@ -319,6 +320,7 @@ function startMainGameLoop() {
             let currentWinnerType = forcedNextWinner;
             forcedNextWinner = null; 
 
+            // 🎯 [True Random Bingo Mode ለሪል ዩዘሮች]
             if (enableOnlyRealUsersMode) {
                 let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
@@ -340,6 +342,7 @@ function startMainGameLoop() {
                         return;
                     }
 
+                    // 1. ቁጥር መጥራት
                     let calledNum = availableNumbers.shift();
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
@@ -350,13 +353,14 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', Number(calledNum));
 
+                    // 2. 🔍 ምንም የጥሪ ገደብ (Call Limit) የለም! ቁጥር በተጠራ ቁጥር ካርዶች ይፈተሻሉ
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
                         if (pData && pData.cards) {
                             pData.cards.forEach(cNum => {
                                 let cList = getCartelaNumbers(cNum);
                                 let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                                if (matched) {
+                                if (matched) { // አግድም፣ ቁመት፣ ሰያፍ ወይም 4 ማዕዘን ከሞላ
                                     winningWinnersList.push({
                                         username: pData.username || 'ተጫዋች',
                                         socketId: socketId,
@@ -370,6 +374,7 @@ function startMainGameLoop() {
                         }
                     });
 
+                    // 3. አሸናፊ ከተገኘ በዚያው ቅጽበት BINGO ማወጅ
                     if (winningWinnersList.length > 0) {
                         let primaryWinner = winningWinnersList[0];
                         let winningPrimaryCardNum = primaryWinner.cardNum;
@@ -412,6 +417,7 @@ function startMainGameLoop() {
                 return;
             }
 
+            // 🤖 መደበኛ የቦቶች ሞድ (Standard Bot Mode)
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -523,7 +529,7 @@ function startMainGameLoop() {
                 let allWinnersReady = true;
                 perWinnerConfigs.forEach((cfg) => {
                     let matchedIdxs = getWinningMatchedIndices(cfg.cartelaList, globalRoom.calledNumbers);
-                    let isPatternDone = cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
+                    let isPatternDone = matchedIdxs && cfg.patternIndices.every(pIdx => matchedIdxs.includes(pIdx));
                     if (!isPatternDone) allWinnersReady = false;
                 });
                 
@@ -597,11 +603,13 @@ function startMainGameLoop() {
                                     let tempCalled = [...globalRoom.calledNumbers, Number(calledNum)];
                                     let matched = getWinningMatchedIndices(cList, tempCalled);
                                     
-                                    possiblePatternsCheck.forEach(pat => {
-                                        if (pat.every(pIdx => matched.includes(pIdx))) {
-                                            isAccidentalRealWin = true;
-                                        }
-                                    });
+                                    if (matched) {
+                                        possiblePatternsCheck.forEach(pat => {
+                                            if (pat.every(pIdx => matched.includes(pIdx))) {
+                                                isAccidentalRealWin = true;
+                                            }
+                                        });
+                                    }
                                 });
                             }
                         });
@@ -630,10 +638,10 @@ function startMainGameLoop() {
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     globalRoom.gameActive = false;
-    globalRoom.calledNumbers = []; // 🎯 ዙሩ ሲጠናቀቅ የተጠሩ ቁጥሮች ይጸዳሉ
+    globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
-    globalRoom.playerRoundCards = {}; // 🎯 የድሮው ዙር ካርዶች ሙሉ በሙሉ ይጸዳሉ (አዲስ ዙር በንጹህ ይጀምራል)
+    globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
 
