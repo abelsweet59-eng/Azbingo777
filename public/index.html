@@ -313,7 +313,26 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
                 
-                <!-- አዲስ: የጨዋታ ሁነታ መቀየሪያ (ሪል ዩዘሮች ብቻ vs መደበኛ) -->
+                <!-- 🎯 አዲስ: የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock / Unlock Panel) -->
+                <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
+                    <div class="font-bold text-amber-300">🔒 የዲፖዚት እና ዊዝድሮዋል መቆጣጠሪያ</div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-gray-300">ዲፖዚት (Deposit)</div>
+                            <button id="admin-lock-dep-btn" onclick="toggleAdminLock('deposit')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow">
+                                ክፈት (Unlocked)
+                            </button>
+                        </div>
+                        <div class="space-y-1">
+                            <div class="text-[10px] text-gray-300">ዊዝድሮዋል (Withdraw)</div>
+                            <button id="admin-lock-with-btn" onclick="toggleAdminLock('withdraw')" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow">
+                                ክፈት (Unlocked)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- የጨዋታ ሁነታ መቀየሪያ -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">⚙️ የጨዋታ ሁነታ መቆጣጠሪያ (Game Mode Switcher)</div>
                     <div class="grid grid-cols-1 gap-2 pt-1">
@@ -446,6 +465,10 @@
         let userUsername = "guest_user";
         let isAdmin = false;
 
+        // 🎯 የሎክ ስቴቶች በክላይንት በኩል
+        let isDepositLockedGlobal = false;
+        let isWithdrawLockedGlobal = false;
+
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -567,6 +590,17 @@
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
+            });
+
+            // 🎯 ከሰርቨር የሎክ ስቴቶችን መቀበል
+            socket.on('financialLockStatus', (data) => {
+                isDepositLockedGlobal = data.isDepositLocked;
+                isWithdrawLockedGlobal = data.isWithdrawLocked;
+                updateAdminLockUIButtons();
+            });
+
+            socket.on('financialError', (data) => {
+                alert(data.message);
             });
 
             socket.on('rewardPrize', (data) => {
@@ -800,6 +834,39 @@
                 }
             });
         });
+
+        // 🎯 አድሚኑ ከፓነል ሆነው ሎክ/አንሎክ እንዲያደርጉ
+        function toggleAdminLock(type) {
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
+            let currentLocked = (type === 'deposit') ? isDepositLockedGlobal : isWithdrawLockedGlobal;
+            let newLockedState = !currentLocked;
+            socket.emit('adminToggleLock', { type: type, locked: newLockedState });
+        }
+
+        function updateAdminLockUIButtons() {
+            const depBtn = document.getElementById('admin-lock-dep-btn');
+            const withBtn = document.getElementById('admin-lock-with-btn');
+
+            if (depBtn) {
+                if (isDepositLockedGlobal) {
+                    depBtn.className = "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow";
+                    depBtn.innerText = "ተቆልፏል (Locked)";
+                } else {
+                    depBtn.className = "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
+                    depBtn.innerText = "ክፈት (Unlocked)";
+                }
+            }
+
+            if (withBtn) {
+                if (isWithdrawLockedGlobal) {
+                    withBtn.className = "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow";
+                    withBtn.innerText = "ተቆልፏል (Locked)";
+                } else {
+                    withBtn.className = "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
+                    withBtn.innerText = "ክፈት (Unlocked)";
+                }
+            }
+        }
 
         function requestRealUsersList() {
             if (!isAdmin) return;
@@ -1035,10 +1102,34 @@
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         }
 
-        function openDepositModal() { document.getElementById('deposit-modal').classList.remove('hidden'); }
-        function openWithdrawModal() { document.getElementById('withdraw-modal').classList.remove('hidden'); }
+        // 🎯 ዲፖዚት ወይም ዊዝድሮዋል ሞዳል ሲከፈት ሎክ መሆኑን ማረጋገጥ
+        function openDepositModal() { 
+            if (isDepositLockedGlobal) {
+                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!");
+                return;
+            }
+            document.getElementById('deposit-modal').classList.remove('hidden'); 
+        }
+
+        function openWithdrawModal() { 
+            if (isWithdrawLockedGlobal) {
+                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!");
+                return;
+            }
+            document.getElementById('withdraw-modal').classList.remove('hidden'); 
+        }
 
         function submitFinancialRequest(type) {
+            // 🎯 ዳግም ማረጋገጫ (Frontend Check)
+            if (type === 'deposit' && isDepositLockedGlobal) {
+                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!");
+                return;
+            }
+            if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLockedGlobal) {
+                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!");
+                return;
+            }
+
             let amount, phone = "ቴሌብር", receipt = "";
             if (type === 'deposit') {
                 amount = parseFloat(document.getElementById('dep-amount-input').value);
@@ -1243,6 +1334,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
             requestRealUsersList();
+            updateAdminLockUIButtons();
         }
 
         let switchTab = function(tabId, btn) {
