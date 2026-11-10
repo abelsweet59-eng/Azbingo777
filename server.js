@@ -428,7 +428,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [Default Bot Mode]
+            // 🤖 [Default Bot Mode with Strict Sequence Loop]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -467,7 +467,10 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
+            // 🎯 የሲክዌንስ ቁጥሩን በቅደም ተከተል መውሰድ
             let targetCallCount = baseNumberFlowSequence[sequenceIndex];
+            
+            // 🎯 ሲክዌንሱ መጨረሻ ላይ ሲደርስ በራስ-ሰር ተመልሶ ወደ መጀመሪያው (Index 0) እንዲመለስ (Loop) ማድረግ
             sequenceIndex++;
             if (sequenceIndex >= baseNumberFlowSequence.length) {
                 sequenceIndex = 0; 
@@ -866,7 +869,6 @@ io.on('connection', (socket) => {
         } else if (data.type === 'withdraw') {
             isWithdrawLocked = data.locked;
         }
-        // ለሁሉም ተጠቃሚዎች አዲሱን የሎክ ስቴት ማሳወቅ
         io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
         socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
     });
@@ -948,7 +950,6 @@ io.on('connection', (socket) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
-        // 🎯 ሰርቨር ሎክ መሆኑን ማረጋገጥ (Security check)
         if (type === 'deposit' && isDepositLocked) {
             socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
             return;
