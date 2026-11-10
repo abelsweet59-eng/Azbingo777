@@ -579,7 +579,6 @@ function startMainGameLoop() {
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
                     if (availableNumbers.length > 0) {
-                        // 🎯 Smart Protection: ሪል ዩዘሮች የሚያስፈልጋቸውን የማጠናቀቂያ ቁጥር እንዳያገኙ መከላከል
                         let candidateIdx = -1;
                         let candidateNum = null;
 
@@ -638,6 +637,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
+    // 🎯 ጨዋታው ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ሪሴት (Reset) እንዲደረጉ ይደረጋል
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
