@@ -23,15 +23,7 @@ const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
 const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 
 const claimedWelcomeBonusUsers = new Set();
-const userWallets = {}; // 🎯 የዩዘሮች የኪስ ቦርሳ ቀሪ ሂሳብ ማከማቻ
-
-const baseNumberFlowSequence = [
-    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
-];
-let customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
-let sequenceIndex = 0;
-
-const rareCallCountsPool = [10, 31, 10, 35, 30, 31, 10, 32, 30, 32];
+const userWallets = {}; 
 
 const ETHIOPIAN_BOT_NAMES = [
     "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
@@ -416,7 +408,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🤖 [መደበኛ የቦቶች ሞድ (Default Bot Mode)] - የቀደመው ኦሪጅናል ኮድ ሙሉ በሙሉ የተመለሰበት
+            // 🤖 [መደበኛ የቦቶች ሞድ (Default Bot Mode)] - ከ 12 እስከ 30 ባለው ጥሪ ሮቴት ሉፕ እየሆነ 1 ወይም 2 አሸናፊዎችን የሚያወጣው ኦሪጅናል ሎጂክ
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -435,7 +427,7 @@ function startMainGameLoop() {
                 }
             } else {
                 targetRealCount = 0;
-                winnersCount = Math.random() < 0.80 ? 1 : 2;
+                winnersCount = Math.random() < 0.80 ? 1 : 2; // 🎯 አንዳንዴ 1 አንዳንዴ 2 አሸናፊዎች
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -458,16 +450,8 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            let targetCallCount = customNumberFlowSequence[sequenceIndex];
-            sequenceIndex++;
-            if (sequenceIndex >= customNumberFlowSequence.length) {
-                sequenceIndex = 0;
-                customNumberFlowSequence = [...baseNumberFlowSequence].sort(() => 0.5 - Math.random());
-            }
-
-            if (Math.random() < 0.35) {
-                targetCallCount = rareCallCountsPool[Math.floor(Math.random() * rareCallCountsPool.length)];
-            }
+            // 🎯 ከ 12 እስከ 30 ባለው ክልል ውስጥ ሮቴት ሉፕ እንዲያደርግ የተደረገበት ትክክለኛው የጥሪ ብዛት ገደብ
+            let targetCallCount = Math.floor(Math.random() * (30 - 12 + 1)) + 12;
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
@@ -508,6 +492,7 @@ function startMainGameLoop() {
             }
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            availableNumbers.sort(() => 0.5 - Math.random());
             
             io.emit('gameStarted', { calledNumbers: [] });
             io.emit('gameStartedBroadcast');
@@ -585,8 +570,12 @@ function startMainGameLoop() {
                     let availIdx = availableNumbers.indexOf(calledNum);
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
-                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                    calledNum = availableNumbers.splice(randIdx, 1)[0];
+                    if (availableNumbers.length > 0) {
+                        let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                        calledNum = availableNumbers.splice(randIdx, 1)[0];
+                    } else {
+                        calledNum = Math.floor(Math.random() * 75) + 1;
+                    }
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
