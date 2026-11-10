@@ -89,7 +89,7 @@ let globalRoom = {
     gameStartTime: Date.now() + 60000,
     playersCount: 140,
     takenCards: [],
-    playerRoundCards: {},
+    playerRoundCards: {}, // { socketId: { cards: [...], username, userId } }
     playerTemporaryCards: {},
     lastCalledNumber: null,
     targetWinCallCount: 12,
@@ -637,7 +637,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
-    // 🎯 ጨዋታው ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ሪሴት (Reset) እንዲደረጉ ይደረጋል
+    // 🎯 ጨዋታው ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ሪሴት (Reset) ይደረጋሉ
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -840,18 +840,19 @@ io.on('connection', (socket) => {
                 userWallets[userId] = 0;
             }
 
+            // 🎯 ዩዘሩ አፕሊኬሽኑን ዘግቶ ወጥቶ በነቃ ጨዋታ (Active Game) ውስጥ ሲመለስ የነበረውን ካርድ እንዲያገኝ ማድረግ
             if (globalRoom.gameActive) {
-                Object.keys(globalRoom.playerRoundCards).forEach(sId => {
-                    if (globalRoom.playerRoundCards[sId].userId === userId) {
-                        delete globalRoom.playerRoundCards[sId];
-                    }
-                });
+                let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
+                if (existingKey) {
+                    let existingData = globalRoom.playerRoundCards[existingKey];
+                    delete globalRoom.playerRoundCards[existingKey];
+                    globalRoom.playerRoundCards[socket.id] = existingData;
+                }
             } else {
+                // ጨዋታው ካልጀመረ (በመጠባበቂያ ሰዓት ላይ ከሆነ) የድሮውን ካርድ እናጸዳዋለን (አዲስ መምረጥ አለበት)
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
-                        let existingData = globalRoom.playerRoundCards[sId];
                         delete globalRoom.playerRoundCards[sId];
-                        globalRoom.playerRoundCards[socket.id] = existingData;
                     }
                 });
             }
@@ -1007,7 +1008,10 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        if (globalRoom.gameActive) {
+        // 🎯 ዩዘሩ ሲወጣ ጨዋታው እየተካሄደ ከሆነ ካርዱን ከ `playerRoundCards` ወዲያውኑ አንሰርዘውም 
+        // (በዚያው ጨዋታ ውስጥ መልሶ ከገባ እንዲቀጥልበት በሶኬት ID ምትክ በዩዘር ID ይያዛል)።
+        // ነገር ግን ጨዋታው ካልጀመረ (በመጠባበቂያ ሰዓት ላይ ከሆነ) temp ካርዱን እናጸዳዋለን።
+        if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
         }
         delete globalRoom.playerTemporaryCards[socket.id];
