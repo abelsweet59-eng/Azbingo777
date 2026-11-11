@@ -22,11 +22,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
-const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
-
 const allRegisteredUsers = new Set();
 
 let isDepositLocked = false;
@@ -825,7 +823,7 @@ async function pollTelegramUpdates() {
                             }
 
                             let successPayload = { 
-                                type: reqData.type, 
+                                type: reqType, 
                                 amount: rawAmount, 
                                 adjustedAmount: finalAmountForClient,
                                 balance: userWallets[reqData.userId]
@@ -876,30 +874,7 @@ async function pollTelegramUpdates() {
 }
 setTimeout(pollTelegramUpdates, 2000);
 
-async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
-    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
-    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
-    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
-    
-    for (let adminChatId of ADMIN_CHAT_IDS) {
-        try {
-            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                chat_id: adminChatId, text: message, parse_mode: 'Markdown',
-                reply_markup: { 
-                    inline_keyboard: [
-                        [
-                            { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
-                            { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
-                        ]
-                    ] 
-                }
-            });
-        } catch (error) {}
-    }
-}
-
-// 📌 [አዲስ የተጨመረ] የዲፖዚት ፎቶ (Screenshot) ወይም የጽሑፍ ደረሰኝ (SMS) ተቀብሎ ለአድሚን የሚልክ ሩት (Route)
+// 📌 የዲፖዚት ፎቶ (Screenshot) ወይም የጽሑፍ ደረሰኝ (SMS) ተቀብሎ ለአድሚን የሚልክ ሩት (Route)
 app.post('/api/financial-request', upload.single('receiptImage'), async (req, bodyRes) => {
     try {
         let { type, amount, username, userId, currentBalance, receiptText } = req.body;
@@ -1175,7 +1150,25 @@ io.on('connection', (socket) => {
             timestamp: Date.now() 
         };
 
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+        let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+        if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+        
+        for (let adminChatId of ADMIN_CHAT_IDS) {
+            try {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: adminChatId, text: message, parse_mode: 'Markdown',
+                    reply_markup: { 
+                        inline_keyboard: [
+                            [
+                                { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                                { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                            ]
+                        ] 
+                    }
+                });
+            } catch (error) {}
+        }
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
