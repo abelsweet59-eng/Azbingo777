@@ -453,7 +453,7 @@ function startMainGameLoop() {
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = Math.random() < 0.75 ? 1 : 2; 
+            let winnersCount = 1; 
             let winningCardNums = [];
 
             let targetRealCount = 0;
@@ -762,7 +762,6 @@ async function pollTelegramUpdates() {
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
                             } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                // ዊዝድሮዋል ሲጸድቅ ከባላንሱ ይቀነሳል (በቁጥር መልክ በትክክል እንዲቀነስ ተደርጓል)
                                 userWallets[targetUserId] = Number(userWallets[targetUserId] || 0) - Math.abs(rawAmount);
                                 if (userWallets[targetUserId] < 0) userWallets[targetUserId] = 0;
                             }
@@ -1059,7 +1058,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // 🎯 [የተስተካከለ የሒሳብ ማረጋገጫ ሎጂክ - ጥብቅ የቁጥር ንጽጽር]
         if (type === 'withdraw' || type === 'withdrawal') {
             let currentBal = Number(userWallets[cleanUserId] || 0);
             if (currentBal < parsedAmount) {
