@@ -3,6 +3,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const axios = require('axios');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 const server = http.createServer(app);
@@ -549,7 +551,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 🎯 [ፍጹም ጥበቃ] በ Standard Bot Mode ጊዜ ሪል ዩዘር (እውነተኛው ተጠቃሚ) በአጋጣሚ ፓተርኑን ሞልቶ እንዳያሸንፍ (Accidental Win እንዳይፈጠር) ማረጋገጫ
                 let realUserHasWonNow = false;
                 Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
                     if (pData && pData.cards) {
@@ -563,9 +564,7 @@ function startMainGameLoop() {
                     }
                 });
 
-                // አድሚን ቦት እንዲያሸንፍ ካላዘዘ እና ሪል ዩዘሩ በአጋጣሚ አሸናፊ ከወጣ ወይም 1 ቁጥር ብቻ ከቀረው ጨዋታው እንዳያልቅ እና እንዳይጠራ እናቆማለን
                 if (realUserHasWonNow && currentWinnerType !== 'bot' && currentWinnerType !== 'random_real') {
-                    // አዲስ ቁጥር እንዳይጠራ ለጊዜው ሉፑን እንዘለዋለን (ሪል ዩዘር እንዳያሸንፍ ጨዋታው እንዲቆይ ይደረጋል)
                     return; 
                 }
 
@@ -900,6 +899,80 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
     }
 }
 
+// 📌 [አዲስ የተጨመረ] የዲፖዚት ፎቶ (Screenshot) ወይም የጽሑፍ ደረሰኝ (SMS) ተቀብሎ ለአድሚን የሚልክ ሩት (Route)
+app.post('/api/financial-request', upload.single('receiptImage'), async (req, bodyRes) => {
+    try {
+        let { type, amount, username, userId, currentBalance, receiptText } = req.body;
+        let receiptFile = req.file;
+
+        if (type === 'deposit' && isDepositLocked) {
+            return bodyRes.json({ success: false, message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
+        }
+
+        let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        
+        pendingRequests[requestId] = { 
+            userId: String(userId || 'unknown'), 
+            chatId: userId, 
+            type, 
+            amount, 
+            username, 
+            socketId: null, 
+            timestamp: Date.now() 
+        };
+
+        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*`;
+        
+        if (receiptText) {
+            caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
+        }
+
+        for (let adminChatId of ADMIN_CHAT_IDS) {
+            try {
+                if (receiptFile) {
+                    let formDataTelegram = new (require('form-data'))();
+                    formDataTelegram.append('chat_id', adminChatId);
+                    formDataTelegram.append('photo', receiptFile.buffer, { filename: 'receipt.jpg' });
+                    formDataTelegram.append('caption', caption);
+                    formDataTelegram.append('parse_mode', 'Markdown');
+                    formDataTelegram.append('reply_markup', JSON.stringify({
+                        inline_keyboard: [
+                            [
+                                { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                                { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                            ]
+                        ]
+                    }));
+
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, formDataTelegram, {
+                        headers: formDataTelegram.getHeaders()
+                    });
+                } else {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: adminChatId, 
+                        text: caption, 
+                        parse_mode: 'Markdown',
+                        reply_markup: { 
+                            inline_keyboard: [
+                                [
+                                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                                    { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                                ]
+                            ] 
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log("Admin send error:", e.message);
+            }
+        }
+
+        bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+    } catch (err) {
+        bodyRes.status(500).json({ success: false, message: err.message });
+    }
+});
+
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     updateRoomPlayersAndPot();
@@ -1085,10 +1158,6 @@ io.on('connection', (socket) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
-        if (type === 'deposit' && isDepositLocked) {
-            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
-            return;
-        }
         if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
             socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
             return;
