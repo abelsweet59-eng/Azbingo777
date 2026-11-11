@@ -754,17 +754,15 @@ async function pollTelegramUpdates() {
                     let reqData = pendingRequests[requestId];
 
                     if (reqData) {
-                        let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                        let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
-                        let rawAmount = Number(reqData.amount) || 0;
                         let targetUserId = String(reqData.userId);
+                        let rawAmount = Number(reqData.amount) || 0;
+                        let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
+                        let targetSocket = onlineRealUsers.find(u => u.userId === targetUserId) ? io.sockets.sockets.get(onlineRealUsers.find(u => u.userId === targetUserId).socketId) : null;
 
                         if (action === 'app') {
-                            // 💳 [አፕሩቭ ሲደረግ]
+                            // 💳 [አፕሩቭ ሲደረግ - የመጀመሪያ፣ መሀል ወይም መጨረሻ ሪኩዌስት ይሁን ግድ የለውም በትክክል ይሰራሉ]
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
-                            } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                // ዊዝድሮዋል ሲጠየቅ አስቀድሞ ተቀንሷል፣ አፕሩቭ ሲደረግ ቀሪው ሒሳብ ተረጋግጦ ይቀመጣል
                             }
 
                             let successPayload = { 
@@ -774,7 +772,6 @@ async function pollTelegramUpdates() {
                                 balance: userWallets[targetUserId] || 0
                             };
 
-                            // ተጠቃሚው ኦንላይን ከሆነ በቀጥታ እንልክለታለን፣ ኦፍላይን ከሆነ ወደ offlineApprovedQueue እንጨምረዋለን
                             if (targetSocket) {
                                 targetSocket.emit('financialApproved', successPayload);
                             } else {
@@ -782,7 +779,6 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[targetUserId].push(successPayload);
                             }
 
-                            // ቴሌብር ማሳወቂያ ለተጠቃሚው በቦት በኩል መላክ (ኦፍላይን ቢሆንም እንዲደርሰው)
                             if (reqData.chatId) {
                                 let successUserMsg = reqType === 'deposit' 
                                     ? `✅ *AZ BINGO - የዲፖዚት ጥያቄዎ ጸድቋል!*\n\nየጠየቁት *${rawAmount} ብር* አካውንትዎ ላይ ገቢ ሆኗል! 💰`
@@ -797,13 +793,12 @@ async function pollTelegramUpdates() {
 
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - ተጠቃሚው አካውንት ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - ሒሳብ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
 
                         } else {
-                            // ❌ [ሪጀክት / ሲሰረዝ]
+                            // ❌ [ሪጀክት / ሲሰረዝ - የትኛውንም ሪኩዌስት መርጦ መሰረዝ ይቻላል]
                             if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                // ዊዝድሮዋል ተሰርዟል ከተባለ የቀነሰውን ገንዘብ ተመልሶ ለተጠቃሚው እናስገባለን
                                 userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
                             }
 
@@ -836,6 +831,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         }
 
+                        // ከማህደረ ትውስታ ይሰረዛል (ሌሎቹን ፔንዲንግ ሪኩዌስቶች ፈጽሞ አይነካም)
                         delete pendingRequests[requestId]; 
                     }
                     try { 
@@ -919,7 +915,6 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // ተጠቃሚው ኦፍላይን ሳለ አድሚኑ ያጸደቀላቸው ጥያቄዎች ካሉ ሲገባ በራስ-ሰር ይላክላቸው
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
                     if (item.isRejected) {
@@ -1068,19 +1063,18 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // ዊዝድሮዋል ሲጠየቅ ቀሪ ሒሳብ ማረጋገጥ እና ወዲያውኑ ከሒሳቡ መቀነስ
         if (type === 'withdraw' || type === 'withdrawal') {
             let currentBal = userWallets[cleanUserId] || 0;
             if (currentBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሒሳብ የለዎትም!" });
                 return;
             }
-            // ዊዝድሮዋል ፔንዲንግ ሲሆን ወዲያውኑ ከባላንስ እንቀንሳለን (አድሚኑ ከሰረዘው ተመልሶ ይገባል)
             userWallets[cleanUserId] = currentBal - parsedAmount;
             socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
         }
 
-        let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        // እያንዳንዱ ሪኩዌስት የራሱ የሆነ ዩኒክ አይዲ (requestId) ይኖረዋል፤ ይህም ተደራርቦ እንዳይጠፋ ያደርጋል
+        let requestId = 'req_' + cleanUserId.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
             userId: cleanUserId, 
