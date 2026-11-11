@@ -419,7 +419,7 @@ function startMainGameLoop() {
                 return;
             }
 
-            // 🎯 [ስታንዳርድ/ቦት ሞድ - ጥብቅ የተመረጠ ሪል ዩዘር ሎጂክ]
+            // 🎯 [ስታንዳርድ/ቦት ሞድ - ተፈጥሯዊ እና ጥብቅ ሪል ዩዘር አሸናፊ ሎጂክ]
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = 1; 
@@ -429,7 +429,7 @@ function startMainGameLoop() {
             let explicitRealForced = (currentWinnerType === 'only_real_users' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
 
             if (explicitRealForced && activeRealEntries.length > 0) {
-                if ((currentWinnerType && (currentWinnerType.includes('3' )|| currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
+                if ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
                     targetRealCount = 3;
                     winnersCount = 3; 
                 } else {
@@ -480,31 +480,6 @@ function startMainGameLoop() {
 
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
-            
-            // የዘፈቀደ የቆይታ ጊዜ (ከ 12 እስከ 18 ጥሪዎች)
-            let targetCallCount = Math.floor(Math.random() * 7) + 12; // 12 እስከ 18
-
-            let possiblePatterns = [
-                [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-                [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-                [0,6,12,18,24], [4,8,12,16,20],
-                [0,4,20,24]
-            ];
-
-            let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
-
-            // ለእያንዳንዱ አሸናፊ ፓተርኑ የሚሞላበትን የቁጥር ዝርዝር እናዘጋጃለን
-            let winnerQueues = designatedRealWinners.map(winner => {
-                let p = sharedPattern;
-                let reqNums = p.map(idx => winner.cartelaList[idx]).filter(n => n !== "FREE");
-                // ቁጥሮች ጣል ጣል እያሉ እንዲጠሩ ከፓተርኑ ውጪ ተጨማሪ ቁጥሮችን እንጨምራለን
-                let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
-                let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 5);
-                let extraNums = shuffledExtra.map(idx => winner.cartelaList[idx]).filter(n => n !== "FREE");
-                
-                let needed = [...new Set([...reqNums, ...extraNums])];
-                return { ...winner, neededNumbers: needed };
-            });
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
@@ -520,17 +495,19 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 1. መጀመሪያ ከተመረጡት አሸናፊዎች መካከል ማንኛቸውም ፓተርናቸው መሞላቱን እንፈትሻለን
+                // 1. በማንኛውም ሰዓት ጨዋታው ሲቀጥል ከተመረጡት አሸናፊዎች መካከል የማሸነፊያ ፓተርኑ የሞላ አለ ወይ እንፈትሻለን (ቢያንስ 12 ቁጥሮች ከተጠሩ በኋላ)
                 let actualWinnerFound = null;
-                for (let winner of designatedRealWinners) {
-                    let matched = getWinningMatchedIndices(winner.cartelaList, globalRoom.calledNumbers);
-                    if (matched && globalRoom.calledNumbers.length >= 12) {
-                        actualWinnerFound = { ...winner, matchedIndices: matched };
-                        break;
+                if (globalRoom.calledNumbers.length >= 12) {
+                    for (let winner of designatedRealWinners) {
+                        let matched = getWinningMatchedIndices(winner.cartelaList, globalRoom.calledNumbers);
+                        if (matched) {
+                            actualWinnerFound = { ...winner, matchedIndices: matched };
+                            break;
+                        }
                     }
                 }
 
-                // 2. የተመረጠው አሸናፊ ፓተርኑ ከሞላ ቀጥታ ጨዋታውን አቁመን ዊን እናደርጋለን!
+                // 2. ፓተርኑ ሲሞላ ወዲያውኑ ጨዋታውን አቁመን ፖፕ አፕ እናሳያለን
                 if (actualWinnerFound) {
                     let totalPot = (globalRoom.playersCount || 1) * 10;
                     let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
@@ -571,58 +548,44 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // 3. ቁጥሮች ጣል ጣል እያሉ መጥራት (ለተመረጡት አሸናፊዎች የሚጠቅሙ ቁጥሮችን እየተቀባበሉ ማውጣት)
-                let calledNum;
-                let priorityNum = null;
+                // 3. ሙሉ በሙሉ በዘፈቀደ (True Random) ቁጥሮች እየጠሩ መሄድ - ጨዋታው ተፈጥሯዊ እንዲሆን
+                if (availableNumbers.length === 0) {
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    setTimeout(() => { endRoundAndRestart(); }, 3000);
+                    return;
+                }
 
-                // ከቀጣዮቹ አስፈላጊ ቁጥሮች ውስጥ አንዱን እንመርጣለን
-                for (let winner of winnerQueues) {
-                    let uncalledNeeded = winner.neededNumbers.find(n => !globalRoom.calledNumbers.includes(Number(n)));
-                    if (uncalledNeeded && Math.random() < 0.6) {
-                        priorityNum = Number(uncalledNeeded);
+                let calledNum;
+                let candidateIdx = -1;
+
+                // ሌሎች ያልተመረጡ ሪል ዩዘሮች ፓተርናቸው እንዳይገጥም (እንዳይበሉ) ማጣሪያ በማድረግ ቁጥር እንመርጣለን
+                for (let i = 0; i < availableNumbers.length; i++) {
+                    let testNum = availableNumbers[i];
+                    let wouldUnwantedUserWin = false;
+                    let tempCalled = [...globalRoom.calledNumbers, testNum];
+                    
+                    Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
+                        let isDesignatedWinner = designatedRealWinners.some(w => w.socketId === sId);
+                        if (!isDesignatedWinner && pData && pData.cards) {
+                            pData.cards.forEach(cNum => {
+                                let cList = getCartelaNumbers(cNum);
+                                let matched = getWinningMatchedIndices(cList, tempCalled);
+                                if (matched) wouldUnwantedUserWin = true;
+                            });
+                        }
+                    });
+
+                    if (!wouldUnwantedUserWin) {
+                        candidateIdx = i;
                         break;
                     }
                 }
 
-                if (priorityNum !== null) {
-                    calledNum = priorityNum;
-                    let availIdx = availableNumbers.indexOf(calledNum);
-                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
+                if (candidateIdx > -1) {
+                    calledNum = availableNumbers.splice(candidateIdx, 1)[0];
                 } else {
-                    if (availableNumbers.length > 0) {
-                        let candidateIdx = -1;
-                        for (let i = 0; i < availableNumbers.length; i++) {
-                            let testNum = availableNumbers[i];
-                            let wouldUnwantedUserWin = false;
-                            let tempCalled = [...globalRoom.calledNumbers, testNum];
-                            
-                            // ከነዚህ ውጪ ያሉ ሌሎች ሪል ዩዘሮች ፓተርናቸው እንዳይገጥም ጥብቅ ማጣሪያ
-                            Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
-                                let isDesignatedWinner = designatedRealWinners.some(w => w.socketId === sId);
-                                if (!isDesignatedWinner && pData && pData.cards) {
-                                    pData.cards.forEach(cNum => {
-                                        let cList = getCartelaNumbers(cNum);
-                                        let matched = getWinningMatchedIndices(cList, tempCalled);
-                                        if (matched) wouldUnwantedUserWin = true;
-                                    });
-                                }
-                            });
-
-                            if (!wouldUnwantedUserWin) {
-                                candidateIdx = i;
-                                break;
-                            }
-                        }
-
-                        if (candidateIdx > -1) {
-                            calledNum = availableNumbers.splice(candidateIdx, 1)[0];
-                        } else {
-                            let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                            calledNum = availableNumbers.splice(randIdx, 1)[0];
-                        }
-                    } else {
-                        calledNum = Math.floor(Math.random() * 75) + 1;
-                    }
+                    let randIdx = Math.floor(Math.random() * availableNumbers.length);
+                    calledNum = availableNumbers.splice(randIdx, 1)[0];
                 }
 
                 if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
