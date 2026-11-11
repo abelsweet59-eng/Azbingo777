@@ -655,13 +655,7 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                const countdownBox = document.getElementById('in-place-countdown-box');
-                const mainBall = document.getElementById('main-called-ball');
-
-                if (!room.gameActive || (!room.calledNumbers || room.calledNumbers.length === 0)) {
-                    if (countdownBox) countdownBox.classList.remove('hidden');
-                    if (mainBall) mainBall.classList.add('hidden');
-
+                if (!room.gameActive) {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && myData.cards) {
@@ -675,19 +669,17 @@
                     }
                 }
 
-                if (room.gameActive && room.calledNumbers && room.calledNumbers.length > 0) {
-                    if (countdownBox) countdownBox.classList.add('hidden');
-                    if (mainBall) mainBall.classList.remove('hidden');
-
+                if (room.gameActive) {
                     calledNumbersList = room.calledNumbers || [];
-                    displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
-                    document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                    
+                    if (calledNumbersList.length > 0) {
+                        displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
+                        document.getElementById('stat-called-count').innerText = calledNumbersList.length;
+                    }
                     document.getElementById('card-selection-section').classList.add('hidden');
                     document.getElementById('live-game-section').classList.remove('hidden');
                     renderVerticalBoard();
                     renderPlayerDualCards();
-                } else if (!room.gameActive) {
+                } else {
                     if (confirmedCards.length === 0) {
                         calledNumbersList = [];
                         manualDaubedNumbers = {};
@@ -703,12 +695,6 @@
             socket.on('gameStarted', (data) => {
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
-                
-                const countdownBox = document.getElementById('in-place-countdown-box');
-                const mainBall = document.getElementById('main-called-ball');
-                if (countdownBox) countdownBox.classList.add('hidden');
-                if (mainBall) mainBall.classList.remove('hidden');
-
                 renderPlayerDualCards();
             });
 
@@ -843,37 +829,25 @@
             });
 
             socket.on('financialApproved', (data) => {
-                let adjustedAmt = Number(data.amount || 0);
                 if (data.type === 'deposit') {
-                    walletBalance = Number(walletBalance || 0) + adjustedAmt;
+                    walletBalance += data.amount;
                     updateWalletUI();
-                    addTransactionHistory('ዲፖዚት (ጸድቋል)', adjustedAmt, 'income');
-                    alert(`✅ የ ${adjustedAmt} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                    addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
+                    alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
-                    walletBalance = Number(walletBalance || 0) + adjustedAmt;
+                    walletBalance += data.amount;
                     updateWalletUI();
-                    addTransactionHistory('Az ቦነስ 🎁', adjustedAmt, 'income');
-                    alert(`🎁 እንኳን ደስ አለዎት! የ ${adjustedAmt} ብር Az ቦነስ ተሰጥቶዎታል!`);
+                    addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income');
+                    alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር Az ቦነስ ተሰጥቶዎታል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
-                    walletBalance = Number(data.balance !== undefined ? data.balance : (walletBalance - adjustedAmt));
+                    walletBalance -= data.amount;
                     updateWalletUI();
-                    addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', adjustedAmt, 'expense');
-                    alert(`✅ የ ${adjustedAmt} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
-                }
-            });
-
-            socket.on('updateBalance', (data) => {
-                if (data && data.balance !== undefined) {
-                    walletBalance = Number(data.balance) || 0;
-                    updateWalletUI();
+                    addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
+                    alert(`✅ የ ${data.amount} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
                 }
             });
 
             socket.on('financialRejected', (data) => {
-                if (data && data.balance !== undefined) {
-                    walletBalance = Number(data.balance) || 0;
-                    updateWalletUI();
-                }
                 alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
             });
 
@@ -1160,7 +1134,6 @@
         }
 
         function updateWalletUI() {
-            walletBalance = Number(walletBalance) || 0;
             document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         }
@@ -1202,16 +1175,10 @@
                 phone = document.getElementById('withdraw-phone-input').value.trim();
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
                 if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ እና ቢያንስ 100 ብር ያስገቡ!"); return; }
-                
-                let currentBalNum = Number(walletBalance) || 0;
-                let requestedAmtNum = Number(amount) || 0;
-                if (currentBalNum < requestedAmtNum) { 
-                    alert("⚠️ በቂ ቀሪ ሒሳብ የለዎትም!"); 
-                    return; 
-                }
+                if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
             }
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: Number(walletBalance || 0), phone, receipt, telegramChatId: telegramUserId });
+            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt, telegramChatId: telegramUserId });
         }
 
         function generate500CardGrid() {
@@ -1261,19 +1228,19 @@
             
             let amountToDeduct = desiredTotalCost - totalPaidForCurrentRound;
 
-            if (amountToDeduct > 0 && Number(walletBalance || 0) < amountToDeduct) { 
+            if (amountToDeduct > 0 && walletBalance < amountToDeduct) { 
                 alert("በቂ ሂሳብ የለዎትም! እባክዎ አካውንትዎ ላይ ገንዘብ ያስገቡ።"); 
                 return; 
             }
             
             if (amountToDeduct > 0) {
-                walletBalance = Number(walletBalance || 0) - amountToDeduct;
+                walletBalance -= amountToDeduct;
                 updateWalletUI();
                 addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense');
                 totalPaidForCurrentRound = desiredTotalCost;
             } else if (amountToDeduct < 0) {
                 let refundAmount = Math.abs(amountToDeduct);
-                walletBalance = Number(walletBalance || 0) + refundAmount;
+                walletBalance += refundAmount;
                 updateWalletUI();
                 addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income');
                 totalPaidForCurrentRound = desiredTotalCost;
