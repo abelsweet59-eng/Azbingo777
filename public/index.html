@@ -656,6 +656,12 @@
                 }
 
                 if (!room.gameActive) {
+                    // 🎯 ጨዋታው ገና አላለቀም/አልጀመረም (ቆጣሪው እንዲታይ ማድረግ)
+                    const countdownBox = document.getElementById('in-place-countdown-box');
+                    const mainBall = document.getElementById('main-called-ball');
+                    if (countdownBox) countdownBox.classList.remove('hidden');
+                    if (mainBall) mainBall.classList.add('hidden');
+
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && myData.cards) {
@@ -695,6 +701,13 @@
             socket.on('gameStarted', (data) => {
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
+                
+                // 🎯 ጨዋታው ሲጀመር ቆጣሪውን ደብቆ የኳስ ማሳያውን ማምጣት
+                const countdownBox = document.getElementById('in-place-countdown-box');
+                const mainBall = document.getElementById('main-called-ball');
+                if (countdownBox) countdownBox.classList.add('hidden');
+                if (mainBall) mainBall.classList.remove('hidden');
+
                 renderPlayerDualCards();
             });
 
