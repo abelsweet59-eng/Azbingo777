@@ -20,11 +20,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
-const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
-
 const allRegisteredUsers = new Set();
 
 let isDepositLocked = false;
@@ -220,29 +218,20 @@ let lastSmoothCount = 20;
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
 
-    // 🎯 [ትክክለኛ የኢትዮጵያ ሰዓት አቆጣጠር (UTC+3) ሎጂክ]
     const now = new Date();
-    // UTC ሰዓት ላይ 3 ሰዓት በመጨመር ትክክለኛውን የኢትዮጵያ ሰዓት (0 - 23) በቀጥታ እናገኛለን
     let utcHours = now.getUTCHours();
     let ethiopianHour = (utcHours + 3) % 24; 
 
     let targetBase = 20;
 
-    // 1️⃣ ጠዋት (ከ 6:00 ጀምሮ እስከ ከሰዓት 6:00) -> ከ 10 እስከ 27 ቦቶች
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        targetBase = 10 + Math.floor(Math.random() * 18); // 10 እስከ 27
-    } 
-    // 2️⃣ ከሰዓት 6:00 ጀምሮ እስከ ምሽት 1:00 (19:00) -> ከ 30 እስከ 57 ቦቶች
-    else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        targetBase = 30 + Math.floor(Math.random() * 28); // 30 እስከ 57
-    } 
-    // 3️⃣ ምሽት 1:00 ጀምሮ እስከ ለሊት 6:00 (03:00) -> ከ 100 እስከ 270 ቦቶች (Peak Hours)
-    else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        targetBase = 100 + Math.floor(Math.random() * 171); // 100 እስከ 270
-    } 
-    // 4️⃣ ከለሊት 6:00 ጀምሮ እስከ ጠዋት 6:00 -> ከ 29 እስከ 37 ቦቶች
-    else {
-        targetBase = 29 + Math.floor(Math.random() * 9); // 29 እስከ 37
+        targetBase = 10 + Math.floor(Math.random() * 18); 
+    } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
+        targetBase = 30 + Math.floor(Math.random() * 28); 
+    } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
+        targetBase = 100 + Math.floor(Math.random() * 171); 
+    } else {
+        targetBase = 29 + Math.floor(Math.random() * 9); 
     }
 
     if (isGameActive) {
@@ -704,6 +693,7 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
+                // የ 24 ሰዓት ጊዜ ገደብ ማጽዳት (Pending Requests & Offline Queues)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -721,7 +711,6 @@ async function pollTelegramUpdates() {
 
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
-                            
                             userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
 
                             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
@@ -736,28 +725,18 @@ async function pollTelegramUpdates() {
                                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                                 if (targetSocket) {
                                     targetSocket.emit('financialApproved', bonusPayload);
-                                    
-                                    for (let adminChatId of ADMIN_CHAT_IDS) {
-                                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                            chat_id: adminChatId,
-                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (አካውንቱ ላይ ገቢ ሆኗል)`,
-                                            parse_mode: 'Markdown'
-                                        }).catch(() => {});
-                                    }
                                 }
                             } else {
-                                if (!offlineApprovedQueue[targetUserId]) {
-                                    offlineApprovedQueue[targetUserId] = [];
-                                }
+                                if (!offlineApprovedQueue[targetUserId]) offlineApprovedQueue[targetUserId] = [];
                                 offlineApprovedQueue[targetUserId].push(bonusPayload);
+                            }
 
-                                for (let adminChatId of ADMIN_CHAT_IDS) {
-                                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                        chat_id: adminChatId,
-                                        text: `📌 ዩዘር ID: \`${targetUserId}\` ኦንላይን አይደለም። አፕ ሲከፍት ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!`,
-                                        parse_mode: 'Markdown'
-                                    }).catch(() => {});
-                                }
+                            for (let adminChatId of ADMIN_CHAT_IDS) {
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                    chat_id: adminChatId,
+                                    text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል!`,
+                                    parse_mode: 'Markdown'
+                                }).catch(() => {});
                             }
                         }
                     }
@@ -778,38 +757,71 @@ async function pollTelegramUpdates() {
                         let targetSocket = io.sockets.sockets.get(reqData.socketId);
                         let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
                         let rawAmount = Number(reqData.amount) || 0;
-                        let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+                        let targetUserId = String(reqData.userId);
 
                         if (action === 'app') {
+                            // 💳 [አፕሩቭ ሲደረግ]
                             if (reqType === 'deposit' || reqType === 'bonus') {
-                                userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                                userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
                             } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
+                                // ዊዝድሮዋል ሲጠየቅ አስቀድሞ ተቀንሷል፣ አፕሩቭ ሲደረግ ቀሪው ሒሳብ ተረጋግጦ ይቀመጣል
                             }
 
                             let successPayload = { 
                                 type: reqData.type, 
                                 amount: rawAmount, 
-                                adjustedAmount: finalAmountForClient,
-                                balance: userWallets[reqData.userId]
+                                adjustedAmount: (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount),
+                                balance: userWallets[targetUserId] || 0
                             };
 
+                            // ተጠቃሚው ኦንላይን ከሆነ በቀጥታ እንልክለታለን፣ ኦፍላይን ከሆነ ወደ offlineApprovedQueue እንጨምረዋለን
                             if (targetSocket) {
                                 targetSocket.emit('financialApproved', successPayload);
                             } else {
-                                if (!offlineApprovedQueue[reqData.userId]) {
-                                    offlineApprovedQueue[reqData.userId] = [];
-                                }
-                                offlineApprovedQueue[reqData.userId].push(successPayload);
+                                if (!offlineApprovedQueue[targetUserId]) offlineApprovedQueue[targetUserId] = [];
+                                offlineApprovedQueue[targetUserId].push(successPayload);
+                            }
+
+                            // ቴሌብር ማሳወቂያ ለተጠቃሚው በቦት በኩል መላክ (ኦፍላይን ቢሆንም እንዲደርሰው)
+                            if (reqData.chatId) {
+                                let successUserMsg = reqType === 'deposit' 
+                                    ? `✅ *AZ BINGO - የዲፖዚት ጥያቄዎ ጸድቋል!*\n\nየጠየቁት *${rawAmount} ብር* አካውንትዎ ላይ ገቢ ሆኗል! 💰`
+                                    : `✅ *AZ BINGO - የዊዝድሮዋል ጥያቄዎ ጸድቋል!*\n\nየጠየቁት *${rawAmount} ብር* ተልኳል። እናመሰግናለን! 🙏`;
+                                
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                    chat_id: reqData.chatId,
+                                    text: successUserMsg,
+                                    parse_mode: 'Markdown'
+                                }).catch(() => {});
                             }
 
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - ተጠቃሚው አካውንት ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
+
                         } else {
+                            // ❌ [ሪጀክት / ሲሰረዝ]
+                            if (reqType === 'withdraw' || reqType === 'withdrawal') {
+                                // ዊዝድሮዋል ተሰርዟል ከተባለ የቀነሰውን ገንዘብ ተመልሶ ለተጠቃሚው እናስገባለን
+                                userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
+                            }
+
+                            let rejectPayload = {
+                                type: reqData.type,
+                                amount: rawAmount,
+                                balance: userWallets[targetUserId] || 0
+                            };
+
+                            if (targetSocket) {
+                                targetSocket.emit('financialRejected', rejectPayload);
+                            } else {
+                                if (!offlineApprovedQueue[targetUserId]) offlineApprovedQueue[targetUserId] = [];
+                                offlineApprovedQueue[targetUserId].push({ ...rejectPayload, isRejected: true });
+                            }
+
                             if (reqData.chatId) {
-                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል። 🙏`;
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የ(${reqData.amount} ብር) ${reqType === 'deposit' ? 'ዲፖዚት' : 'ዊዝድሮዋል'} ጥያቄ በአድሚኑ ተሰርዟል። 🙏`;
                                 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
@@ -818,14 +830,12 @@ async function pollTelegramUpdates() {
                                 }).catch(() => {});
                             }
 
-                            if (targetSocket) { 
-                                targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
-                            }
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
+
                         delete pendingRequests[requestId]; 
                     }
                     try { 
@@ -873,7 +883,6 @@ io.on('connection', (socket) => {
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
-            
             allRegisteredUsers.add(userId);
 
             if (!userWallets[userId]) {
@@ -910,9 +919,14 @@ io.on('connection', (socket) => {
                 });
             }
 
+            // ተጠቃሚው ኦፍላይን ሳለ አድሚኑ ያጸደቀላቸው ጥያቄዎች ካሉ ሲገባ በራስ-ሰር ይላክላቸው
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
                 offlineApprovedQueue[userId].forEach(item => {
-                    socket.emit('financialApproved', item);
+                    if (item.isRejected) {
+                        socket.emit('financialRejected', item);
+                    } else {
+                        socket.emit('financialApproved', item);
+                    }
                 });
                 delete offlineApprovedQueue[userId];
             }
@@ -961,9 +975,7 @@ io.on('connection', (socket) => {
                     socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኮ አካውንቱ ላይ ገቢ ሆኗል!` });
                 }
             } else {
-                if (!offlineApprovedQueue[targetUserId]) {
-                    offlineApprovedQueue[targetUserId] = [];
-                }
+                if (!offlineApprovedQueue[targetUserId]) offlineApprovedQueue[targetUserId] = [];
                 offlineApprovedQueue[targetUserId].push(bonusPayload);
                 socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!` });
             }
@@ -972,7 +984,6 @@ io.on('connection', (socket) => {
 
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data ? data.message : null;
-        
         if (!messageText) {
             socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
             return;
@@ -1026,7 +1037,6 @@ io.on('connection', (socket) => {
 
     socket.on('adminSetNextWinner', (data) => {
         let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
-        
         if (winnerType === 'only_real_users_mode') {
             enableOnlyRealUsersMode = true;
             forcedNextWinner = 'random_real';
@@ -1046,6 +1056,8 @@ io.on('connection', (socket) => {
     socket.on('financialRequest', async (data) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
+        let cleanUserId = String(userId || 'unknown');
+        let parsedAmount = Number(amount) || 0;
         
         if (type === 'deposit' && isDepositLocked) {
             socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
@@ -1056,19 +1068,31 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // ዊዝድሮዋል ሲጠየቅ ቀሪ ሒሳብ ማረጋገጥ እና ወዲያውኑ ከሒሳቡ መቀነስ
+        if (type === 'withdraw' || type === 'withdrawal') {
+            let currentBal = userWallets[cleanUserId] || 0;
+            if (currentBal < parsedAmount) {
+                socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሒሳብ የለዎትም!" });
+                return;
+            }
+            // ዊዝድሮዋል ፔንዲንግ ሲሆን ወዲያውኑ ከባላንስ እንቀንሳለን (አድሚኑ ከሰረዘው ተመልሶ ይገባል)
+            userWallets[cleanUserId] = currentBal - parsedAmount;
+            socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
+        }
+
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
-            userId: String(userId || 'unknown'), 
-            chatId: telegramChatId || userId, 
+            userId: cleanUserId, 
+            chatId: telegramChatId || cleanUserId, 
             type, 
-            amount, 
+            amount: parsedAmount, 
             username, 
             socketId: socket.id, 
             timestamp: Date.now() 
         };
 
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        await sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId] || currentBalance, phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
