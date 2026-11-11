@@ -655,10 +655,11 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                if (!room.gameActive) {
-                    // 🎯 ጨዋታው ገና አላለቀም/አልጀመረም (ቆጣሪው እንዲታይ ማድረግ)
-                    const countdownBox = document.getElementById('in-place-countdown-box');
-                    const mainBall = document.getElementById('main-called-ball');
+                const countdownBox = document.getElementById('in-place-countdown-box');
+                const mainBall = document.getElementById('main-called-ball');
+
+                // 🎯 ጥብቅ ማጣሪያ: ጨዋታው ገና አላለጣም/አልጀመረም ወይም ገና ቁጥር አልተጠራም (ቆጣሪው ሁልጊዜ እንዲታይ ማድረግ)
+                if (!room.gameActive || (!room.calledNumbers || room.calledNumbers.length === 0)) {
                     if (countdownBox) countdownBox.classList.remove('hidden');
                     if (mainBall) mainBall.classList.add('hidden');
 
@@ -675,17 +676,19 @@
                     }
                 }
 
-                if (room.gameActive) {
+                if (room.gameActive && room.calledNumbers && room.calledNumbers.length > 0) {
+                    if (countdownBox) countdownBox.classList.add('hidden');
+                    if (mainBall) mainBall.classList.remove('hidden');
+
                     calledNumbersList = room.calledNumbers || [];
-                    if (calledNumbersList.length > 0) {
-                        displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
-                        document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                    }
+                    displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
+                    document.getElementById('stat-called-count').innerText = calledNumbersList.length;
+                    
                     document.getElementById('card-selection-section').classList.add('hidden');
                     document.getElementById('live-game-section').classList.remove('hidden');
                     renderVerticalBoard();
                     renderPlayerDualCards();
-                } else {
+                } else if (!room.gameActive) {
                     if (confirmedCards.length === 0) {
                         calledNumbersList = [];
                         manualDaubedNumbers = {};
@@ -702,7 +705,6 @@
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
                 
-                // 🎯 ጨዋታው ሲጀመር ቆጣሪውን ደብቆ የኳስ ማሳያውን ማምጣት
                 const countdownBox = document.getElementById('in-place-countdown-box');
                 const mainBall = document.getElementById('main-called-ball');
                 if (countdownBox) countdownBox.classList.add('hidden');
