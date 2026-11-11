@@ -759,19 +759,19 @@ async function pollTelegramUpdates() {
                         let targetSocket = onlineRealUsers.find(u => u.userId === targetUserId) ? io.sockets.sockets.get(onlineRealUsers.find(u => u.userId === targetUserId).socketId) : null;
 
                         if (action === 'app') {
-                            // 💳 [አፕሩቭ ሲደረግ]
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
                             } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                // ዊዝድሮዋል አፕሩቭ ሲደረግ አሁን ከባላንስ እንቀንሳለን (ከዚህ በፊት ሪኩዌስት ሲልክ ነበር የሚቀነሰው፣ አሁን ግን አፕሩቭ ሲደረግ ብቻ ይቀነሳል)
-                                userWallets[targetUserId] = (userWallets[targetUserId] || 0) - Math.abs(rawAmount);
+                                // ዊዝድሮዋል ሲጸድቅ ከባላንሱ ይቀነሳል (በቁጥር መልክ በትክክል እንዲቀነስ ተደርጓል)
+                                userWallets[targetUserId] = Number(userWallets[targetUserId] || 0) - Math.abs(rawAmount);
+                                if (userWallets[targetUserId] < 0) userWallets[targetUserId] = 0;
                             }
 
                             let successPayload = { 
                                 type: reqData.type, 
                                 amount: rawAmount, 
                                 adjustedAmount: (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount),
-                                balance: userWallets[targetUserId] || 0
+                                balance: Number(userWallets[targetUserId] || 0)
                             };
 
                             if (targetSocket) {
@@ -799,11 +799,10 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
 
                         } else {
-                            // ❌ [ሪጀክት / ሲሰረዝ] - ዊዝድሮዋልም ሆነ ዲፖዚት ሲሰረዝ ባላንሱ ምንም አይቀየርም (ምክንያቱም ሪኩዌስት ሲልክ አልተቀነሰም ነበርና)
                             let rejectPayload = {
                                 type: reqData.type,
                                 amount: rawAmount,
-                                balance: userWallets[targetUserId] || 0
+                                balance: Number(userWallets[targetUserId] || 0)
                             };
 
                             if (targetSocket) {
@@ -923,7 +922,7 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
-            socket.emit('updateBalance', { balance: userWallets[userId] });
+            socket.emit('updateBalance', { balance: Number(userWallets[userId] || 0) });
 
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
@@ -1060,9 +1059,9 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // ዊዝድሮዋል ሲጠየቅ ቀሪ ሒሳብ ማረጋገጥ ብቻ (አሁን ወዲያውኑ ከባላንስ አይቀነስም፤ አድሚኑ አፕሩቭ ሲያደርግ ብቻ ይቀንሳል)
+        // 🎯 [የተስተካከለ የሒሳብ ማረጋገጫ ሎጂክ - ጥብቅ የቁጥር ንጽጽር]
         if (type === 'withdraw' || type === 'withdrawal') {
-            let currentBal = userWallets[cleanUserId] || 0;
+            let currentBal = Number(userWallets[cleanUserId] || 0);
             if (currentBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሒሳብ የለዎትም!" });
                 return;
@@ -1081,7 +1080,7 @@ io.on('connection', (socket) => {
             timestamp: Date.now() 
         };
 
-        await sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId] || currentBalance, phone, receipt);
+        await sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, Number(userWallets[cleanUserId] || currentBalance), phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
