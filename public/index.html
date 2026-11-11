@@ -418,7 +418,7 @@
 
         <!-- DEPOSIT MODAL -->
         <div id="deposit-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-40 flex items-center justify-center p-4">
-            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs">
+            <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs overflow-y-auto max-h-[90vh]">
                 
                 <div class="space-y-2">
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0940272544', 'telebirr-copy-msg')">
@@ -441,8 +441,20 @@
                 </div>
 
                 <input type="number" id="dep-amount-input" placeholder="የብር መጠን (ቢያንስ 20)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white">
-                <textarea id="dep-receipt-input" rows="3" placeholder="የቴሌብር ወይም የባንክ ደረሰኝ (SMS) እዚህ ጋር ያስገቡ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none"></textarea>
-                <div class="flex gap-2">
+                
+                <!-- አማራጭ 1: የጽሑፍ ደረሰኝ (SMS Text) -->
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-300 font-bold">አማራጭ 1: የባንክ/ቴሌብር SMS ጽሑፍ አስገባ</label>
+                    <textarea id="dep-receipt-input" rows="2" placeholder="የደረሰኝ ጽሑፍ (SMS) እዚህ ጋር ፔስት (Paste) አድርግ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white resize-none text-xs"></textarea>
+                </div>
+
+                <!-- አማራጭ 2: የክፍያ ስክሪንሾት ፎቶ (Screenshot Image) -->
+                <div class="space-y-1">
+                    <label class="text-[10px] text-amber-400 font-bold">ወይም አማራጭ 2: የክፍያ ፎቶ (Screenshot) ላክ</label>
+                    <input type="file" id="dep-receipt-file" accept="image/*" class="w-full bg-black/50 border border-white/20 rounded-lg p-1.5 text-white text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-amber-500 file:text-black hover:file:bg-amber-600">
+                </div>
+
+                <div class="flex gap-2 pt-1">
                     <button onclick="document.getElementById('deposit-modal').classList.add('hidden')" class="flex-1 bg-white/10 py-2 rounded-xl">ይቅር</button>
                     <button onclick="submitFinancialRequest('deposit')" class="flex-1 bg-emerald-600 py-2 rounded-xl font-bold">ጥያቄ ላክ</button>
                 </div>
@@ -1164,21 +1176,59 @@
                 return;
             }
 
-            let amount, phone = "ቴሌብር", receipt = "";
             if (type === 'deposit') {
-                amount = parseFloat(document.getElementById('dep-amount-input').value);
-                receipt = document.getElementById('dep-receipt-input').value.trim();
-                if (isNaN(amount) || amount < 20) { alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); return; }
-                if (!receipt) { alert("⚠️ ደረሰኝ ያስገቡ!"); return; }
+                let amount = parseFloat(document.getElementById('dep-amount-input').value);
+                let receiptText = document.getElementById('dep-receipt-input').value.trim();
+                let fileInput = document.getElementById('dep-receipt-file');
+                let receiptFile = fileInput.files[0];
+
+                if (isNaN(amount) || amount < 20) { 
+                    alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); 
+                    return; 
+                }
+                if (!receiptText && !receiptFile) { 
+                    alert("⚠️ እባክዎ የደረሰኝ ጽሑፍ (SMS) ያስገቡ ወይም የክፍያ ፎቶ (Screenshot) ይምረጡ!"); 
+                    return; 
+                }
+
                 document.getElementById('deposit-modal').classList.add('hidden');
+
+                let formData = new FormData();
+                formData.append('type', type);
+                formData.append('amount', amount);
+                formData.append('username', userFullName);
+                formData.append('userId', telegramUserId);
+                formData.append('currentBalance', walletBalance);
+                formData.append('receiptText', receiptText);
+                if (receiptFile) {
+                    formData.append('receiptImage', receiptFile);
+                }
+
+                fetch('/api/financial-request', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("✅ የዲፖዚት ጥያቄዎ ለአድሚን ተልኳል!");
+                    } else {
+                        alert("❌ ስህተት: " + (data.message || ''));
+                    }
+                })
+                .catch(err => {
+                    alert("❌ መረጃውን መላክ አልተቻለም።");
+                });
+
             } else {
-                phone = document.getElementById('withdraw-phone-input').value.trim();
-                amount = parseFloat(document.getElementById('withdraw-amount-input').value);
+                let phone = document.getElementById('withdraw-phone-input').value.trim();
+                let amount = parseFloat(document.getElementById('withdraw-amount-input').value);
                 if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ እና ቢያንስ 100 ብር ያስገቡ!"); return; }
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
+
+                socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt: '', telegramChatId: telegramUserId });
             }
-            socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt, telegramChatId: telegramUserId });
         }
 
         function generate500CardGrid() {
