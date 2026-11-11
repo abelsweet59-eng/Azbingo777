@@ -225,15 +225,19 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     let ethiopianHour = (utcHours + 3) % 24; 
     let targetBase = 95;
 
+    // 🎯 [የተስተካከለ የሰዓት ክፍፍል እና የቦቶች ብዛት ክልል]
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        targetBase = 50 + Math.floor(Math.random() * 10); 
+        // ጠዋት (ከ 6:00 እስከ 12:00 ኢትዮጵያ ሰዓት) -> ከ 20 እስከ 50
+        targetBase = 20 + Math.floor(Math.random() * 31); 
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        let progress = (ethiopianHour - 12) / 7; 
-        targetBase = Math.floor(60 + (progress * 20) + Math.random() * 5); 
+        // ቀትር እና ከሰዓት (ከ 12:00 እስከ 1:00 ማታ / 19:00 ኢትዮጵያ ሰዓት) -> ከ 50 እስከ 90
+        targetBase = 50 + Math.floor(Math.random() * 41); 
     } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        targetBase = 120 + Math.floor(Math.random() * 131); 
+        // ማታ / ፒክ ሰዓት (ከ 1:00 ማታ እስከ 6:00 ሌሊት) -> ከ 200 እስከ 300 (200 + Math.floor(Math.random() * 101))
+        targetBase = 200 + Math.floor(Math.random() * 101); 
     } else {
-        targetBase = 60 + Math.floor(Math.random() * 31); 
+        // ሌሊት (ከ 6:00 ሌሊት እስከ ጧት 6:00) -> ከ 29 እስከ 37
+        targetBase = 29 + Math.floor(Math.random() * 9); 
     }
 
     if (isGameActive) {
@@ -252,8 +256,8 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
         }
     }
 
-    if (lastSmoothCount < 40) lastSmoothCount = 40;
-    if (lastSmoothCount > 250) lastSmoothCount = 250;
+    if (lastSmoothCount < 10) lastSmoothCount = 10;
+    if (lastSmoothCount > 350) lastSmoothCount = 350;
 
     return lastSmoothCount;
 }
@@ -267,8 +271,7 @@ function updateRoomPlayersAndPot() {
         activeRealEntries.forEach(([sId, data]) => {
             if (data.cards) uniqueRealCardsCount += data.cards.length;
         });
-        globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
-        if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
+        globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : (activeRealEntries.length > 0 ? activeRealEntries.length : (realCount > 0 ? realCount : 1));
     } else {
         let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
         globalRoom.playersCount = currentBotsCount + realCount; 
