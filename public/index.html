@@ -1203,7 +1203,6 @@
                 amount = parseFloat(document.getElementById('withdraw-amount-input').value);
                 if (!phone || isNaN(amount) || amount < 100) { alert("⚠️ ትክክለኛ መረጃ እና ቢያንስ 100 ብር ያስገቡ!"); return; }
                 
-                // 🎯 100% አስተማማኝ እና የተስተካከለ የሒሳብ ማረጋገጫ (Validation)
                 let currentBalNum = Number(walletBalance) || 0;
                 let requestedAmtNum = Number(amount) || 0;
                 if (currentBalNum < requestedAmtNum) { 
