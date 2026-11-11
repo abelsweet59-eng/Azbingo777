@@ -602,6 +602,33 @@ function startMainGameLoop() {
                 }
 
                 let calledNum;
+                
+                // 🎯 [ጠንካራ ማስተካከያ] Standard Bot Mode ላይ ሪል ዩዘሩ ካርዱ 1 ቁጥር ብቻ ከቀረው (ወይም ሙሉ በሙሉ ሊያሸንፍ ሲል) ከ winNumQueue ውስጥ የሚወጣውን ቁጥር እንዘለዋለን
+                if (winNumQueue.length > 0) {
+                    let nextQueuedNum = Number(winNumQueue[0]);
+                    let wouldRealUserWinNow = false;
+
+                    let tempCalledCheck = [...globalRoom.calledNumbers, nextQueuedNum];
+                    Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
+                        if (pData && pData.cards) {
+                            pData.cards.forEach(cNum => {
+                                let cList = getCartelaNumbers(cNum);
+                                let matched = getWinningMatchedIndices(cList, tempCalledCheck);
+                                if (matched) wouldRealUserWinNow = true;
+
+                                let remCount = getRemainingCountForCard(cList, globalRoom.calledNumbers);
+                                if (remCount <= 1) {
+                                    wouldRealUserWinNow = true;
+                                }
+                            });
+                        }
+                    });
+
+                    if (wouldRealUserWinNow && currentWinnerType !== 'bot') {
+                        winNumQueue.shift(); // ሪል ዩዘሩ በአጋጣሚ እንዳያሸንፍ ቁጥሩን እንዘለዋለን
+                    }
+                }
+
                 if (winNumQueue.length > 0) {
                     calledNum = Number(winNumQueue.shift());
                     let availIdx = availableNumbers.indexOf(calledNum);
@@ -616,9 +643,8 @@ function startMainGameLoop() {
                             let wouldRealUserWin = false;
 
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
-                            
-                            // 🎯 [የተስተካከለ ጥበቃ] በ Standard Bot Mode ጊዜ እውነተኛው ተጠቃሚ 1 ቁጥር ብቻ ከቀረው (ወይም ፓተርኑን ሊጨርስ ሲቃረብ) ቦቱ በአጋጣሚ እንዳያሸንፍ/ቁጥሩ እንዳይጠራ ጥንቃቄ ይደረጋል
                             let realUserCardDanger = false;
+
                             Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
@@ -626,8 +652,9 @@ function startMainGameLoop() {
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
                                         if (matched) wouldRealUserWin = true;
 
-                                        let remCount = getRemainingCountForCard(cList, tempCalled);
-                                        if (remCount === 1) {
+                                        let remCount = getRemainingCountForCard(cList, globalRoom.calledNumbers);
+                                        // 🎯 ሪል ዩዘሩ 1 ቁጥር ወይም ከዚያ በታች ከቀረው ፈጽሞ እንዳይጠራ ጥብቅ ማጣሪያ
+                                        if (remCount <= 1) {
                                             realUserCardDanger = true;
                                         }
                                     });
