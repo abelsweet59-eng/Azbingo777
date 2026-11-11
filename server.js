@@ -25,14 +25,11 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🎯 ሁሉንም አፕሊኬሽኑን የከፈቱ / የተመዘገቡ ዩዘሮች በቋሚነት ለመያዝ (ለ Broadcast)
 const allRegisteredUsers = new Set();
 
-// 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock/Unlock) ሁኔታዎች
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
-// 🎯 የቦት ሞድ የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
@@ -191,7 +188,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return null;
 }
 
-// 🎯 የተጠቃሚው ካርድ ሙሉ ለመሆን (Bingo ለማለት) ምን ያህል ቁጥሮች እንደቀሩት የሚቆጥር ሎጂክ
 function getRemainingCountForCard(winningCardNumbers, calledNumbers) {
     let cleanCalled = new Set(calledNumbers.map(n => Number(n)));
     cleanCalled.add("FREE");
@@ -553,6 +549,26 @@ function startMainGameLoop() {
                     return;
                 }
 
+                // 🎯 [ፍጹም ጥበቃ] በ Standard Bot Mode ጊዜ ሪል ዩዘር (እውነተኛው ተጠቃሚ) በአጋጣሚ ፓተርኑን ሞልቶ እንዳያሸንፍ (Accidental Win እንዳይፈጠር) ማረጋገጫ
+                let realUserHasWonNow = false;
+                Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
+                    if (pData && pData.cards) {
+                        pData.cards.forEach(cNum => {
+                            let cList = getCartelaNumbers(cNum);
+                            let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
+                            if (matched) {
+                                realUserHasWonNow = true;
+                            }
+                        });
+                    }
+                });
+
+                // አድሚን ቦት እንዲያሸንፍ ካላዘዘ እና ሪል ዩዘሩ በአጋጣሚ አሸናፊ ከወጣ ወይም 1 ቁጥር ብቻ ከቀረው ጨዋታው እንዳያልቅ እና እንዳይጠራ እናቆማለን
+                if (realUserHasWonNow && currentWinnerType !== 'bot' && currentWinnerType !== 'random_real') {
+                    // አዲስ ቁጥር እንዳይጠራ ለጊዜው ሉፑን እንዘለዋለን (ሪል ዩዘር እንዳያሸንፍ ጨዋታው እንዲቆይ ይደረጋል)
+                    return; 
+                }
+
                 let currentCalledLen = globalRoom.calledNumbers.length;
                 let shouldTriggerWin = (currentCalledLen >= targetCallCount);
                 
@@ -603,7 +619,6 @@ function startMainGameLoop() {
 
                 let calledNum;
                 
-                // 🎯 [ጠንካራ ማስተካከያ] Standard Bot Mode ላይ ሪል ዩዘሩ ካርዱ 1 ቁጥር ብቻ ከቀረው (ወይም ሙሉ በሙሉ ሊያሸንፍ ሲል) ከ winNumQueue ውስጥ የሚወጣውን ቁጥር እንዘለዋለን
                 if (winNumQueue.length > 0) {
                     let nextQueuedNum = Number(winNumQueue[0]);
                     let wouldRealUserWinNow = false;
@@ -625,7 +640,7 @@ function startMainGameLoop() {
                     });
 
                     if (wouldRealUserWinNow && currentWinnerType !== 'bot') {
-                        winNumQueue.shift(); // ሪል ዩዘሩ በአጋጣሚ እንዳያሸንፍ ቁጥሩን እንዘለዋለን
+                        winNumQueue.shift(); 
                     }
                 }
 
@@ -652,8 +667,7 @@ function startMainGameLoop() {
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
                                         if (matched) wouldRealUserWin = true;
 
-                                        let remCount = getRemainingCountForCard(cList, globalRoom.calledNumbers);
-                                        // 🎯 ሪል ዩዘሩ 1 ቁጥር ወይም ከዚያ በታች ከቀረው ፈጽሞ እንዳይጠራ ጥብቅ ማጣሪያ
+                                        let remCount = getRemainingCountForCard(cList, tempCalled);
                                         if (remCount <= 1) {
                                             realUserCardDanger = true;
                                         }
@@ -833,7 +847,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         } else {
                             if (reqData.chatId) {
-                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል። 🙏`;
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ/መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                                 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
@@ -898,7 +912,6 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🎯 ዩዘሩ አፕሊኬሽኑን ሲከፍት በቋሚነት እንመዘግበዋለን (ለ ብሮድካስት እንዲመች)
             allRegisteredUsers.add(userId);
 
             if (!userWallets[userId]) {
@@ -995,7 +1008,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🎯 [የተሻሻለ] ማስታወቂያ (Broadcast) ሲላክ ለሁሉም (ኦንላይን እና ኦፍላይን ለነበሩ) ተጠቃሚዎች በጀርባ ይደርሳል
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data ? data.message : null;
         
@@ -1007,7 +1019,6 @@ io.on('connection', (socket) => {
         let successCount = 0;
         let allUserIds = [...allRegisteredUsers];
 
-        // ዩዘሮች በሌሉበት በጀርባ (Async) በሰርቨሩ ላይ ያለምንም መጫናነቅ እንዲለቀቅ ይደረጋል
         (async () => {
             for (let uId of allUserIds) {
                 try {
@@ -1017,7 +1028,6 @@ io.on('connection', (socket) => {
                         parse_mode: 'Markdown'
                     });
                     successCount++;
-                    // ሰርቨሩ ላይ ስፓም ወይም መጫናነቅ እንዳይፈጥር 100 ሚሊሰከንድ አርፈው ይላካሉ
                     await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (e) {}
             }
