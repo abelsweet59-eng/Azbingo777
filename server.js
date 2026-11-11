@@ -25,14 +25,11 @@ const ADMIN_CHAT_ID = ADMIN_CHAT_IDS[0];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 
-// 🎯 ሁሉንም አፕሊኬሽኑን የከፈቱ / የተመዘገቡ ዩዘሮች በቋሚነት ለመያዝ (ለ Broadcast)
 const allRegisteredUsers = new Set();
 
-// 🎯 የዲፖዚት እና ዊዝድሮዋል መቆለፊያ (Lock/Unlock) ሁኔታዎች
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
-// 🎯 የቦት ሞድ የጥሪ ሉፕ ቅደም ተከተል (Flow Sequence)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
 ];
@@ -191,7 +188,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return null;
 }
 
-// 🎯 የተጠቃሚው ካርድ ሙሉ ለመሆን (Bingo ለማለት) ምን ያህል ቁጥሮች እንደቀሩት የሚቆጥር ሎጂክ
 function getRemainingCountForCard(winningCardNumbers, calledNumbers) {
     let cleanCalled = new Set(calledNumbers.map(n => Number(n)));
     cleanCalled.add("FREE");
@@ -617,7 +613,6 @@ function startMainGameLoop() {
 
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             
-                            // 🎯 [የተስተካከለ ጥበቃ] በ Standard Bot Mode ጊዜ እውነተኛው ተጠቃሚ 1 ቁጥር ብቻ ከቀረው (ወይም ፓተርኑን ሊጨርስ ሲቃረብ) ቦቱ በአጋጣሚ እንዳያሸንፍ/ቁጥሩ እንዳይጠራ ጥንቃቄ ይደረጋል
                             let realUserCardDanger = false;
                             Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
                                 if (pData && pData.cards) {
@@ -871,7 +866,6 @@ io.on('connection', (socket) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
             
-            // 🎯 ዩዘሩ አፕሊኬሽኑን ሲከፍት በቋሚነት እንመዘግበዋለን (ለ ብሮድካስት እንዲመች)
             allRegisteredUsers.add(userId);
 
             if (!userWallets[userId]) {
@@ -968,7 +962,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🎯 [የተሻሻለ] ማስታወቂያ (Broadcast) ሲላክ ለሁሉም (ኦንላይን እና ኦፍላይን ለነበሩ) ተጠቃሚዎች በጀርባ ይደርሳል
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data ? data.message : null;
         
@@ -980,7 +973,6 @@ io.on('connection', (socket) => {
         let successCount = 0;
         let allUserIds = [...allRegisteredUsers];
 
-        // ዩዘሮች በሌሉበት በጀርባ (Async) በሰርቨሩ ላይ ያለምንም መጫናነቅ እንዲለቀቅ ይደረጋል
         (async () => {
             for (let uId of allUserIds) {
                 try {
@@ -990,7 +982,6 @@ io.on('connection', (socket) => {
                         parse_mode: 'Markdown'
                     });
                     successCount++;
-                    // ሰርቨሩ ላይ ስፓም ወይም መጫናነቅ እንዳይፈጥር 100 ሚሊሰከንድ አርፈው ይላካሉ
                     await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (e) {}
             }
