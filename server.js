@@ -693,7 +693,6 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
-                // የ 24 ሰዓት ጊዜ ገደብ ማጽዳት (Pending Requests & Offline Queues)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -760,9 +759,12 @@ async function pollTelegramUpdates() {
                         let targetSocket = onlineRealUsers.find(u => u.userId === targetUserId) ? io.sockets.sockets.get(onlineRealUsers.find(u => u.userId === targetUserId).socketId) : null;
 
                         if (action === 'app') {
-                            // 💳 [አፕሩቭ ሲደረግ - የመጀመሪያ፣ መሀል ወይም መጨረሻ ሪኩዌስት ይሁን ግድ የለውም በትክክል ይሰራሉ]
+                            // 💳 [አፕሩቭ ሲደረግ]
                             if (reqType === 'deposit' || reqType === 'bonus') {
                                 userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
+                            } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
+                                // ዊዝድሮዋል አፕሩቭ ሲደረግ አሁን ከባላንስ እንቀንሳለን (ከዚህ በፊት ሪኩዌስት ሲልክ ነበር የሚቀነሰው፣ አሁን ግን አፕሩቭ ሲደረግ ብቻ ይቀነሳል)
+                                userWallets[targetUserId] = (userWallets[targetUserId] || 0) - Math.abs(rawAmount);
                             }
 
                             let successPayload = { 
@@ -793,15 +795,11 @@ async function pollTelegramUpdates() {
 
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - ሒሳብ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - ተከናውኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
 
                         } else {
-                            // ❌ [ሪጀክት / ሲሰረዝ - የትኛውንም ሪኩዌስት መርጦ መሰረዝ ይቻላል]
-                            if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                                userWallets[targetUserId] = (userWallets[targetUserId] || 0) + Math.abs(rawAmount);
-                            }
-
+                            // ❌ [ሪጀክት / ሲሰረዝ] - ዊዝድሮዋልም ሆነ ዲፖዚት ሲሰረዝ ባላንሱ ምንም አይቀየርም (ምክንያቱም ሪኩዌስት ሲልክ አልተቀነሰም ነበርና)
                             let rejectPayload = {
                                 type: reqData.type,
                                 amount: rawAmount,
@@ -831,7 +829,6 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         }
 
-                        // ከማህደረ ትውስታ ይሰረዛል (ሌሎቹን ፔንዲንግ ሪኩዌስቶች ፈጽሞ አይነካም)
                         delete pendingRequests[requestId]; 
                     }
                     try { 
@@ -1063,17 +1060,15 @@ io.on('connection', (socket) => {
             return;
         }
 
+        // ዊዝድሮዋል ሲጠየቅ ቀሪ ሒሳብ ማረጋገጥ ብቻ (አሁን ወዲያውኑ ከባላንስ አይቀነስም፤ አድሚኑ አፕሩቭ ሲያደርግ ብቻ ይቀንሳል)
         if (type === 'withdraw' || type === 'withdrawal') {
             let currentBal = userWallets[cleanUserId] || 0;
             if (currentBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሒሳብ የለዎትም!" });
                 return;
             }
-            userWallets[cleanUserId] = currentBal - parsedAmount;
-            socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
         }
 
-        // እያንዳንዱ ሪኩዌስት የራሱ የሆነ ዩኒክ አይዲ (requestId) ይኖረዋል፤ ይህም ተደራርቦ እንዳይጠፋ ያደርጋል
         let requestId = 'req_' + cleanUserId.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
         pendingRequests[requestId] = { 
