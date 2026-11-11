@@ -220,23 +220,28 @@ let lastSmoothCount = 95;
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
 
+    // 🎯 [ትክክለኛ የኢትዮጵያ ሰዓት አቆጣጠር (East Africa Time - UTC+3)]
     const now = new Date();
-    let utcHours = now.getUTCHours();
-    let ethiopianHour = (utcHours + 3) % 24; 
-    let targetBase = 95;
+    // ሰርቨሩ የትኛዉም ዞን ላይ ቢሆን ትክክለኛውን የኢትዮጵያ ሰዓት (Hour: 0 - 23) ለማግኘት:
+    let ethiopianHour = parseInt(now.toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa', hour: 'numeric', hour12: false }));
+    if (ethiopianHour === 24) ethiopianHour = 0;
 
-    // 🎯 [የተስተካከለ የሰዓት ክፍፍል እና የቦቶች ብዛት ክልል]
+    let targetBase = 20;
+
+    // 1️⃣ ጠዋት (ከ 6:00 እስከ 12:00 ሰዓት) -> 20 - 50 ቦቶች
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        // ጠዋት (ከ 6:00 እስከ 12:00 ኢትዮጵያ ሰዓት) -> ከ 20 እስከ 50
         targetBase = 20 + Math.floor(Math.random() * 31); 
-    } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        // ቀትር እና ከሰዓት (ከ 12:00 እስከ 1:00 ማታ / 19:00 ኢትዮጵያ ሰዓት) -> ከ 50 እስከ 90
+    } 
+    // 2️⃣ ቀትር እና ከሰዓት (ከ 12:00 እስከ 1:00 ማታ / 19:00) -> 50 - 90 ቦቶች
+    else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         targetBase = 50 + Math.floor(Math.random() * 41); 
-    } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        // ማታ / ፒክ ሰዓት (ከ 1:00 ማታ እስከ 6:00 ሌሊት) -> ከ 200 እስከ 300 (200 + Math.floor(Math.random() * 101))
+    } 
+    // 3️⃣ ማታ / ፒክ ሰዓት (ከ 1:00 ማታ እስከ 6:00 ሌሊት) -> 200 - 300 ቦቶች
+    else if (ethiopianHour >= 19 || ethiopianHour < 3) {
         targetBase = 200 + Math.floor(Math.random() * 101); 
-    } else {
-        // ሌሊት (ከ 6:00 ሌሊት እስከ ጧት 6:00) -> ከ 29 እስከ 37
+    } 
+    // 4️⃣ ሌሊት (ከ 6:00 ሌሊት እስከ ጧት 6:00) -> 29 - 37 ቦቶች
+    else {
         targetBase = 29 + Math.floor(Math.random() * 9); 
     }
 
