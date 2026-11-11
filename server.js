@@ -215,40 +215,40 @@ function getRemainingCountForCard(winningCardNumbers, calledNumbers) {
     return minMissing;
 }
 
-let lastSmoothCount = 95; 
+let lastSmoothCount = 20; 
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
 
-    // 🎯 [ትክክለኛ የኢትዮጵያ ሰዓት አቆጣጠር (East Africa Time - UTC+3)]
+    // 🎯 [ትክክለኛ የኢትዮጵያ ሰዓት አቆጣጠር (UTC+3) ሎጂክ]
     const now = new Date();
-    // ሰርቨሩ የትኛዉም ዞን ላይ ቢሆን ትክክለኛውን የኢትዮጵያ ሰዓት (Hour: 0 - 23) ለማግኘት:
-    let ethiopianHour = parseInt(now.toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa', hour: 'numeric', hour12: false }));
-    if (ethiopianHour === 24) ethiopianHour = 0;
+    // UTC ሰዓት ላይ 3 ሰዓት በመጨመር ትክክለኛውን የኢትዮጵያ ሰዓት (0 - 23) በቀጥታ እናገኛለን
+    let utcHours = now.getUTCHours();
+    let ethiopianHour = (utcHours + 3) % 24; 
 
     let targetBase = 20;
 
-    // 1️⃣ ጠዋት (ከ 6:00 እስከ 12:00 ሰዓት) -> 20 - 50 ቦቶች
+    // 1️⃣ ጠዋት (ከ 6:00 ጀምሮ እስከ ከሰዓት 6:00) -> ከ 10 እስከ 27 ቦቶች
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        targetBase = 20 + Math.floor(Math.random() * 31); 
+        targetBase = 10 + Math.floor(Math.random() * 18); // 10 እስከ 27
     } 
-    // 2️⃣ ቀትር እና ከሰዓት (ከ 12:00 እስከ 1:00 ማታ / 19:00) -> 50 - 90 ቦቶች
+    // 2️⃣ ከሰዓት 6:00 ጀምሮ እስከ ምሽት 1:00 (19:00) -> ከ 30 እስከ 57 ቦቶች
     else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        targetBase = 50 + Math.floor(Math.random() * 41); 
+        targetBase = 30 + Math.floor(Math.random() * 28); // 30 እስከ 57
     } 
-    // 3️⃣ ማታ / ፒክ ሰዓት (ከ 1:00 ማታ እስከ 6:00 ሌሊት) -> 200 - 300 ቦቶች
+    // 3️⃣ ምሽት 1:00 ጀምሮ እስከ ለሊት 6:00 (03:00) -> ከ 100 እስከ 270 ቦቶች (Peak Hours)
     else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        targetBase = 200 + Math.floor(Math.random() * 101); 
+        targetBase = 100 + Math.floor(Math.random() * 171); // 100 እስከ 270
     } 
-    // 4️⃣ ሌሊት (ከ 6:00 ሌሊት እስከ ጧት 6:00) -> 29 - 37 ቦቶች
+    // 4️⃣ ከለሊት 6:00 ጀምሮ እስከ ጠዋት 6:00 -> ከ 29 እስከ 37 ቦቶች
     else {
-        targetBase = 29 + Math.floor(Math.random() * 9); 
+        targetBase = 29 + Math.floor(Math.random() * 9); // 29 እስከ 37
     }
 
     if (isGameActive) {
         lastSmoothCount = targetBase;
     } else {
-        let step = Math.floor(Math.random() * 5) + 1; 
+        let step = Math.floor(Math.random() * 3) + 1; 
         if (lastSmoothCount < targetBase) {
             lastSmoothCount += step;
             if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
@@ -261,7 +261,7 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
         }
     }
 
-    if (lastSmoothCount < 10) lastSmoothCount = 10;
+    if (lastSmoothCount < 5) lastSmoothCount = 5;
     if (lastSmoothCount > 350) lastSmoothCount = 350;
 
     return lastSmoothCount;
