@@ -81,12 +81,12 @@ const ETHIOPIAN_BOT_NAMES = [
     "kefle birhane", "Abushi 💀💀", "Yonase Tesema", "Mulugeta Fantahun", "Kifle Møk",
     "Pro max", "Nscros", "የማርያም", "አቤል", "Tloya",
     "ተሜ", "bakle", "ናቲና", "Dj", "wanaw",
-    "Falcon", "Dawit_B", "Ermias_99", "Solomon_K", "Bethel_M",
-    "Miki_Bingo", "Hanna_T", "Natnael_X", "Kidist_L", "Bereket_P",
-    "Samson_G", "Yordanos_K", "Feven_A", "Henok_Z", "Meron_W",
-    "Rediet_S", "Abel_T", "Tsion_M", "Brook_H", "Lidya_D",
-    "Michael_B", "Nahom_V", "Rut_K", "Robel_M", "Tigist_Y",
-    "Biniyam_C", "Kalkidan_F", "Ephrem_G", "Rahel_N", "Yonas_P", "Semhar_L"
+    "Falcon", "Dawit_B", "Ermias_99", "Solomon", "Bethel_M",
+    "Miki_Bingo", "Hanna", "Natnael", "Kidist", "Bereket",
+    "Samson_tefera", "Yordanos", "Feven_A", "Henok_Z", "Meron",
+    "Rediet", "Abel_T", "Tsion", "Brook", "Lidya",
+    "Michael_B", "Nahom", "Rut_K", "Robel", "Tigist",
+    "Biniyam", "Kalkidan", "Ephrem", "Rahel", "Yonas", "Semhar"
 ];
 
 function getRandomBotNames(count) {
@@ -611,8 +611,30 @@ function startMainGameLoop() {
                     if (availableNumbers.length > 0) {
                         let candidateIndices = [];
 
+                        // ==================== የተመጣጠነ እና የተለያየ አቅጣጫ ቁጥር ምርጫ (Balanced Column Distribution) ====================
+                        // ቁጥሮች በአንድ አምድ ላይ ተከታትረው እንዳይወጡ እና ሪል ዩዘር እንዳይበላሽ ማጣራት
+                        let columnCounts = { B: 0, I: 0, N: 0, G: 0, O: 0 };
+                        globalRoom.calledNumbers.forEach(n => {
+                            if (n <= 15) columnCounts.B++;
+                            else if (n <= 30) columnCounts.I++;
+                            else if (n <= 45) columnCounts.N++;
+                            else if (n <= 60) columnCounts.G++;
+                            else columnCounts.O++;
+                        });
+
+                        // የትኛው አምድ በብዛት እንደወጣ በመለየት ከመጠን በላይ እንዳይከመር ማድረግ
+                        let sortedCols = Object.keys(columnCounts).sort((a, b) => columnCounts[b] - columnCounts[a]);
+                        let overcrowdedCol = columnCounts[sortedCols[0]] - (globalRoom.calledNumbers.length / 5) > 2 ? sortedCols[0] : null;
+
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
+                            let testCol = testNum <= 15 ? 'B' : testNum <= 30 ? 'I' : testNum <= 45 ? 'N' : testNum <= 60 ? 'G' : 'O';
+                            
+                            // ከመጠን በላይ ከተከመረው አምድ ቁጥር እንዳይመርጥ መከላከል
+                            if (overcrowdedCol && testCol === overcrowdedCol && Math.random() < 0.7) {
+                                continue;
+                            }
+
                             let wouldRealUserWin = false;
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
 
@@ -709,7 +731,6 @@ async function pollTelegramUpdates() {
                         let cmd = parts[0].toLowerCase();
                         let targetUserId = parts[1] ? String(parts[1]).trim() : null;
 
-                        // አድሚኑ ከቴሌግራም ቦት ሆኖ ቁጥር መቀየር እንዲችል: /settelebirr 0912345678 ስም
                         if (cmd === '/settelebirr' && parts[1]) {
                             let newPhone = parts[1];
                             let newName = parts.slice(2).join(' ') || telebirrConfig.name;
@@ -959,8 +980,6 @@ io.on('connection', (socket) => {
     refreshTakenCardsList();
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-    
-    // ዩዘር አፕ ሲከፍት አሁን ያለው የቴሌብር ቁጥር እንዲደርሰው ማድረግ
     socket.emit('telebirrConfigUpdated', telebirrConfig);
 
     socket.on('registerRealUser', (userData) => {
@@ -1032,7 +1051,6 @@ io.on('connection', (socket) => {
         socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
     });
 
-    // ከአድሚን ፓነል ቴሌብር ቁጥር መቀየሪያ ዌብኬት ሪኩዌስት
     socket.on('adminUpdateTelebirr', (data) => {
         if (data && data.phone) {
             telebirrConfig.phone = data.phone;
