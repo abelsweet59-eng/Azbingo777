@@ -839,13 +839,15 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[reqData.userId].push(successPayload);
                             }
 
+                            // አድሚኑ ማረጋገጫውን (Confirmation) ሲጫን መልእክቱ ተቀይሮ እንዲህ ይላል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
+                            // ሪጀክት (ሰርዝ) ሲደረግ ለተጠቃሚው በቦቱ በኩል የደረሰኝ ስህተት ማሳሰቢያ ኖቲፊኬሽን እንዲደርሰው ማድረግ
                             if (reqData.chatId) {
-                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል። 🙏`;
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                                 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
@@ -857,9 +859,11 @@ async function pollTelegramUpdates() {
                             if (targetSocket) { 
                                 targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
+
+                            // አድሚኑ ሰርዝ የሚለውን ሲጫን መልእክቱ ተቀይሮ እንዲህ ይላል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username})`, parse_mode: 'Markdown'
+                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username} - ለተጠቃሚው ማሳሰቢያ ተልኳል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
                         delete pendingRequests[requestId]; 
@@ -908,7 +912,6 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
         let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
-        // ሪኩዌስቱ በማንኛውም ሰዓት (እስከ 24 ሰዓት ውስጥ) አድሚኑ ሲጫነው በትክክል እንዲሠራ በሰዓት (timestamp) ተመዝግቦ ይቀመጣል
         pendingRequests[requestId] = { 
             userId: String(userId || 'unknown'), 
             chatId: userId, 
@@ -925,7 +928,6 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
         }
 
-        // ለሁሉም አድሚኖች ጥያቄውን በፍጥነት መላክ
         for (let adminChatId of ADMIN_CHAT_IDS) {
             try {
                 if (receiptImage && receiptImage.startsWith('data:image')) {
