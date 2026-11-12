@@ -1191,32 +1191,16 @@
 
                 document.getElementById('deposit-modal').classList.add('hidden');
 
-                let formData = new FormData();
-                formData.append('type', type);
-                formData.append('amount', amount);
-                formData.append('username', userFullName);
-                formData.append('userId', telegramUserId);
-                formData.append('currentBalance', walletBalance);
-                formData.append('receiptText', receiptText);
                 if (receiptFile) {
-                    formData.append('receiptImage', receiptFile);
+                    let reader = new FileReader();
+                    reader.onload = function(e) {
+                        let base64Image = e.target.result;
+                        sendDepositPostRequest(type, amount, receiptText, base64Image);
+                    };
+                    reader.readAsDataURL(receiptFile);
+                } else {
+                    sendDepositPostRequest(type, amount, receiptText, null);
                 }
-
-                fetch('/api/financial-request', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("✅ የዲፖዚት ጥያቄዎ ለአድሚን ተልኳል!");
-                    } else {
-                        alert("❌ ስህተት: " + (data.message || ''));
-                    }
-                })
-                .catch(err => {
-                    alert("❌ መረጃውን መላክ አልተቻለም።");
-                });
 
             } else {
                 let phone = document.getElementById('withdraw-phone-input').value.trim();
@@ -1225,8 +1209,44 @@
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
 
-                socket.emit('financialRequest', { type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone, receipt: '', telegramChatId: telegramUserId });
+                socket.emit('financialRequest', { 
+                    type: type, 
+                    amount: amount, 
+                    username: userFullName, 
+                    userId: telegramUserId, 
+                    currentBalance: walletBalance, 
+                    phone: phone, 
+                    receipt: '', 
+                    telegramChatId: telegramUserId 
+                });
             }
+        }
+
+        function sendDepositPostRequest(type, amount, receiptText, receiptImage) {
+            fetch('/api/financial-request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: type,
+                    amount: amount,
+                    username: userFullName,
+                    userId: telegramUserId,
+                    currentBalance: walletBalance,
+                    receiptText: receiptText,
+                    receiptImage: receiptImage
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ የዲፖዚት ጥያቄዎ ለአድሚን ተልኳል!");
+                } else {
+                    alert("❌ ስህተት: " + (data.message || ''));
+                }
+            })
+            .catch(err => {
+                alert("❌ መረጃውን መላክ አልተቻለም።");
+            });
         }
 
         function generate500CardGrid() {
