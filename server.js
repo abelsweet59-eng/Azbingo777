@@ -38,7 +38,7 @@ let telebirrConfig = {
 
 // የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
 const baseNumberFlowSequence = [
-    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
+    12, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
     16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 
     19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 
     32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 
@@ -984,8 +984,12 @@ io.on('connection', (socket) => {
             
             allRegisteredUsers.add(userId);
 
-            if (!userWallets[userId]) {
-                userWallets[userId] = 0;
+            // ተጠቃሚው የላከውን የሂሳብ መጠን ከክላየንት እንቀበላለን (ኦፍላይን የቆየውን ጨምሮ)
+            let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
+            if (userWallets[userId] === undefined || userWallets[userId] === 0) {
+                userWallets[userId] = clientBalance;
+            } else if (clientBalance > userWallets[userId]) {
+                userWallets[userId] = clientBalance;
             }
 
             if (globalRoom.gameActive) {
@@ -1037,11 +1041,12 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // ==================== አድሚኑ የተጠቃሚን ሂሳብ በ ID እንዲያይ የሚያስችል ዌብኬት ====================
+    // ==================== የተጠቃሚን ሂሳብ በ ID መፈለጊያ (ኦንላይን እና ኦፍላይን) ====================
     socket.on('adminCheckUserBalance', (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
             let foundBalance = userWallets[tId] !== undefined ? userWallets[tId] : 0.00;
+            
             socket.emit('adminUserBalanceResponse', { 
                 success: true, 
                 targetUserId: tId, 
