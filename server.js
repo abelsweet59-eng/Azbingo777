@@ -30,8 +30,13 @@ const allRegisteredUsers = new Set();
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
+// እርስዎ የሰጡት 82 የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
 const baseNumberFlowSequence = [
-    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 18, 19
+    17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
+    16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 
+    19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 
+    32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 
+    18, 19
 ];
 let sequenceIndex = 0;
 
@@ -186,33 +191,6 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     }
 
     return null;
-}
-
-function getRemainingCountForCard(winningCardNumbers, calledNumbers) {
-    let cleanCalled = new Set(calledNumbers.map(n => Number(n)));
-    cleanCalled.add("FREE");
-
-    let possiblePatterns = [
-        [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
-        [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
-        [0,6,12,18,24], [4,8,12,16,20],
-        [0,4,20,24]
-    ];
-
-    let minMissing = 999;
-    for (let p of possiblePatterns) {
-        let missingInPattern = 0;
-        for (let idx of p) {
-            let val = winningCardNumbers[idx];
-            if (val !== "FREE" && !cleanCalled.has(Number(val))) {
-                missingInPattern++;
-            }
-        }
-        if (missingInPattern < minMissing) {
-            minMissing = missingInPattern;
-        }
-    }
-    return minMissing;
 }
 
 let lastSmoothCount = 95; 
@@ -628,9 +606,6 @@ function startMainGameLoop() {
                         let candidateIdx = -1;
                         let candidateNum = null;
 
-                        // ==================== ሪል ዩዘር ፓተርን እንዳይሰራ (አ እንዳያሸንፍ) ጥብቅ መከላከያ ሎጂክ ====================
-                        // ሪል ዩዘር ስክሪኑ ላይ ቁጥሮች (Hits) እንዲኖሩት ይደረጋል (ይዝናናል)፣ 
-                        // ነገር ግን ሙሉ የማሸነፊያ መስመር/ፓተርን (Win Pattern) የሚፈጥርበት ቁጥር ፈጽሞ እንዳይጠራ ይጣራል።
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
                             let wouldRealUserWin = false;
@@ -640,7 +615,6 @@ function startMainGameLoop() {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
                                         let cList = getCartelaNumbers(cNum);
-                                        // ሪል ዩዘር ሙሉ ዊን የሚያደርግበት ፓተርን (አግድም፣ ቁመት፣ ዲያጎናል፣ ማዕዘን) መፈጠሩን ማረጋገጥ
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
                                         if (matched) {
                                             wouldRealUserWin = true; 
@@ -649,7 +623,6 @@ function startMainGameLoop() {
                                 }
                             });
 
-                            // ሪል ዩዘሩን ሙሉ ዊን ከሚያደርጉ ቁጥሮች ውጪ ያሉትን መደበኛ ቁጥሮች መምረጥ
                             if (!wouldRealUserWin) {
                                 candidateIdx = i;
                                 candidateNum = testNum;
@@ -717,6 +690,7 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
+                // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑትን የቆዩ ሪኩዌስቶች ማጽዳት (Memory Leak እንዳይፈጥር)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -816,11 +790,23 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[reqData.userId].push(successPayload);
                             }
 
+                            // አድሚኑ ማረጋገጫውን (Confirmation) ሲጫን መልእክቱ ተቀይሮ የትኛው ሪኩዌስት እንደጸደቀ በግልጽ ያሳያል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
+                                text: `✅ *ጥያቄው ጸድቋል!* \n👤 ስም: *${reqData.username}*\n💰 መጠን: *${reqData.amount} ብር*\n🆔 ሪኩዌስት ID: \`${requestId}\`\n✨ (አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
+
+                            // ለተጠቃሚው በቦቱ በኩል ስኬታማ የሆኑት ኖቲፊኬሽን በግል መላክ
+                            if (reqData.chatId) {
+                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የ (${reqData.amount} ብር) ጥያቄ በአድሚኑ ጸድቆ ቀሪ ሂሳብዎ ላይ ገቢ ሆኗል! መልካም ጨዋታ። 🎮`;
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                    chat_id: reqData.chatId,
+                                    text: successMsg,
+                                    parse_mode: 'Markdown'
+                                }).catch(() => {});
+                            }
                         } else {
+                            // ሪጀክት (ሰርዝ) ሲደረግ ለተጠቃሚው በቦቱ በኩል የደረሰኝ ስህተት ማሳሰቢያ ኖቲፊኬሽን እንዲደርሰው ማድረግ
                             if (reqData.chatId) {
                                 let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                                 
@@ -835,9 +821,10 @@ async function pollTelegramUpdates() {
                                 targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
 
+                            // አድሚኑ ሰርዝ የሚለውን ሲጫን መልእክቱ ተቀይሮ የትኛው ሪኩዌስት እንደተሰረዘ በግልጽ ያሳያል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
-                                text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username} - ለተጠቃሚው ማሳሰቢያ ተልኳል)`, parse_mode: 'Markdown'
+                                text: `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n💰 መጠን: *${reqData.amount} ብር*\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ (ለተጠቃሚው ማሳሰቢያ ተልኳል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
                         delete pendingRequests[requestId]; 
@@ -856,7 +843,7 @@ setTimeout(pollTelegramUpdates, 2000);
 async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
     let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}\n🆔 ሪኩዌስት ID: \`${requestId}\``;
     if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
     
     for (let adminChatId of ADMIN_CHAT_IDS) {
@@ -896,7 +883,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             timestamp: Date.now() 
         };
 
-        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*`;
+        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n🆔 ሪኩዌስት ID: \`${requestId}\``;
         
         if (receiptText) {
             caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
