@@ -30,7 +30,7 @@ const allRegisteredUsers = new Set();
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
-// እርስዎ የሰጡት 82 የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
+// የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
     16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 
@@ -511,6 +511,7 @@ function startMainGameLoop() {
                 });
             }
 
+            // ኳሶች በአንድ አምድ ላይ እንዳይከመሩ በዘፈቀደ ሙሉ በሙሉ እንዲቀላቀሉ (Shuffle) ተደርጓል
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
@@ -603,9 +604,10 @@ function startMainGameLoop() {
                     if (availIdx > -1) availableNumbers.splice(availIdx, 1);
                 } else {
                     if (availableNumbers.length > 0) {
-                        let candidateIdx = -1;
-                        let candidateNum = null;
+                        let candidateIndices = [];
 
+                        // ==================== የተመጣጠነ እና የተለያየ አቅጣጫ ቁጥር ምርጫ (Balanced Column Distribution) ====================
+                        // ሪል ዩዘር ፓተርን እንዳይሰራ እየጠበቅን፣ ከሁሉም አምዶች (B, I, N, G, O) በዘፈቀደ እንዲመረጥ ማድረግ
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
                             let wouldRealUserWin = false;
@@ -624,14 +626,14 @@ function startMainGameLoop() {
                             });
 
                             if (!wouldRealUserWin) {
-                                candidateIdx = i;
-                                candidateNum = testNum;
-                                break;
+                                candidateIndices.push(i);
                             }
                         }
 
-                        if (candidateIdx > -1) {
-                            calledNum = availableNumbers.splice(candidateIdx, 1)[0];
+                        if (candidateIndices.length > 0) {
+                            // ከደህና ከሆኑት ቁጥሮች መካከል በዘፈቀደ አንዱን መምረጥ (በአንድ አምድ ላይ እንዳይከመር ያደርጋል)
+                            let randCandIdx = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
+                            calledNum = availableNumbers.splice(randCandIdx, 1)[0];
                         } else {
                             let randIdx = Math.floor(Math.random() * availableNumbers.length);
                             calledNum = availableNumbers.splice(randIdx, 1)[0];
@@ -690,7 +692,6 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
-                // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑትን የቆዩ ሪኩዌስቶች ማጽዳት (Memory Leak እንዳይፈጥር)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -790,13 +791,11 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[reqData.userId].push(successPayload);
                             }
 
-                            // አድሚኑ ማረጋገጫውን (Confirmation) ሲጫን መልእክቱ ተቀይሮ የትኛው ሪኩዌስት እንደጸደቀ በግልጽ ያሳያል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `✅ *ጥያቄው ጸድቋል!* \n👤 ስም: *${reqData.username}*\n💰 መጠን: *${reqData.amount} ብር*\n🆔 ሪኩዌስት ID: \`${requestId}\`\n✨ (አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
 
-                            // ለተጠቃሚው በቦቱ በኩል ስኬታማ የሆኑት ኖቲፊኬሽን በግል መላክ
                             if (reqData.chatId) {
                                 let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የ (${reqData.amount} ብር) ጥያቄ በአድሚኑ ጸድቆ ቀሪ ሂሳብዎ ላይ ገቢ ሆኗል! መልካም ጨዋታ። 🎮`;
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -806,7 +805,6 @@ async function pollTelegramUpdates() {
                                 }).catch(() => {});
                             }
                         } else {
-                            // ሪጀክት (ሰርዝ) ሲደረግ ለተጠቃሚው በቦቱ በኩል የደረሰኝ ስህተት ማሳሰቢያ ኖቲፊኬሽን እንዲደርሰው ማድረግ
                             if (reqData.chatId) {
                                 let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                                 
@@ -821,7 +819,6 @@ async function pollTelegramUpdates() {
                                 targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
 
-                            // አድሚኑ ሰርዝ የሚለውን ሲጫን መልእክቱ ተቀይሮ የትኛው ሪኩዌስት እንደተሰረዘ በግልጽ ያሳያል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n💰 መጠን: *${reqData.amount} ብር*\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ (ለተጠቃሚው ማሳሰቢያ ተልኳል)`, parse_mode: 'Markdown'
