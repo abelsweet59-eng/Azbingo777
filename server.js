@@ -7,7 +7,7 @@ const axios = require('axios');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  maxHttpBufferSize: 1e8 // ለስክሪንሾት ፎቶዎች ትልቅ ፋይል እንዲቀበል
+  maxHttpBufferSize: 1e8 
 });
 
 app.express = express;
@@ -739,6 +739,7 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
+                // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑትን የቆዩ ሪኩዌስቶች ማጽዳት (Memory Leak እንዳይፈጥር)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -775,7 +776,7 @@ async function pollTelegramUpdates() {
                                     for (let adminChatId of ADMIN_CHAT_IDS) {
                                         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                             chat_id: adminChatId,
-                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል! (አካውንቱ ላይ ገቢ ሆኗል)`,
+                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል!`,
                                             parse_mode: 'Markdown'
                                         }).catch(() => {});
                                     }
@@ -844,7 +845,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         } else {
                             if (reqData.chatId) {
-                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ/መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
+                                let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል። 🙏`;
                                 
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
@@ -907,6 +908,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
         let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
+        // ሪኩዌስቱ በማንኛውም ሰዓት (እስከ 24 ሰዓት ውስጥ) አድሚኑ ሲጫነው በትክክል እንዲሠራ በሰዓት (timestamp) ተመዝግቦ ይቀመጣል
         pendingRequests[requestId] = { 
             userId: String(userId || 'unknown'), 
             chatId: userId, 
@@ -923,6 +925,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
         }
 
+        // ለሁሉም አድሚኖች ጥያቄውን በፍጥነት መላክ
         for (let adminChatId of ADMIN_CHAT_IDS) {
             try {
                 if (receiptImage && receiptImage.startsWith('data:image')) {
@@ -943,11 +946,11 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                         ]
                     }));
 
-                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, formDataTelegram, {
+                    axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, formDataTelegram, {
                         headers: formDataTelegram.getHeaders()
-                    });
+                    }).catch(() => {});
                 } else {
-                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                         chat_id: adminChatId, 
                         text: caption, 
                         parse_mode: 'Markdown',
@@ -959,11 +962,9 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                                 ]
                             ] 
                         }
-                    });
+                    }).catch(() => {});
                 }
-            } catch (e) {
-                console.log("Admin send error:", e.message);
-            }
+            } catch (e) {}
         }
 
         bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
@@ -1174,7 +1175,7 @@ io.on('connection', (socket) => {
             timestamp: Date.now() 
         };
 
-        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
