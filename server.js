@@ -611,8 +611,6 @@ function startMainGameLoop() {
                     if (availableNumbers.length > 0) {
                         let candidateIndices = [];
 
-                        // ==================== የተመጣጠነ እና የተለያየ አቅጣጫ ቁጥር ምርጫ (Balanced Column Distribution) ====================
-                        // ቁጥሮች በአንድ አምድ ላይ ተከታትረው እንዳይወጡ እና ሪል ዩዘር እንዳይበላሽ ማጣራት
                         let columnCounts = { B: 0, I: 0, N: 0, G: 0, O: 0 };
                         globalRoom.calledNumbers.forEach(n => {
                             if (n <= 15) columnCounts.B++;
@@ -622,7 +620,6 @@ function startMainGameLoop() {
                             else columnCounts.O++;
                         });
 
-                        // የትኛው አምድ በብዛት እንደወጣ በመለየት ከመጠን በላይ እንዳይከመር ማድረግ
                         let sortedCols = Object.keys(columnCounts).sort((a, b) => columnCounts[b] - columnCounts[a]);
                         let overcrowdedCol = columnCounts[sortedCols[0]] - (globalRoom.calledNumbers.length / 5) > 2 ? sortedCols[0] : null;
 
@@ -630,7 +627,6 @@ function startMainGameLoop() {
                             let testNum = availableNumbers[i];
                             let testCol = testNum <= 15 ? 'B' : testNum <= 30 ? 'I' : testNum <= 45 ? 'N' : testNum <= 60 ? 'G' : 'O';
                             
-                            // ከመጠን በላይ ከተከመረው አምድ ቁጥር እንዳይመርጥ መከላከል
                             if (overcrowdedCol && testCol === overcrowdedCol && Math.random() < 0.7) {
                                 continue;
                             }
@@ -1039,6 +1035,20 @@ io.on('connection', (socket) => {
 
     socket.on('getAdminRealUsers', () => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    });
+
+    // ==================== አድሚኑ የተጠቃሚን ሂሳብ በ ID እንዲያይ የሚያስችል ዌብኬት ====================
+    socket.on('adminCheckUserBalance', (data) => {
+        if (data && data.targetUserId) {
+            let tId = String(data.targetUserId).trim();
+            let foundBalance = userWallets[tId] !== undefined ? userWallets[tId] : 0.00;
+            socket.emit('adminUserBalanceResponse', { 
+                success: true, 
+                targetUserId: tId, 
+                balance: foundBalance,
+                message: `👤 ዩዘር ID (${tId}) ቀሪ ሂሳብ: ${foundBalance} ብር` 
+            });
+        }
     });
 
     socket.on('adminToggleLock', (data) => {
