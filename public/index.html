@@ -118,11 +118,12 @@
                         </div>
                     </div>
 
-                    <div class="flex-1 min-h-[220px] max-h-[340px] overflow-y-auto custom-scroll bg-black/40 p-2.5 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+                    <div class="flex-1 min-h-[160px] max-h-[220px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
 
-                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-3 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-lg shadow-inner pulse-ball">
+                    <!-- Countdown & Confirm Section -->
+                    <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-2.5 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-sm shadow-inner pulse-ball">
                                 ⏳
                             </div>
                             <div>
@@ -131,20 +132,33 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div id="big-countdown-timer" class="text-2xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
+                            <div id="big-countdown-timer" class="text-xl font-black text-amber-400 font-mono tracking-widest drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">
                                 60s
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex justify-between items-center text-xs">
-                        <div>
-                            <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
-                            <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
+                    <!-- Selection & Preview Slots (በምስሉ ላይ ያመለከቱባቸው ሁለቱ ክፍት ቦታዎች) -->
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex flex-col space-y-2 text-xs">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
+                                <div id="selected-cards-badge" class="font-bold text-amber-300 text-xs">ምንም የለም</div>
+                            </div>
+                            <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-3 py-1.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300">
+                                ✨ ካርድ አረጋግጥ
+                            </button>
                         </div>
-                        <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-4 py-2 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300">
-                            ✨ ካርድ አረጋግጥ
-                        </button>
+
+                        <!-- 💡 የካርድ ፕሪቪው የሚታይባቸው ሁለቱ ቦታዎች -->
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[90px] flex items-center justify-center text-gray-500 text-[10px]">
+                                ካርድ 1 ፕሪቪው
+                            </div>
+                            <div id="previewCardSlot2" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[90px] flex items-center justify-center text-gray-500 text-[10px]">
+                                ካርድ 2 ፕሪቪው
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -622,6 +636,7 @@
             startClientTimer();
             renderPlayerDualCards();
             updateAudioButtonUI();
+            renderCardSelectionPreviews(); // 💡 የቅድመ-ዝግጅት ፕሪቪው ማሳያ
 
             if (confirmedCards.length > 0) {
                 document.getElementById('card-selection-section').classList.add('hidden');
@@ -632,7 +647,7 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
-                socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName });
+                socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName, balance: walletBalance });
 
                 if (confirmedCards.length > 0) {
                     socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
@@ -641,7 +656,6 @@
                 }
             });
 
-            // ቴሌብር ቁጥር ሲቀየር በቅጽበት መቀበያ
             socket.on('telebirrConfigUpdated', (config) => {
                 const phoneEl = document.getElementById('telebirr-phone-text');
                 const nameEl = document.getElementById('telebirr-name-label');
@@ -658,7 +672,6 @@
                 }
             });
 
-            // ==================== የተጠቃሚ ሂሳብ መፈለጊያ ምላሽ ማግኛ ====================
             socket.on('adminUserBalanceResponse', (data) => {
                 let resEl = document.getElementById('admin-user-balance-result');
                 if (resEl) {
@@ -757,7 +770,8 @@
 
             socket.on('numberCalled', (data) => {
                 let num = data.number;
-                if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
+                let cleanCalledList = calledNumbersList.map(n => Number(n));
+                if (!cleanCalledList.includes(Number(num))) calledNumbersList.push(Number(num));
                 displayCalledBall(num);
                 document.getElementById('stat-called-count').innerText = calledNumbersList.length;
                 renderVerticalBoard();
@@ -932,7 +946,6 @@
             document.getElementById('admin-telebirr-name').value = '';
         }
 
-        // የተጠቃሚ ሂሳብ በ ID መረማመጃ/መፈለጊያ ፈንክሽን
         function adminCheckUserBalance() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let targetUserId = document.getElementById('admin-check-userid').value.trim();
@@ -1196,7 +1209,7 @@
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
 
             const confirmBtn = document.getElementById('confirm-card-btn');
-            confirmBtn.className = "blink-btn text-white px-4 py-2 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300";
+            confirmBtn.className = "blink-btn text-white px-3 py-1.5 rounded-xl font-extrabold text-xs shadow-xl transition-all border border-amber-300";
             confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
 
             document.getElementById('stat-called-count').innerText = "0";
@@ -1208,6 +1221,7 @@
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
                 generate500CardGrid();
+                renderCardSelectionPreviews();
             }, 1000);
 
             renderVerticalBoard();
@@ -1355,9 +1369,65 @@
                     document.getElementById('selected-cards-badge').innerText = userSelectedCards.length ? userSelectedCards.join(', ') : "ምንም የለም";
                     socket.emit('tempSelectCards', userSelectedCards);
                     generate500CardGrid();
+                    renderCardSelectionPreviews(); // 💡 ፕሪቪው ማሳያውን ማዘመን
                 };
                 grid.appendChild(btn);
             }
+        }
+
+        // 💡 1 ወይም 2 ካርዶች ሲመረጡ በታች ያሉት ሁለቱ ስሎቶች ላይ የካርድ ፕሪቪው ማሳያ ፈንክሽን
+        function renderCardSelectionPreviews() {
+            const slot1 = document.getElementById('previewCardSlot1');
+            const slot2 = document.getElementById('previewCardSlot2');
+            if (!slot1 || !slot2) return;
+
+            slot1.innerHTML = '';
+            slot2.innerHTML = '';
+
+            let cardsToPreview = userSelectedCards.length > 0 ? userSelectedCards : confirmedCards;
+
+            if (cardsToPreview.length === 0) {
+                slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[90px] flex items-center justify-center text-gray-500 text-[10px]";
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[90px] flex items-center justify-center text-gray-500 text-[10px]";
+                slot1.innerText = "ካርድ 1 ፕሪቪው";
+                slot2.innerText = "ካርድ 2 ፕሪቪው";
+                return;
+            }
+
+            if (cardsToPreview.length >= 1) {
+                slot1.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1 flex flex-col items-center justify-start overflow-hidden shadow";
+                slot1.innerHTML = generateMiniCardPreviewHTML(cardsToPreview[0]);
+            }
+
+            if (cardsToPreview.length >= 2) {
+                slot2.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1 flex flex-col items-center justify-start overflow-hidden shadow";
+                slot2.innerHTML = generateMiniCardPreviewHTML(cardsToPreview[1]);
+            } else {
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[90px] flex items-center justify-center text-gray-500 text-[10px]";
+                slot2.innerText = "ካርድ 2 ፕሪቪው";
+            }
+        }
+
+        function generateMiniCardPreviewHTML(cardNum) {
+            let numbers = getCartelaNumbers(cardNum);
+            let html = `<div class="text-[8px] font-bold text-amber-400 mb-0.5">ካርድ #${cardNum}</div>`;
+            html += `<div class="grid grid-cols-5 gap-0.5 text-center w-full">`;
+            
+            let colsHeader = ['B','I','N','G','O'];
+            colsHeader.forEach((c, idx) => {
+                let bg = idx === 0 ? "bg-blue-600" : idx === 1 ? "bg-purple-600" : idx === 2 ? "bg-pink-600" : idx === 3 ? "bg-emerald-600" : "bg-amber-600";
+                html += `<div class="${bg} text-white font-bold text-[7px] rounded py-0.2">${c}</div>`;
+            });
+
+            numbers.forEach(num => {
+                if (num === "FREE") {
+                    html += `<div class="bg-amber-500 text-black font-black text-[8px] rounded flex items-center justify-center">★</div>`;
+                } else {
+                    html += `<div class="bg-white text-black font-bold text-[7px] rounded flex items-center justify-center">${num}</div>`;
+                }
+            });
+            html += `</div>`;
+            return html;
         }
 
         function confirmCardSelection() {
@@ -1388,6 +1458,7 @@
 
             confirmedCards = [...userSelectedCards];
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
+            renderCardSelectionPreviews();
         }
 
         function renderVerticalBoard() {
