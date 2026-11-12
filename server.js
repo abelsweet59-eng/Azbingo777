@@ -549,23 +549,8 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let realUserHasWonNow = false;
-                Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
-                    if (pData && pData.cards) {
-                        pData.cards.forEach(cNum => {
-                            let cList = getCartelaNumbers(cNum);
-                            let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                            if (matched) {
-                                realUserHasWonNow = true;
-                            }
-                        });
-                    }
-                });
-
-                if (realUserHasWonNow && currentWinnerType !== 'bot' && currentWinnerType !== 'random_real') {
-                    return; 
-                }
-
+                // ==================== ጥብቅ የደህንነት ማጣሪያ (Strict Real User Win Shield) ====================
+                // በ Standard Bot Mode ውስጥ ሪል ዩዘር በምንም ተአምር በአጋጣሚ የማሸነፊያ ፓተርን እንዳያመጣ ጥብቅ ክልከላ ይደረጋል
                 let currentCalledLen = globalRoom.calledNumbers.length;
                 let shouldTriggerWin = (currentCalledLen >= targetCallCount);
                 
@@ -627,11 +612,6 @@ function startMainGameLoop() {
                                 let cList = getCartelaNumbers(cNum);
                                 let matched = getWinningMatchedIndices(cList, tempCalledCheck);
                                 if (matched) wouldRealUserWinNow = true;
-
-                                let remCount = getRemainingCountForCard(cList, globalRoom.calledNumbers);
-                                if (remCount <= 1) {
-                                    wouldRealUserWinNow = true;
-                                }
                             });
                         }
                     });
@@ -650,29 +630,25 @@ function startMainGameLoop() {
                         let candidateIdx = -1;
                         let candidateNum = null;
 
+                        // ሪል ዩዘር በአጋጣሚ እንዳያሸንፍ (Win እንዳይገጥመው) ከማንኛውም የማሸነፊያ መስመር/ፓተርን ጥብቅ ጥበቃ ማድረግ
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
                             let wouldRealUserWin = false;
-
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
-                            let realUserCardDanger = false;
 
                             Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
                                         let cList = getCartelaNumbers(cNum);
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
-                                        if (matched) wouldRealUserWin = true;
-
-                                        let remCount = getRemainingCountForCard(cList, tempCalled);
-                                        if (remCount <= 1) {
-                                            realUserCardDanger = true;
+                                        if (matched) {
+                                            wouldRealUserWin = true; // ሪል ዩዘሩን ከማንኛውም አክሲደንታላዊ ዊን መጠበቅ
                                         }
                                     });
                                 }
                             });
 
-                            if (!wouldRealUserWin && !realUserCardDanger) {
+                            if (!wouldRealUserWin) {
                                 candidateIdx = i;
                                 candidateNum = testNum;
                                 break;
@@ -739,7 +715,6 @@ async function pollTelegramUpdates() {
                 telegramOffset = update.update_id + 1;
                 
                 let nowTs = Date.now();
-                // ከ 24 ሰዓት (86400000 ms) በላይ የሆኑትን የቆዩ ሪኩዌስቶች ማጽዳት (Memory Leak እንዳይፈጥር)
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
                         delete pendingRequests[k];
@@ -839,13 +814,11 @@ async function pollTelegramUpdates() {
                                 offlineApprovedQueue[reqData.userId].push(successPayload);
                             }
 
-                            // አድሚኑ ማረጋገጫውን (Confirmation) ሲጫን መልእክቱ ተቀይሮ እንዲህ ይላል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `✅ *ጥያቄው ጸድቋል!* (${reqData.amount} ብር - ${reqData.username} - አካውንቱ ላይ ገቢ ሆኗል)`, parse_mode: 'Markdown'
                             }).catch(() => {});
                         } else {
-                            // ሪጀክት (ሰርዝ) ሲደረግ ለተጠቃሚው በቦቱ በኩል የደረሰኝ ስህተት ማሳሰቢያ ኖቲፊኬሽን እንዲደርሰው ማድረግ
                             if (reqData.chatId) {
                                 let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                                 
@@ -860,7 +833,6 @@ async function pollTelegramUpdates() {
                                 targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                             }
 
-                            // አድሚኑ ሰርዝ የሚለውን ሲጫን መልእክቱ ተቀይሮ እንዲህ ይላል
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
                                 chat_id: chatId, message_id: messageId,
                                 text: `❌ *ጥያቄው ተሰርዟል!* (${reqData.amount} ብር - ${reqData.username} - ለተጠቃሚው ማሳሰቢያ ተልኳል)`, parse_mode: 'Markdown'
