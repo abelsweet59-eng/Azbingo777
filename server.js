@@ -506,16 +506,19 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            let interleavedWinningNumbers = [];
+            // 💡 ቁጥሮቹ ተራኪ (Sequential) እንዳይሆኑ እዚህ ጋር በዘፈቀደ እናቀላቅላቸዋለን (Natural Random Shuffle)
+            let rawInterleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
             for (let i = 0; i < maxLength; i++) {
                 perWinnerConfigs.forEach(cfg => {
-                    if (cfg.requiredNumbers[i] !== undefined && !interleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
-                        interleavedWinningNumbers.push(cfg.requiredNumbers[i]);
+                    if (cfg.requiredNumbers[i] !== undefined && !rawInterleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
+                        rawInterleavedWinningNumbers.push(cfg.requiredNumbers[i]);
                     }
                 });
             }
+            // ከቅደም ተከተል ውጪ (Shuffle) በማድረግ ተፈጥሯዊ መልክ እንሰጠዋለን
+            let interleavedWinningNumbers = [...rawInterleavedWinningNumbers].sort(() => 0.5 - Math.random());
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
@@ -984,12 +987,13 @@ io.on('connection', (socket) => {
             
             allRegisteredUsers.add(userId);
 
-            // ተጠቃሚው የላከውን የሂሳብ መጠን ከክላየንት እንቀበላለን (ኦፍላይን የቆየውን ጨምሮ)
             let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
-            if (userWallets[userId] === undefined || userWallets[userId] === 0) {
+            if (userWallets[userId] === undefined) {
                 userWallets[userId] = clientBalance;
-            } else if (clientBalance > userWallets[userId]) {
-                userWallets[userId] = clientBalance;
+            } else {
+                if (clientBalance > userWallets[userId]) {
+                    userWallets[userId] = clientBalance;
+                }
             }
 
             if (globalRoom.gameActive) {
@@ -1012,7 +1016,7 @@ io.on('connection', (socket) => {
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
-            if (!claimedWelcomeBonusUsers.has(userId)) {
+            if (!claimedWelcomeBonusUsers.has(userId) && userWallets[userId] === 0) {
                 claimedWelcomeBonusUsers.add(userId);
                 userWallets[userId] += 20;
                 socket.emit('welcomeBonusGranted', { 
@@ -1020,6 +1024,8 @@ io.on('connection', (socket) => {
                     balance: userWallets[userId],
                     message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
                 });
+            } else {
+                claimedWelcomeBonusUsers.add(userId);
             }
 
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
@@ -1041,7 +1047,6 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // ==================== የተጠቃሚን ሂሳብ በ ID መፈለጊያ (ኦንላይን እና ኦፍላይን) ====================
     socket.on('adminCheckUserBalance', (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
