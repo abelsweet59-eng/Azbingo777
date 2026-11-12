@@ -3,16 +3,16 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const axios = require('axios');
-const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  maxHttpBufferSize: 1e8 // ለስክሪንሾት ፎቶዎች ትልቅ ፋይል እንዲቀበል
+});
 
 app.express = express;
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -823,7 +823,7 @@ async function pollTelegramUpdates() {
                             }
 
                             let successPayload = { 
-                                type: reqType, 
+                                type: reqData.type, 
                                 amount: rawAmount, 
                                 adjustedAmount: finalAmountForClient,
                                 balance: userWallets[reqData.userId]
@@ -874,11 +874,32 @@ async function pollTelegramUpdates() {
 }
 setTimeout(pollTelegramUpdates, 2000);
 
-// 📌 የዲፖዚት ፎቶ (Screenshot) ወይም የጽሑፍ ደረሰኝ (SMS) ተቀብሎ ለአድሚን የሚልክ ሩት (Route)
-app.post('/api/financial-request', upload.single('receiptImage'), async (req, bodyRes) => {
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
+    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    
+    for (let adminChatId of ADMIN_CHAT_IDS) {
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId, text: message, parse_mode: 'Markdown',
+                reply_markup: { 
+                    inline_keyboard: [
+                        [
+                            { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                            { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
+                        ]
+                    ] 
+                }
+            });
+        } catch (error) {}
+    }
+}
+
+app.post('/api/financial-request', async (req, bodyRes) => {
     try {
-        let { type, amount, username, userId, currentBalance, receiptText } = req.body;
-        let receiptFile = req.file;
+        let { type, amount, username, userId, currentBalance, receiptText, receiptImage } = req.body;
 
         if (type === 'deposit' && isDepositLocked) {
             return bodyRes.json({ success: false, message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
@@ -904,10 +925,13 @@ app.post('/api/financial-request', upload.single('receiptImage'), async (req, bo
 
         for (let adminChatId of ADMIN_CHAT_IDS) {
             try {
-                if (receiptFile) {
+                if (receiptImage && receiptImage.startsWith('data:image')) {
+                    let base64Data = receiptImage.replace(/^data:image\/\w+;base64,/, "");
+                    let buffer = Buffer.from(base64Data, 'base64');
+                    
                     let formDataTelegram = new (require('form-data'))();
                     formDataTelegram.append('chat_id', adminChatId);
-                    formDataTelegram.append('photo', receiptFile.buffer, { filename: 'receipt.jpg' });
+                    formDataTelegram.append('photo', buffer, { filename: 'receipt.jpg' });
                     formDataTelegram.append('caption', caption);
                     formDataTelegram.append('parse_mode', 'Markdown');
                     formDataTelegram.append('reply_markup', JSON.stringify({
@@ -1150,25 +1174,7 @@ io.on('connection', (socket) => {
             timestamp: Date.now() 
         };
 
-        let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-        let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}`;
-        if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
-        
-        for (let adminChatId of ADMIN_CHAT_IDS) {
-            try {
-                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                    chat_id: adminChatId, text: message, parse_mode: 'Markdown',
-                    reply_markup: { 
-                        inline_keyboard: [
-                            [
-                                { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
-                                { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
-                            ]
-                        ] 
-                    }
-                });
-            } catch (error) {}
-        }
+        await sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
