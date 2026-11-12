@@ -354,6 +354,16 @@
                     </div>
                 </div>
 
+                <!-- ==================== የተጠቃሚ ሂሳብ በ ID መረማመጃ/መፈለጊያ ሳጥን ==================== -->
+                <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
+                    <div class="font-bold text-amber-300">🔍 የትኛውንም ተጠቃሚ ሂሳብ በ ID ፈልግ (Check Balance)</div>
+                    <input type="text" id="admin-check-userid" placeholder="የቴሌግራም ዩዘር ID (Telegram ID) አስገባ" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
+                    <button onclick="adminCheckUserBalance()" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-black py-2 rounded text-xs shadow">
+                        ሂሳብ ፈልግ (Check User Balance)
+                    </button>
+                    <div id="admin-user-balance-result" class="text-xs text-amber-300 font-bold hidden pt-1 text-center bg-black/40 p-2 rounded border border-amber-500/30"></div>
+                </div>
+
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">📢 ለሁሉም ተጠቃሚዎች ማስታወቂያ መላኪያ (Broadcast)</div>
                     <textarea id="admin-broadcast-input" placeholder="ለተጠቃሚዎች የሚተላለፍ መልእክት እዚህ ይጻፉ..." class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs resize-none h-16"></textarea>
@@ -648,6 +658,15 @@
                 }
             });
 
+            // ==================== የተጠቃሚ ሂሳብ መፈለጊያ ምላሽ ማግኛ ====================
+            socket.on('adminUserBalanceResponse', (data) => {
+                let resEl = document.getElementById('admin-user-balance-result');
+                if (resEl) {
+                    resEl.innerHTML = `✅ ዩዘር ID: <span class="text-white font-mono">${data.targetUserId}</span><br>💰 ቀሪ ሂሳብ: <span class="text-emerald-400 font-mono text-sm">${data.balance} ብር</span>`;
+                    resEl.classList.remove('hidden');
+                }
+            });
+
             socket.on('financialLockStatus', (data) => {
                 isDepositLockedGlobal = data.isDepositLocked;
                 isWithdrawLockedGlobal = data.isWithdrawLocked;
@@ -899,7 +918,7 @@
             });
         });
 
-        // ከአድሚን ፓነል ሆነው የቴሌብር ቁጥር ሲቀይሩ የሚጠራ ፈንክሽን
+        // ------------------ አድሚን ፈንክሽኖች ------------------
         function adminUpdateTelebirrNum() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let phoneVal = document.getElementById('admin-telebirr-phone').value.trim();
@@ -911,6 +930,17 @@
             socket.emit('adminUpdateTelebirr', { phone: phoneVal, name: nameVal });
             document.getElementById('admin-telebirr-phone').value = '';
             document.getElementById('admin-telebirr-name').value = '';
+        }
+
+        // የተጠቃሚ ሂሳብ በ ID መረማመጃ/መፈለጊያ ፈንክሽን
+        function adminCheckUserBalance() {
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
+            let targetUserId = document.getElementById('admin-check-userid').value.trim();
+            if (!targetUserId) {
+                alert("⚠️ እባክዎ የቴሌግራም ዩዘር ID ያስገቡ!");
+                return;
+            }
+            socket.emit('adminCheckUserBalance', { targetUserId: targetUserId });
         }
 
         function sendAdminBroadcast() {
