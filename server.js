@@ -549,8 +549,6 @@ function startMainGameLoop() {
                     return;
                 }
 
-                // ==================== ጥብቅ የደህንነት ማጣሪያ (Strict Real User Win Shield) ====================
-                // በ Standard Bot Mode ውስጥ ሪል ዩዘር በምንም ተአምር በአጋጣሚ የማሸነፊያ ፓተርን እንዳያመጣ ጥብቅ ክልከላ ይደረጋል
                 let currentCalledLen = globalRoom.calledNumbers.length;
                 let shouldTriggerWin = (currentCalledLen >= targetCallCount);
                 
@@ -630,7 +628,9 @@ function startMainGameLoop() {
                         let candidateIdx = -1;
                         let candidateNum = null;
 
-                        // ሪል ዩዘር በአጋጣሚ እንዳያሸንፍ (Win እንዳይገጥመው) ከማንኛውም የማሸነፊያ መስመር/ፓተርን ጥብቅ ጥበቃ ማድረግ
+                        // ==================== ሪል ዩዘር ፓተርን እንዳይሰራ (አ እንዳያሸንፍ) ጥብቅ መከላከያ ሎጂክ ====================
+                        // ሪል ዩዘር ስክሪኑ ላይ ቁጥሮች (Hits) እንዲኖሩት ይደረጋል (ይዝናናል)፣ 
+                        // ነገር ግን ሙሉ የማሸነፊያ መስመር/ፓተርን (Win Pattern) የሚፈጥርበት ቁጥር ፈጽሞ እንዳይጠራ ይጣራል።
                         for (let i = 0; i < availableNumbers.length; i++) {
                             let testNum = availableNumbers[i];
                             let wouldRealUserWin = false;
@@ -640,14 +640,16 @@ function startMainGameLoop() {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
                                         let cList = getCartelaNumbers(cNum);
+                                        // ሪል ዩዘር ሙሉ ዊን የሚያደርግበት ፓተርን (አግድም፣ ቁመት፣ ዲያጎናል፣ ማዕዘን) መፈጠሩን ማረጋገጥ
                                         let matched = getWinningMatchedIndices(cList, tempCalled);
                                         if (matched) {
-                                            wouldRealUserWin = true; // ሪል ዩዘሩን ከማንኛውም አክሲደንታላዊ ዊን መጠበቅ
+                                            wouldRealUserWin = true; 
                                         }
                                     });
                                 }
                             });
 
+                            // ሪል ዩዘሩን ሙሉ ዊን ከሚያደርጉ ቁጥሮች ውጪ ያሉትን መደበኛ ቁጥሮች መምረጥ
                             if (!wouldRealUserWin) {
                                 candidateIdx = i;
                                 candidateNum = testNum;
