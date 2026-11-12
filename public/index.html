@@ -324,6 +324,17 @@
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
+
+                <!-- ቴሌብር ቁጥር መቀየሪያ ከአድሚን ፓነል -->
+                <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
+                    <div class="font-bold text-amber-300">📱 የቴሌብር ቁጥር ማስተካከያ (Telebirr Config)</div>
+                    <input type="text" id="admin-telebirr-phone" placeholder="አዲስ ስልክ ቁጥር (ለምሳሌ: 0940272544)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
+                    <input type="text" id="admin-telebirr-name" placeholder="የአካውንት ስም (ለምሳሌ: Abel Seyoum)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
+                    <button onclick="adminUpdateTelebirrNum()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-2 rounded text-xs shadow">
+                        ቁጥሩን አዘምን (Update Telebirr)
+                    </button>
+                    <div id="admin-telebirr-status-msg" class="text-[10px] text-emerald-400 font-bold hidden pt-1 text-center"></div>
+                </div>
                 
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">🔒 የዲፖዚት እና ዊዝድሮዋል መቆጣጠሪያ</div>
@@ -421,9 +432,9 @@
             <div class="bg-[#201138] border border-purple-500/40 rounded-2xl p-4 w-full max-w-xs space-y-3 text-xs overflow-y-auto max-h-[90vh]">
                 
                 <div class="space-y-2">
-                    <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo('0940272544', 'telebirr-copy-msg')">
-                        <div class="text-[9px] text-sky-400 font-bold">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
-                        <div class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
+                    <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo(document.getElementById('telebirr-phone-text').innerText, 'telebirr-copy-msg')">
+                        <div class="text-[9px] text-sky-400 font-bold" id="telebirr-name-label">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
+                        <div id="telebirr-phone-text" class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
                         <div id="telebirr-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                     </div>
 
@@ -617,6 +628,23 @@
                     socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
+                }
+            });
+
+            // ቴሌብር ቁጥር ሲቀየር በቅጽበት መቀበያ
+            socket.on('telebirrConfigUpdated', (config) => {
+                const phoneEl = document.getElementById('telebirr-phone-text');
+                const nameEl = document.getElementById('telebirr-name-label');
+                if (phoneEl) phoneEl.innerText = config.phone;
+                if (nameEl) nameEl.innerText = `ከቴሌብር (${config.name}) - ለመቅዳት ይጫኑ`;
+            });
+
+            socket.on('adminTelebirrResponse', (data) => {
+                let msgEl = document.getElementById('admin-telebirr-status-msg');
+                if(msgEl) {
+                    msgEl.innerText = data.message;
+                    msgEl.classList.remove('hidden');
+                    setTimeout(() => msgEl.classList.add('hidden'), 3000);
                 }
             });
 
@@ -870,6 +898,20 @@
                 }
             });
         });
+
+        // ከአድሚን ፓነል ሆነው የቴሌብር ቁጥር ሲቀይሩ የሚጠራ ፈንክሽን
+        function adminUpdateTelebirrNum() {
+            if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
+            let phoneVal = document.getElementById('admin-telebirr-phone').value.trim();
+            let nameVal = document.getElementById('admin-telebirr-name').value.trim();
+            if (!phoneVal) {
+                alert("⚠️ እባክዎ አዲስ ስልክ ቁጥር ያስገቡ!");
+                return;
+            }
+            socket.emit('adminUpdateTelebirr', { phone: phoneVal, name: nameVal });
+            document.getElementById('admin-telebirr-phone').value = '';
+            document.getElementById('admin-telebirr-name').value = '';
+        }
 
         function sendAdminBroadcast() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
