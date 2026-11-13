@@ -76,7 +76,7 @@
             </div>
         </header>
 
-        <!-- Stats Bar (በቁጥር መምረጫው ሰዓት ተደብቆ፣ ወደ ጌሙ ሲገባ ብቻ እንዲታይ ተደርጓል) -->
+        <!-- Stats Bar -->
         <section id="stats-bar-section" class="grid grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">Game ID</div>
@@ -118,8 +118,8 @@
                         </div>
                     </div>
 
-                    <!-- 💡 የቁጥር መምረጫው ቦታ ቁመቱ ትንሽ እንዲቀንስ ተደርጓል (በምስሉ ላይ የጠየቁትን ቦታ ለማስፋት) -->
-                    <div class="min-h-[120px] max-h-[170px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
+                    <!-- ቁጥር መምረጫው ቦታ (መጠኑ ሳይቀነስ ልክ እንደቀድሞው እንዳለ ነው) -->
+                    <div class="max-h-[220px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5" id="card-grid-500"></div>
 
                     <!-- Countdown & Confirm Section -->
                     <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 p-2.5 rounded-xl border border-amber-500/50 flex items-center justify-between shadow-xl">
@@ -139,8 +139,8 @@
                         </div>
                     </div>
 
-                    <!-- Selection & Preview Slots (💡 ቦታው ሰፋ እንዲል እና ወደታች ወርዶ የተስተካከለ ቁመት እንዲኖረው ተደርጓል) -->
-                    <div class="bg-white/5 p-2.5 rounded-xl border border-white/10 flex flex-col space-y-2 text-xs flex-1">
+                    <!-- Selection & Preview Slots (በቀይ ያመለከቱት ቦታ ላይ ብቻ የተመረጡት ካርዶች በትንሽ ፕሪቪው እንዲታዩ ተደርጓል) -->
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/10 flex flex-col space-y-1.5 text-xs">
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="text-gray-400 text-[10px]">የመረጧቸው:</div>
@@ -151,12 +151,12 @@
                             </button>
                         </div>
 
-                        <!-- 💡 የካርድ ፕሪቪው የሚታይባቸው ሁለቱ ሰፋ ያሉ ቦታዎች -->
-                        <div class="grid grid-cols-2 gap-2 flex-1 min-h-[130px]">
-                            <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 flex items-center justify-center text-gray-400 text-[10px] overflow-y-auto custom-scroll">
+                        <!-- 💡 በቀይ ባመለከቱበት ቦታ ላይ ብቻ የሚታዩ ሁለቱ ትናንሽ የካርድ ፕሪቪው ስሎቶች -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[70px] flex items-center justify-center text-gray-400 text-[10px] overflow-y-auto custom-scroll">
                                 ካርድ 1 ፕሪቪው
                             </div>
-                            <div id="previewCardSlot2" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 flex items-center justify-center text-gray-400 text-[10px] overflow-y-auto custom-scroll">
+                            <div id="previewCardSlot2" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[70px] flex items-center justify-center text-gray-400 text-[10px] overflow-y-auto custom-scroll">
                                 ካርድ 2 ፕሪቪው
                             </div>
                         </div>
@@ -340,7 +340,6 @@
                     <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
 
-                <!-- ቴሌብር ቁጥር መቀየሪያ ከአድሚን ፓነል -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">📱 የቴሌብር ቁጥር ማስተካከያ (Telebirr Config)</div>
                     <input type="text" id="admin-telebirr-phone" placeholder="አዲስ ስልክ ቁጥር (ለምሳሌ: 0940272544)" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
@@ -369,7 +368,6 @@
                     </div>
                 </div>
 
-                <!-- ==================== የተጠቃሚ ሂሳብ በ ID መረማመጃ/መፈለጊያ ሳጥን ==================== -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">🔍 የትኛውንም ተጠቃሚ ሂሳብ በ ID ፈልግ (Check Balance)</div>
                     <input type="text" id="admin-check-userid" placeholder="የቴሌግራም ዩዘር ID (Telegram ID) አስገባ" class="w-full bg-black/50 border border-white/20 rounded-lg p-2 text-white text-xs">
@@ -639,7 +637,6 @@
             updateAudioButtonUI();
             renderCardSelectionPreviews();
 
-            // 💡 3ኛ ጥያቄ: በቁጥር መምረጫው ሰዓት stats bar መደበቅ፣ ጌሙ ሲጀመር ማሳየት
             const statsBar = document.getElementById('stats-bar-section');
             if (confirmedCards.length > 0) {
                 document.getElementById('card-selection-section').classList.add('hidden');
@@ -766,7 +763,7 @@
                         document.getElementById('stat-called-count').innerText = "0";
                         document.getElementById('card-selection-section').classList.remove('hidden');
                         document.getElementById('live-game-section').classList.add('hidden');
-                        if(statsBar) statsBar.classList.add('hidden'); // 💡 በምረጫው ሰዓት ተደብቋል
+                        if(statsBar) statsBar.classList.add('hidden');
                         renderVerticalBoard();
                         generate500CardGrid();
                     }
@@ -774,7 +771,6 @@
             });
 
             socket.on('gameStarted', (data) => {
-                // 💡 2ኛ ጥያቄ: ካርድ አረጋግጥ ከተጫነ በኋላ እዛው በካርድ መምረጫው ቆይቶ ቆጠራው ሲያልቅ (ወይም 5 ሰከንድ ሲቀረው) ወደ ጌሙ ይገባል
                 const statsBar = document.getElementById('stats-bar-section');
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
@@ -810,8 +806,6 @@
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! (ቆጠራው እስኪያልቅ ይጠብቁ)";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
-                
-                // 💡 2ኛ ጥያቄ: ካርድ ሲረጋገጥ ወዲያውኑ ወደ ጌም ሜኑ አይገባም፤ ቆጣሪው (countdown) እስኪያልቅ በዛው በካርድ መምረጫው ይቆያል
                 renderCardSelectionPreviews();
             });
 
@@ -1103,7 +1097,6 @@
                     bigTimerEl.innerText = `${timeLeft}s`;
                 }
 
-                // 💡 2ኛ ጥያቄ: ቆጣሪው 5 ሰከንድ ሲቀረው (ወይም 0 ሲሆን) ወደ ጌም ሜኑ እንዲሸጋገር ማድረግ
                 if (timeLeft <= 5 && confirmedCards.length > 0) {
                     const cardSec = document.getElementById('card-selection-section');
                     const liveSec = document.getElementById('live-game-section');
@@ -1246,7 +1239,7 @@
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
                 const statsBar = document.getElementById('stats-bar-section');
-                if(statsBar) statsBar.classList.add('hidden'); // 💡 በምረጫው ሰዓት ተደብቋል
+                if(statsBar) statsBar.classList.add('hidden');
                 generate500CardGrid();
                 renderCardSelectionPreviews();
             }, 1000);
@@ -1274,7 +1267,6 @@
                 alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!");
                 return;
             }
-            document.getElementById('withdraw-modal').classList.add('hidden'); // Fix typo if any
             document.getElementById('withdraw-modal').classList.remove('hidden'); 
         }
 
@@ -1414,8 +1406,8 @@
             let cardsToPreview = userSelectedCards.length > 0 ? userSelectedCards : confirmedCards;
 
             if (cardsToPreview.length === 0) {
-                slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 flex items-center justify-center text-gray-400 text-[10px]";
-                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 flex items-center justify-center text-gray-400 text-[10px]";
+                slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[70px] flex items-center justify-center text-gray-400 text-[10px]";
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[70px] flex items-center justify-center text-gray-400 text-[10px]";
                 slot1.innerText = "ካርድ 1 ፕሪቪው";
                 slot2.innerText = "ካርድ 2 ፕሪቪው";
                 return;
@@ -1430,27 +1422,27 @@
                 slot2.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1 flex flex-col items-center justify-start overflow-y-auto custom-scroll shadow";
                 slot2.innerHTML = generateMiniCardPreviewHTML(cardsToPreview[1]);
             } else {
-                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 flex items-center justify-center text-gray-400 text-[10px]";
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[70px] flex items-center justify-center text-gray-400 text-[10px]";
                 slot2.innerText = "ካርድ 2 ፕሪቪው";
             }
         }
 
         function generateMiniCardPreviewHTML(cardNum) {
             let numbers = getCartelaNumbers(cardNum);
-            let html = `<div class="text-[9px] font-bold text-amber-400 mb-1">ካርድ #${cardNum}</div>`;
-            html += `<div class="grid grid-cols-5 gap-1 text-center w-full">`;
+            let html = `<div class="text-[8px] font-bold text-amber-400 mb-0.5">ካርድ #${cardNum}</div>`;
+            html += `<div class="grid grid-cols-5 gap-0.5 text-center w-full">`;
             
             let colsHeader = ['B','I','N','G','O'];
             colsHeader.forEach((c, idx) => {
                 let bg = idx === 0 ? "bg-blue-600" : idx === 1 ? "bg-purple-600" : idx === 2 ? "bg-pink-600" : idx === 3 ? "bg-emerald-600" : "bg-amber-600";
-                html += `<div class="${bg} text-white font-bold text-[8px] rounded py-0.5">${c}</div>`;
+                html += `<div class="${bg} text-white font-bold text-[7px] rounded py-0.2">${c}</div>`;
             });
 
             numbers.forEach(num => {
                 if (num === "FREE") {
-                    html += `<div class="bg-amber-500 text-black font-black text-[9px] rounded h-5 flex items-center justify-center">★</div>`;
+                    html += `<div class="bg-amber-500 text-black font-black text-[8px] rounded flex items-center justify-center">★</div>`;
                 } else {
-                    html += `<div class="bg-white text-black font-bold text-[9px] rounded h-5 flex items-center justify-center">${num}</div>`;
+                    html += `<div class="bg-white text-black font-bold text-[7px] rounded flex items-center justify-center">${num}</div>`;
                 }
             });
             html += `</div>`;
