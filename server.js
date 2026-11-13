@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -673,6 +673,76 @@ function startMainGameLoop() {
                         calledNumbers: globalRoom.calledNumbers
                     });
                     io.emit('numberCalledBroadcast', Number(calledNum));
+
+                    // 💡 5 ሰከንድ ቆይታ (Pause) እና አውቶማቲክ ቢንጎ አረጋጋጭ ሎጂክ
+                    let winningWinnersList = [];
+                    Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
+                        if (pData && pData.cards) {
+                            pData.cards.forEach(cNum => {
+                                let cList = getCartelaNumbers(cNum);
+                                let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
+                                if (matched) { 
+                                    winningWinnersList.push({
+                                        username: pData.username || 'ተጫዋች',
+                                        socketId: socketId,
+                                        userId: pData.userId,
+                                        isBot: false,
+                                        cardNum: cNum,
+                                        matched: matched,
+                                        cartelaList: cList
+                                    });
+                                }
+                            });
+                        }
+                    });
+
+                    if (winningWinnersList.length > 0) {
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        
+                        setTimeout(() => {
+                            if (!globalRoom.gameActive) return;
+                            
+                            let primaryWinner = winningWinnersList[0];
+                            let winningPrimaryCardNum = primaryWinner.cardNum;
+                            let winningMatchedIndices = primaryWinner.matched;
+
+                            let winnerNamesStr = winningWinnersList.map(w => w.username).join(', ');
+                            let winnersCount = winningWinnersList.length;
+
+                            let totalPot = (globalRoom.playersCount || 1) * 10;
+                            let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+
+                            winningWinnersList.forEach(w => {
+                                if (!w.isBot && w.userId) {
+                                    userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
+                                }
+                            });
+
+                            sendWinnerNotificationToAdmin(winnerNamesStr, winningPrimaryCardNum, prizePerWinner, true);
+
+                            winningWinnersList.forEach(w => {
+                                if (!w.isBot && w.socketId) {
+                                    let targetSocket = io.sockets.sockets.get(w.socketId);
+                                    if (targetSocket) {
+                                        targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
+                                    }
+                                }
+                            });
+
+                            io.emit('bingoWinner', {
+                                username: winnerNamesStr,
+                                userId: winningWinnersList.find(w => !w.isBot)?.socketId || null,
+                                cardNum: winningPrimaryCardNum,
+                                prize: prizePerWinner,
+                                calledNumbers: globalRoom.calledNumbers,
+                                matchedIndices: winningMatchedIndices,
+                                winnersCount: winnersCount,
+                                playersCount: globalRoom.playersCount
+                            });
+
+                            setTimeout(() => { endRoundAndRestart(); }, 6000);
+                        }, 5000); // 5 ሰከንድ ቆም ብሎ ተጫዋቹ ራሱ በተኑን እንዲነካው እድል ይሰጣል፣ ካልነካውም ሰርቨሩ ራሱ አውቶማቲካሊ አሸናፊ ያደርገዋል
+                    }
                 }
 
             }, 4500); 
@@ -834,7 +904,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
 
                             if (reqData.chatId) {
-                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*၊ የጠየቁት የ (${reqData.amount} ብር) ጥያቄ በአድሚኑ ጸድቆ ቀሪ ሂሳብዎ ላይ ገቢ ሆኗል! መልካም ጨዋታ። 🎮`;
+                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት 450 ብር ተልኳል። እናመሰግናለን! 🙏`;
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
                                     text: successMsg,
@@ -1038,6 +1108,42 @@ io.on('connection', (socket) => {
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
             socket.emit('syncGameState', globalRoom);
+        }
+    });
+
+    socket.on('playerClaimBingo', (data) => {
+        if (!globalRoom.gameActive) return;
+        let userId = String(data.userId);
+        let cardNum = data.cardNum;
+        
+        let cList = getCartelaNumbers(cardNum);
+        let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
+        
+        if (matched) {
+            let totalPot = (globalRoom.playersCount || 1) * 10;
+            let prizePerWinner = Math.floor(totalPot * 0.90);
+            
+            userWallets[userId] = (userWallets[userId] || 0) + prizePerWinner;
+            
+            sendWinnerNotificationToAdmin(data.username || 'ተጫዋች', cardNum, prizePerWinner, true);
+            
+            socket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[userId] });
+            
+            io.emit('bingoWinner', {
+                username: data.username || 'ተጫዋች',
+                userId: socket.id,
+                cardNum: cardNum,
+                prize: prizePerWinner,
+                calledNumbers: globalRoom.calledNumbers,
+                matchedIndices: matched,
+                winnersCount: 1,
+                playersCount: globalRoom.playersCount
+            });
+            
+            if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+            setTimeout(() => { endRoundAndRestart(); }, 6000);
+        } else {
+            socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
         }
     });
 
