@@ -506,7 +506,6 @@ function startMainGameLoop() {
                 return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
             });
 
-            // 💡 ቁጥሮቹ ተራኪ (Sequential) እንዳይሆኑ እዚህ ጋር በዘፈቀደ እናቀላቅላቸዋለን (Natural Random Shuffle)
             let rawInterleavedWinningNumbers = [];
             let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
             
@@ -517,7 +516,6 @@ function startMainGameLoop() {
                     }
                 });
             }
-            // ከቅደም ተከተል ውጪ (Shuffle) በማድረግ ተፈጥሯዊ መልክ እንሰጠዋለን
             let interleavedWinningNumbers = [...rawInterleavedWinningNumbers].sort(() => 0.5 - Math.random());
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
@@ -836,7 +834,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
 
                             if (reqData.chatId) {
-                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የ (${reqData.amount} ብር) ጥያቄ በአድሚኑ ጸድቆ ቀሪ ሂሳብዎ ላይ ገቢ ሆኗል! መልካም ጨዋታ። 🎮`;
+                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*၊ የጠየቁት የ (${reqData.amount} ብር) ጥያቄ በአድሚኑ ጸድቆ ቀሪ ሂሳብዎ ላይ ገቢ ሆኗል! መልካም ጨዋታ። 🎮`;
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
                                     text: successMsg,
@@ -1050,7 +1048,15 @@ io.on('connection', (socket) => {
     socket.on('adminCheckUserBalance', (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
-            let foundBalance = userWallets[tId] !== undefined ? userWallets[tId] : 0.00;
+            let foundBalance = 0.00;
+            if (userWallets[tId] !== undefined) {
+                foundBalance = parseFloat(userWallets[tId]);
+            } else {
+                let matchedKey = Object.keys(userWallets).find(k => String(k).trim() === tId);
+                if (matchedKey) {
+                    foundBalance = parseFloat(userWallets[matchedKey]);
+                }
+            }
             
             socket.emit('adminUserBalanceResponse', { 
                 success: true, 
