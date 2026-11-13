@@ -18,7 +18,23 @@
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
         
-        /* 💡 እጅግ የሚያምር 3D የቢንጎ አዝራር ስታይል */
+        @keyframes fastFlameGlow {
+            0%, 100% { 
+                transform: scale(1); 
+                background: linear-gradient(to right, #f59e0b, #ea580c);
+                box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), inset 0 0 5px rgba(255, 255, 255, 0.4);
+                border-color: rgba(255, 255, 255, 0.6);
+            }
+            50% { 
+                transform: scale(1.06); 
+                background: linear-gradient(to right, #fbbf24, #ef4444);
+                box-shadow: 0 0 25px rgba(239, 68, 68, 0.9), 0 0 40px rgba(245, 158, 11, 1), inset 0 0 12px rgba(255, 255, 255, 0.8);
+                border-color: #ffffff;
+            }
+        }
+        .blink-btn { animation: fastFlameGlow 0.6s infinite ease-in-out; }
+
+        /* እጅግ የሚያምር 3D የቢንጎ አዝራር ስታይል */
         @keyframes bingo3DGlow {
             0%, 100% { 
                 transform: translateY(0px) scale(1); 
@@ -151,6 +167,7 @@
                                 <div class="text-gray-400 text-[9px]">የመረጧቸው:</div>
                                 <div id="selected-cards-badge" class="font-bold text-amber-300 text-[11px]">ምንም የለም</div>
                             </div>
+                            <!-- 💡 የካርድ አረጋግጥ አዝራር (ገና ካርድ ሳይረጋገጥ blink-btn ይኖረዋል፣ ከተረጋገጠ በኋላ ግን blink-btn ይጠፋል) -->
                             <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300">
                                 ✨ ካርድ አረጋግጥ
                             </button>
@@ -221,7 +238,7 @@
 
                             <div id="right-side-dynamic-area" class="bg-[#180a29] rounded-lg p-1 border border-purple-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1 flex-1"></div>
                             
-                            <!-- 💡 በምስሉ ላይ በቀይ ያከበቡበት ቦታ ላይ የተጨመረው እጅግ የሚያምር 3D ቢንጎ አዝራር -->
+                            <!-- BINGO Button -->
                             <div class="w-full pt-0.5">
                                 <button onclick="triggerPlayerBingo()" class="w-full py-2.5 rounded-xl text-white font-black text-xs tracking-wider uppercase bingo-3d-btn border border-amber-200/60 flex items-center justify-center gap-1.5 shadow-xl">
                                     <span class="text-sm">🎉</span> BINGO! <span class="text-sm">🏆</span>
@@ -648,6 +665,18 @@
             updateAudioButtonUI();
             renderCardSelectionPreviews();
 
+            // 💡 የካርድ አረጋግጥ አዝራር ስታይል እንደ confirmedCards ሁኔታ (እንዳያበራ/እንዲያበራ) ማስተካከል
+            const confirmBtn = document.getElementById('confirm-card-btn');
+            if (confirmBtn) {
+                if (confirmedCards.length > 0) {
+                    confirmBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
+                    confirmBtn.innerText = "✨ ካርድ ተረጋግጧል";
+                } else {
+                    confirmBtn.className = "blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
+                    confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
+                }
+            }
+
             const statsBar = document.getElementById('stats-bar-section');
             if (confirmedCards.length > 0) {
                 document.getElementById('card-selection-section').classList.add('hidden');
@@ -748,6 +777,14 @@
                             confirmedCards = myData.cards;
                             userSelectedCards = [...confirmedCards];
                             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
+                            
+                            // 💡 ካርድ ከተረጋገጠ በኋላ አዝራሩ ማብራቱን (Glow) እንዲያቆም ማድረግ
+                            const cBtn = document.getElementById('confirm-card-btn');
+                            if(cBtn) {
+                                cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
+                                cBtn.innerText = "✨ ካርድ ተረጋግጧል";
+                            }
+
                             document.getElementById('card-selection-section').classList.add('hidden');
                             document.getElementById('live-game-section').classList.remove('hidden');
                             if(statsBar) statsBar.classList.remove('hidden');
@@ -817,6 +854,14 @@
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! (ቆጠራው እስኪያልቅ ይጠብቁ)";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
+                
+                // 💡 ካርድ ሲረጋገጥ አዝራሩ ማብራቱን (Glow) አቁሞ የተረጋጋ (Static) እንዲሆን ማድረግ
+                const cBtn = document.getElementById('confirm-card-btn');
+                if(cBtn) {
+                    cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
+                    cBtn.innerText = "✨ ካርድ ተረጋግጧል";
+                }
+
                 renderCardSelectionPreviews();
             });
 
@@ -921,7 +966,7 @@
                     walletBalance += data.amount;
                     updateWalletUI();
                     addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
-                    alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                    alert(`✅ የᒐ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
                     walletBalance += data.amount;
                     updateWalletUI();
@@ -1558,6 +1603,14 @@
             }
 
             confirmedCards = [...userSelectedCards];
+            
+            // 💡 ካርድ አንዴ ሲረጋገጥ አዝራሩ ማብራቱን (Glow/blink-btn) አቁሞ የተረጋጋ (Static) እንዲሆን ማድረግ
+            const confirmBtn = document.getElementById('confirm-card-btn');
+            if (confirmBtn) {
+                confirmBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
+                confirmBtn.innerText = "✨ ካርድ ተረጋግጧል";
+            }
+
             socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
             renderCardSelectionPreviews();
         }
