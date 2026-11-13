@@ -108,7 +108,7 @@
                 
                 <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-1">
-                    <div class="flex justify-between items-center text-xs bg-purple-900/40 px-2 py-1 rounded-lg border border-purple-500/20">
+                    <div class="flex justify-between items-center text-xs bg-purple-900/40 px-2.5 py-1 rounded-lg border border-purple-500/20">
                         <div>
                             <div id="user-welcome-info" class="text-gray-300 font-bold text-[10px]">ሰላም ተጫዋች</div>
                             <div class="text-[8px] text-gray-400">1 ካርድ (10 ብር) ወይም 2 ካርድ (20 ብር)</div>
@@ -118,8 +118,8 @@
                         </div>
                     </div>
 
-                    <!-- 💡 የቁጥር መምረጫው ቦታ (Grid) ከ 1 እስከ 64 ያሉት ረድፎች በአንድ ላይ ሙሉ በሙሉ እንዲታዩ የተስተካከለበት (h-[240px]) -->
-                    <div class="h-[240px] sm:h-[270px] overflow-y-auto custom-scroll bg-black/40 p-1.5 rounded-xl border border-white/10 grid grid-cols-8 gap-1 content-start" id="card-grid-500"></div>
+                    <!-- 💡 የቁጥር መምረጫው ቦታ (Grid) ቁመቱ እንዲጨምር እና ወደ ታች ሰፍቶ ባዶውን ቦታ እንዲሞላ (h-[310px]) ተደርጓል -->
+                    <div class="h-[310px] sm:h-[350px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5 content-start" id="card-grid-500"></div>
 
                     <!-- Countdown & Confirm Section -->
                     <div class="bg-gradient-to-r from-purple-950/90 via-[#1c0c33] to-purple-950/90 px-2 py-1 rounded-lg border border-amber-500/50 flex items-center justify-between shadow-xl">
@@ -139,24 +139,24 @@
                         </div>
                     </div>
 
-                    <!-- Selection & Preview Slots (በመጀመሪያው ምስል ላይ እንዳለው ክፍተት የተስተካከለ) -->
+                    <!-- 💡 Selection & Preview Slots (የካርድ ፕሪቪው ሳጥኖች መጠናቸው እንደነበረው ሆኖ ወደ ታች በቢጫው መስመር ልክ እንዲገጥሙ የተደረገ) -->
                     <div class="bg-white/5 p-1.5 rounded-xl border border-white/10 flex flex-col space-y-1 text-xs">
                         <div class="flex justify-between items-center">
                             <div>
                                 <div class="text-gray-400 text-[9px]">የመረጧቸው:</div>
                                 <div id="selected-cards-badge" class="font-bold text-amber-300 text-[11px]">ምንም የለም</div>
                             </div>
-                            <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-2.5 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300">
+                            <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300">
                                 ✨ ካርድ አረጋግጥ
                             </button>
                         </div>
 
-                        <!-- 💡 የካርድ ፕሪቪው ስሎቶች -->
+                        <!-- 💡 ፕሪቪው ሳጥኖች -->
                         <div class="grid grid-cols-2 gap-2">
-                            <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1 min-h-[65px] flex flex-col items-center justify-center text-gray-400 text-[9px] overflow-y-auto custom-scroll">
+                            <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px] overflow-y-auto custom-scroll">
                                 ካርድ 1 ፕሪቪው
                             </div>
-                            <div id="previewCardSlot2" class="bg-black/50 border border-purple-500/30 rounded-lg p-1 min-h-[65px] flex flex-col items-center justify-center text-gray-400 text-[9px] overflow-y-auto custom-scroll">
+                            <div id="previewCardSlot2" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px] overflow-y-auto custom-scroll">
                                 ካርድ 2 ፕሪቪው
                             </div>
                         </div>
@@ -1367,14 +1367,14 @@
                 let isTakenByOther = takenCardsByOthers.includes(i);
 
                 if (isConfirmedByMe) {
-                    btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-1 rounded shadow";
+                    btn.className = "bg-amber-500 text-black font-extrabold text-[11px] py-1.5 rounded shadow";
                 } else if (isSelectedByMe) {
-                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-1 rounded border border-amber-300 shadow";
+                    btn.className = "bg-amber-600/80 text-white font-extrabold text-[11px] py-1.5 rounded border border-amber-300 shadow";
                 } else if (isTakenByOther) {
-                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-1 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
+                    btn.className = "bg-red-950/70 text-red-300 font-medium text-[11px] py-1.5 rounded border border-red-500/30 opacity-70 cursor-not-allowed";
                     btn.disabled = true;
                 } else {
-                    btn.className = "bg-[#2d2b45] hover:bg-[#3d395c] text-white font-medium text-[11px] py-1 rounded border border-white/5 shadow-sm";
+                    btn.className = "bg-[#2d2b45] hover:bg-[#3d395c] text-white font-medium text-[11px] py-1.5 rounded border border-white/5 shadow-sm";
                 }
                 btn.innerText = String(i);
 
@@ -1406,43 +1406,43 @@
             let cardsToPreview = userSelectedCards.length > 0 ? userSelectedCards : confirmedCards;
 
             if (cardsToPreview.length === 0) {
-                slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1 min-h-[65px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
-                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1 min-h-[65px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
+                slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
                 slot1.innerText = "ካርድ 1 ፕሪቪው";
                 slot2.innerText = "ካርድ 2 ፕሪቪው";
                 return;
             }
 
             if (cardsToPreview.length >= 1) {
-                slot1.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1 flex flex-col items-center justify-start overflow-y-auto custom-scroll shadow";
+                slot1.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1.5 flex flex-col items-center justify-start overflow-y-auto custom-scroll shadow";
                 slot1.innerHTML = generateMiniCardPreviewHTML(cardsToPreview[0]);
             }
 
             if (cardsToPreview.length >= 2) {
-                slot2.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1 flex flex-col items-center justify-start overflow-y-auto custom-scroll shadow";
+                slot2.className = "bg-[#140826] border border-amber-500/40 rounded-lg p-1.5 flex flex-col items-center justify-start overflow-y-auto custom-scroll shadow";
                 slot2.innerHTML = generateMiniCardPreviewHTML(cardsToPreview[1]);
             } else {
-                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1 min-h-[65px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
+                slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
                 slot2.innerText = "ካርድ 2 ፕሪቪው";
             }
         }
 
         function generateMiniCardPreviewHTML(cardNum) {
             let numbers = getCartelaNumbers(cardNum);
-            let html = `<div class="text-[8px] font-bold text-amber-400 mb-0.5">ካርድ #${cardNum}</div>`;
-            html += `<div class="grid grid-cols-5 gap-0.5 text-center w-full">`;
+            let html = `<div class="text-[9px] font-bold text-amber-400 mb-1">ካርድ #${cardNum}</div>`;
+            html += `<div class="grid grid-cols-5 gap-1 text-center w-full">`;
             
             let colsHeader = ['B','I','N','G','O'];
             colsHeader.forEach((c, idx) => {
                 let bg = idx === 0 ? "bg-blue-600" : idx === 1 ? "bg-purple-600" : idx === 2 ? "bg-pink-600" : idx === 3 ? "bg-emerald-600" : "bg-amber-600";
-                html += `<div class="${bg} text-white font-bold text-[7px] rounded py-0.2">${c}</div>`;
+                html += `<div class="${bg} text-white font-bold text-[8px] rounded py-0.5">${c}</div>`;
             });
 
             numbers.forEach(num => {
                 if (num === "FREE") {
-                    html += `<div class="bg-amber-500 text-black font-black text-[8px] rounded flex items-center justify-center">★</div>`;
+                    html += `<div class="bg-amber-500 text-black font-black text-[9px] h-4 rounded flex items-center justify-center shadow">★</div>`;
                 } else {
-                    html += `<div class="bg-white text-black font-bold text-[7px] rounded flex items-center justify-center">${num}</div>`;
+                    html += `<div class="bg-white text-black font-bold text-[9px] h-4 rounded flex items-center justify-center shadow">${num}</div>`;
                 }
             });
             html += `</div>`;
