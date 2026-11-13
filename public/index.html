@@ -18,21 +18,27 @@
         }
         .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
         
-        @keyframes fastFlameGlow {
+        /* 💡 እጅግ የሚያምር 3D የቢንጎ አዝራር ስታይል */
+        @keyframes bingo3DGlow {
             0%, 100% { 
-                transform: scale(1); 
-                background: linear-gradient(to right, #f59e0b, #ea580c);
-                box-shadow: 0 0 8px rgba(245, 158, 11, 0.6), inset 0 0 5px rgba(255, 255, 255, 0.4);
-                border-color: rgba(255, 255, 255, 0.6);
+                transform: translateY(0px) scale(1); 
+                background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+                box-shadow: 0 6px 0 #92400e, 0 10px 20px rgba(245, 158, 11, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.6), inset 0 -2px 4px rgba(0, 0, 0, 0.4);
             }
             50% { 
-                transform: scale(1.06); 
-                background: linear-gradient(to right, #fbbf24, #ef4444);
-                box-shadow: 0 0 25px rgba(239, 68, 68, 0.9), 0 0 40px rgba(245, 158, 11, 1), inset 0 0 12px rgba(255, 255, 255, 0.8);
-                border-color: #ffffff;
+                transform: translateY(-2px) scale(1.02); 
+                background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+                box-shadow: 0 8px 0 #92400e, 0 15px 30px rgba(245, 158, 11, 0.9), inset 0 2px 6px rgba(255, 255, 255, 0.8), inset 0 -2px 6px rgba(0, 0, 0, 0.3);
             }
         }
-        .blink-btn { animation: fastFlameGlow 0.6s infinite ease-in-out; }
+        .bingo-3d-btn { 
+            animation: bingo3DGlow 1.2s infinite ease-in-out;
+            transition: all 0.1s ease;
+        }
+        .bingo-3d-btn:active {
+            transform: translateY(4px) scale(0.98);
+            box-shadow: 0 2px 0 #92400e, 0 5px 10px rgba(245, 158, 11, 0.4), inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
 
         @keyframes countdownPop {
             0% { transform: scale(0.5); opacity: 0; }
@@ -118,7 +124,6 @@
                         </div>
                     </div>
 
-                    <!-- 💡 የቁጥር መምረጫው ቦታ (Grid) ቁመቱ እንዲጨምር እና ወደ ታች ሰፍቶ ባዶውን ቦታ እንዲሞላ (h-[310px]) ተደርጓል -->
                     <div class="h-[310px] sm:h-[350px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5 content-start" id="card-grid-500"></div>
 
                     <!-- Countdown & Confirm Section -->
@@ -139,7 +144,7 @@
                         </div>
                     </div>
 
-                    <!-- 💡 Selection & Preview Slots (የካርድ ፕሪቪው ሳጥኖች መጠናቸው እንደነበረው ሆኖ ወደ ታች በቢጫው መስመር ልክ እንዲገጥሙ የተደረገ) -->
+                    <!-- Selection & Preview Slots -->
                     <div class="bg-white/5 p-1.5 rounded-xl border border-white/10 flex flex-col space-y-1 text-xs">
                         <div class="flex justify-between items-center">
                             <div>
@@ -151,7 +156,6 @@
                             </button>
                         </div>
 
-                        <!-- 💡 ፕሪቪው ሳጥኖች -->
                         <div class="grid grid-cols-2 gap-2">
                             <div id="previewCardSlot1" class="bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[95px] flex flex-col items-center justify-center text-gray-400 text-[9px] overflow-y-auto custom-scroll">
                                 ካርድ 1 ፕሪቪው
@@ -216,6 +220,13 @@
                             </div>
 
                             <div id="right-side-dynamic-area" class="bg-[#180a29] rounded-lg p-1 border border-purple-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1 flex-1"></div>
+                            
+                            <!-- 💡 በምስሉ ላይ በቀይ ያከበቡበት ቦታ ላይ የተጨመረው እጅግ የሚያምር 3D ቢንጎ አዝራር -->
+                            <div class="w-full pt-0.5">
+                                <button onclick="triggerPlayerBingo()" class="w-full py-2.5 rounded-xl text-white font-black text-xs tracking-wider uppercase bingo-3d-btn border border-amber-200/60 flex items-center justify-center gap-1.5 shadow-xl">
+                                    <span class="text-sm">🎉</span> BINGO! <span class="text-sm">🏆</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -937,6 +948,77 @@
                 }
             });
         });
+
+        // ------------------ 💡 የቢንጎ ጥሪ ፈንክሽን (Trigger Bingo) ------------------
+        function triggerPlayerBingo() {
+            if (confirmedCards.length === 0) {
+                alert("⚠️ ማሳሰቢያ፡ በዚህ ዙር ምንም የተመዘገበ ካርድ የለዎትም!");
+                return;
+            }
+            
+            let calledNumbersClean = calledNumbersList.map(n => Number(n));
+            let foundValidBingo = false;
+            let winningCardNum = null;
+
+            confirmedCards.forEach(cardNum => {
+                let cardNums = getCartelaNumbers(cardNum);
+                
+                // 5 አግድም (Rows) ማረጋገጫ
+                for (let r = 0; r < 5; r++) {
+                    let rowWin = true;
+                    for (let c = 0; c < 5; c++) {
+                        let val = cardNums[r * 5 + c];
+                        if (val !== "FREE" && !calledNumbersClean.includes(Number(val))) {
+                            rowWin = false;
+                            break;
+                        }
+                    }
+                    if (rowWin) { foundValidBingo = true; winningCardNum = cardNum; }
+                }
+
+                // 5 ቁመት (Cols) ማረጋገጫ
+                for (let c = 0; c < 5; c++) {
+                    let colWin = true;
+                    for (let r = 0; r < 5; r++) {
+                        let val = cardNums[r * 5 + c];
+                        if (val !== "FREE" && !calledNumbersClean.includes(Number(val))) {
+                            colWin = false;
+                            break;
+                        }
+                    }
+                    if (colWin) { foundValidBingo = true; winningCardNum = cardNum; }
+                }
+
+                // ሰያፍ (Diagonal 1)
+                let diag1Win = true;
+                for (let i = 0; i < 5; i++) {
+                    let val = cardNums[i * 5 + i];
+                    if (val !== "FREE" && !calledNumbersClean.includes(Number(val))) {
+                        diag1Win = false;
+                        break;
+                    }
+                }
+                if (diag1Win) { foundValidBingo = true; winningCardNum = cardNum; }
+
+                // ሰያፍ (Diagonal 2)
+                let diag2Win = true;
+                for (let i = 0; i < 5; i++) {
+                    let val = cardNums[i * 5 + (4 - i)];
+                    if (val !== "FREE" && !calledNumbersClean.includes(Number(val))) {
+                        diag2Win = false;
+                        break;
+                    }
+                }
+                if (diag2Win) { foundValidBingo = true; winningCardNum = cardNum; }
+            });
+
+            if (foundValidBingo) {
+                socket.emit('playerClaimBingo', { userId: telegramUserId, username: userFullName, cardNum: winningCardNum });
+                alert(`🎉 BINGO! ካርድ #${winningCardNum} አሸናፊ ሆኗል! ጥያቄዎ ተልኳል!`);
+            } else {
+                alert("❌ ገና ሙሉ ማሸነፊያ (Pattern) አልሞሉም! እባክዎ ተጨማሪ ቁጥሮች ይጠብቁ።");
+            }
+        }
 
         // ------------------ አድሚን ፈንክሽኖች ------------------
         function adminUpdateTelebirrNum() {
