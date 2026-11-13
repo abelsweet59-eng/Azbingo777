@@ -34,7 +34,6 @@
         }
         .blink-btn { animation: fastFlameGlow 0.6s infinite ease-in-out; }
 
-        /* እጅግ የሚያምር 3D የቢንጎ አዝራር ስታይል */
         @keyframes bingo3DGlow {
             0%, 100% { 
                 transform: translateY(0px) scale(1); 
@@ -167,7 +166,6 @@
                                 <div class="text-gray-400 text-[9px]">የመረጧቸው:</div>
                                 <div id="selected-cards-badge" class="font-bold text-amber-300 text-[11px]">ምንም የለም</div>
                             </div>
-                            <!-- 💡 የካርድ አረጋግጥ አዝራር (ገና ካርድ ሳይረጋገጥ blink-btn ይኖረዋል፣ ከተረጋገጠ በኋላ ግን blink-btn ይጠፋል) -->
                             <button id="confirm-card-btn" onclick="confirmCardSelection()" class="blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300">
                                 ✨ ካርድ አረጋግጥ
                             </button>
@@ -665,7 +663,6 @@
             updateAudioButtonUI();
             renderCardSelectionPreviews();
 
-            // 💡 የካርድ አረጋግጥ አዝራር ስታይል እንደ confirmedCards ሁኔታ (እንዳያበራ/እንዲያበራ) ማስተካከል
             const confirmBtn = document.getElementById('confirm-card-btn');
             if (confirmBtn) {
                 if (confirmedCards.length > 0) {
@@ -778,7 +775,6 @@
                             userSelectedCards = [...confirmedCards];
                             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                             
-                            // 💡 ካርድ ከተረጋገጠ በኋላ አዝራሩ ማብራቱን (Glow) እንዲያቆም ማድረግ
                             const cBtn = document.getElementById('confirm-card-btn');
                             if(cBtn) {
                                 cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
@@ -855,7 +851,6 @@
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
                 
-                // 💡 ካርድ ሲረጋገጥ አዝራሩ ማብራቱን (Glow) አቁሞ የተረጋጋ (Static) እንዲሆን ማድረግ
                 const cBtn = document.getElementById('confirm-card-btn');
                 if(cBtn) {
                     cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
@@ -966,7 +961,7 @@
                     walletBalance += data.amount;
                     updateWalletUI();
                     addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
-                    alert(`✅ የᒐ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                    alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
                     walletBalance += data.amount;
                     updateWalletUI();
@@ -994,7 +989,6 @@
             });
         });
 
-        // ------------------ 💡 የቢንጎ ጥሪ ፈንክሽን (Trigger Bingo) ------------------
         function triggerPlayerBingo() {
             if (confirmedCards.length === 0) {
                 alert("⚠️ ማሳሰቢያ፡ በዚህ ዙር ምንም የተመዘገበ ካርድ የለዎትም!");
@@ -1008,7 +1002,6 @@
             confirmedCards.forEach(cardNum => {
                 let cardNums = getCartelaNumbers(cardNum);
                 
-                // 5 አግድም (Rows) ማረጋገጫ
                 for (let r = 0; r < 5; r++) {
                     let rowWin = true;
                     for (let c = 0; c < 5; c++) {
@@ -1021,7 +1014,6 @@
                     if (rowWin) { foundValidBingo = true; winningCardNum = cardNum; }
                 }
 
-                // 5 ቁመት (Cols) ማረጋገጫ
                 for (let c = 0; c < 5; c++) {
                     let colWin = true;
                     for (let r = 0; r < 5; r++) {
@@ -1034,7 +1026,6 @@
                     if (colWin) { foundValidBingo = true; winningCardNum = cardNum; }
                 }
 
-                // ሰያፍ (Diagonal 1)
                 let diag1Win = true;
                 for (let i = 0; i < 5; i++) {
                     let val = cardNums[i * 5 + i];
@@ -1045,7 +1036,6 @@
                 }
                 if (diag1Win) { foundValidBingo = true; winningCardNum = cardNum; }
 
-                // ሰያፍ (Diagonal 2)
                 let diag2Win = true;
                 for (let i = 0; i < 5; i++) {
                     let val = cardNums[i * 5 + (4 - i)];
@@ -1065,7 +1055,6 @@
             }
         }
 
-        // ------------------ አድሚን ፈንክሽኖች ------------------
         function adminUpdateTelebirrNum() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let phoneVal = document.getElementById('admin-telebirr-phone').value.trim();
@@ -1604,7 +1593,6 @@
 
             confirmedCards = [...userSelectedCards];
             
-            // 💡 ካርድ አንዴ ሲረጋገጥ አዝራሩ ማብራቱን (Glow/blink-btn) አቁሞ የተረጋጋ (Static) እንዲሆን ማድረግ
             const confirmBtn = document.getElementById('confirm-card-btn');
             if (confirmBtn) {
                 confirmBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
