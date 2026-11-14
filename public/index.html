@@ -139,7 +139,6 @@
                         </div>
                     </div>
 
-                    <!-- 💡 Fixed Grid Height to ensure cards are visible -->
                     <div class="flex-1 min-h-[180px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5 content-start" id="card-grid-500"></div>
 
                     <!-- Countdown & Confirm Section -->
@@ -267,6 +266,32 @@
                     </div>
                     <div id="transaction-history-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scroll text-[10px]">
                         <div class="text-center text-gray-500 py-3">ምንም የሂሳብ ታሪክ የለም</div>
+                    </div>
+                </div>
+
+                <!-- 🎁 ሪፈራል እና ሼር ማድረጊያ ቦክስ (በምስሉ ላይ በቀይ ባከበቡት ቦታ ላይ ተካቷል) -->
+                <div class="bg-[#1e1e2f] border border-purple-500/30 rounded-2xl p-3 space-y-2 shadow-xl">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-base">🎁</span>
+                        <h3 class="text-xs font-extrabold text-amber-400">ጓደኛ ይጋብዙ፣ 5 ብር ይሸለሙ!</h3>
+                    </div>
+                    <p class="text-[10px] text-gray-300 leading-relaxed">
+                        ከታች ያለውን የሼር ቁልፍ በመጫን ጓደኞችዎ ወይም ግሩፖች ውስጥ በቀጥታ ሼር በማድረግ ይጋብዙ!
+                    </p>
+                    
+                    <div class="flex gap-1.5 pt-1">
+                        <input type="text" id="refLinkInput" readonly class="flex-1 bg-black/60 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-amber-300 font-mono" value="ሊንኩ በመጫን ላይ...">
+                        <button onclick="shareRefLink()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] shadow flex items-center gap-1">
+                            <span>ሼር 🚀</span>
+                        </button>
+                        <button onclick="copyRefLink()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] shadow" title="ሊንክ ኮፒ አድርግ">
+                            <span>ኮፒ 📋</span>
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-between items-center text-[10px] pt-1 border-t border-white/10 text-gray-300">
+                        <span>ጠቅላላ የተገኘ የሪፈራል ቦነስ:</span>
+                        <span id="totalRefEarnings" class="text-amber-400 font-black font-mono">0.00 ብር</span>
                     </div>
                 </div>
             </div>
@@ -577,6 +602,7 @@
 
         let isDepositLockedGlobal = false;
         let isWithdrawLockedGlobal = false;
+        let currentReferralLink = "";
 
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
@@ -717,6 +743,19 @@
                 }
             });
 
+            // 🔗 ሪፈራል ሊንክ እና ገቢ መቀበያ
+            socket.on('referralData', (data) => {
+                const refInput = document.getElementById('refLinkInput');
+                const refEarnings = document.getElementById('totalRefEarnings');
+                if (refInput && data.referralLink) {
+                    currentReferralLink = data.referralLink;
+                    refInput.value = data.referralLink;
+                }
+                if (refEarnings && data.totalEarnings !== undefined) {
+                    refEarnings.innerText = data.totalEarnings.toFixed(2) + " ብር";
+                }
+            });
+
             socket.on('telebirrConfigUpdated', (config) => {
                 const phoneEl = document.getElementById('telebirr-phone-text');
                 const nameEl = document.getElementById('telebirr-name-label');
@@ -724,7 +763,6 @@
                 if (nameEl) nameEl.innerText = `ከቴሌብር (${config.name}) - ለመቅዳት ይጫኑ`;
             });
 
-            // 💡 የቦት ማዋቀሪያ ሲዘምን ከአድሚን ፓነል ላይ ፕሌስሆልደሮችን ለማሳየት
             socket.on('botConfigUpdated', (config) => {
                 const minInput = document.getElementById('admin-min-bots-input');
                 const maxInput = document.getElementById('admin-max-bots-input');
@@ -741,7 +779,6 @@
                 }
             });
 
-            // 💡 የቦት ማስተካከያ ሪስፖንስ ለማሳየት
             socket.on('adminBotResponse', (data) => {
                 let msgEl = document.getElementById('admin-bot-status-msg');
                 if(msgEl) {
@@ -1000,17 +1037,17 @@
                     walletBalance += data.amount;
                     updateWalletUI();
                     addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
-                    alert(`✅ የ ${data.amount} ብር የዲፖዚት ጥያቄዎ ጸድቋል!`);
+                    alert(`✅ የካርድ/ዲፖዚት የ ${data.amount} ብር ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
                     walletBalance += data.amount;
                     updateWalletUI();
                     addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income');
-                    alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር Az ቦነስ ተሰጥቶዎታል!`);
+                    alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር ቦነስ ተሰጥቶዎታል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
                     walletBalance -= data.amount;
                     updateWalletUI();
                     addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
-                    alert(`✅ የ ${data.amount} ብር የዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
+                    alert(`✅ የ ${data.amount} ብር ዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
                 }
             });
 
@@ -1027,6 +1064,39 @@
                 }
             });
         });
+
+        // 🚀 አውቶማቲክ ቴሌግራም ሼር ማድረጊያ ፈንክሽን
+        function shareRefLink() {
+            if (!currentReferralLink || currentReferralLink.includes("መጫን ላይ")) {
+                alert("⚠️ የሪፈራል ሊንኩ እስኪመጣ ትንሽ ይጠብቁ!");
+                return;
+            }
+
+            let shareText = encodeURIComponent("ኑ በ AZ Bingo አብረን እንጫወት እና ሽልማት እንውሰድ! 🎮💰 በዚህ ሊንክ በመግባት ይቀላቀሉን:");
+            let telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(currentReferralLink)}&text=${shareText}`;
+
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(telegramShareUrl);
+            } else {
+                window.open(telegramShareUrl, '_blank');
+            }
+        }
+
+        // 📋 ኮፒ ማድረጊያ (አማራጭ)
+        function copyRefLink() {
+            let copyText = document.getElementById("refLinkInput");
+            if (!copyText || !copyText.value || copyText.value.includes("መጫን ላይ")) {
+                alert("⚠️ ሊንኩ እስኪመጣ ትንሽ ይጠብቁ!");
+                return;
+            }
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value).then(() => {
+                alert("✅ የሪፈራል ሊንኩ ተኮርጅዟል!");
+            }).catch(err => {
+                console.error('ኮፒ ማድረግ አልተቻለም', err);
+            });
+        }
 
         function triggerPlayerBingo() {
             if (confirmedCards.length === 0) {
@@ -1107,7 +1177,6 @@
             document.getElementById('admin-telebirr-name').value = '';
         }
 
-        // 💡 አድሚኑ ከፓነል የቦት ብዛት ሲያስተካክል ወደ ሰርቨር የሚልክ ፈንክሽን
         function adminUpdateBotConfig() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let minB = document.getElementById('admin-min-bots-input').value.trim();
