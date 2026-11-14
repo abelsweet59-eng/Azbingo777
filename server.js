@@ -1,86 +1,86 @@
-Const express = require('express');
-Const http = require('http');
-Const { Server } = require('socket.io');
-Const path = require('path');
-Const axios = require('axios');
-Const fs = require('fs');
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const axios = require('axios');
+const fs = require('fs');
 
-Const app = express();
-Const server = http.createServer(app);
-Const io = new Server(server, {
-  MaxHttpBufferSize: 1e8 
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  maxHttpBufferSize: 1e8 
 });
 
-App.express = express;
-App.use(express.json({ limit: '50mb' }));
-App.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.express = express;
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-App.get('/', (req, res) => {
-    Res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-App.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
-Const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
-Const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
+const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
+const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
 
-Const claimedWelcomeBonusUsers = new Set();
-Const userWallets = {}; 
-Const allRegisteredUsers = new Set();
+const claimedWelcomeBonusUsers = new Set();
+const userWallets = {}; 
+const allRegisteredUsers = new Set();
 
-Let isDepositLocked = false;
-Let isWithdrawLocked = false;
+let isDepositLocked = false;
+let isWithdrawLocked = false;
 
-Const configFilePath = path.join(__dirname, 'telebirr_config.json');
-Let telebirrConfig = {
-    Phone: "0900015260",
-    Name: "ABEYE"
+const configFilePath = path.join(__dirname, 'telebirr_config.json');
+let telebirrConfig = {
+    phone: "0900015260",
+    name: "ABEYE"
 };
 
-If (fs.existsSync(configFilePath)) {
-    Try {
-        Let savedConfig = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
-        If (savedConfig.phone) telebirrConfig.phone = savedConfig.phone;
-        If (savedConfig.name) telebirrConfig.name = savedConfig.name;
+if (fs.existsSync(configFilePath)) {
+    try {
+        let savedConfig = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
+        if (savedConfig.phone) telebirrConfig.phone = savedConfig.phone;
+        if (savedConfig.name) telebirrConfig.name = savedConfig.name;
     } catch (e) {}
 }
 
-Function saveTelebirrConfigToDisk() {
-    Try {
-        Fs.writeFileSync(configFilePath, JSON.stringify(telebirrConfig, null, 2));
+function saveTelebirrConfigToDisk() {
+    try {
+        fs.writeFileSync(configFilePath, JSON.stringify(telebirrConfig, null, 2));
     } catch (e) {}
 }
 
-Const botConfigFilePath = path.join(__dirname, 'bot_config.json');
-Let botConfig = {
-    MinBots: 40,
-    MaxBots: 250
+const botConfigFilePath = path.join(__dirname, 'bot_config.json');
+let botConfig = {
+    minBots: 40,
+    maxBots: 250
 };
 
-If (fs.existsSync(botConfigFilePath)) {
-    Try {
-        Let savedBotConfig = JSON.parse(fs.readFileSync(botConfigFilePath, 'utf8'));
-        If (savedBotConfig.minBots !== undefined) botConfig.minBots = Number(savedBotConfig.minBots);
-        If (savedBotConfig.maxBots !== undefined) botConfig.maxBots = Number(savedBotConfig.maxBots);
+if (fs.existsSync(botConfigFilePath)) {
+    try {
+        let savedBotConfig = JSON.parse(fs.readFileSync(botConfigFilePath, 'utf8'));
+        if (savedBotConfig.minBots !== undefined) botConfig.minBots = Number(savedBotConfig.minBots);
+        if (savedBotConfig.maxBots !== undefined) botConfig.maxBots = Number(savedBotConfig.maxBots);
     } catch (e) {}
 }
 
-Function saveBotConfigToDisk() {
-    Try {
-        Fs.writeFileSync(botConfigFilePath, JSON.stringify(botConfig, null, 2));
+function saveBotConfigToDisk() {
+    try {
+        fs.writeFileSync(botConfigFilePath, JSON.stringify(botConfig, null, 2));
     } catch (e) {}
 }
 
-Const baseNumberFlowSequence = [
+const baseNumberFlowSequence = [
     12, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
     16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 
     19, 18, 23, 26, 19, 19, 13, 15, 12, 24, 19, 12, 16, 33, 11, 22, 18, 16, 22, 32, 
     32, 14, 19, 18, 13, 17, 18, 12, 30, 21, 19, 18, 28, 26, 24, 19, 13, 17, 17, 30, 
     18, 19
 ];
-Let sequenceIndex = 0;
+let sequenceIndex = 0;
 
-Const ETHIOPIAN_BOT_NAMES = [
+const ETHIOPIAN_BOT_NAMES = [
     "ኬላ", "ፓፓ", "asrat00", "kesho", "በላይ", "መሌ", "hamud", "ali ali", "aste19", "nati47", 
     "kida7k", "natinati", "goshu", "gadeion", "aster asta", "yonasjo", "temesgen19", "የኔ", "ቤላ", 
     "Dawit Mohamed", "sani", "eyobeyob", "0947151407", "halal", "ebrahim ebra",
@@ -123,523 +123,523 @@ Const ETHIOPIAN_BOT_NAMES = [
     "Biniyam", "Kalkidan", "Ephrem", "Rahel", "Yonas", "Semhar"
 ];
 
-Function getRandomBotNames(count) {
-    Let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
-    Return shuffled.slice(0, count);
+function getRandomBotNames(count) {
+    let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
 }
 
-Let globalRoom = {
-    GameActive: false,
-    CalledNumbers: [],
-    GameStartTime: Date.now() + 60000,
-    PlayersCount: 140,
-    TakenCards: [],
-    PlayerRoundCards: {}, 
-    PlayerTemporaryCards: {},
-    LastCalledNumber: null,
-    TargetWinCallCount: 12,
-    ForcedWinningCardNums: []
+let globalRoom = {
+    gameActive: false,
+    calledNumbers: [],
+    gameStartTime: Date.now() + 60000,
+    playersCount: 140,
+    takenCards: [],
+    playerRoundCards: {}, 
+    playerTemporaryCards: {},
+    lastCalledNumber: null,
+    targetWinCallCount: 12,
+    forcedWinningCardNums: []
 };
 
-Let forcedNextWinner = null; 
-Let enableOnlyRealUsersMode = false; 
-Let onlineRealUsers = [];
-Let pendingRequests = {};
-Let offlineApprovedQueue = {}; 
-Let gameInterval = null;
-Let numberCallInterval = null;
-Let winGraceTimeout = null;
-Let connectedRealPlayers = [];
+let forcedNextWinner = null; 
+let enableOnlyRealUsersMode = false; 
+let onlineRealUsers = [];
+let pendingRequests = {};
+let offlineApprovedQueue = {}; 
+let gameInterval = null;
+let numberCallInterval = null;
+let winGraceTimeout = null;
+let connectedRealPlayers = [];
 
-Function getCartelaNumbers(cardNum) {
-    Let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
-    Let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
-    Let cols = ['B', 'I', 'N', 'G', 'O'];
+function getCartelaNumbers(cardNum) {
+    let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
+    let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+    let cols = ['B', 'I', 'N', 'G', 'O'];
 
-    Cols.forEach((col, colIdx) => {
-        Let range = colRanges[col];
-        Let pool = [];
-        For (let n = range[0]; n <= range[1]; n++) pool.push(n);
+    cols.forEach((col, colIdx) => {
+        let range = colRanges[col];
+        let pool = [];
+        for (let n = range[0]; n <= range[1]; n++) pool.push(n);
 
-        Let seed = (cardNum * 7919) + (colIdx * 104729);
-        For (let i = pool.length - 1; i > 0; i--) {
-            Seed = (seed * 9301 + 49297) % 233280;
-            Let rnd = seed / 233280;
-            Let j = Math.floor(rnd * (i + 1));
-            Let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+        let seed = (cardNum * 7919) + (colIdx * 104729);
+        for (let i = pool.length - 1; i > 0; i--) {
+            seed = (seed * 9301 + 49297) % 233280;
+            let rnd = seed / 233280;
+            let j = Math.floor(rnd * (i + 1));
+            let temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
         }
-        CardNumbersByCol[col] = pool.slice(0, 5);
+        cardNumbersByCol[col] = pool.slice(0, 5);
     });
 
-    Let flatList = [];
-    For (let r = 0; r < 5; r++) {
-        Cols.forEach(col => {
-            If (r === 2 && col === 'N') flatList.push("FREE");
-            Else flatList.push(cardNumbersByCol[col][r]);
+    let flatList = [];
+    for (let r = 0; r < 5; r++) {
+        cols.forEach(col => {
+            if (r === 2 && col === 'N') flatList.push("FREE");
+            else flatList.push(cardNumbersByCol[col][r]);
         });
     }
-    Return flatList;
+    return flatList;
 }
 
-Function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
-    If (!calledNumbers || calledNumbers.length === 0) return null;
+function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
+    if (!calledNumbers || calledNumbers.length === 0) return null;
 
-    Let grid2D = [];
-    Let cleanCalled = calledNumbers.map(n => Number(n));
+    let grid2D = [];
+    let cleanCalled = calledNumbers.map(n => Number(n));
     
-    For(let r=0; r<5; r++) {
-        Let row = [];
-        For(let c=0; c<5; c++) {
-            Let idx = r * 5 + c;
-            Let val = winningCardNumbers[idx];
-            Let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
-            Row.push({ idx, isHit, val });
+    for(let r=0; r<5; r++) {
+        let row = [];
+        for(let c=0; c<5; c++) {
+            let idx = r * 5 + c;
+            let val = winningCardNumbers[idx];
+            let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
+            row.push({ idx, isHit, val });
         }
-        Grid2D.push(row);
+        grid2D.push(row);
     }
 
-    For(let r=0; r<5; r++) {
-        If(grid2D[r].every(cell => cell.isHit)) {
-            Return grid2D[r].map(cell => cell.idx);
-        }
-    }
-
-    For(let c=0; c<5; c++) {
-        Let colHits = true;
-        Let colCells = [];
-        For(let r=0; r<5; r++) {
-            ColCells.push(grid2D[r][c]);
-            If(!grid2D[r][c].isHit) colHits = false;
-        }
-        If(colHits) {
-            Return colCells.map(cell => cell.idx);
+    for(let r=0; r<5; r++) {
+        if(grid2D[r].every(cell => cell.isHit)) {
+            return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    Let diag1Hits = true, diag2Hits = true;
-    Let diag1Cells = [], diag2Cells = [];
-    For(let i=0; i<5; i++) {
-        Diag1Cells.push(grid2D[i][i]);
-        Diag2Cells.push(grid2D[i][4-i]);
-        If(!grid2D[i][i].isHit) diag1Hits = false;
-        If(!grid2D[i][4-i].isHit) diag2Hits = false;
-    }
-    If(diag1Hits) return diag1Cells.map(cell => cell.idx);
-    If(diag2Hits) return diag2Cells.map(cell => cell.idx);
-
-    If(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
-        Return [0, 4, 20, 24];
+    for(let c=0; c<5; c++) {
+        let colHits = true;
+        let colCells = [];
+        for(let r=0; r<5; r++) {
+            colCells.push(grid2D[r][c]);
+            if(!grid2D[r][c].isHit) colHits = false;
+        }
+        if(colHits) {
+            return colCells.map(cell => cell.idx);
+        }
     }
 
-    Return null;
+    let diag1Hits = true, diag2Hits = true;
+    let diag1Cells = [], diag2Cells = [];
+    for(let i=0; i<5; i++) {
+        diag1Cells.push(grid2D[i][i]);
+        diag2Cells.push(grid2D[i][4-i]);
+        if(!grid2D[i][i].isHit) diag1Hits = false;
+        if(!grid2D[i][4-i].isHit) diag2Hits = false;
+    }
+    if(diag1Hits) return diag1Cells.map(cell => cell.idx);
+    if(diag2Hits) return diag2Cells.map(cell => cell.idx);
+
+    if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+        return [0, 4, 20, 24];
+    }
+
+    return null;
 }
 
-Let lastSmoothCount = 95; 
+let lastSmoothCount = 95; 
 
-Function getRealisticBotsCount(realCount, isGameActive = false) {
-    If (enableOnlyRealUsersMode) return 0;
+function getRealisticBotsCount(realCount, isGameActive = false) {
+    if (enableOnlyRealUsersMode) return 0;
 
-    Let minB = Number(botConfig.minBots) || 40;
-    Let maxB = Number(botConfig.maxBots) || 250;
-    If (minB > maxB) { let tmp = minB; minB = maxB; maxB = tmp; }
+    let minB = Number(botConfig.minBots) || 40;
+    let maxB = Number(botConfig.maxBots) || 250;
+    if (minB > maxB) { let tmp = minB; minB = maxB; maxB = tmp; }
 
-    Const now = new Date();
-    Let utcHours = now.getUTCHours();
-    Let ethiopianHour = (utcHours + 3) % 24; 
-    Let targetBase = Math.floor((minB + maxB) / 2);
+    const now = new Date();
+    let utcHours = now.getUTCHours();
+    let ethiopianHour = (utcHours + 3) % 24; 
+    let targetBase = Math.floor((minB + maxB) / 2);
 
-    If (ethiopianHour >= 6 && ethiopianHour < 12) {
-        TargetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
+    if (ethiopianHour >= 6 && ethiopianHour < 12) {
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        Let progress = (ethiopianHour - 12) / 7; 
-        TargetBase = Math.floor(minB + (progress * (maxB - minB) * 0.6)); 
+        let progress = (ethiopianHour - 12) / 7; 
+        targetBase = Math.floor(minB + (progress * (maxB - minB) * 0.6)); 
     } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        TargetBase = Math.floor(minB + ((maxB - minB) * 0.7) + Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
+        targetBase = Math.floor(minB + ((maxB - minB) * 0.7) + Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
     } else {
-        TargetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.4)); 
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.4)); 
     }
 
-    If (isGameActive) {
-        LastSmoothCount = targetBase;
+    if (isGameActive) {
+        lastSmoothCount = targetBase;
     } else {
-        Let step = Math.floor(Math.random() * 5) + 1; 
-        If (lastSmoothCount < targetBase) {
-            LastSmoothCount += step;
-            If (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
+        let step = Math.floor(Math.random() * 5) + 1; 
+        if (lastSmoothCount < targetBase) {
+            lastSmoothCount += step;
+            if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
         } else if (lastSmoothCount > targetBase) {
-            LastSmoothCount -= step;
-            If (lastSmoothCount < targetBase) lastSmoothCount = targetBase;
+            lastSmoothCount -= step;
+            if (lastSmoothCount < targetBase) lastSmoothCount = targetBase;
         } else {
-            Let minorDelta = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? 1 : -1);
-            LastSmoothCount += minorDelta;
+            let minorDelta = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? 1 : -1);
+            lastSmoothCount += minorDelta;
         }
     }
 
-    If (lastSmoothCount < minB) lastSmoothCount = minB;
-    If (lastSmoothCount > maxB) lastSmoothCount = maxB;
+    if (lastSmoothCount < minB) lastSmoothCount = minB;
+    if (lastSmoothCount > maxB) lastSmoothCount = maxB;
 
-    Return lastSmoothCount;
+    return lastSmoothCount;
 }
 
-Function updateRoomPlayersAndPot() {
-    Let realCount = connectedRealPlayers.length;
-    Let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
+function updateRoomPlayersAndPot() {
+    let realCount = connectedRealPlayers.length;
+    let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
     
-    If (enableOnlyRealUsersMode) {
-        Let uniqueRealCardsCount = 0;
-        ActiveRealEntries.forEach(([sId, data]) => {
-            If (data.cards) uniqueRealCardsCount += data.cards.length;
+    if (enableOnlyRealUsersMode) {
+        let uniqueRealCardsCount = 0;
+        activeRealEntries.forEach(([sId, data]) => {
+            if (data.cards) uniqueRealCardsCount += data.cards.length;
         });
-        GlobalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
-        If (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
+        globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
+        if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
     } else {
-        Let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
-        GlobalRoom.playersCount = currentBotsCount + realCount; 
+        let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
+        globalRoom.playersCount = currentBotsCount + realCount; 
     }
-    Io.emit('updatePlayersCount', globalRoom.playersCount);
+    io.emit('updatePlayersCount', globalRoom.playersCount);
 }
 
-SetInterval(() => {
-    If (!globalRoom.gameActive) {
-        UpdateRoomPlayersAndPot();
+setInterval(() => {
+    if (!globalRoom.gameActive) {
+        updateRoomPlayersAndPot();
     }
 }, 4000);
 
-Function refreshTakenCardsList() {
-    Let allTaken = [];
+function refreshTakenCardsList() {
+    let allTaken = [];
     Object.values(globalRoom.playerRoundCards).forEach(p => {
-        If (p.cards) allTaken.push(...p.cards);
+        if (p.cards) allTaken.push(...p.cards);
     });
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
-        If (cards) allTaken.push(...cards);
+        if (cards) allTaken.push(...cards);
     });
-    GlobalRoom.takenCards = Array.from(new Set(allTaken));
-    Io.emit('updateTakenCards', globalRoom.takenCards);
+    globalRoom.takenCards = Array.from(new Set(allTaken));
+    io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-Function simulateBotCardSelections() {
-    If (globalRoom.gameActive || enableOnlyRealUsersMode) return;
-    Let available = [];
-    For(let i = 1; i <= 500; i++) {
-        If(!globalRoom.takenCards.includes(i)) available.push(i);
+function simulateBotCardSelections() {
+    if (globalRoom.gameActive || enableOnlyRealUsersMode) return;
+    let available = [];
+    for(let i = 1; i <= 500; i++) {
+        if(!globalRoom.takenCards.includes(i)) available.push(i);
     }
-    Let botPicksCount = Math.floor(Math.random() * 15) + 10;
-    For(let i = 0; i < botPicksCount && available.length > 0; i++) {
-        Let randIdx = Math.floor(Math.random() * available.length);
-        Let cardToTake = available.splice(randIdx, 1)[0];
-        If(!globalRoom.takenCards.includes(cardToTake)) {
-            GlobalRoom.takenCards.push(cardToTake);
+    let botPicksCount = Math.floor(Math.random() * 15) + 10;
+    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
+        let randIdx = Math.floor(Math.random() * available.length);
+        let cardToTake = available.splice(randIdx, 1)[0];
+        if(!globalRoom.takenCards.includes(cardToTake)) {
+            globalRoom.takenCards.push(cardToTake);
         }
     }
-    Io.emit('updateTakenCards', globalRoom.takenCards);
+    io.emit('updateTakenCards', globalRoom.takenCards);
 }
 
-SetInterval(simulateBotCardSelections, 6000);
+setInterval(simulateBotCardSelections, 6000);
 
-Async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
-    If (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
-    Let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
+    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
     
-    For (let adminChatId of ADMIN_CHAT_IDS) {
-        Try {
-            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                Chat_id: adminChatId, text: message, parse_mode: 'Markdown'
+    for (let adminChatId of ADMIN_CHAT_IDS) {
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId, text: message, parse_mode: 'Markdown'
             });
         } catch (error) {}
     }
 }
 
-Function announceWinnersAndFinish(winnersDataList) {
-    If (!globalRoom.gameActive) return;
-    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-    If (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
+function announceWinnersAndFinish(winnersDataList) {
+    if (!globalRoom.gameActive) return;
+    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
 
-    Let primaryWinner = winnersDataList[0];
-    Let primaryCardNum = primaryWinner.cardNum;
-    Let matchedIndices = primaryWinner.matched;
-    Let winnerNamesStr = winnersDataList.map(w => w.username).join(', ');
-    Let winnersCount = winnersDataList.length;
+    let primaryWinner = winnersDataList[0];
+    let primaryCardNum = primaryWinner.cardNum;
+    let matchedIndices = primaryWinner.matched;
+    let winnerNamesStr = winnersDataList.map(w => w.username).join(', ');
+    let winnersCount = winnersDataList.length;
 
-    Let totalPot = (globalRoom.playersCount || 1) * 10;
-    Let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
-    Let hasRealWinner = winnersDataList.some(w => !w.isBot);
+    let totalPot = (globalRoom.playersCount || 1) * 10;
+    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+    let hasRealWinner = winnersDataList.some(w => !w.isBot);
 
-    WinnersDataList.forEach(w => {
-        If (!w.isBot && w.userId) {
-            UserWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
+    winnersDataList.forEach(w => {
+        if (!w.isBot && w.userId) {
+            userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
         }
     });
 
-    SendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
+    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
 
-    WinnersDataList.forEach(w => {
-        If (!w.isBot && w.socketId) {
-            Let targetSocket = io.sockets.sockets.get(w.socketId);
-            If (targetSocket) {
-                TargetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
+    winnersDataList.forEach(w => {
+        if (!w.isBot && w.socketId) {
+            let targetSocket = io.sockets.sockets.get(w.socketId);
+            if (targetSocket) {
+                targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
             }
         }
     });
 
-    Io.emit('bingoWinner', {
-        Username: winnerNamesStr,
-        UserId: winnersDataList.find(w => !w.isBot)?.socketId || null,
-        CardNum: primaryCardNum,
-        Prize: prizePerWinner,
-        CalledNumbers: globalRoom.calledNumbers,
-        MatchedIndices: matchedIndices,
-        WinnersCount: winnersCount,
-        PlayersCount: globalRoom.playersCount
+    io.emit('bingoWinner', {
+        username: winnerNamesStr,
+        userId: winnersDataList.find(w => !w.isBot)?.socketId || null,
+        cardNum: primaryCardNum,
+        prize: prizePerWinner,
+        calledNumbers: globalRoom.calledNumbers,
+        matchedIndices: matchedIndices,
+        winnersCount: winnersCount,
+        playersCount: globalRoom.playersCount
     });
 
-    SetTimeout(() => { endRoundAndRestart(); }, 6000);
+    setTimeout(() => { endRoundAndRestart(); }, 6000);
 }
 
-Function startMainGameLoop() {
-    If (gameInterval) clearInterval(gameInterval);
-    GlobalRoom.gameStartTime = Date.now() + 60000;
+function startMainGameLoop() {
+    if (gameInterval) clearInterval(gameInterval);
+    globalRoom.gameStartTime = Date.now() + 60000;
 
-    GameInterval = setInterval(() => {
-        Let timeLeft = globalRoom.gameStartTime - Date.now();
+    gameInterval = setInterval(() => {
+        let timeLeft = globalRoom.gameStartTime - Date.now();
 
-        If (timeLeft <= 0 && !globalRoom.gameActive) {
-            GlobalRoom.gameActive = true;
-            GlobalRoom.calledNumbers = []; 
-            GlobalRoom.lastCalledNumber = null;
+        if (timeLeft <= 0 && !globalRoom.gameActive) {
+            globalRoom.gameActive = true;
+            globalRoom.calledNumbers = []; 
+            globalRoom.lastCalledNumber = null;
             
-            UpdateRoomPlayersAndPot();
+            updateRoomPlayersAndPot();
 
-            Let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
-            Let currentWinnerType = forcedNextWinner;
-            ForcedNextWinner = null; 
+            let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
+            let currentWinnerType = forcedNextWinner;
+            forcedNextWinner = null; 
 
-            If (enableOnlyRealUsersMode) {
-                Let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
-                AvailableNumbers.sort(() => 0.5 - Math.random());
+            if (enableOnlyRealUsersMode) {
+                let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+                availableNumbers.sort(() => 0.5 - Math.random());
 
-                Io.emit('gameStarted', { calledNumbers: [] });
-                Io.emit('gameStartedBroadcast');
+                io.emit('gameStarted', { calledNumbers: [] });
+                io.emit('gameStartedBroadcast');
 
-                If (numberCallInterval) clearInterval(numberCallInterval);
+                if (numberCallInterval) clearInterval(numberCallInterval);
 
-                NumberCallInterval = setInterval(() => {
-                    If (!globalRoom.gameActive) {
-                        If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        Return;
+                numberCallInterval = setInterval(() => {
+                    if (!globalRoom.gameActive) {
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        return;
                     }
 
-                    If (availableNumbers.length === 0 || globalRoom.calledNumbers.length >= 75) {
-                        If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        SetTimeout(() => { endRoundAndRestart(); }, 3000);
-                        Return;
+                    if (availableNumbers.length === 0 || globalRoom.calledNumbers.length >= 75) {
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        setTimeout(() => { endRoundAndRestart(); }, 3000);
+                        return;
                     }
 
-                    Let calledNum = availableNumbers.shift();
-                    GlobalRoom.calledNumbers.push(Number(calledNum));
-                    GlobalRoom.lastCalledNumber = Number(calledNum);
+                    let calledNum = availableNumbers.shift();
+                    globalRoom.calledNumbers.push(Number(calledNum));
+                    globalRoom.lastCalledNumber = Number(calledNum);
 
-                    Io.emit('numberCalled', {
-                        Number: Number(calledNum),
-                        CalledNumbers: globalRoom.calledNumbers
+                    io.emit('numberCalled', {
+                        number: Number(calledNum),
+                        calledNumbers: globalRoom.calledNumbers
                     });
-                    Io.emit('numberCalledBroadcast', Number(calledNum));
+                    io.emit('numberCalledBroadcast', Number(calledNum));
 
-                    Let winningWinnersList = [];
+                    let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
-                        If (pData && pData.cards) {
-                            PData.cards.forEach(cNum => {
-                                Let cList = getCartelaNumbers(cNum);
-                                Let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                                If (matched) { 
-                                    WinningWinnersList.push({
-                                        Username: pData.username || 'ተጫዋች',
-                                        SocketId: socketId,
-                                        UserId: pData.userId,
-                                        IsBot: false,
-                                        CardNum: cNum,
-                                        Matched: matched
+                        if (pData && pData.cards) {
+                            pData.cards.forEach(cNum => {
+                                let cList = getCartelaNumbers(cNum);
+                                let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
+                                if (matched) { 
+                                    winningWinnersList.push({
+                                        username: pData.username || 'ተጫዋች',
+                                        socketId: socketId,
+                                        userId: pData.userId,
+                                        isBot: false,
+                                        cardNum: cNum,
+                                        matched: matched
                                     });
                                 }
                             });
                         }
                     });
 
-                    If (winningWinnersList.length > 0) {
-                        If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        WinGraceTimeout = setTimeout(() => {
-                            AnnounceWinnersAndFinish(winningWinnersList);
+                    if (winningWinnersList.length > 0) {
+                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                        winGraceTimeout = setTimeout(() => {
+                            announceWinnersAndFinish(winningWinnersList);
                         }, 6000);
                     }
 
                 }, 4500);
 
-                Return;
+                return;
             }
 
             // --- Standard Bot + Real Users Mode ---
-            Let winningUsernamesArr = [];
-            Let winningSocketData = []; 
-            Let winnersCount = Math.random() < 0.75 ? 1 : 2; 
-            Let winningCardNums = [];
+            let winningUsernamesArr = [];
+            let winningSocketData = []; 
+            let winnersCount = Math.random() < 0.75 ? 1 : 2; 
+            let winningCardNums = [];
 
-            Let targetRealCount = 0;
-            Let explicitRealForced = (currentWinnerType === 'only_real_users' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
+            let targetRealCount = 0;
+            let explicitRealForced = (currentWinnerType === 'only_real_users' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
 
-            If (explicitRealForced && activeRealEntries.length > 0) {
-                If ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
-                    TargetRealCount = 3;
-                    WinnersCount = 3; 
+            if (explicitRealForced && activeRealEntries.length > 0) {
+                if ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
+                    targetRealCount = 3;
+                    winnersCount = 3; 
                 } else {
-                    TargetRealCount = 1;
-                    WinnersCount = 1; 
+                    targetRealCount = 1;
+                    winnersCount = 1; 
                 }
             }
 
-            If (targetRealCount > 0 && activeRealEntries.length > 0) {
-                Let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
-                Let chosenReal = shuffledReal.slice(0, targetRealCount);
-                ChosenReal.forEach(item => {
-                    WinningUsernamesArr.push(item[1].username);
-                    WinningSocketData.push({ socketId: item[0], userId: item[1].userId, isBot: false });
-                    WinningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
+            if (targetRealCount > 0 && activeRealEntries.length > 0) {
+                let shuffledReal = [...activeRealEntries].sort(() => 0.5 - Math.random());
+                let chosenReal = shuffledReal.slice(0, targetRealCount);
+                chosenReal.forEach(item => {
+                    winningUsernamesArr.push(item[1].username);
+                    winningSocketData.push({ socketId: item[0], userId: item[1].userId, isBot: false });
+                    winningCardNums.push(item[1].cards && item[1].cards.length > 0 ? item[1].cards[0] : Math.floor(Math.random() * 450) + 1);
                 });
             }
 
-            While (winningUsernamesArr.length < winnersCount) {
-                Let bName = getRandomBotNames(1)[0];
-                WinningUsernamesArr.push(bName);
-                WinningSocketData.push({ socketId: null, userId: null, isBot: true });
-                WinningCardNums.push(Math.floor(Math.random() * 450) + 1);
+            while (winningUsernamesArr.length < winnersCount) {
+                let bName = getRandomBotNames(1)[0];
+                winningUsernamesArr.push(bName);
+                winningSocketData.push({ socketId: null, userId: null, isBot: true });
+                winningCardNums.push(Math.floor(Math.random() * 450) + 1);
             }
 
-            WinnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
-            GlobalRoom.forcedWinningCardNums = winningCardNums;
+            winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
+            globalRoom.forcedWinningCardNums = winningCardNums;
             
-            Let targetCallCount = Math.max(6, baseNumberFlowSequence[sequenceIndex]);
-            SequenceIndex = (sequenceIndex + 1) % baseNumberFlowSequence.length;
+            let targetCallCount = Math.max(6, baseNumberFlowSequence[sequenceIndex]);
+            sequenceIndex = (sequenceIndex + 1) % baseNumberFlowSequence.length;
 
-            Let possiblePatterns = [
+            let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
                 [0,5,10,15,20], [1,6,11,16,21], [2,7,12,17,22], [3,8,13,18,23], [4,9,14,19,24],
                 [0,6,12,18,24], [4,8,12,16,20],
                 [0,4,20,24]
             ];
 
-            Let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
+            let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
 
-            Let primaryCardList = getCartelaNumbers(winningCardNums[0]);
-            Let primaryPatternNumbers = sharedPattern
+            let primaryCardList = getCartelaNumbers(winningCardNums[0]);
+            let primaryPatternNumbers = sharedPattern
                 .map(idx => primaryCardList[idx])
                 .filter(n => n !== "FREE")
                 .map(n => Number(n));
 
-            Let shuffledPatternNums = [...primaryPatternNumbers].sort(() => 0.5 - Math.random());
-            Let finalWinningBall = shuffledPatternNums.pop(); 
-            Let earlyPatternBalls = shuffledPatternNums;     
+            let shuffledPatternNums = [...primaryPatternNumbers].sort(() => 0.5 - Math.random());
+            let finalWinningBall = shuffledPatternNums.pop(); 
+            let earlyPatternBalls = shuffledPatternNums;     
 
-            Let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
-            AvailableNumbers.sort(() => 0.5 - Math.random());
+            let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            availableNumbers.sort(() => 0.5 - Math.random());
             
-            AvailableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
+            availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
-            Let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
-            Let preCallSchedule = new Array(totalPreCalls).fill(null);
+            let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
+            let preCallSchedule = new Array(totalPreCalls).fill(null);
 
-            Let slotIndices = Array.from({length: totalPreCalls}, (_, i) => i).sort(() => 0.5 - Math.random());
-            EarlyPatternBalls.forEach((ball, i) => {
-                PreCallSchedule[slotIndices[i]] = ball;
+            let slotIndices = Array.from({length: totalPreCalls}, (_, i) => i).sort(() => 0.5 - Math.random());
+            earlyPatternBalls.forEach((ball, i) => {
+                preCallSchedule[slotIndices[i]] = ball;
             });
 
-            Io.emit('gameStarted', { calledNumbers: [] });
-            Io.emit('gameStartedBroadcast');
+            io.emit('gameStarted', { calledNumbers: [] });
+            io.emit('gameStartedBroadcast');
 
-            If (numberCallInterval) clearInterval(numberCallInterval);
+            if (numberCallInterval) clearInterval(numberCallInterval);
             
-            Let callStep = 0;
+            let callStep = 0;
 
-            NumberCallInterval = setInterval(() => {
-                If (!globalRoom.gameActive) {
-                    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                    Return;
+            numberCallInterval = setInterval(() => {
+                if (!globalRoom.gameActive) {
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    return;
                 }
 
-                Let calledNum;
+                let calledNum;
 
-                If (callStep < totalPreCalls) {
-                    If (preCallSchedule[callStep] !== null) {
-                        CalledNum = preCallSchedule[callStep];
+                if (callStep < totalPreCalls) {
+                    if (preCallSchedule[callStep] !== null) {
+                        calledNum = preCallSchedule[callStep];
                     } else {
-                        Let safeIndex = availableNumbers.findIndex(testNum => {
-                            Let tempCalled = [...globalRoom.calledNumbers, testNum];
-                            Let realWins = false;
+                        let safeIndex = availableNumbers.findIndex(testNum => {
+                            let tempCalled = [...globalRoom.calledNumbers, testNum];
+                            let realWins = false;
                             Object.values(globalRoom.playerRoundCards).forEach(pData => {
-                                If (pData && pData.cards) {
-                                    PData.cards.forEach(cNum => {
-                                        If (getWinningMatchedIndices(getCartelaNumbers(cNum), tempCalled)) {
-                                            RealWins = true;
+                                if (pData && pData.cards) {
+                                    pData.cards.forEach(cNum => {
+                                        if (getWinningMatchedIndices(getCartelaNumbers(cNum), tempCalled)) {
+                                            realWins = true;
                                         }
                                     });
                                 }
                             });
-                            Return !realWins;
+                            return !realWins;
                         });
 
-                        If (safeIndex !== -1) {
-                            CalledNum = availableNumbers.splice(safeIndex, 1)[0];
+                        if (safeIndex !== -1) {
+                            calledNum = availableNumbers.splice(safeIndex, 1)[0];
                         } else {
-                            CalledNum = availableNumbers.shift();
+                            calledNum = availableNumbers.shift();
                         }
                     }
-                    CallStep++;
+                    callStep++;
 
-                    If (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                        GlobalRoom.calledNumbers.push(Number(calledNum));
-                        GlobalRoom.lastCalledNumber = Number(calledNum);
+                    if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                        globalRoom.calledNumbers.push(Number(calledNum));
+                        globalRoom.lastCalledNumber = Number(calledNum);
 
-                        Io.emit('numberCalled', {
-                            Number: Number(calledNum),
-                            CalledNumbers: globalRoom.calledNumbers
+                        io.emit('numberCalled', {
+                            number: Number(calledNum),
+                            calledNumbers: globalRoom.calledNumbers
                         });
-                        Io.emit('numberCalledBroadcast', Number(calledNum));
+                        io.emit('numberCalledBroadcast', Number(calledNum));
                     }
-                    Return;
+                    return;
                 }
 
-                If (callStep === totalPreCalls) {
-                    CallStep++;
-                    CalledNum = finalWinningBall;
+                if (callStep === totalPreCalls) {
+                    callStep++;
+                    calledNum = finalWinningBall;
 
-                    If (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                        GlobalRoom.calledNumbers.push(Number(calledNum));
-                        GlobalRoom.lastCalledNumber = Number(calledNum);
+                    if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                        globalRoom.calledNumbers.push(Number(calledNum));
+                        globalRoom.lastCalledNumber = Number(calledNum);
 
-                        Io.emit('numberCalled', {
-                            Number: Number(calledNum),
-                            CalledNumbers: globalRoom.calledNumbers
+                        io.emit('numberCalled', {
+                            number: Number(calledNum),
+                            calledNumbers: globalRoom.calledNumbers
                         });
-                        Io.emit('numberCalledBroadcast', Number(calledNum));
+                        io.emit('numberCalledBroadcast', Number(calledNum));
                     }
 
-                    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
 
-                    WinGraceTimeout = setTimeout(() => {
-                        If (!globalRoom.gameActive) return;
+                    winGraceTimeout = setTimeout(() => {
+                        if (!globalRoom.gameActive) return;
 
-                        Let finalWinnersList = winningSocketData.map((item, idx) => {
-                            Let cNum = winningCardNums[idx];
-                            Let cList = getCartelaNumbers(cNum);
-                            Let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers) || sharedPattern;
-                            Return {
-                                Username: winningUsernamesArr[idx],
-                                SocketId: item.socketId,
-                                UserId: item.userId,
-                                IsBot: item.isBot,
-                                CardNum: cNum,
-                                Matched: matched
+                        let finalWinnersList = winningSocketData.map((item, idx) => {
+                            let cNum = winningCardNums[idx];
+                            let cList = getCartelaNumbers(cNum);
+                            let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers) || sharedPattern;
+                            return {
+                                username: winningUsernamesArr[idx],
+                                socketId: item.socketId,
+                                userId: item.userId,
+                                isBot: item.isBot,
+                                cardNum: cNum,
+                                matched: matched
                             };
                         });
 
-                        AnnounceWinnersAndFinish(finalWinnersList);
+                        announceWinnersAndFinish(finalWinnersList);
                     }, 6000);
                 }
 
@@ -648,109 +648,109 @@ Function startMainGameLoop() {
     }, 1000);
 }
 
-Function endRoundAndRestart() {
-    If (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-    If (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
-    GlobalRoom.gameActive = false;
-    GlobalRoom.calledNumbers = []; 
-    GlobalRoom.lastCalledNumber = null;
+function endRoundAndRestart() {
+    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
+    globalRoom.gameActive = false;
+    globalRoom.calledNumbers = []; 
+    globalRoom.lastCalledNumber = null;
     
-    GlobalRoom.playerRoundCards = {}; 
-    GlobalRoom.playerTemporaryCards = {};
-    GlobalRoom.takenCards = [];
+    globalRoom.playerRoundCards = {}; 
+    globalRoom.playerTemporaryCards = {};
+    globalRoom.takenCards = [];
 
-    GlobalRoom.gameStartTime = Date.now() + 60000; 
-    GlobalRoom.forcedWinningCardNums = [];
+    globalRoom.gameStartTime = Date.now() + 60000; 
+    globalRoom.forcedWinningCardNums = [];
     
-    Io.emit('roundEnded', { nextGameIn: 60000 });
-    Io.emit('gameEndedBroadcast');
-    RefreshTakenCardsList();
+    io.emit('roundEnded', { nextGameIn: 60000 });
+    io.emit('gameEndedBroadcast');
+    refreshTakenCardsList();
 }
 
-StartMainGameLoop();
+startMainGameLoop();
 
-Let telegramOffset = 0;
-Async function pollTelegramUpdates() {
-    If (!TELEGRAM_BOT_TOKEN) return;
-    Try {
-        Let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
-            Params: { offset: telegramOffset, timeout: 30 }
+let telegramOffset = 0;
+async function pollTelegramUpdates() {
+    if (!TELEGRAM_BOT_TOKEN) return;
+    try {
+        let response = await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`, {
+            params: { offset: telegramOffset, timeout: 30 }
         });
-        If (response.data && response.data.ok) {
-            Let updates = response.data.result;
-            For (let update of updates) {
-                TelegramOffset = update.update_id + 1;
+        if (response.data && response.data.ok) {
+            let updates = response.data.result;
+            for (let update of updates) {
+                telegramOffset = update.update_id + 1;
                 
-                Let nowTs = Date.now();
+                let nowTs = Date.now();
                 Object.keys(pendingRequests).forEach(k => {
-                    If (nowTs - pendingRequests[k].timestamp > 86400000) {
-                        Delete pendingRequests[k];
+                    if (nowTs - pendingRequests[k].timestamp > 86400000) {
+                        delete pendingRequests[k];
                     }
                 });
 
-                If (update.message && update.message.text) {
-                    Let msgText = update.message.text.trim();
-                    Let senderChatId = String(update.message.chat.id);
+                if (update.message && update.message.text) {
+                    let msgText = update.message.text.trim();
+                    let senderChatId = String(update.message.chat.id);
                     
-                    If (ADMIN_CHAT_IDS.includes(senderChatId)) {
-                        Let parts = msgText.split(' ');
-                        Let cmd = parts[0].toLowerCase();
-                        Let targetUserId = parts[1] ? String(parts[1]).trim() : null;
+                    if (ADMIN_CHAT_IDS.includes(senderChatId)) {
+                        let parts = msgText.split(' ');
+                        let cmd = parts[0].toLowerCase();
+                        let targetUserId = parts[1] ? String(parts[1]).trim() : null;
 
-                        If (cmd === '/settelebirr' && parts[1]) {
-                            Let newPhone = parts[1];
-                            Let newName = parts.slice(2).join(' ') || telebirrConfig.name;
+                        if (cmd === '/settelebirr' && parts[1]) {
+                            let newPhone = parts[1];
+                            let newName = parts.slice(2).join(' ') || telebirrConfig.name;
                             
-                            TelebirrConfig.phone = newPhone;
-                            TelebirrConfig.name = newName;
+                            telebirrConfig.phone = newPhone;
+                            telebirrConfig.name = newName;
 
-                            SaveTelebirrConfigToDisk();
-                            Io.emit('telebirrConfigUpdated', telebirrConfig);
+                            saveTelebirrConfigToDisk();
+                            io.emit('telebirrConfigUpdated', telebirrConfig);
 
-                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                Chat_id: senderChatId,
-                                Text: `✅ የቴሌብር ቁጥር በተሳካ ሁኔታ ተቀይሯል!\n📱 ቁጥር: \`${newPhone}\`\n👤 ስም: *${newName}*`,
-                                Parse_mode: 'Markdown'
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: senderChatId,
+                                text: `✅ የቴሌብር ቁጥር በተሳካ ሁኔታ ተቀይሯል!\n📱 ቁጥር: \`${newPhone}\`\n👤 ስም: *${newName}*`,
+                                parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
 
-                        If ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
-                            Let bonusAmount = cmd === '/bonus20' ? 20 : 50;
+                        if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
+                            let bonusAmount = cmd === '/bonus20' ? 20 : 50;
                             
-                            UserWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+                            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
 
-                            Let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
-                            Let bonusPayload = {
-                                Type: 'bonus',
-                                Amount: bonusAmount,
-                                AdjustedAmount: bonusAmount,
-                                Balance: userWallets[targetUserId]
+                            let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
+                            let bonusPayload = {
+                                type: 'bonus',
+                                amount: bonusAmount,
+                                adjustedAmount: bonusAmount,
+                                balance: userWallets[targetUserId]
                             };
 
-                            If (targetUserSocketObj) {
-                                Let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
-                                If (targetSocket) {
-                                    TargetSocket.emit('financialApproved', bonusPayload);
+                            if (targetUserSocketObj) {
+                                let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
+                                if (targetSocket) {
+                                    targetSocket.emit('financialApproved', bonusPayload);
                                     
-                                    For (let adminChatId of ADMIN_CHAT_IDS) {
-                                        Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                            Chat_id: adminChatId,
-                                            Text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል!`,
-                                            Parse_mode: 'Markdown'
+                                    for (let adminChatId of ADMIN_CHAT_IDS) {
+                                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                            chat_id: adminChatId,
+                                            text: `✅ በተሳካ ሁኔታ ለዩዘር ID: \`${targetUserId}\` የ **${bonusAmount} ብር** ቦነስ ተልኳል!`,
+                                            parse_mode: 'Markdown'
                                         }).catch(() => {});
                                     }
                                 }
                             } else {
-                                If (!offlineApprovedQueue[targetUserId]) {
-                                    OfflineApprovedQueue[targetUserId] = [];
+                                if (!offlineApprovedQueue[targetUserId]) {
+                                    offlineApprovedQueue[targetUserId] = [];
                                 }
-                                OfflineApprovedQueue[targetUserId].push(bonusPayload);
+                                offlineApprovedQueue[targetUserId].push(bonusPayload);
 
-                                For (let adminChatId of ADMIN_CHAT_IDS) {
-                                    Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                        Chat_id: adminChatId,
-                                        Text: `📌 ዩዘር ID: \`${targetUserId}\` ኦንላይን አይደለም። አፕ ሲከፍት ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!`,
-                                        Parse_mode: 'Markdown'
+                                for (let adminChatId of ADMIN_CHAT_IDS) {
+                                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                        chat_id: adminChatId,
+                                        text: `📌 ዩዘር ID: \`${targetUserId}\` ኦንላይን አይደለም። አፕ ሲከፍት ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!`,
+                                        parse_mode: 'Markdown'
                                     }).catch(() => {});
                                 }
                             }
@@ -759,150 +759,148 @@ Async function pollTelegramUpdates() {
                 }
 
                 // --- Telegram Callback Query (Admin Approve / Reject Syncing) ---
-                If (update.callback_query) {
-                    Let callbackQuery = update.callback_query;
-                    Let data = callbackQuery.data; 
-                    Let chatId = callbackQuery.message.chat.id;
-                    Let messageId = callbackQuery.message.message_id;
+                if (update.callback_query) {
+                    let callbackQuery = update.callback_query;
+                    let data = callbackQuery.data; 
+                    let chatId = callbackQuery.message.chat.id;
+                    let messageId = callbackQuery.message.message_id;
                     
-                    Let parts = data.split('_');
-                    Let action = parts[0]; 
-                    Let requestId = parts.slice(1).join('_');
-                    Let reqData = pendingRequests[requestId];
+                    let parts = data.split('_');
+                    let action = parts[0]; 
+                    let requestId = parts.slice(1).join('_');
+                    let reqData = pendingRequests[requestId];
 
-                    // 💡 ሪኩዌስቱ አስቀድሞ የተጠናቀቀ ወይም ያልተገኘ ከሆነ
-                    If (!reqData) {
-                        Try {
-                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { 
-                                Callback_query_id: callbackQuery.id,
-                                Text: "⚠️ ይህ ጥያቄ አስቀድሞ በሌላ አድሚን ጸድቋል ወይም ተሰርዟል!",
-                                Show_alert: true 
+                    if (!reqData) {
+                        try {
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { 
+                                callback_query_id: callbackQuery.id,
+                                text: "⚠️ ይህ ጥያቄ አስቀድሞ በሌላ አድሚን ጸድቋል ወይም ተሰርዟል!",
+                                show_alert: true 
                             });
-                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
-                                Chat_id: chatId,
-                                Message_id: messageId,
-                                Reply_markup: { inline_keyboard: [] }
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
+                                chat_id: chatId,
+                                message_id: messageId,
+                                reply_markup: { inline_keyboard: [] }
                             });
                         } catch (e) {}
-                        Continue;
+                        continue;
                     }
 
-                    Let targetSocket = io.sockets.sockets.get(reqData.socketId);
-                    Let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
-                    Let rawAmount = Number(reqData.amount) || 0;
-                    Let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
+                    let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                    let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
+                    let rawAmount = Number(reqData.amount) || 0;
+                    let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
-                    If (action === 'app') {
-                        If (reqType === 'deposit' || reqType === 'bonus') {
-                            UserWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                    if (action === 'app') {
+                        if (reqType === 'deposit' || reqType === 'bonus') {
+                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                         } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                            UserWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
+                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
                         }
 
-                        Let successPayload = { 
-                            Type: reqData.type, 
-                            Amount: rawAmount, 
-                            AdjustedAmount: finalAmountForClient,
-                            Balance: userWallets[reqData.userId]
+                        let successPayload = { 
+                            type: reqData.type, 
+                            amount: rawAmount, 
+                            adjustedAmount: finalAmountForClient,
+                            balance: userWallets[reqData.userId]
                         };
 
-                        If (targetSocket) {
-                            TargetSocket.emit('financialApproved', successPayload);
+                        if (targetSocket) {
+                            targetSocket.emit('financialApproved', successPayload);
                         } else {
-                            If (!offlineApprovedQueue[reqData.userId]) {
-                                OfflineApprovedQueue[reqData.userId] = [];
+                            if (!offlineApprovedQueue[reqData.userId]) {
+                                offlineApprovedQueue[reqData.userId] = [];
                             }
-                            OfflineApprovedQueue[reqData.userId].push(successPayload);
+                            offlineApprovedQueue[reqData.userId].push(successPayload);
                         }
 
-                        If (reqData.chatId) {
-                            Let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት ${rawAmount} ብር ተስተካክሏል። እናመሰግናለን! 🙏`;
-                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                Chat_id: reqData.chatId,
-                                Text: successMsg,
-                                Parse_mode: 'Markdown'
+                        if (reqData.chatId) {
+                            let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት ${rawAmount} ብር ተስተካክሏል። እናመሰግናለን! 🙏`;
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: reqData.chatId,
+                                text: successMsg,
+                                parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
 
-                        // 💡 ማረጋገጫ: ጥያቄው መጸደቁን የሚያሳይ ግልጽ ጽሁፍ በሁለቱም አድሚኖች ቻት ላይ ይቀመጣል
-                        Let approvedFinalText = `✅ *ጥያቄው ተረጋግጦ ጸድቋል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n✨ *(ሁኔታ: በአድሚን ጸድቆ ተጠናቋል)*`;
+                        let approvedFinalText = `✅ *ጥያቄው ተረጋግጦ ጸድቋል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n✨ *(ሁኔታ: በአድሚን ጸድቆ ተጠናቋል)*`;
 
-                        For (let adminId of ADMIN_CHAT_IDS) {
-                            Try {
-                                Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageCaption`, {
-                                    Chat_id: adminId, message_id: messageId,
-                                    Caption: approvedFinalText, parse_mode: 'Markdown',
-                                    Reply_markup: { inline_keyboard: [] }
+                        for (let adminId of ADMIN_CHAT_IDS) {
+                            try {
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageCaption`, {
+                                    chat_id: adminId, message_id: messageId,
+                                    caption: approvedFinalText, parse_mode: 'Markdown',
+                                    reply_markup: { inline_keyboard: [] }
                                 });
                             } catch (err) {
-                                Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                    Chat_id: adminId, message_id: messageId,
-                                    Text: approvedFinalText, parse_mode: 'Markdown',
-                                    Reply_markup: { inline_keyboard: [] }
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                    chat_id: adminId, message_id: messageId,
+                                    text: approvedFinalText, parse_mode: 'Markdown',
+                                    reply_markup: { inline_keyboard: [] }
                                 }).catch(() => {});
                             }
                         }
 
                     } else {
-                        If (reqData.chatId) {
-                            Let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
-                            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                                Chat_id: reqData.chatId,
-                                Text: rejectMsg,
-                                Parse_mode: 'Markdown'
+                        if (reqData.chatId) {
+                            let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                chat_id: reqData.chatId,
+                                text: rejectMsg,
+                                parse_mode: 'Markdown'
                             }).catch(() => {});
                         }
 
-                        If (targetSocket) { 
-                            TargetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
+                        if (targetSocket) { 
+                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
                         }
 
-                        Let rejectedFinalText = `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ *(ሁኔታ: በአድሚን ተሰርዟል)*`;
+                        let rejectedFinalText = `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ *(ሁኔታ: በአድሚን ተሰርዟል)*`;
 
-                        For (let adminId of ADMIN_CHAT_IDS) {
-                            Try {
-                                Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageCaption`, {
-                                    Chat_id: adminId, message_id: messageId,
-                                    Caption: rejectedFinalText, parse_mode: 'Markdown',
-                                    Reply_markup: { inline_keyboard: [] }
+                        for (let adminId of ADMIN_CHAT_IDS) {
+                            try {
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageCaption`, {
+                                    chat_id: adminId, message_id: messageId,
+                                    caption: rejectedFinalText, parse_mode: 'Markdown',
+                                    reply_markup: { inline_keyboard: [] }
                                 });
                             } catch (err) {
-                                Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
-                                    Chat_id: adminId, message_id: messageId,
-                                    Text: rejectedFinalText, parse_mode: 'Markdown',
-                                    Reply_markup: { inline_keyboard: [] }
+                                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+                                    chat_id: adminId, message_id: messageId,
+                                    text: rejectedFinalText, parse_mode: 'Markdown',
+                                    reply_markup: { inline_keyboard: [] }
                                 }).catch(() => {});
                             }
                         }
                     }
 
-                    Delete pendingRequests[requestId]; 
+                    delete pendingRequests[requestId]; 
 
-                    Try { 
-                        Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
+                    try { 
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
                     } catch (e) {}
                 }
             }
         }
     } catch (err) {}
-    SetTimeout(pollTelegramUpdates, 1000);
+    setTimeout(pollTelegramUpdates, 1000);
 }
-SetTimeout(pollTelegramUpdates, 2000);
+setTimeout(pollTelegramUpdates, 2000);
 
-Async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
-    If (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
-    Let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
-    Let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
+async function sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt) {
+    if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length) return;
+    let reqTypeTitle = type === 'deposit' ? '💳 ቴሌብር ዲፖዚት' : '🏧 ቴሌብር ዊዝድሮዋል';
+    let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
 
-    Let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
-    If (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
+    let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
+    if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
     
-    For (let adminChatId of ADMIN_CHAT_IDS) {
-        Try {
-            Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                Chat_id: adminChatId, text: message, parse_mode: 'Markdown',
-                Reply_markup: { 
-                    Inline_keyboard: [
+    for (let adminChatId of ADMIN_CHAT_IDS) {
+        try {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId, text: message, parse_mode: 'Markdown',
+                reply_markup: { 
+                    inline_keyboard: [
                         [
                             { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
                             { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
@@ -914,47 +912,47 @@ Async function sendAdminFinancialRequest(requestId, type, amount, username, user
     }
 }
 
-App.post('/api/financial-request', async (req, bodyRes) => {
-    Try {
-        Let { type, amount, username, userId, currentBalance, receiptText, receiptImage } = req.body;
+app.post('/api/financial-request', async (req, bodyRes) => {
+    try {
+        let { type, amount, username, userId, currentBalance, receiptText, receiptImage } = req.body;
 
-        If (type === 'deposit' && isDepositLocked) {
-            Return bodyRes.json({ success: false, message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
+        if (type === 'deposit' && isDepositLocked) {
+            return bodyRes.json({ success: false, message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
         }
 
-        Let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
-        Let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
+        let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
         
-        PendingRequests[requestId] = { 
-            UserId: String(userId || 'unknown'), 
-            ChatId: userId, 
-            Type, 
-            Amount, 
-            Username, 
-            SocketId: null, 
-            Timestamp: Date.now(),
-            RequestTimeStr: requestTimeStr
+        pendingRequests[requestId] = { 
+            userId: String(userId || 'unknown'), 
+            chatId: userId, 
+            type, 
+            amount, 
+            username, 
+            socketId: null, 
+            timestamp: Date.now(),
+            requestTimeStr: requestTimeStr
         };
 
-        Let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
+        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
         
-        If (receiptText) {
-            Caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
+        if (receiptText) {
+            caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
         }
 
-        For (let adminChatId of ADMIN_CHAT_IDS) {
-            Try {
-                If (receiptImage && receiptImage.startsWith('data:image')) {
-                    Let base64Data = receiptImage.replace(/^data:image\/\w+;base64,/, "");
-                    Let buffer = Buffer.from(base64Data, 'base64');
+        for (let adminChatId of ADMIN_CHAT_IDS) {
+            try {
+                if (receiptImage && receiptImage.startsWith('data:image')) {
+                    let base64Data = receiptImage.replace(/^data:image\/\w+;base64,/, "");
+                    let buffer = Buffer.from(base64Data, 'base64');
                     
-                    Let formDataTelegram = new (require('form-data'))();
-                    FormDataTelegram.append('chat_id', adminChatId);
-                    FormDataTelegram.append('photo', buffer, { filename: 'receipt.jpg' });
-                    FormDataTelegram.append('caption', caption);
-                    FormDataTelegram.append('parse_mode', 'Markdown');
-                    FormDataTelegram.append('reply_markup', JSON.stringify({
-                        Inline_keyboard: [
+                    let formDataTelegram = new (require('form-data'))();
+                    formDataTelegram.append('chat_id', adminChatId);
+                    formDataTelegram.append('photo', buffer, { filename: 'receipt.jpg' });
+                    formDataTelegram.append('caption', caption);
+                    formDataTelegram.append('parse_mode', 'Markdown');
+                    formDataTelegram.append('reply_markup', JSON.stringify({
+                        inline_keyboard: [
                             [
                                 { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
                                 { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
@@ -962,16 +960,16 @@ App.post('/api/financial-request', async (req, bodyRes) => {
                         ]
                     }));
 
-                    Axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, formDataTelegram, {
-                        Headers: formDataTelegram.getHeaders()
+                    axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, formDataTelegram, {
+                        headers: formDataTelegram.getHeaders()
                     }).catch(() => {});
                 } else {
-                    Axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                        Chat_id: adminChatId, 
-                        Text: caption, 
-                        Parse_mode: 'Markdown',
-                        Reply_markup: { 
-                            Inline_keyboard: [
+                    axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: adminChatId, 
+                        text: caption, 
+                        parse_mode: 'Markdown',
+                        reply_markup: { 
+                            inline_keyboard: [
                                 [
                                     { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
                                     { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
@@ -983,318 +981,318 @@ App.post('/api/financial-request', async (req, bodyRes) => {
             } catch (e) {}
         }
 
-        BodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     } catch (err) {
-        BodyRes.status(500).json({ success: false, message: err.message });
+        bodyRes.status(500).json({ success: false, message: err.message });
     }
 });
 
-Io.on('connection', (socket) => {
-    ConnectedRealPlayers.push(socket.id);
-    UpdateRoomPlayersAndPot();
-    Socket.emit('syncGameState', globalRoom);
-    RefreshTakenCardsList();
+io.on('connection', (socket) => {
+    connectedRealPlayers.push(socket.id);
+    updateRoomPlayersAndPot();
+    socket.emit('syncGameState', globalRoom);
+    refreshTakenCardsList();
 
-    Socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-    Socket.emit('telebirrConfigUpdated', telebirrConfig);
-    Socket.emit('botConfigUpdated', botConfig); 
+    socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+    socket.emit('telebirrConfigUpdated', telebirrConfig);
+    socket.emit('botConfigUpdated', botConfig); 
 
-    Socket.on('registerRealUser', (userData) => {
-        If (userData && userData.userId) {
-            Let userId = String(userData.userId);
+    socket.on('registerRealUser', (userData) => {
+        if (userData && userData.userId) {
+            let userId = String(userData.userId);
             
-            AllRegisteredUsers.add(userId);
+            allRegisteredUsers.add(userId);
 
-            Let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
-            If (userWallets[userId] === undefined) {
-                UserWallets[userId] = clientBalance;
+            let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
+            if (userWallets[userId] === undefined) {
+                userWallets[userId] = clientBalance;
             } else {
-                If (clientBalance > userWallets[userId]) {
-                    UserWallets[userId] = clientBalance;
+                if (clientBalance > userWallets[userId]) {
+                    userWallets[userId] = clientBalance;
                 }
             }
 
-            If (globalRoom.gameActive) {
-                Let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
-                If (existingKey) {
-                    Let existingData = globalRoom.playerRoundCards[existingKey];
-                    Delete globalRoom.playerRoundCards[existingKey];
-                    GlobalRoom.playerRoundCards[socket.id] = existingData;
+            if (globalRoom.gameActive) {
+                let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
+                if (existingKey) {
+                    let existingData = globalRoom.playerRoundCards[existingKey];
+                    delete globalRoom.playerRoundCards[existingKey];
+                    globalRoom.playerRoundCards[socket.id] = existingData;
                 }
             } else {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
-                    If (globalRoom.playerRoundCards[sId].userId === userId) {
-                        Delete globalRoom.playerRoundCards[sId];
+                    if (globalRoom.playerRoundCards[sId].userId === userId) {
+                        delete globalRoom.playerRoundCards[sId];
                     }
                 });
             }
 
-            Delete globalRoom.playerTemporaryCards[socket.id];
+            delete globalRoom.playerTemporaryCards[socket.id];
 
-            OnlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
-            OnlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
+            onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
+            onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
             
-            If (!claimedWelcomeBonusUsers.has(userId) && userWallets[userId] === 0) {
-                ClaimedWelcomeBonusUsers.add(userId);
-                UserWallets[userId] += 20;
-                Socket.emit('welcomeBonusGranted', { 
-                    Amount: 20, 
-                    Balance: userWallets[userId],
-                    Message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
+            if (!claimedWelcomeBonusUsers.has(userId) && userWallets[userId] === 0) {
+                claimedWelcomeBonusUsers.add(userId);
+                userWallets[userId] += 20;
+                socket.emit('welcomeBonusGranted', { 
+                    amount: 20, 
+                    balance: userWallets[userId],
+                    message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
                 });
             } else {
-                ClaimedWelcomeBonusUsers.add(userId);
+                claimedWelcomeBonusUsers.add(userId);
             }
 
-            If (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
-                OfflineApprovedQueue[userId].forEach(item => {
-                    Socket.emit('financialApproved', item);
+            if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
+                offlineApprovedQueue[userId].forEach(item => {
+                    socket.emit('financialApproved', item);
                 });
-                Delete offlineApprovedQueue[userId];
+                delete offlineApprovedQueue[userId];
             }
 
-            Socket.emit('updateBalance', { balance: userWallets[userId] });
+            socket.emit('updateBalance', { balance: userWallets[userId] });
 
-            RefreshTakenCardsList();
-            UpdateRoomPlayersAndPot();
-            Socket.emit('syncGameState', globalRoom);
+            refreshTakenCardsList();
+            updateRoomPlayersAndPot();
+            socket.emit('syncGameState', globalRoom);
         }
     });
 
-    Socket.on('playerClaimBingo', (data) => {
-        If (!globalRoom.gameActive) return;
-        Let userId = String(data.userId);
-        Let cardNum = data.cardNum;
+    socket.on('playerClaimBingo', (data) => {
+        if (!globalRoom.gameActive) return;
+        let userId = String(data.userId);
+        let cardNum = data.cardNum;
         
-        Let cList = getCartelaNumbers(cardNum);
-        Let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
+        let cList = getCartelaNumbers(cardNum);
+        let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
         
-        If (matched) {
-            AnnounceWinnersAndFinish([{
-                Username: data.username || 'ተጫዋች',
-                SocketId: socket.id,
-                UserId: userId,
-                IsBot: false,
-                CardNum: cardNum,
-                Matched: matched
+        if (matched) {
+            announceWinnersAndFinish([{
+                username: data.username || 'ተጫዋች',
+                socketId: socket.id,
+                userId: userId,
+                isBot: false,
+                cardNum: cardNum,
+                matched: matched
             }]);
         } else {
-            Socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
+            socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
         }
     });
 
-    Socket.on('getAdminRealUsers', () => {
-        Socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+    socket.on('getAdminRealUsers', () => {
+        socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    Socket.on('adminCheckUserBalance', (data) => {
-        If (data && data.targetUserId) {
-            Let tId = String(data.targetUserId).trim();
-            Let foundBalance = 0.00;
-            If (userWallets[tId] !== undefined) {
-                FoundBalance = parseFloat(userWallets[tId]);
+    socket.on('adminCheckUserBalance', (data) => {
+        if (data && data.targetUserId) {
+            let tId = String(data.targetUserId).trim();
+            let foundBalance = 0.00;
+            if (userWallets[tId] !== undefined) {
+                foundBalance = parseFloat(userWallets[tId]);
             } else {
-                Let matchedKey = Object.keys(userWallets).find(k => String(k).trim() === tId);
-                If (matchedKey) {
-                    FoundBalance = parseFloat(userWallets[matchedKey]);
+                let matchedKey = Object.keys(userWallets).find(k => String(k).trim() === tId);
+                if (matchedKey) {
+                    foundBalance = parseFloat(userWallets[matchedKey]);
                 }
             }
             
-            Socket.emit('adminUserBalanceResponse', { 
-                Success: true, 
-                TargetUserId: tId, 
-                Balance: foundBalance,
-                Message: `👤 ዩዘር ID (${tId}) ቀሪ ሂሳብ: ${foundBalance} ብር` 
+            socket.emit('adminUserBalanceResponse', { 
+                success: true, 
+                targetUserId: tId, 
+                balance: foundBalance,
+                message: `👤 ዩዘር ID (${tId}) ቀሪ ሂሳብ: ${foundBalance} ብር` 
             });
         }
     });
 
-    Socket.on('adminToggleLock', (data) => {
-        If (data.type === 'deposit') {
-            IsDepositLocked = data.locked;
+    socket.on('adminToggleLock', (data) => {
+        if (data.type === 'deposit') {
+            isDepositLocked = data.locked;
         } else if (data.type === 'withdraw') {
-            IsWithdrawLocked = data.locked;
+            isWithdrawLocked = data.locked;
         }
-        Io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
-        Socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
+        io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+        socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
     });
 
-    Socket.on('adminUpdateTelebirr', (data) => {
-        If (data && data.phone) {
-            TelebirrConfig.phone = data.phone;
-            If (data.name) telebirrConfig.name = data.name;
+    socket.on('adminUpdateTelebirr', (data) => {
+        if (data && data.phone) {
+            telebirrConfig.phone = data.phone;
+            if (data.name) telebirrConfig.name = data.name;
 
-            SaveTelebirrConfigToDisk();
-            Io.emit('telebirrConfigUpdated', telebirrConfig);
-            Socket.emit('adminTelebirrResponse', { success: true, message: `✅ የቴሌብር ቁጥር ተቀይሯል!` });
+            saveTelebirrConfigToDisk();
+            io.emit('telebirrConfigUpdated', telebirrConfig);
+            socket.emit('adminTelebirrResponse', { success: true, message: `✅ የቴሌብር ቁጥር ተቀይሯል!` });
         }
     });
 
-    Socket.on('adminUpdateBotConfig', (data) => {
-        If (data && data.minBots !== undefined && data.maxBots !== undefined) {
-            Let minB = parseInt(data.minBots);
-            Let maxB = parseInt(data.maxBots);
+    socket.on('adminUpdateBotConfig', (data) => {
+        if (data && data.minBots !== undefined && data.maxBots !== undefined) {
+            let minB = parseInt(data.minBots);
+            let maxB = parseInt(data.maxBots);
 
-            If (!isNaN(minB) && !isNaN(maxB)) {
-                If (minB < 1) minB = 1;
-                If (maxB < minB) maxB = minB;
+            if (!isNaN(minB) && !isNaN(maxB)) {
+                if (minB < 1) minB = 1;
+                if (maxB < minB) maxB = minB;
 
-                BotConfig.minBots = minB;
-                BotConfig.maxBots = maxB;
+                botConfig.minBots = minB;
+                botConfig.maxBots = maxB;
 
-                SaveBotConfigToDisk();
-                Io.emit('botConfigUpdated', botConfig);
-                UpdateRoomPlayersAndPot();
+                saveBotConfigToDisk();
+                io.emit('botConfigUpdated', botConfig);
+                updateRoomPlayersAndPot();
 
-                Socket.emit('adminBotResponse', { success: true, message: `✅ የቦቶች ብዛት (Min: ${minB}, Max: ${maxB}) ተስተካክሏል!` });
+                socket.emit('adminBotResponse', { success: true, message: `✅ የቦቶች ብዛት (Min: ${minB}, Max: ${maxB}) ተስተካክሏል!` });
             } else {
-                Socket.emit('adminBotResponse', { success: false, message: `⚠️ እባክዎ ትክክለኛ ቁጥሮችን ያስገቡ!` });
+                socket.emit('adminBotResponse', { success: false, message: `⚠️ እባክዎ ትክክለኛ ቁጥሮችን ያስገቡ!` });
             }
         }
     });
 
-    Socket.on('adminSendBonus', (data) => {
-        If (socket.id) {
-            Let targetUserId = String(data.targetUserId).trim();
-            Let bonusAmount = Number(data.amount) || 20;
+    socket.on('adminSendBonus', (data) => {
+        if (socket.id) {
+            let targetUserId = String(data.targetUserId).trim();
+            let bonusAmount = Number(data.amount) || 20;
 
-            UserWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
 
-            Let bonusPayload = {
-                Type: 'bonus',
-                Amount: bonusAmount,
-                AdjustedAmount: bonusAmount,
-                Balance: userWallets[targetUserId]
+            let bonusPayload = {
+                type: 'bonus',
+                amount: bonusAmount,
+                adjustedAmount: bonusAmount,
+                balance: userWallets[targetUserId]
             };
 
-            Let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
-            If (targetUserSocketObj) {
-                Let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
-                If (targetSocket) {
-                    TargetSocket.emit('financialApproved', bonusPayload);
-                    Socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኮ አካውንቱ ላይ ገቢ ሆኗል!` });
+            let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
+            if (targetUserSocketObj) {
+                let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
+                if (targetSocket) {
+                    targetSocket.emit('financialApproved', bonusPayload);
+                    socket.emit('adminBonusResponse', { success: true, message: `✅ ለዩዘር ID (${targetUserId}) ${bonusAmount} ብር ቦነስ ተልኮ አካውንቱ ላይ ገቢ ሆኗል!` });
                 }
             } else {
-                If (!offlineApprovedQueue[targetUserId]) {
-                    OfflineApprovedQueue[targetUserId] = [];
+                if (!offlineApprovedQueue[targetUserId]) {
+                    offlineApprovedQueue[targetUserId] = [];
                 }
-                OfflineApprovedQueue[targetUserId].push(bonusPayload);
-                Socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!` });
+                offlineApprovedQueue[targetUserId].push(bonusPayload);
+                socket.emit('adminBonusResponse', { success: true, message: `📌 ዩዘሩ ኦንላይን አይደለም። አፕ ሲከፍት የ ${bonusAmount} ብር ቦነሱ በራስ-ሰር አካውንቱ ላይ ይገባል!` });
             }
         }
     });
 
-    Socket.on('adminBroadcastMessage', async (data) => {
-        Let messageText = data ? data.message : null;
+    socket.on('adminBroadcastMessage', async (data) => {
+        let messageText = data ? data.message : null;
         
-        If (!messageText) {
-            Socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
-            Return;
+        if (!messageText) {
+            socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
+            return;
         }
 
-        Let allUserIds = [...allRegisteredUsers];
+        let allUserIds = [...allRegisteredUsers];
 
         (async () => {
-            For (let uId of allUserIds) {
-                Try {
-                    Await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                        Chat_id: uId,
-                        Text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
-                        Parse_mode: 'Markdown'
+            for (let uId of allUserIds) {
+                try {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: uId,
+                        text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
+                        parse_mode: 'Markdown'
                     });
-                    Await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (e) {}
             }
         })();
 
-        Socket.emit('adminBroadcastResponse', { 
-            Success: true, 
-            Message: `✅ ማስታወቂያው ለተጠቃሚዎች በሂደት ላይ ይላካል! (አጠቃላይ ተመዝጋቢዎች: ${allUserIds.length})` 
+        socket.emit('adminBroadcastResponse', { 
+            success: true, 
+            message: `✅ ማስታወቂያው ለተጠቃሚዎች በሂደት ላይ ይላካል! (አጠቃላይ ተመዝጋቢዎች: ${allUserIds.length})` 
         });
     });
 
-    Socket.on('tempSelectCards', (cards) => {
-        If (Array.isArray(cards)) {
-            GlobalRoom.playerTemporaryCards[socket.id] = cards;
-            RefreshTakenCardsList();
+    socket.on('tempSelectCards', (cards) => {
+        if (Array.isArray(cards)) {
+            globalRoom.playerTemporaryCards[socket.id] = cards;
+            refreshTakenCardsList();
         }
     });
 
-    Socket.on('confirmCards', (data) => {
-        If (data && data.cards && Array.isArray(data.cards)) {
-            GlobalRoom.playerRoundCards[socket.id] = {
-                Cards: data.cards,
-                Username: data.username || 'ተጫዋች',
-                UserId: data.userId || 'unknown'
+    socket.on('confirmCards', (data) => {
+        if (data && data.cards && Array.isArray(data.cards)) {
+            globalRoom.playerRoundCards[socket.id] = {
+                cards: data.cards,
+                username: data.username || 'ተጫዋች',
+                userId: data.userId || 'unknown'
             };
-            If (globalRoom.playerTemporaryCards[socket.id]) {
-                Delete globalRoom.playerTemporaryCards[socket.id];
+            if (globalRoom.playerTemporaryCards[socket.id]) {
+                delete globalRoom.playerTemporaryCards[socket.id];
             }
-            RefreshTakenCardsList();
-            UpdateRoomPlayersAndPot();
-            Socket.emit('cardSelectionSuccess');
+            refreshTakenCardsList();
+            updateRoomPlayersAndPot();
+            socket.emit('cardSelectionSuccess');
         }
     });
 
-    Socket.on('adminSetNextWinner', (data) => {
-        Let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
+    socket.on('adminSetNextWinner', (data) => {
+        let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
         
-        If (winnerType === 'only_real_users_mode') {
-            EnableOnlyRealUsersMode = true;
-            ForcedNextWinner = 'random_real';
-            UpdateRoomPlayersAndPot();
-            Socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [ሪል ዩዘሮች ብቻ - True Random] ተቀይሯል!` });
+        if (winnerType === 'only_real_users_mode') {
+            enableOnlyRealUsersMode = true;
+            forcedNextWinner = 'random_real';
+            updateRoomPlayersAndPot();
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [ሪል ዩዘሮች ብቻ - True Random] ተቀይሯል!` });
         } else if (winnerType === 'standard_bot_mode') {
-            EnableOnlyRealUsersMode = false;
-            ForcedNextWinner = null;
-            UpdateRoomPlayersAndPot();
-            Socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [መደበኛ (ቦቶች + ሪል)] ተመለሰ!` });
+            enableOnlyRealUsersMode = false;
+            forcedNextWinner = null;
+            updateRoomPlayersAndPot();
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [መደበኛ (ቦቶች + ሪል)] ተመለሰ!` });
         } else {
-            ForcedNextWinner = winnerType;
-            Socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
+            forcedNextWinner = winnerType;
+            socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
         }
     });
 
-    Socket.on('financialRequest', async (data) => {
-        Data.type = data.type || 'deposit';
-        Let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
+    socket.on('financialRequest', async (data) => {
+        data.type = data.type || 'deposit';
+        let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
         
-        If ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
-            Socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
-            Return;
+        if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
+            socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
+            return;
         }
 
-        Let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         
-        PendingRequests[requestId] = { 
-            UserId: String(userId || 'unknown'), 
-            ChatId: telegramChatId || userId, 
-            Type, 
-            Amount, 
-            Username, 
-            SocketId: socket.id, 
-            Timestamp: Date.now() 
+        pendingRequests[requestId] = { 
+            userId: String(userId || 'unknown'), 
+            chatId: telegramChatId || userId, 
+            type, 
+            amount, 
+            username, 
+            socketId: socket.id, 
+            timestamp: Date.now() 
         };
 
-        SendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
-        Socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
-    Socket.on('disconnect', () => {
-        ConnectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        OnlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
+    socket.on('disconnect', () => {
+        connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        If (!globalRoom.gameActive) {
-            Delete globalRoom.playerRoundCards[socket.id];
+        if (!globalRoom.gameActive) {
+            delete globalRoom.playerRoundCards[socket.id];
         }
-        Delete globalRoom.playerTemporaryCards[socket.id];
+        delete globalRoom.playerTemporaryCards[socket.id];
         
-        RefreshTakenCardsList();
-        UpdateRoomPlayersAndPot();
+        refreshTakenCardsList();
+        updateRoomPlayersAndPot();
     });
 });
 
-Const PORT = process.env.PORT || 3000;
-Server.listen(PORT, () => {
-    Console.log("AZ Server running on port " + PORT);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log("AZ Server running on port " + PORT);
 });
