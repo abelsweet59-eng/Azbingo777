@@ -772,7 +772,7 @@ async function pollTelegramUpdates() {
                             }
                         }
                     } else {
-                        // 🔗 እዚህ ጋር ተጠቃሚው ወደ ቦቱ ሲገባ /start <referrerId> ብሎ ሲልክ ሪፈራሉ ይመዝገባል
+                        // 🔗 ሪፈራል መመዝገቢያ በ /start <referrerId>
                         if (msgText.startsWith('/start')) {
                             let startParts = msgText.split(' ');
                             if (startParts.length > 1) {
@@ -820,12 +820,11 @@ async function pollTelegramUpdates() {
 
                     if (action === 'app') {
                         if (reqType === 'deposit' || reqType === 'bonus') {
-                            let isFirstRealDeposit = !reqData.hasDepositedBefore; 
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
 
-                            // 🔗 ሪፈራል ቦነስ ሎጂክ (የመጀመሪያ ዲፖዚት ሲያደርግ ለጋባዡ 5 ብር መስጠት)
+                            // 🔗 ሪፈራል ቦነስ (5 ብር ለጋባዡ መስጠት)
                             let referrerId = userReferrers[reqData.userId];
-                            if (referrerId && !reqData.hasDepositedBefore) {
+                            if (referrerId) {
                                 let bonusForReferrer = 5;
                                 userWallets[referrerId] = (userWallets[referrerId] || 0) + bonusForReferrer;
                                 referralEarnings[referrerId] = (referralEarnings[referrerId] || 0) + bonusForReferrer;
@@ -849,7 +848,6 @@ async function pollTelegramUpdates() {
                                     offlineApprovedQueue[referrerId].push(refPayload);
                                 }
 
-                                // ለአድሚን ማሳወቂያ መላክ (አማራጭ)
                                 for (let adminChatId of ADMIN_CHAT_IDS) {
                                     await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                         chat_id: adminChatId,
@@ -1117,8 +1115,8 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
-            // 🔗 ለተጠቃሚው የራሱን ሪፈራል ሊንክ መላክ (ለምሳሌ: https://t.me/YourBotUsername?start=userId)
-            let botUsername = "AzBIng2obot"; // የቦትዎ ዩዘርናም
+            // 🔗 ሪፈራል ሊንክ መላኪያ
+            let botUsername = "AzBIng2obot"; 
             let myReferralLink = `https://t.me/${botUsername}?start=${userId}`;
             let myTotalEarnings = referralEarnings[userId] || 0;
             
