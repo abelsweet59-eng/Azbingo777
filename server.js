@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const axios = require('axios');
-const fs = require('fs'); // ቋሚ ፋይል ለማስቀመጥ የሚያስፈልግ
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -31,9 +31,7 @@ const allRegisteredUsers = new Set();
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
-// 💡 የቴሌብር መረጃዎች ቋሚ እንዲሆኑ ከፋይል (JSON) የማንበብ እና የማስቀመጥ ሎጂክ
 const configFilePath = path.join(__dirname, 'telebirr_config.json');
-
 let telebirrConfig = {
     phone: "0940272544",
     name: "Abel Seyoum"
@@ -53,9 +51,7 @@ function saveTelebirrConfigToDisk() {
     } catch (e) {}
 }
 
-// 💡 የቦቶች ብዛት መቆጣጠሪያ (Min/Max Bots) ቋሚ ማዋቀሪያ ፋይል ሎጂክ
 const botConfigFilePath = path.join(__dirname, 'bot_config.json');
-
 let botConfig = {
     minBots: 40,
     maxBots: 250
@@ -75,7 +71,6 @@ function saveBotConfigToDisk() {
     } catch (e) {}
 }
 
-// የቁጥር ጥሪ ቅደም ተከተል (Loop የሚያደርግ)
 const baseNumberFlowSequence = [
     12, 19, 22, 23, 32, 18, 19, 12, 27, 27, 23, 17, 19, 19, 22, 19, 24, 23, 19, 18, 
     16, 14, 22, 26, 30, 32, 17, 18, 18, 18, 22, 27, 32, 27, 19, 18, 21, 20, 26, 25, 
@@ -436,7 +431,7 @@ function startMainGameLoop() {
                     if (winningWinnersList.length > 0) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         
-                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ እንዲታይ ለ 5 ሰከንድ ቆይቶ ዊን ያደርጋል
+                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ ተጫዋቾች አይተው እንዲያረጋግጡ እና ቢንጎ ለማለት የ 6 ሰከንድ እድል እንዲኖራቸው ቆይታ (Delay) ተደርጓል
                         setTimeout(() => {
                             if (!globalRoom.gameActive) return;
 
@@ -479,7 +474,7 @@ function startMainGameLoop() {
                             });
 
                             setTimeout(() => { endRoundAndRestart(); }, 6000);
-                        }, 5000);
+                        }, 6000); // 👈 6 ሰከንድ ሙሉ ተጫዋቾች እራሳቸው ቢንጎ የሚሉበት ወይም የማየት ሰዓት ተሰጥቷል
                     }
 
                 }, 4500);
@@ -577,8 +572,8 @@ function startMainGameLoop() {
             
             let winNumQueue = [...interleavedWinningNumbers];
 
-            // 💡 የመጨረሻውን ቁጥር መጥራት የሚጀምረው ከ targetCallCount በ 1 ቀንሶ ነው (ይህም የመጨረሻው ቁጥር በመጀመሪያ ተጠርቶ በቦርዱ ላይ እንዲታይ እና ተጫዋቾቹ ቢንጎ ለማለት 6 ሰከንድ እድል እንዲኖራቸው ያደርጋል)
-            let actualTargetCallCount = Math.max(5, targetCallCount - 1);
+            // 💡 የመጨረሻውን ቁጥር ትክክለኛው ሰዓት ላይ እንዲጠራ ተደርጓል
+            let actualTargetCallCount = Math.max(5, targetCallCount);
 
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
@@ -592,7 +587,7 @@ function startMainGameLoop() {
                 if (shouldTriggerWin) {
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                     
-                    // 💡 የመጨረሻው ቁጥር ቦርዱ ላይ ታይቶ እንዲቆይ ለ 5 ሰከንድ ቆይታ አድርጎ አሸናፊውን ያወጣል
+                    // 💡 የመጨረሻው ቁጥር ቦርዱ ላይ ታይቶ ተጫዋቾች የ 6 ሰከንድ የማየት እና ቢንጎ የማለት እድል እንዲኖራቸው ቆይታ ተደርጓል
                     setTimeout(() => {
                         if (!globalRoom.gameActive) return;
 
@@ -635,7 +630,7 @@ function startMainGameLoop() {
                         });
                         
                         setTimeout(() => { endRoundAndRestart(); }, 6000);
-                    }, 5000);
+                    }, 6000); // 👈 6 ሰከንድ የቆይታ ጊዜ
 
                     return;
                 }
@@ -756,7 +751,7 @@ function startMainGameLoop() {
                     if (winningWinnersList.length > 0) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         
-                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ እንዲታይ ለ 5 ሰከንድ ቆይቶ ዊን ያደርጋል
+                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ ተጫዋቾች አይተው እንዲያረጋግጡ እና ቢንጎ ለማለት የ 6 ሰከንድ እድል እንዲኖራቸው ቆይታ ተደርጓል
                         setTimeout(() => {
                             if (!globalRoom.gameActive) return;
                             
@@ -799,7 +794,7 @@ function startMainGameLoop() {
                             });
 
                             setTimeout(() => { endRoundAndRestart(); }, 6000);
-                        }, 5000); 
+                        }, 6000); // 👈 6 ሰከንድ የማየት እና ቢንጎ የማለት እድል
                     }
                 }
 
