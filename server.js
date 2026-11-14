@@ -148,6 +148,7 @@ let pendingRequests = {};
 let offlineApprovedQueue = {}; 
 let gameInterval = null;
 let numberCallInterval = null;
+let winGraceTimeout = null;
 let connectedRealPlayers = [];
 
 function getCartelaNumbers(cardNum) {
@@ -348,6 +349,52 @@ async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWi
     }
 }
 
+function announceWinnersAndFinish(winnersDataList) {
+    if (!globalRoom.gameActive) return;
+    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
+
+    let primaryWinner = winnersDataList[0];
+    let primaryCardNum = primaryWinner.cardNum;
+    let matchedIndices = primaryWinner.matched;
+    let winnerNamesStr = winnersDataList.map(w => w.username).join(', ');
+    let winnersCount = winnersDataList.length;
+
+    let totalPot = (globalRoom.playersCount || 1) * 10;
+    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+    let hasRealWinner = winnersDataList.some(w => !w.isBot);
+
+    winnersDataList.forEach(w => {
+        if (!w.isBot && w.userId) {
+            userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
+        }
+    });
+
+    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
+
+    winnersDataList.forEach(w => {
+        if (!w.isBot && w.socketId) {
+            let targetSocket = io.sockets.sockets.get(w.socketId);
+            if (targetSocket) {
+                targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
+            }
+        }
+    });
+
+    io.emit('bingoWinner', {
+        username: winnerNamesStr,
+        userId: winnersDataList.find(w => !w.isBot)?.socketId || null,
+        cardNum: primaryCardNum,
+        prize: prizePerWinner,
+        calledNumbers: globalRoom.calledNumbers,
+        matchedIndices: matchedIndices,
+        winnersCount: winnersCount,
+        playersCount: globalRoom.playersCount
+    });
+
+    setTimeout(() => { endRoundAndRestart(); }, 6000);
+}
+
 function startMainGameLoop() {
     if (gameInterval) clearInterval(gameInterval);
     globalRoom.gameStartTime = Date.now() + 60000;
@@ -381,17 +428,7 @@ function startMainGameLoop() {
                         return;
                     }
 
-                    let currentActiveRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
-                    
-                    if (currentActiveRealEntries.length === 0) {
-                        if (availableNumbers.length === 0 || globalRoom.calledNumbers.length >= 75) {
-                            if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                            setTimeout(() => { endRoundAndRestart(); }, 3000);
-                            return;
-                        }
-                    }
-
-                    if (availableNumbers.length === 0) {
+                    if (availableNumbers.length === 0 || globalRoom.calledNumbers.length >= 75) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         setTimeout(() => { endRoundAndRestart(); }, 3000);
                         return;
@@ -420,8 +457,7 @@ function startMainGameLoop() {
                                         userId: pData.userId,
                                         isBot: false,
                                         cardNum: cNum,
-                                        matched: matched,
-                                        cartelaList: cList
+                                        matched: matched
                                     });
                                 }
                             });
@@ -430,51 +466,9 @@ function startMainGameLoop() {
 
                     if (winningWinnersList.length > 0) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        
-                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ ተጫዋቾች አይተው እንዲያረጋግጡ እና ቢንጎ ለማለት የ 6 ሰከንድ እድል እንዲኖራቸው ቆይታ (Delay) ተደርጓል
-                        setTimeout(() => {
-                            if (!globalRoom.gameActive) return;
-
-                            let primaryWinner = winningWinnersList[0];
-                            let winningPrimaryCardNum = primaryWinner.cardNum;
-                            let winningMatchedIndices = primaryWinner.matched;
-
-                            let winnerNamesStr = winningWinnersList.map(w => w.username).join(', ');
-                            let winnersCount = winningWinnersList.length;
-
-                            let totalPot = (globalRoom.playersCount || 1) * 10;
-                            let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
-
-                            winningWinnersList.forEach(w => {
-                                if (!w.isBot && w.userId) {
-                                    userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
-                                }
-                            });
-
-                            sendWinnerNotificationToAdmin(winnerNamesStr, winningPrimaryCardNum, prizePerWinner, true);
-
-                            winningWinnersList.forEach(w => {
-                                if (!w.isBot && w.socketId) {
-                                    let targetSocket = io.sockets.sockets.get(w.socketId);
-                                    if (targetSocket) {
-                                        targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
-                                    }
-                                }
-                            });
-
-                            io.emit('bingoWinner', {
-                                username: winnerNamesStr,
-                                userId: winningWinnersList.find(w => !w.isBot)?.socketId || null,
-                                cardNum: winningPrimaryCardNum,
-                                prize: prizePerWinner,
-                                calledNumbers: globalRoom.calledNumbers,
-                                matchedIndices: winningMatchedIndices,
-                                winnersCount: winnersCount,
-                                playersCount: globalRoom.playersCount
-                            });
-
-                            setTimeout(() => { endRoundAndRestart(); }, 6000);
-                        }, 6000); // 👈 6 ሰከንድ ሙሉ ተጫዋቾች እራሳቸው ቢንጎ የሚሉበት ወይም የማየት ሰዓት ተሰጥቷል
+                        winGraceTimeout = setTimeout(() => {
+                            announceWinnersAndFinish(winningWinnersList);
+                        }, 6000);
                     }
 
                 }, 4500);
@@ -482,6 +476,7 @@ function startMainGameLoop() {
                 return;
             }
 
+            // --- Standard Bot + Real Users Mode ---
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -520,12 +515,8 @@ function startMainGameLoop() {
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
             
-            let targetCallCount = baseNumberFlowSequence[sequenceIndex];
-            
-            sequenceIndex++;
-            if (sequenceIndex >= baseNumberFlowSequence.length) {
-                sequenceIndex = 0; 
-            }
+            let targetCallCount = Math.max(6, baseNumberFlowSequence[sequenceIndex]);
+            sequenceIndex = (sequenceIndex + 1) % baseNumberFlowSequence.length;
 
             let possiblePatterns = [
                 [0,1,2,3,4], [5,6,7,8,9], [10,11,12,13,14], [15,16,17,18,19], [20,21,22,23,24],
@@ -536,44 +527,39 @@ function startMainGameLoop() {
 
             let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
 
-            let perWinnerConfigs = winningCardNums.map(cNum => {
-                let cList = getCartelaNumbers(cNum);
-                let p = sharedPattern; 
-                let reqNums = p.map(idx => cList[idx]).filter(n => n !== "FREE");
+            // የዋና አሸናፊውን ፓተርን ቁጥሮች ብቻ ለይተን እናወጣለን (ያለ ተጨማሪ ቁጥሮች)
+            let primaryCardList = getCartelaNumbers(winningCardNums[0]);
+            let primaryPatternNumbers = sharedPattern
+                .map(idx => primaryCardList[idx])
+                .filter(n => n !== "FREE")
+                .map(n => Number(n));
 
-                let allIndices = Array.from({length: 25}, (_, i) => i).filter(i => i !== 12 && !p.includes(i));
-                let shuffledExtra = allIndices.sort(() => 0.5 - Math.random()).slice(0, 4);
-                let extraNums = shuffledExtra.map(idx => cList[idx]).filter(n => n !== "FREE");
-
-                let combinedRequired = [...new Set([...reqNums, ...extraNums])];
-
-                return { cardNum: cNum, cartelaList: cList, patternIndices: p, requiredNumbers: combinedRequired };
-            });
-
-            let rawInterleavedWinningNumbers = [];
-            let maxLength = Math.max(...perWinnerConfigs.map(cfg => cfg.requiredNumbers.length));
-            
-            for (let i = 0; i < maxLength; i++) {
-                perWinnerConfigs.forEach(cfg => {
-                    if (cfg.requiredNumbers[i] !== undefined && !rawInterleavedWinningNumbers.includes(cfg.requiredNumbers[i])) {
-                        rawInterleavedWinningNumbers.push(cfg.requiredNumbers[i]);
-                    }
-                });
-            }
-            let interleavedWinningNumbers = [...rawInterleavedWinningNumbers].sort(() => 0.5 - Math.random());
+            // ቅደም ተከተላቸውን እናቀላቅላለን፣ የመጨረሻው ቁጥር (finalWinningBall) ልክ በመጨረሻው ጥሪ ላይ እንዲወጣ ይቀመጣል
+            let shuffledPatternNums = [...primaryPatternNumbers].sort(() => 0.5 - Math.random());
+            let finalWinningBall = shuffledPatternNums.pop(); // የመጨረሻዋ አሸናፊ ቁጥር (ለምሳሌ 13)
+            let earlyPatternBalls = shuffledPatternNums;     // ቀድመው የሚጠሩት የፓተርኑ ቁጥሮች
 
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
+            // የአሸናፊውን ቁጥሮች ከተራው ገንዳ ውስጥ እናወጣቸዋለን (በስህተት ቀድመው እንዳይጠሩ)
+            availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
+
+            // ቀድመው የሚጠሩትን የፓተርን ቁጥሮች ከ targetCallCount በፊት ባሉት ጥሪዎች ውስጥ በዘፈቀደ ቦታ ላይ እናስገባቸዋለን
+            let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
+            let preCallSchedule = new Array(totalPreCalls).fill(null);
+
+            let slotIndices = Array.from({length: totalPreCalls}, (_, i) => i).sort(() => 0.5 - Math.random());
+            earlyPatternBalls.forEach((ball, i) => {
+                preCallSchedule[slotIndices[i]] = ball;
+            });
+
             io.emit('gameStarted', { calledNumbers: [] });
             io.emit('gameStartedBroadcast');
 
             if (numberCallInterval) clearInterval(numberCallInterval);
             
-            let winNumQueue = [...interleavedWinningNumbers];
-
-            // 💡 የመጨረሻውን ቁጥር ትክክለኛው ሰዓት ላይ እንዲጠራ ተደርጓል
-            let actualTargetCallCount = Math.max(5, targetCallCount);
+            let callStep = 0;
 
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
@@ -581,221 +567,91 @@ function startMainGameLoop() {
                     return;
                 }
 
-                let currentCalledLen = globalRoom.calledNumbers.length;
-                let shouldTriggerWin = (currentCalledLen >= actualTargetCallCount);
-                
-                if (shouldTriggerWin) {
-                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                    
-                    // 💡 የመጨረሻው ቁጥር ቦርዱ ላይ ታይቶ ተጫዋቾች የ 6 ሰከንድ የማየት እና ቢንጎ የማለት እድል እንዲኖራቸው ቆይታ ተደርጓል
-                    setTimeout(() => {
-                        if (!globalRoom.gameActive) return;
-
-                        let totalPot = (globalRoom.playersCount || 1) * 10;
-                        let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
-
-                        let primaryCardNum = winningCardNums[0];
-                        let winningCardNumbers = getCartelaNumbers(primaryCardNum);
-                        let matchedIndices = getWinningMatchedIndices(winningCardNumbers, globalRoom.calledNumbers) || sharedPattern;
-
-                        let winnerNamesStr = winningUsernamesArr.join(', ');
-                        let hasRealWinner = winningSocketData.some(i => !i.isBot);
-                        
-                        winningSocketData.forEach(item => {
-                            if (!item.isBot && item.userId) {
-                                userWallets[item.userId] = (userWallets[item.userId] || 0) + prizePerWinner;
-                            }
-                        });
-
-                        sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
-
-                        winningSocketData.forEach(item => {
-                            if (!item.isBot && item.socketId) {
-                                let targetSocket = io.sockets.sockets.get(item.socketId);
-                                if (targetSocket) {
-                                    targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[item.userId] });
-                                }
-                            }
-                        });
-
-                        io.emit('bingoWinner', {
-                            username: winnerNamesStr,
-                            userId: winningSocketData.find(i => !i.isBot)?.socketId || null,
-                            cardNum: primaryCardNum,
-                            prize: prizePerWinner,
-                            calledNumbers: globalRoom.calledNumbers,
-                            matchedIndices: matchedIndices,
-                            winnersCount: winnersCount,
-                            playersCount: globalRoom.playersCount
-                        });
-                        
-                        setTimeout(() => { endRoundAndRestart(); }, 6000);
-                    }, 6000); // 👈 6 ሰከንድ የቆይታ ጊዜ
-
-                    return;
-                }
-
                 let calledNum;
-                
-                if (winNumQueue.length > 0) {
-                    let nextQueuedNum = Number(winNumQueue[0]);
-                    let wouldRealUserWinNow = false;
 
-                    let tempCalledCheck = [...globalRoom.calledNumbers, nextQueuedNum];
-                    Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
-                        if (pData && pData.cards) {
-                            pData.cards.forEach(cNum => {
-                                let cList = getCartelaNumbers(cNum);
-                                let matched = getWinningMatchedIndices(cList, tempCalledCheck);
-                                if (matched) wouldRealUserWinNow = true;
-                            });
-                        }
-                    });
-
-                    if (wouldRealUserWinNow && currentWinnerType !== 'bot') {
-                        winNumQueue.shift(); 
-                    }
-                }
-
-                if (winNumQueue.length > 0) {
-                    calledNum = Number(winNumQueue.shift());
-                    let availIdx = availableNumbers.indexOf(calledNum);
-                    if (availIdx > -1) availableNumbers.splice(availIdx, 1);
-                } else {
-                    if (availableNumbers.length > 0) {
-                        let candidateIndices = [];
-
-                        let columnCounts = { B: 0, I: 0, N: 0, G: 0, O: 0 };
-                        globalRoom.calledNumbers.forEach(n => {
-                            if (n <= 15) columnCounts.B++;
-                            else if (n <= 30) columnCounts.I++;
-                            else if (n <= 45) columnCounts.N++;
-                            else if (n <= 60) columnCounts.G++;
-                            else columnCounts.O++;
-                        });
-
-                        let sortedCols = Object.keys(columnCounts).sort((a, b) => columnCounts[b] - columnCounts[a]);
-                        let overcrowdedCol = columnCounts[sortedCols[0]] - (globalRoom.calledNumbers.length / 5) > 2 ? sortedCols[0] : null;
-
-                        for (let i = 0; i < availableNumbers.length; i++) {
-                            let testNum = availableNumbers[i];
-                            let testCol = testNum <= 15 ? 'B' : testNum <= 30 ? 'I' : testNum <= 45 ? 'N' : testNum <= 60 ? 'G' : 'O';
-                            
-                            if (overcrowdedCol && testCol === overcrowdedCol && Math.random() < 0.7) {
-                                continue;
-                            }
-
-                            let wouldRealUserWin = false;
+                // 1. ከመጨረሻው ጥሪ በፊት ያሉት ጥሪዎች
+                if (callStep < totalPreCalls) {
+                    if (preCallSchedule[callStep] !== null) {
+                        calledNum = preCallSchedule[callStep];
+                    } else {
+                        // ተራ ቁጥር ስንመርጥ ሌላ ሪል ዩዘር ድንገት እንዳያሸንፍ እንጠነቀቃለን
+                        let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
-
-                            Object.entries(globalRoom.playerRoundCards).forEach(([sId, pData]) => {
+                            let realWins = false;
+                            Object.values(globalRoom.playerRoundCards).forEach(pData => {
                                 if (pData && pData.cards) {
                                     pData.cards.forEach(cNum => {
-                                        let cList = getCartelaNumbers(cNum);
-                                        let matched = getWinningMatchedIndices(cList, tempCalled);
-                                        if (matched) {
-                                            wouldRealUserWin = true; 
+                                        if (getWinningMatchedIndices(getCartelaNumbers(cNum), tempCalled)) {
+                                            realWins = true;
                                         }
                                     });
                                 }
                             });
+                            return !realWins;
+                        });
 
-                            if (!wouldRealUserWin) {
-                                candidateIndices.push(i);
-                            }
-                        }
-
-                        if (candidateIndices.length > 0) {
-                            let randCandIdx = candidateIndices[Math.floor(Math.random() * candidateIndices.length)];
-                            calledNum = availableNumbers.splice(randCandIdx, 1)[0];
+                        if (safeIndex !== -1) {
+                            calledNum = availableNumbers.splice(safeIndex, 1)[0];
                         } else {
-                            let randIdx = Math.floor(Math.random() * availableNumbers.length);
-                            calledNum = availableNumbers.splice(randIdx, 1)[0];
+                            calledNum = availableNumbers.shift();
                         }
-                    } else {
-                        calledNum = Math.floor(Math.random() * 75) + 1;
                     }
+                    callStep++;
+
+                    if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                        globalRoom.calledNumbers.push(Number(calledNum));
+                        globalRoom.lastCalledNumber = Number(calledNum);
+
+                        io.emit('numberCalled', {
+                            number: Number(calledNum),
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+                        io.emit('numberCalledBroadcast', Number(calledNum));
+                    }
+                    return;
                 }
 
-                if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
-                    globalRoom.calledNumbers.push(Number(calledNum));
-                    globalRoom.lastCalledNumber = Number(calledNum);
+                // 2. የመጨረሻው አሸናፊ ቁጥር (finalWinningBall - ለምሳሌ 13) የሚጠራበት ሰዓት!
+                if (callStep === totalPreCalls) {
+                    callStep++;
+                    calledNum = finalWinningBall;
 
-                    io.emit('numberCalled', {
-                        number: Number(calledNum),
-                        calledNumbers: globalRoom.calledNumbers
-                    });
-                    io.emit('numberCalledBroadcast', Number(calledNum));
+                    if (calledNum !== undefined && !globalRoom.calledNumbers.includes(Number(calledNum))) {
+                        globalRoom.calledNumbers.push(Number(calledNum));
+                        globalRoom.lastCalledNumber = Number(calledNum);
 
-                    let winningWinnersList = [];
-                    Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
-                        if (pData && pData.cards) {
-                            pData.cards.forEach(cNum => {
-                                let cList = getCartelaNumbers(cNum);
-                                let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                                if (matched) { 
-                                    winningWinnersList.push({
-                                        username: pData.username || 'ተጫዋች',
-                                        socketId: socketId,
-                                        userId: pData.userId,
-                                        isBot: false,
-                                        cardNum: cNum,
-                                        matched: matched,
-                                        cartelaList: cList
-                                    });
-                                }
-                            });
-                        }
-                    });
-
-                    if (winningWinnersList.length > 0) {
-                        if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-                        
-                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ ተጫዋቾች አይተው እንዲያረጋግጡ እና ቢንጎ ለማለት የ 6 ሰከንድ እድል እንዲኖራቸው ቆይታ ተደርጓል
-                        setTimeout(() => {
-                            if (!globalRoom.gameActive) return;
-                            
-                            let primaryWinner = winningWinnersList[0];
-                            let winningPrimaryCardNum = primaryWinner.cardNum;
-                            let winningMatchedIndices = primaryWinner.matched;
-
-                            let winnerNamesStr = winningWinnersList.map(w => w.username).join(', ');
-                            let winnersCount = winningWinnersList.length;
-
-                            let totalPot = (globalRoom.playersCount || 1) * 10;
-                            let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
-
-                            winningWinnersList.forEach(w => {
-                                if (!w.isBot && w.userId) {
-                                    userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
-                                }
-                            });
-
-                            sendWinnerNotificationToAdmin(winnerNamesStr, winningPrimaryCardNum, prizePerWinner, true);
-
-                            winningWinnersList.forEach(w => {
-                                if (!w.isBot && w.socketId) {
-                                    let targetSocket = io.sockets.sockets.get(w.socketId);
-                                    if (targetSocket) {
-                                        targetSocket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[w.userId] });
-                                    }
-                                }
-                            });
-
-                            io.emit('bingoWinner', {
-                                username: winnerNamesStr,
-                                userId: winningWinnersList.find(w => !w.isBot)?.socketId || null,
-                                cardNum: winningPrimaryCardNum,
-                                prize: prizePerWinner,
-                                calledNumbers: globalRoom.calledNumbers,
-                                matchedIndices: winningMatchedIndices,
-                                winnersCount: winnersCount,
-                                playersCount: globalRoom.playersCount
-                            });
-
-                            setTimeout(() => { endRoundAndRestart(); }, 6000);
-                        }, 6000); // 👈 6 ሰከንድ የማየት እና ቢንጎ የማለት እድል
+                        // መጀመሪያ የመጨረሻውን ቁጥር ለሁሉም ተጫዋቾች በግልጽ እንጠራለን እና ቦርዱ ላይ እንዲታይ እናደርጋለን!
+                        io.emit('numberCalled', {
+                            number: Number(calledNum),
+                            calledNumbers: globalRoom.calledNumbers
+                        });
+                        io.emit('numberCalledBroadcast', Number(calledNum));
                     }
+
+                    // ቁጥሩ ስለተጠራ ተጨማሪ ቁጥር መጥራት እናቆማለን
+                    if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+
+                    // አሁን ለ 6 ሰከንድ ቀጥ ብሎ ይቆማል -> ተጫዋቹ ቁጥሩን ፓተርኑ ላይ አይቶ "BINGO!" እንዲል እድል ይሰጠዋል
+                    // በ 6 ሰከንድ ውስጥ ካልተጫነ ግን አውቶማቲካሊ ዊን ያደርጋል!
+                    winGraceTimeout = setTimeout(() => {
+                        if (!globalRoom.gameActive) return;
+
+                        let finalWinnersList = winningSocketData.map((item, idx) => {
+                            let cNum = winningCardNums[idx];
+                            let cList = getCartelaNumbers(cNum);
+                            let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers) || sharedPattern;
+                            return {
+                                username: winningUsernamesArr[idx],
+                                socketId: item.socketId,
+                                userId: item.userId,
+                                isBot: item.isBot,
+                                cardNum: cNum,
+                                matched: matched
+                            };
+                        });
+
+                        announceWinnersAndFinish(finalWinnersList);
+                    }, 6000);
                 }
 
             }, 4500); 
@@ -805,6 +661,7 @@ function startMainGameLoop() {
 
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
+    if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
     globalRoom.gameActive = false;
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
@@ -958,7 +815,7 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
 
                             if (reqData.chatId) {
-                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት 450 ብር ተልኳል። እናመሰግናለን! 🙏`;
+                                let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት ${reqData.amount} ብር ተልኳል። እናመሰግናለን! 🙏`;
                                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                     chat_id: reqData.chatId,
                                     text: successMsg,
@@ -1175,28 +1032,14 @@ io.on('connection', (socket) => {
         let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
         
         if (matched) {
-            let totalPot = (globalRoom.playersCount || 1) * 10;
-            let prizePerWinner = Math.floor(totalPot * 0.90);
-            
-            userWallets[userId] = (userWallets[userId] || 0) + prizePerWinner;
-            
-            sendWinnerNotificationToAdmin(data.username || 'ተጫዋች', cardNum, prizePerWinner, true);
-            
-            socket.emit('rewardPrize', { prize: prizePerWinner, balance: userWallets[userId] });
-            
-            io.emit('bingoWinner', {
+            announceWinnersAndFinish([{
                 username: data.username || 'ተጫዋች',
-                userId: socket.id,
+                socketId: socket.id,
+                userId: userId,
+                isBot: false,
                 cardNum: cardNum,
-                prize: prizePerWinner,
-                calledNumbers: globalRoom.calledNumbers,
-                matchedIndices: matched,
-                winnersCount: 1,
-                playersCount: globalRoom.playersCount
-            });
-            
-            if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
-            setTimeout(() => { endRoundAndRestart(); }, 6000);
+                matched: matched
+            }]);
         } else {
             socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
         }
@@ -1311,7 +1154,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        let successCount = 0;
         let allUserIds = [...allRegisteredUsers];
 
         (async () => {
@@ -1322,7 +1164,6 @@ io.on('connection', (socket) => {
                         text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
                         parse_mode: 'Markdown'
                     });
-                    successCount++;
                     await new Promise(resolve => setTimeout(resolve, 100));
                 } catch (e) {}
             }
