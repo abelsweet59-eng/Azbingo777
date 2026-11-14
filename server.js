@@ -555,6 +555,12 @@ function startMainGameLoop() {
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
+            // 🛑 ጠቃሚ ማስተካከያ: በስታንዳርድ ሞድ ሰዓት ሪል ዩዘር 1 ወይም 2 ቁጥሮች ብቻ እየቀሩት (ቆሞ) እንዲቀር 
+            // የመጨረሻውን የድል ኳስ ከሪል ዩዘር ካርድ ፓተርን ውስጥ እንከለክለዋለን!
+            if (!targetRealCount) {
+                availableNumbers = availableNumbers.filter(n => n !== finalWinningBall);
+            }
+
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
             let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
@@ -587,15 +593,21 @@ function startMainGameLoop() {
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let realWins = false;
-                            Object.values(globalRoom.playerRoundCards).forEach(pData => {
-                                if (pData && pData.cards) {
-                                    pData.cards.forEach(cNum => {
-                                        if (getWinningMatchedIndices(getCartelaNumbers(cNum), tempCalled)) {
-                                            realWins = true;
-                                        }
-                                    });
-                                }
-                            });
+                            
+                            // 🛑 ጥብቅ ማጣሪያ: በስታንዳርድ ሞድ ጊዜ የትኛዉም ሪል ዩዘር ካርድ ሙሉ በሙሉ (Pattern) እንዳይሞላ እንከላከላለን
+                            if (!targetRealCount) {
+                                Object.values(globalRoom.playerRoundCards).forEach(pData => {
+                                    if (pData && pData.cards) {
+                                        pData.cards.forEach(cNum => {
+                                            let cList = getCartelaNumbers(cNum);
+                                            let matched = getWinningMatchedIndices(cList, tempCalled);
+                                            if (matched) {
+                                                realWins = true; // ሪል ዩዘሩ እንዳያሸንፍ ይህን ቁጥር እንዘለዋለን
+                                            }
+                                        });
+                                    }
+                                });
+                            }
                             return !realWins;
                         });
 
@@ -1151,7 +1163,6 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    // 🛑 እዚህ ጋር የተስተካከለው የሂሳብ ማረጋገጫ (Real-time Balance Check)
     socket.on('adminCheckUserBalance', (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
@@ -1285,7 +1296,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 🛑 ካርድ ሲረጋገጥ የባላንስ መረጃው ሰርቨር ላይ እንዲዘመን የተደረገበት ክፍል
     socket.on('confirmCards', (data) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             let userId = String(data.userId || 'unknown');
