@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -436,6 +436,7 @@ function startMainGameLoop() {
                     if (winningWinnersList.length > 0) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         
+                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ እንዲታይ ለ 5 ሰከንድ ቆይቶ ዊን ያደርጋል
                         setTimeout(() => {
                             if (!globalRoom.gameActive) return;
 
@@ -576,6 +577,9 @@ function startMainGameLoop() {
             
             let winNumQueue = [...interleavedWinningNumbers];
 
+            // 💡 የመጨረሻውን ቁጥር መጥራት የሚጀምረው ከ targetCallCount በ 1 ቀንሶ ነው (ይህም የመጨረሻው ቁጥር በመጀመሪያ ተጠርቶ በቦርዱ ላይ እንዲታይ እና ተጫዋቾቹ ቢንጎ ለማለት 6 ሰከንድ እድል እንዲኖራቸው ያደርጋል)
+            let actualTargetCallCount = Math.max(5, targetCallCount - 1);
+
             numberCallInterval = setInterval(() => {
                 if (!globalRoom.gameActive) {
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
@@ -583,11 +587,12 @@ function startMainGameLoop() {
                 }
 
                 let currentCalledLen = globalRoom.calledNumbers.length;
-                let shouldTriggerWin = (currentCalledLen >= targetCallCount);
+                let shouldTriggerWin = (currentCalledLen >= actualTargetCallCount);
                 
                 if (shouldTriggerWin) {
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                     
+                    // 💡 የመጨረሻው ቁጥር ቦርዱ ላይ ታይቶ እንዲቆይ ለ 5 ሰከንድ ቆይታ አድርጎ አሸናፊውን ያወጣል
                     setTimeout(() => {
                         if (!globalRoom.gameActive) return;
 
@@ -751,6 +756,7 @@ function startMainGameLoop() {
                     if (winningWinnersList.length > 0) {
                         if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                         
+                        // 💡 ቁጥሩ ቦርዱ ላይ መጥቶ እንዲታይ ለ 5 ሰከንድ ቆይቶ ዊን ያደርጋል
                         setTimeout(() => {
                             if (!globalRoom.gameActive) return;
                             
@@ -1101,7 +1107,7 @@ io.on('connection', (socket) => {
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
     socket.emit('telebirrConfigUpdated', telebirrConfig);
-    socket.emit('botConfigUpdated', botConfig); // 👈 የቦት ማዋቀሪያውን ለክላየንት መላኪያ
+    socket.emit('botConfigUpdated', botConfig); 
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
@@ -1248,7 +1254,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // 💡 አድሚኑ ከፓነል የቦት ብዛት ሲቀይር የሚቀበለው ሎጂክ
     socket.on('adminUpdateBotConfig', (data) => {
         if (data && data.minBots !== undefined && data.maxBots !== undefined) {
             let minB = parseInt(data.minBots);
