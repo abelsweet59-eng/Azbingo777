@@ -269,7 +269,7 @@
                     </div>
                 </div>
 
-                <!-- 🎁 ሪፈራል እና ሼር ማድረጊያ ቦክስ (በምስሉ ላይ በቀይ ባከበቡት ቦታ ላይ ተካቷል) -->
+                <!-- 🎁 ሪፈራል እና ሼር ማድረጊያ ቦክስ -->
                 <div class="bg-[#1e1e2f] border border-purple-500/30 rounded-2xl p-3 space-y-2 shadow-xl">
                     <div class="flex items-center gap-1.5">
                         <span class="text-base">🎁</span>
@@ -529,7 +529,7 @@
                 <div class="space-y-2">
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo(document.getElementById('telebirr-phone-text').innerText, 'telebirr-copy-msg')">
                         <div class="text-[9px] text-sky-400 font-bold" id="telebirr-name-label">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
-                        <div id="telebirr-phone-text" class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
+                        <div id="telebirr-phone-text" class="text-amber-400 font-black text-xs tracking-wider">0900015260</div>
                         <div id="telebirr-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                     </div>
 
@@ -756,6 +756,14 @@
                 }
             });
 
+            // 🔄 ሪል-ታይም ባላንስ ማስተካከያ (Real-time Balance Listener)
+            socket.on('updateBalance', (data) => {
+                if (data && data.balance !== undefined) {
+                    walletBalance = parseFloat(data.balance);
+                    updateWalletUI();
+                }
+            });
+
             socket.on('telebirrConfigUpdated', (config) => {
                 const phoneEl = document.getElementById('telebirr-phone-text');
                 const nameEl = document.getElementById('telebirr-name-label');
@@ -807,7 +815,11 @@
             });
 
             socket.on('rewardPrize', (data) => {
-                walletBalance += data.prize;
+                if (data.balance !== undefined) {
+                    walletBalance = parseFloat(data.balance);
+                } else {
+                    walletBalance += data.prize;
+                }
                 updateWalletUI();
                 addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
             });
@@ -922,7 +934,11 @@
                 resetPlayerSelectionForNewRound();
             });
 
-            socket.on('cardSelectionSuccess', () => {
+            socket.on('cardSelectionSuccess', (data) => {
+                if (data && data.balance !== undefined) {
+                    walletBalance = parseFloat(data.balance);
+                    updateWalletUI();
+                }
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! (ቆጠራው እስኪያልቅ ይጠብቁ)";
                 localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                 localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
@@ -1033,26 +1049,35 @@
             });
 
             socket.on('financialApproved', (data) => {
+                if (data.balance !== undefined) {
+                    walletBalance = parseFloat(data.balance);
+                } else {
+                    if (data.type === 'deposit' || data.type === 'bonus') {
+                        walletBalance += data.amount;
+                    } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
+                        walletBalance -= data.amount;
+                    }
+                }
+                updateWalletUI();
+
                 if (data.type === 'deposit') {
-                    walletBalance += data.amount;
-                    updateWalletUI();
                     addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
                     alert(`✅ የካርድ/ዲፖዚት የ ${data.amount} ብር ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
-                    walletBalance += data.amount;
-                    updateWalletUI();
                     addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income');
                     alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር ቦነስ ተሰጥቶዎታል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
-                    walletBalance -= data.amount;
-                    updateWalletUI();
                     addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
                     alert(`✅ የ ${data.amount} ብር ዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
                 }
             });
 
             socket.on('financialRejected', (data) => {
-                alert(`❌ ጥያቄዎ ውድቅ ተደርጓል።`);
+                if (data.balance !== undefined) {
+                    walletBalance = parseFloat(data.balance);
+                    updateWalletUI();
+                }
+                alert(`❌ ጥያቄዎ ውድቅ ተደርጓል። ብሩ ወደ አካውንትዎ ተመልሷል።`);
             });
 
             socket.on('adminBonusResponse', (data) => {
@@ -1065,7 +1090,6 @@
             });
         });
 
-        // 🚀 አውቶማቲክ ቴሌግራም ሼር ማድረጊያ ፈንክሽን
         function shareRefLink() {
             if (!currentReferralLink || currentReferralLink.includes("መጫን ላይ")) {
                 alert("⚠️ የሪፈራል ሊንኩ እስኪመጣ ትንሽ ይጠብቁ!");
@@ -1082,7 +1106,6 @@
             }
         }
 
-        // 📋 ኮፒ ማድረጊያ (አማራጭ)
         function copyRefLink() {
             let copyText = document.getElementById("refLinkInput");
             if (!copyText || !copyText.value || copyText.value.includes("መጫን ላይ")) {
