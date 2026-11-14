@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -1290,17 +1290,20 @@ io.on('connection', (socket) => {
 
     socket.on('confirmCards', (data) => {
         if (data && data.cards && Array.isArray(data.cards)) {
+            let userId = String(data.userId || 'unknown');
             globalRoom.playerRoundCards[socket.id] = {
                 cards: data.cards,
                 username: data.username || 'ተጫዋች',
-                userId: data.userId || 'unknown'
+                userId: userId
             };
             if (globalRoom.playerTemporaryCards[socket.id]) {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
-            socket.emit('cardSelectionSuccess');
+            
+            // ሰርቨሩ የካርድ ግዢ ሲረጋገጥ የተጠቃሚውን ትክክለኛ የሰርቨር ባላንስ መልሶ ይልካል
+            socket.emit('cardSelectionSuccess', { balance: userWallets[userId] });
         }
     });
 
