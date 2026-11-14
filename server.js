@@ -792,17 +792,16 @@ async function pollTelegramUpdates() {
                     let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                     if (action === 'app') {
+                        // 💡 አፕሩቭ ሲደረግ: ዲፖዚት ከሆነ እዚህ ይጨመራል፤ ዊዝድሮዋል ከሆነ ግን ጥያቄው ሲላክ (Escrow) ቀድሞውኑ ተቀንሶ ስለቆየ እዚህ ላይ ተጨማሪ መቀነስ አያስፈልግም
                         if (reqType === 'deposit' || reqType === 'bonus') {
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
-                        } else if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) - Math.abs(rawAmount);
                         }
 
                         let successPayload = { 
                             type: reqData.type, 
                             amount: rawAmount, 
                             adjustedAmount: finalAmountForClient,
-                            balance: userWallets[reqData.userId]
+                            balance: userWallets[reqData.userId] || 0
                         };
 
                         if (targetSocket) {
@@ -842,6 +841,11 @@ async function pollTelegramUpdates() {
                         }
 
                     } else {
+                        // ❌ ሪጀክት (ሰርዝ) ሲደረግ: ዊዝድሮዋል ከሆነ ታግዶ/ተቀንሶ የነበረው ገንዘብ ተመልሶ ወደ ተጫዋቹ አካውንት ይገባል!
+                        if (reqType === 'withdraw' || reqType === 'withdrawal') {
+                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                        }
+
                         if (reqData.chatId) {
                             let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -852,10 +856,10 @@ async function pollTelegramUpdates() {
                         }
 
                         if (targetSocket) { 
-                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount }); 
+                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: userWallets[reqData.userId] || 0 }); 
                         }
 
-                        let rejectedFinalText = `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ *(ሁኔታ: በአድሚን ተሰርዟል)*`;
+                        let rejectedFinalText = `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ *(ሁኔታ: በአድሚን ተሰርዟል - ብሩ ተመልሷል)*`;
 
                         for (let adminId of ADMIN_CHAT_IDS) {
                             try {
@@ -1262,19 +1266,36 @@ io.on('connection', (socket) => {
             return;
         }
 
+        let parsedAmount = Number(amount) || 0;
+        let cleanUserId = String(userId || 'unknown');
+        let currentWalletBal = userWallets[cleanUserId] || 0;
+
+        // 💡 ዊዝድሮዋል (Withdrawal) በሚጠየቅበት ጊዜ ተጠቃሚው በቂ ሂሳብ እንዳለው እናረጋግጣለን
+        if (type === 'withdraw' || type === 'withdrawal') {
+            if (currentWalletBal < parsedAmount) {
+                socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
+                return;
+            }
+            // 💡 ዊዝድሮዋል ጥያቄ ሲላክ ገንዘቡ ወዲያውኑ ከቀሪ ሂሳቡ ላይ ይቀነሳል (ተጫዋቹ ጨዋታ ላይ እንዳይጨርሰው)
+            userWallets[cleanUserId] = currentWalletBal - parsedAmount;
+            socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
+        }
+
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
+        let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
         
         pendingRequests[requestId] = { 
-            userId: String(userId || 'unknown'), 
-            chatId: telegramChatId || userId, 
+            userId: cleanUserId, 
+            chatId: telegramChatId || cleanUserId, 
             type, 
-            amount, 
+            amount: parsedAmount, 
             username, 
             socketId: socket.id, 
-            timestamp: Date.now() 
+            timestamp: Date.now(),
+            requestTimeStr: requestTimeStr
         };
 
-        sendAdminFinancialRequest(requestId, type, amount, username, userId, currentBalance, phone, receipt);
+        sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId], phone, receipt);
         socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
     });
 
