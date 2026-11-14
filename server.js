@@ -28,6 +28,10 @@ const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 const allRegisteredUsers = new Set();
 
+// 🔗 ሪፈራል ማከማቻ (ማን ማንን እንደጋበዘ እና የሪፈራል ቦነስ መረጃ ለመያዝ)
+const userReferrers = {}; // { userId: referrerId }
+const referralEarnings = {}; // { userId: totalBonusEarned }
+
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 
@@ -489,7 +493,6 @@ function startMainGameLoop() {
                 return;
             }
 
-            // --- Standard Bot + Real Users Mode ---
             let winningUsernamesArr = [];
             let winningSocketData = []; 
             let winnersCount = Math.random() < 0.75 ? 1 : 2; 
@@ -768,10 +771,21 @@ async function pollTelegramUpdates() {
                                 }
                             }
                         }
+                    } else {
+                        // 🔗 እዚህ ጋር ተጠቃሚው ወደ ቦቱ ሲገባ /start <referrerId> ብሎ ሲልክ ሪፈራሉ ይመዝገባል
+                        if (msgText.startsWith('/start')) {
+                            let startParts = msgText.split(' ');
+                            if (startParts.length > 1) {
+                                let refId = startParts[1].trim();
+                                let newUserId = senderChatId;
+                                if (refId && refId !== newUserId && !userReferrers[newUserId]) {
+                                    userReferrers[newUserId] = refId;
+                                }
+                            }
+                        }
                     }
                 }
 
-                // --- Telegram Callback Query (Admin Approve / Reject Syncing) ---
                 if (update.callback_query) {
                     let callbackQuery = update.callback_query;
                     let data = callbackQuery.data; 
@@ -805,9 +819,45 @@ async function pollTelegramUpdates() {
                     let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
 
                     if (action === 'app') {
-                        // 💡 አፕሩቭ ሲደረግ: ዲፖዚት ከሆነ እዚህ ይጨመራል፤ ዊዝድሮዋል ከሆነ ግን ጥያቄው ሲላክ (Escrow) ቀድሞውኑ ተቀንሶ ስለቆየ እዚህ ላይ ተጨማሪ መቀነስ አያስፈልግም
                         if (reqType === 'deposit' || reqType === 'bonus') {
+                            let isFirstRealDeposit = !reqData.hasDepositedBefore; 
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+
+                            // 🔗 ሪፈራል ቦነስ ሎጂክ (የመጀመሪያ ዲፖዚት ሲያደርግ ለጋባዡ 5 ብር መስጠት)
+                            let referrerId = userReferrers[reqData.userId];
+                            if (referrerId && !reqData.hasDepositedBefore) {
+                                let bonusForReferrer = 5;
+                                userWallets[referrerId] = (userWallets[referrerId] || 0) + bonusForReferrer;
+                                referralEarnings[referrerId] = (referralEarnings[referrerId] || 0) + bonusForReferrer;
+
+                                let refPayload = {
+                                    type: 'bonus',
+                                    amount: bonusForReferrer,
+                                    adjustedAmount: bonusForReferrer,
+                                    balance: userWallets[referrerId]
+                                };
+
+                                let refSocketObj = onlineRealUsers.find(u => u.userId === referrerId);
+                                if (refSocketObj) {
+                                    let refSocket = io.sockets.sockets.get(refSocketObj.socketId);
+                                    if (refSocket) {
+                                        refSocket.emit('financialApproved', refPayload);
+                                        refSocket.emit('chatNotification', { message: `🎁 ዎው! ጓደኛዎ የመጀመሪያውን ዲፖዚት በማድረጉ 5 ብር የሪፈራል ቦነስ አግኝተዋል!` });
+                                    }
+                                } else {
+                                    if (!offlineApprovedQueue[referrerId]) offlineApprovedQueue[referrerId] = [];
+                                    offlineApprovedQueue[referrerId].push(refPayload);
+                                }
+
+                                // ለአድሚን ማሳወቂያ መላክ (አማራጭ)
+                                for (let adminChatId of ADMIN_CHAT_IDS) {
+                                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                        chat_id: adminChatId,
+                                        text: `🎁 *ሪፈራል ቦነስ የተሰጠ:* ዩዘር ID \`${referrerId}\` ጓደኛው ዲፖዚት በማድረጉ 5 ብር ተሸልሟል!`,
+                                        parse_mode: 'Markdown'
+                                    }).catch(() => {});
+                                }
+                            }
                         }
 
                         let successPayload = { 
@@ -854,7 +904,6 @@ async function pollTelegramUpdates() {
                         }
 
                     } else {
-                        // ❌ ሪጀክት (ሰርዝ) ሲደረግ: ዊዝድሮዋል ከሆነ ታግዶ/ተቀንሶ የነበረው ገንዘብ ተመልሶ ወደ ተጫዋቹ አካውንት ይገባል!
                         if (reqType === 'withdraw' || reqType === 'withdrawal') {
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                         }
@@ -1068,7 +1117,13 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
+            // 🔗 ለተጠቃሚው የራሱን ሪፈራል ሊንክ መላክ (ለምሳሌ: https://t.me/YourBotUsername?start=userId)
+            let botUsername = "AzBIng2obot"; // የቦትዎ ዩዘርናም
+            let myReferralLink = `https://t.me/${botUsername}?start=${userId}`;
+            let myTotalEarnings = referralEarnings[userId] || 0;
+            
             socket.emit('updateBalance', { balance: userWallets[userId] });
+            socket.emit('referralData', { referralLink: myReferralLink, totalEarnings: myTotalEarnings });
 
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
@@ -1283,13 +1338,11 @@ io.on('connection', (socket) => {
         let cleanUserId = String(userId || 'unknown');
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
-        // 💡 ዊዝድሮዋል (Withdrawal) በሚጠየቅበት ጊዜ ተጠቃሚው በቂ ሂሳብ እንዳለው እናረጋግጣለን
         if (type === 'withdraw' || type === 'withdrawal') {
             if (currentWalletBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
                 return;
             }
-            // 💡 ዊዝድሮዋል ጥያቄ ሲላክ ገንዘቡ ወዲያውኑ ከቀሪ ሂሳቡ ላይ ይቀነሳል (ተጫዋቹ ጨዋታ ላይ እንዳይጨርሰው)
             userWallets[cleanUserId] = currentWalletBal - parsedAmount;
             socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
         }
