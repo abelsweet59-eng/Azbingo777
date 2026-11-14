@@ -28,9 +28,8 @@ const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
 const allRegisteredUsers = new Set();
 
-// 🔗 ሪፈራል ማከማቻ (ማን ማንን እንደጋበዘ እና የሪፈራል ቦነስ መረጃ ለመያዝ)
-const userReferrers = {}; // { userId: referrerId }
-const referralEarnings = {}; // { userId: totalBonusEarned }
+const userReferrers = {}; 
+const referralEarnings = {}; 
 
 let isDepositLocked = false;
 let isWithdrawLocked = false;
@@ -772,7 +771,6 @@ async function pollTelegramUpdates() {
                             }
                         }
                     } else {
-                        // 🔗 ሪፈራል መመዝገቢያ በ /start <referrerId>
                         if (msgText.startsWith('/start')) {
                             let startParts = msgText.split(' ');
                             if (startParts.length > 1) {
@@ -822,7 +820,6 @@ async function pollTelegramUpdates() {
                         if (reqType === 'deposit' || reqType === 'bonus') {
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
 
-                            // 🔗 ሪፈራል ቦነስ (5 ብር ለጋባዡ መስጠት)
                             let referrerId = userReferrers[reqData.userId];
                             if (referrerId) {
                                 let bonusForReferrer = 5;
@@ -1115,7 +1112,6 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
-            // 🔗 ሪፈራል ሊንክ መላኪያ
             let botUsername = "AzBIng2obot"; 
             let myReferralLink = `https://t.me/${botUsername}?start=${userId}`;
             let myTotalEarnings = referralEarnings[userId] || 0;
@@ -1155,6 +1151,7 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
+    // 🛑 እዚህ ጋር የተስተካከለው የሂሳብ ማረጋገጫ (Real-time Balance Check)
     socket.on('adminCheckUserBalance', (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
@@ -1288,9 +1285,11 @@ io.on('connection', (socket) => {
         }
     });
 
+    // 🛑 ካርድ ሲረጋገጥ የባላንስ መረጃው ሰርቨር ላይ እንዲዘመን የተደረገበት ክፍል
     socket.on('confirmCards', (data) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             let userId = String(data.userId || 'unknown');
+            
             globalRoom.playerRoundCards[socket.id] = {
                 cards: data.cards,
                 username: data.username || 'ተጫዋች',
@@ -1299,10 +1298,14 @@ io.on('connection', (socket) => {
             if (globalRoom.playerTemporaryCards[socket.id]) {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
+
+            if (data.balance !== undefined && !isNaN(data.balance)) {
+                userWallets[userId] = parseFloat(data.balance);
+            }
+
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
             
-            // ሰርቨሩ የካርድ ግዢ ሲረጋገጥ የተጠቃሚውን ትክክለኛ የሰርቨር ባላንስ መልሶ ይልካል
             socket.emit('cardSelectionSuccess', { balance: userWallets[userId] });
         }
     });
