@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const axios = require('axios');
-const fs = require('fs'); // 👈 ቋሚ ፋይል ለማስቀመጥ የሚያስፈልግ
+const fs = require('fs'); // ቋሚ ፋይል ለማስቀመጥ የሚያስፈልግ
 
 const app = express();
 const server = http.createServer(app);
@@ -39,7 +39,6 @@ let telebirrConfig = {
     name: "Abel Seyoum"
 };
 
-// አስቀድሞ በፋይል የተቀመጠ ካለ እንጭነዋለን (ሰርቨር ሲጠፋ/ሲነሳ እንዳይጠፋ)
 if (fs.existsSync(configFilePath)) {
     try {
         let savedConfig = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
@@ -51,6 +50,28 @@ if (fs.existsSync(configFilePath)) {
 function saveTelebirrConfigToDisk() {
     try {
         fs.writeFileSync(configFilePath, JSON.stringify(telebirrConfig, null, 2));
+    } catch (e) {}
+}
+
+// 💡 የቦቶች ብዛት መቆጣጠሪያ (Min/Max Bots) ቋሚ ማዋቀሪያ ፋይል ሎጂክ
+const botConfigFilePath = path.join(__dirname, 'bot_config.json');
+
+let botConfig = {
+    minBots: 40,
+    maxBots: 250
+};
+
+if (fs.existsSync(botConfigFilePath)) {
+    try {
+        let savedBotConfig = JSON.parse(fs.readFileSync(botConfigFilePath, 'utf8'));
+        if (savedBotConfig.minBots !== undefined) botConfig.minBots = Number(savedBotConfig.minBots);
+        if (savedBotConfig.maxBots !== undefined) botConfig.maxBots = Number(savedBotConfig.maxBots);
+    } catch (e) {}
+}
+
+function saveBotConfigToDisk() {
+    try {
+        fs.writeFileSync(botConfigFilePath, JSON.stringify(botConfig, null, 2));
     } catch (e) {}
 }
 
@@ -222,20 +243,24 @@ let lastSmoothCount = 95;
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
 
+    let minB = Number(botConfig.minBots) || 40;
+    let maxB = Number(botConfig.maxBots) || 250;
+    if (minB > maxB) { let tmp = minB; minB = maxB; maxB = tmp; }
+
     const now = new Date();
     let utcHours = now.getUTCHours();
     let ethiopianHour = (utcHours + 3) % 24; 
-    let targetBase = 95;
+    let targetBase = Math.floor((minB + maxB) / 2);
 
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        targetBase = 50 + Math.floor(Math.random() * 10); 
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
         let progress = (ethiopianHour - 12) / 7; 
-        targetBase = Math.floor(60 + (progress * 20) + Math.random() * 5); 
+        targetBase = Math.floor(minB + (progress * (maxB - minB) * 0.6)); 
     } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        targetBase = 120 + Math.floor(Math.random() * 131); 
+        targetBase = Math.floor(minB + ((maxB - minB) * 0.7) + Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
     } else {
-        targetBase = 60 + Math.floor(Math.random() * 31); 
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.4)); 
     }
 
     if (isGameActive) {
@@ -254,8 +279,8 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
         }
     }
 
-    if (lastSmoothCount < 40) lastSmoothCount = 40;
-    if (lastSmoothCount > 250) lastSmoothCount = 250;
+    if (lastSmoothCount < minB) lastSmoothCount = minB;
+    if (lastSmoothCount > maxB) lastSmoothCount = maxB;
 
     return lastSmoothCount;
 }
@@ -702,7 +727,6 @@ function startMainGameLoop() {
                     });
                     io.emit('numberCalledBroadcast', Number(calledNum));
 
-                    // 💡 5 ሰከንድ ቆይታ (Pause) እና አውቶማቲክ ቢንጎ አረጋጋጭ ሎጂክ
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
                         if (pData && pData.cards) {
@@ -833,7 +857,7 @@ async function pollTelegramUpdates() {
                             telebirrConfig.phone = newPhone;
                             telebirrConfig.name = newName;
 
-                            saveTelebirrConfigToDisk(); // 👈 ቋሚ እንዲሆን ፋይል ላይ ማከማቻ
+                            saveTelebirrConfigToDisk();
                             io.emit('telebirrConfigUpdated', telebirrConfig);
 
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -1077,6 +1101,7 @@ io.on('connection', (socket) => {
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
     socket.emit('telebirrConfigUpdated', telebirrConfig);
+    socket.emit('botConfigUpdated', botConfig); // 👈 የቦት ማዋቀሪያውን ለክላየንት መላኪያ
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
@@ -1217,9 +1242,33 @@ io.on('connection', (socket) => {
             telebirrConfig.phone = data.phone;
             if (data.name) telebirrConfig.name = data.name;
 
-            saveTelebirrConfigToDisk(); // 👈 ቋሚ እንዲሆን ፋይል ላይ ማከማቻ
+            saveTelebirrConfigToDisk();
             io.emit('telebirrConfigUpdated', telebirrConfig);
             socket.emit('adminTelebirrResponse', { success: true, message: `✅ የቴሌብር ቁጥር ተቀይሯል!` });
+        }
+    });
+
+    // 💡 አድሚኑ ከፓነል የቦት ብዛት ሲቀይር የሚቀበለው ሎጂክ
+    socket.on('adminUpdateBotConfig', (data) => {
+        if (data && data.minBots !== undefined && data.maxBots !== undefined) {
+            let minB = parseInt(data.minBots);
+            let maxB = parseInt(data.maxBots);
+
+            if (!isNaN(minB) && !isNaN(maxB)) {
+                if (minB < 1) minB = 1;
+                if (maxB < minB) maxB = minB;
+
+                botConfig.minBots = minB;
+                botConfig.maxBots = maxB;
+
+                saveBotConfigToDisk();
+                io.emit('botConfigUpdated', botConfig);
+                updateRoomPlayersAndPot();
+
+                socket.emit('adminBotResponse', { success: true, message: `✅ የቦቶች ብዛት (Min: ${minB}, Max: ${maxB}) ተስተካክሏል!` });
+            } else {
+                socket.emit('adminBotResponse', { success: false, message: `⚠️ እባክዎ ትክክለኛ ቁጥሮችን ያስገቡ!` });
+            }
         }
     });
 
