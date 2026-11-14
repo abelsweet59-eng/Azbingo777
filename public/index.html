@@ -420,7 +420,6 @@
                     </div>
                 </div>
 
-                <!-- 💡 የቦት ብዛት መቆጣጠሪያ (Min/Max Bots Control Panel) -->
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
                     <div class="font-bold text-amber-300">🤖 የቦቶች ብዛት መቆጣጠሪያ (Bot Count Config)</div>
                     <div class="text-[10px] text-gray-300">በጨዋታው ውስጥ የሚታዩትን የቦቶች ዝቅተኛ እና ከፍተኛ ገደብ ያስተካክሉ</div>
@@ -737,13 +736,12 @@
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName, balance: walletBalance });
 
                 if (confirmedCards.length > 0) {
-                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
+                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId, balance: walletBalance });
                 } else if (userSelectedCards.length > 0) {
                     socket.emit('tempSelectCards', userSelectedCards);
                 }
             });
 
-            // 🔗 ሪፈራል ሊንክ እና ገቢ መቀበያ
             socket.on('referralData', (data) => {
                 const refInput = document.getElementById('refLinkInput');
                 const refEarnings = document.getElementById('totalRefEarnings');
@@ -756,7 +754,6 @@
                 }
             });
 
-            // 🔄 ሪል-ታይም ባላንስ ማስተካከያ (Real-time Balance Listener)
             socket.on('updateBalance', (data) => {
                 if (data && data.balance !== undefined) {
                     walletBalance = parseFloat(data.balance);
@@ -1742,7 +1739,15 @@
                 confirmBtn.innerText = "✨ ካርድ ተረጋግጧል";
             }
 
-            socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId });
+            // 🛑 ከታች ባለው ኮድ አሁን የባላንሱ መረጃ አብሮ ወደ ሰርቨር ይላካል (Real-time Balance Sync Fix)
+            socket.emit('confirmCards', { 
+                cards: confirmedCards, 
+                userId: telegramUserId, 
+                username: userFullName, 
+                telegramChatId: telegramUserId,
+                balance: walletBalance 
+            });
+
             renderCardSelectionPreviews();
         }
 
