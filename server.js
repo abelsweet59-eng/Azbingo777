@@ -33,8 +33,8 @@ let isWithdrawLocked = false;
 
 const configFilePath = path.join(__dirname, 'telebirr_config.json');
 let telebirrConfig = {
-    phone: "0940272544",
-    name: "Abel Seyoum"
+    phone: "0900015260",
+    name: "ABEYE"
 };
 
 if (fs.existsSync(configFilePath)) {
