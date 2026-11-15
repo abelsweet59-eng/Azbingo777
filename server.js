@@ -555,12 +555,6 @@ function startMainGameLoop() {
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
-            // 🛑 ጠቃሚ ማስተካከያ: በስታንዳርድ ሞድ ሰዓት ሪል ዩዘር 1 ወይም 2 ቁጥሮች ብቻ እየቀሩት (ቆሞ) እንዲቀር 
-            // የመጨረሻውን የድል ኳስ ከሪል ዩዘር ካርድ ፓተርን ውስጥ እንከለክለዋለን!
-            if (!targetRealCount) {
-                availableNumbers = availableNumbers.filter(n => n !== finalWinningBall);
-            }
-
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
             let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
@@ -590,25 +584,27 @@ function startMainGameLoop() {
                     if (preCallSchedule[callStep] !== null) {
                         calledNum = preCallSchedule[callStep];
                     } else {
+                        // 🛑 እጅግ ጠቃሚ ማስተካከያ (Smart Filtering):
+                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን ካላዘዘ, 
+                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር እንዳይመርጥ ያጣራል።
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
-                            let realWins = false;
-                            
-                            // 🛑 ጥብቅ ማጣሪያ: በስታንዳርድ ሞድ ጊዜ የትኛዉም ሪል ዩዘር ካርድ ሙሉ በሙሉ (Pattern) እንዳይሞላ እንከላከላለን
-                            if (!targetRealCount) {
+                            let wouldRealUserWin = false;
+
+                            if (targetRealCount === 0) {
                                 Object.values(globalRoom.playerRoundCards).forEach(pData => {
                                     if (pData && pData.cards) {
                                         pData.cards.forEach(cNum => {
                                             let cList = getCartelaNumbers(cNum);
                                             let matched = getWinningMatchedIndices(cList, tempCalled);
                                             if (matched) {
-                                                realWins = true; // ሪል ዩዘሩ እንዳያሸንፍ ይህን ቁጥር እንዘለዋለን
+                                                wouldRealUserWin = true; // ይህ ቁጥር ከገባ ሪል ዩዘሩ ይሞላል! እንዘለዋለን።
                                             }
                                         });
                                     }
                                 });
                             }
-                            return !realWins;
+                            return !wouldRealUserWin;
                         });
 
                         if (safeIndex !== -1) {
