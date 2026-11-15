@@ -584,9 +584,9 @@ function startMainGameLoop() {
                     if (preCallSchedule[callStep] !== null) {
                         calledNum = preCallSchedule[callStep];
                     } else {
-                        // 🛑 እጅግ ጠቃሚ ማስተካከያ (Smart Filtering):
-                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን ካላዘዘ, 
-                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር እንዳይመርጥ ያጣራል።
+                        // 🛑 እጅግ ጠቃሚ እና ጥብቅ ማጣሪያ (Strict Guard for Standard Mode):
+                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን (explicitRealForced) ካላዘዘ በስተቀር፥
+                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር በጭራሽ እንዳይገባ ያጣራል።
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let wouldRealUserWin = false;
@@ -1142,14 +1142,21 @@ io.on('connection', (socket) => {
         let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
         
         if (matched) {
-            announceWinnersAndFinish([{
-                username: data.username || 'ተጫዋች',
-                socketId: socket.id,
-                userId: userId,
-                isBot: false,
-                cardNum: cardNum,
-                matched: matched
-            }]);
+            // ጥብቅ ማረጋገጫ: አድሚኑ ራሱ እንዲያሸንፍ ካላዘዘ በስተቀር ሪል ዩዘር ክሌም ቢያደርግም በስታንዳርድ ሞድ አይቀበልም!
+            let isForcedReal = (forcedNextWinner === 'only_real_users' || forcedNextWinner === 'random_real' || forcedNextWinner === 'random_3_real' || forcedNextWinner === 'multi_real_3' || forcedNextWinner === 'real_user' || forcedNextWinner === 'single_real');
+            
+            if (isForcedReal || enableOnlyRealUsersMode) {
+                announceWinnersAndFinish([{
+                    username: data.username || 'ተጫዋች',
+                    socketId: socket.id,
+                    userId: userId,
+                    isBot: false,
+                    cardNum: cardNum,
+                    matched: matched
+                }]);
+            } else {
+                socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ በስታንዳርድ ሞድ ቦቶች ብቻ አሸናፊ ናቸው!");
+            }
         } else {
             socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
         }
