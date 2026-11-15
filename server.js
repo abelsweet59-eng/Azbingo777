@@ -131,7 +131,7 @@ const ETHIOPIAN_BOT_NAMES = [
     "Brook", "Lidya", "Michael", "Nahom", "Rut_K", 
     "Robel", "Tigist", "Biniyam", "Kalkidan", "Ephrem", 
     "Rahel", "Yonas", "Semhar", "አበበ", "መርየም", 
-    "ጌታቸው", "ሰሎሞನ್", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ", 
+    "ጌታቸው", "ሰሎሞን", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ", 
     "ምህረት", "ተስፋዬ", "አንለይ", "ፍቅሩ", "እዮብ", 
     "አማኑኤል", "ኤልያስ", "ብርሃኑ", "ታደሰ", "መኮንን", 
     "ጌታነህ", "ሰለሞን", "አበራ", "ተክሌ", "መላኩ", "አምሳሉ", 
@@ -1141,8 +1141,6 @@ io.on('connection', (socket) => {
         let cList = getCartelaNumbers(cardNum);
         let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
         
-        // 🛑 ትክክለኛ ማስተካከያ: ሪል ዩዘር በስታንዳርድ ሞድ ሰዓት መጀመሪያውኑ ፓተርን ስለማይሞላለት (ቁጥሮቹ ተጣርተው ስለሚወጡ) 
-        // ክሌም ቢያደርግ በቀጥታ ካርዱ ትክክለኛውን ፖተር (5/5) ማሟላቱን ብቻ ያረጋግጣል። አድሚኑ ያዘዘው ዩዘር ከሆነ ዊን ይወስዳል።
         if (matched) {
             announceWinnersAndFinish([{
                 username: data.username || 'ተጫዋች',
