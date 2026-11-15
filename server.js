@@ -131,7 +131,7 @@ const ETHIOPIAN_BOT_NAMES = [
     "Brook", "Lidya", "Michael", "Nahom", "Rut_K", 
     "Robel", "Tigist", "Biniyam", "Kalkidan", "Ephrem", 
     "Rahel", "Yonas", "Semhar", "አበበ", "መርየም", 
-    "ጌታቸው", "ሰሎሞን", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ", 
+    "ጌታቸው", "ሰሎሞನ್", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ", 
     "ምህረት", "ተስፋዬ", "አንለይ", "ፍቅሩ", "እዮብ", 
     "አማኑኤል", "ኤልያስ", "ብርሃኑ", "ታደሰ", "መኮንን", 
     "ጌታነህ", "ሰለሞን", "አበራ", "ተክሌ", "መላኩ", "አምሳሉ", 
@@ -585,7 +585,7 @@ function startMainGameLoop() {
                         calledNum = preCallSchedule[callStep];
                     } else {
                         // 🛑 እጅግ ጠቃሚ እና ጥብቅ ማጣሪያ (Strict Guard for Standard Mode):
-                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን (explicitRealForced) ካላዘዘ በስተቀር፥
+                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን ካላዘዘ በስተቀር፥
                         // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር በጭራሽ እንዳይገባ ያጣራል።
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
@@ -1141,22 +1141,17 @@ io.on('connection', (socket) => {
         let cList = getCartelaNumbers(cardNum);
         let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
         
+        // 🛑 ትክክለኛ ማስተካከያ: ሪል ዩዘር በስታንዳርድ ሞድ ሰዓት መጀመሪያውኑ ፓተርን ስለማይሞላለት (ቁጥሮቹ ተጣርተው ስለሚወጡ) 
+        // ክሌም ቢያደርግ በቀጥታ ካርዱ ትክክለኛውን ፖተር (5/5) ማሟላቱን ብቻ ያረጋግጣል። አድሚኑ ያዘዘው ዩዘር ከሆነ ዊን ይወስዳል።
         if (matched) {
-            // ጥብቅ ማረጋገጫ: አድሚኑ ራሱ እንዲያሸንፍ ካላዘዘ በስተቀር ሪል ዩዘር ክሌም ቢያደርግም በስታንዳርድ ሞድ አይቀበልም!
-            let isForcedReal = (forcedNextWinner === 'only_real_users' || forcedNextWinner === 'random_real' || forcedNextWinner === 'random_3_real' || forcedNextWinner === 'multi_real_3' || forcedNextWinner === 'real_user' || forcedNextWinner === 'single_real');
-            
-            if (isForcedReal || enableOnlyRealUsersMode) {
-                announceWinnersAndFinish([{
-                    username: data.username || 'ተጫዋች',
-                    socketId: socket.id,
-                    userId: userId,
-                    isBot: false,
-                    cardNum: cardNum,
-                    matched: matched
-                }]);
-            } else {
-                socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ በስታንዳርድ ሞድ ቦቶች ብቻ አሸናፊ ናቸው!");
-            }
+            announceWinnersAndFinish([{
+                username: data.username || 'ተጫዋች',
+                socketId: socket.id,
+                userId: userId,
+                isBot: false,
+                cardNum: cardNum,
+                matched: matched
+            }]);
         } else {
             socket.emit('cardSelectionError', "⚠️ ማሳሰቢያ፡ የእርስዎ ካርድ ገና ሙሉ ማሸነፊያ (Pattern) አላሟላም!");
         }
