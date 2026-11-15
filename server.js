@@ -584,9 +584,9 @@ function startMainGameLoop() {
                     if (preCallSchedule[callStep] !== null) {
                         calledNum = preCallSchedule[callStep];
                     } else {
-                        // 🛑 እጅግ ጠቃሚ እና ጥብቅ ማጣሪያ (Strict Guard for Standard Mode):
-                        // በስታንዳርድ ሞድ ሰዓት አድሚኑ ሪል ዩዘር አሸናፊ እንዲሆን ካላዘዘ በስተቀር፥
-                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር በጭራሽ እንዳይገባ ያጣራል።
+                        // 🛑 100% ጥብቅ ማጣሪያ (Strict Guard for Standard Mode):
+                        // አድሚኑ ኦንላይን ይሁን ወይም አፑን ዘግቶ ይውጣ (Standard Bot Mode በሚሆንበት ጊዜ)፥
+                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር በጭራሽ እንዳይገባ በጥብቅ ያጣራል።
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let wouldRealUserWin = false;
@@ -598,7 +598,7 @@ function startMainGameLoop() {
                                             let cList = getCartelaNumbers(cNum);
                                             let matched = getWinningMatchedIndices(cList, tempCalled);
                                             if (matched) {
-                                                wouldRealUserWin = true; // ይህ ቁጥር ከገባ ሪል ዩዘሩ ይሞላል! እንዘለዋለን።
+                                                wouldRealUserWin = true; // ይህ ቁጥር ከገባ ሪል ዩዘሩ ይሞላል! ስለዚህ በጭራሽ እንዳይገባ እንዘለዋለን።
                                             }
                                         });
                                     }
