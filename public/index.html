@@ -1058,13 +1058,13 @@
                 updateWalletUI();
 
                 if (data.type === 'deposit') {
-                    addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income');
+                    addTransactionHistory('ዲፖዚት (ጸድቋል)', data.amount, 'income', 'completed');
                     alert(`✅ የካርድ/ዲፖዚት የ ${data.amount} ብር ጥያቄዎ ጸድቋል!`);
                 } else if (data.type === 'bonus') {
-                    addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income');
+                    addTransactionHistory('Az ቦነስ 🎁', data.amount, 'income', 'completed');
                     alert(`🎁 እንኳን ደስ አለዎት! የ ${data.amount} ብር ቦነስ ተሰጥቶዎታል!`);
                 } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
-                    addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense');
+                    addTransactionHistory('ዊዝድሮዋል (ተፈጸመ)', data.amount, 'expense', 'completed');
                     alert(`✅ የ ${data.amount} ብር ዊዝድሮዋል ጥያቄዎ ጸድቆ ተልኳል!`);
                 }
             });
@@ -1074,6 +1074,7 @@
                     walletBalance = parseFloat(data.balance);
                     updateWalletUI();
                 }
+                addTransactionHistory('ጥያቄ ተሰርዟል (ተመልሷል)', data.amount || 0, 'income', 'rejected');
                 alert(`❌ ጥያቄዎ ውድቅ ተደርጓል። ብሩ ወደ አካውንትዎ ተመልሷል።`);
             });
 
@@ -1314,9 +1315,9 @@
             }
         }
 
-        function addTransactionHistory(title, amount, type) {
+        function addTransactionHistory(title, amount, type, status = 'completed') {
             let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            transactionHistory.unshift({ title, amount, type, time: timeNow });
+            transactionHistory.unshift({ title, amount, type, time: timeNow, status });
             if (transactionHistory.length > 120) transactionHistory.pop();
             localStorage.setItem(userHistoryKey, JSON.stringify(transactionHistory));
             renderHistoryUI();
@@ -1335,7 +1336,21 @@
                 item.className = "flex justify-between items-center bg-black/40 p-2 rounded border border-white/5";
                 let amtColor = tx.type === 'income' ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold';
                 let sign = tx.type === 'income' ? '+' : '-';
-                item.innerHTML = `<div><div class="text-white font-medium">${tx.title}</div><div class="text-[8px] text-gray-400">${tx.time}</div></div><div class="${amtColor}">${sign}${tx.amount} ብር</div>`;
+                
+                let statusBadge = '';
+                if (tx.status === 'pending') {
+                    statusBadge = `<span class="text-[9px] px-1.5 py-0.5 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded ml-1 font-bold">Pending ⏳</span>`;
+                } else if (tx.status === 'rejected') {
+                    statusBadge = `<span class="text-[9px] px-1.5 py-0.5 bg-red-500/20 text-red-400 border border-red-500/40 rounded ml-1 font-bold">Rejected ❌</span>`;
+                }
+
+                item.innerHTML = `
+                    <div>
+                        <div class="text-white font-medium flex items-center">${tx.title} ${statusBadge}</div>
+                        <div class="text-[8px] text-gray-400">${tx.time}</div>
+                    </div>
+                    <div class="${amtColor}">${sign}${tx.amount} ብር</div>
+                `;
                 listEl.appendChild(item);
             });
         }
@@ -1571,6 +1586,11 @@
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
 
+                // 🛑 ዊዝድሮዋል ሲጠየቅ ከሂሳብ ላይ ተቀንሶ ታሪክ ላይ "Pending" ሆኖ እንዲቀመጥ ይደረጋል
+                walletBalance -= amount;
+                updateWalletUI();
+                addTransactionHistory(`ዊዝድሮዋል (Pending)`, amount, 'expense', 'pending');
+
                 socket.emit('financialRequest', { 
                     type: type, 
                     amount: amount, 
@@ -1585,6 +1605,9 @@
         }
 
         function sendDepositPostRequest(type, amount, receiptText, receiptImage) {
+            // 🛑 ዲፖዚት ሲላክ በታሪክ ላይ "Pending" ተብሎ እንዲመዘገብ ይደረጋል
+            addTransactionHistory(`ዲፖዚት (Pending)`, amount, 'income', 'pending');
+
             fetch('/api/financial-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1601,7 +1624,7 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    alert("✅ የዲፖዚት ጥያቄዎ ለአድሚን ተልኳል!");
+                    alert("✅ የዲፖዚት ጥያቄዎ ለአድሚን ተልኳል! (በመጠበቅ ላይ...)");
                 } else {
                     alert("❌ ስህተት: " + (data.message || ''));
                 }
@@ -1721,13 +1744,13 @@
             if (amountToDeduct > 0) {
                 walletBalance -= amountToDeduct;
                 updateWalletUI();
-                addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense');
+                addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense', 'completed');
                 totalPaidForCurrentRound = desiredTotalCost;
             } else if (amountToDeduct < 0) {
                 let refundAmount = Math.abs(amountToDeduct);
                 walletBalance += refundAmount;
                 updateWalletUI();
-                addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income');
+                addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income', 'completed');
                 totalPaidForCurrentRound = desiredTotalCost;
             }
 
@@ -1739,7 +1762,6 @@
                 confirmBtn.innerText = "✨ ካርድ ተረጋግጧል";
             }
 
-            // 🛑 ከታች ባለው ኮድ አሁን የባላንሱ መረጃ አብሮ ወደ ሰርቨር ይላካል (Real-time Balance Sync Fix)
             socket.emit('confirmCards', { 
                 cards: confirmedCards, 
                 userId: telegramUserId, 
