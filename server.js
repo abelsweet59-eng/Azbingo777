@@ -30,7 +30,7 @@ const allRegisteredUsers = new Set();
 
 const userReferrers = {}; 
 const referralEarnings = {}; 
-const userLastRequestTimeMap = {}; // 🛑 የ 10 ደቂቃ ገደብ መቆጣጠሪያ ማስታወሻ
+const userLastRequestTimeMap = {}; 
 
 let isDepositLocked = false;
 let isWithdrawLocked = false;
@@ -488,7 +488,7 @@ function startMainGameLoop() {
                         }, 6000);
                     }
 
-                }, 5500); // 5 sec gap for real mode
+                }, 5500);
 
                 return;
             }
@@ -664,7 +664,7 @@ function startMainGameLoop() {
                     }, 6000);
                 }
 
-            }, 5500); // 🛑 የ 5 ሰከንድ ልዩነት (5500 ms) ለቁጥር ጥሪ
+            }, 5500); 
         }
     }, 1000);
 }
@@ -905,6 +905,7 @@ async function pollTelegramUpdates() {
                         }
 
                     } else {
+                        // 🛑 ዊዝድሮዋሉ ሲሰረዝ (Rejected) የተቀነሰው ገንዘብ ተመልሶ ወደ ዩዘር አካውንት ገቢ ይደረጋል[span_3](start_span)[span_3](end_span)
                         if (reqType === 'withdraw' || reqType === 'withdrawal') {
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                         }
@@ -918,8 +919,16 @@ async function pollTelegramUpdates() {
                             }).catch(() => {});
                         }
 
+                        let finalRejectedBalance = userWallets[reqData.userId] || 0;
                         if (targetSocket) { 
-                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: userWallets[reqData.userId] || 0 }); 
+                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: finalRejectedBalance }); 
+                            targetSocket.emit('updateBalance', { balance: finalRejectedBalance });
+                        } else {
+                            if (!offlineApprovedQueue[reqData.userId]) offlineApprovedQueue[reqData.userId] = [];
+                            offlineApprovedQueue[reqData.userId].push({
+                                type: 'balance_update',
+                                balance: finalRejectedBalance
+                            });
                         }
 
                         let rejectedFinalText = `❌ *ጥያቄው ተሰርዟል!* \n👤 ስም: *${reqData.username}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${reqData.amount} ብር*\n⏱ የላከበት ሰዓት: _${reqData.requestTimeStr || 'N/A'}_\n🆔 ሪኩዌስት ID: \`${requestId}\`\n⚠️ *(ሁኔታ: በአድሚን ተሰርዟል - ብሩ ተመልሷል)*`;
@@ -989,10 +998,9 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
         let cleanUserId = String(userId || 'unknown');
 
-        // 🛑 1. የ 10 ደቂቃ የሰዓት ገደብ (Cooldown) ማጣሪያ
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
-        let cooldownTime = 10 * 60 * 1000; // 10 ደቂቃ (በሚሊሰከንድ)
+        let cooldownTime = 10 * 60 * 1000; 
         
         if (nowTime - lastRequestTime < cooldownTime) {
             let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
@@ -1000,13 +1008,23 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             return bodyRes.json({ success: false, message: `⚠️ እባክዎ ተጨማሪ የክፍያ ጥያቄ ከማስተላለፍዎ በፊት ${remainingMins} ደቂቃ ይጠብቁ!` });
         }
 
-        // 🛑 2. ገና ያልጸደቀ (Pending) ሌላ ጥያቄ ካለው ማጣራት
         let existingUserPendingReq = Object.values(pendingRequests).find(r => r.userId === cleanUserId);
         if (existingUserPendingReq) {
             return bodyRes.json({ success: false, message: "⚠️ ገና ያልጸደቀ የክፍያ ጥያቄ አለዎት! እባክዎ አድሚኑ እስኪቀበለው ይጠብቁ።" });
         }
 
-        userLastRequestTimeMap[cleanUserId] = nowTime; // ሰዓቱን መዝግብ
+        let parsedAmount = Number(amount) || 0;
+        let currentWalletBal = userWallets[cleanUserId] || 0;
+
+        // 🛑 ዊዝድሮዋል በሚጠየቅበት ሰዓት ወዲያውኑ ከሂሳቡ ላይ እንዲቀነስ ይደረጋል[span_4](start_span)[span_4](end_span)
+        if (type === 'withdraw' || type === 'withdrawal') {
+            if (currentWalletBal < parsedAmount) {
+                return bodyRes.json({ success: false, message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
+            }
+            userWallets[cleanUserId] = currentWalletBal - parsedAmount;
+        }
+
+        userLastRequestTimeMap[cleanUserId] = nowTime; 
 
         let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
@@ -1015,14 +1033,14 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             userId: cleanUserId, 
             chatId: userId, 
             type, 
-            amount, 
+            amount: parsedAmount, 
             username, 
             socketId: null, 
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr
         };
 
-        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
+        let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${userWallets[cleanUserId]} ብር*\n📥 የጠየቀው: *${parsedAmount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
         
         if (receiptText) {
             caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
@@ -1069,7 +1087,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             } catch (e) {}
         }
 
-        bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", newBalance: userWallets[cleanUserId] });
     } catch (err) {
         bodyRes.status(500).json({ success: false, message: err.message });
     }
@@ -1365,10 +1383,9 @@ io.on('connection', (socket) => {
 
         let cleanUserId = String(userId || 'unknown');
 
-        // 🛑 1. የ 10 ደቂቃ የሰዓት ገደብ (Cooldown) ማጣሪያ በሶኬት በኩል
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
-        let cooldownTime = 10 * 60 * 1000; // 10 ደቂቃ
+        let cooldownTime = 10 * 60 * 1000; 
         
         if (nowTime - lastRequestTime < cooldownTime) {
             let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
@@ -1377,18 +1394,18 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // 🛑 2. ገና ያልጸደቀ (Pending) ሌላ ጥያቄ ካለው ማጣራት
         let existingUserPendingReq = Object.values(pendingRequests).find(r => r.userId === cleanUserId);
         if (existingUserPendingReq) {
             socket.emit('financialError', { message: "⚠️ ገና ያልጸደቀ የክፍያ ጥያቄ አለዎት! እባክዎ አድሚኑ እስኪቀበለው ይጠብቁ።" });
             return;
         }
 
-        userLastRequestTimeMap[cleanUserId] = nowTime; // ሰዓቱን መዝግብ
+        userLastRequestTimeMap[cleanUserId] = nowTime; 
 
         let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
+        // 🛑 ዊዝድሮዋል በሚጠየቅበት ሰዓት ዌብሶኬት (Socket) በኩል ወዲያውኑ ከሂሳቡ ላይ ይቀንሳል[span_5](start_span)[span_5](end_span)
         if (type === 'withdraw' || type === 'withdrawal') {
             if (currentWalletBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
@@ -1413,7 +1430,7 @@ io.on('connection', (socket) => {
         };
 
         sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId], phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!" });
+        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", balance: userWallets[cleanUserId] });
     });
 
     socket.on('disconnect', () => {
