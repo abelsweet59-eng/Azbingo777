@@ -905,7 +905,6 @@ async function pollTelegramUpdates() {
                         }
 
                     } else {
-                        // 🛑 ዊዝድሮዋሉ ሲሰረዝ (Rejected) የተቀነሰው ገንዘብ ተመልሶ ወደ ዩዘር አካውንት ገቢ ይደረጋል[span_3](start_span)[span_3](end_span)
                         if (reqType === 'withdraw' || reqType === 'withdrawal') {
                             userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
                         }
@@ -921,7 +920,7 @@ async function pollTelegramUpdates() {
 
                         let finalRejectedBalance = userWallets[reqData.userId] || 0;
                         if (targetSocket) { 
-                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: finalRejectedBalance }); 
+                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: finalRejectedBalance, status: 'rejected' }); 
                             targetSocket.emit('updateBalance', { balance: finalRejectedBalance });
                         } else {
                             if (!offlineApprovedQueue[reqData.userId]) offlineApprovedQueue[reqData.userId] = [];
@@ -1016,7 +1015,6 @@ app.post('/api/financial-request', async (req, bodyRes) => {
         let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
-        // 🛑 ዊዝድሮዋል በሚጠየቅበት ሰዓት ወዲያውኑ ከሂሳቡ ላይ እንዲቀነስ ይደረጋል[span_4](start_span)[span_4](end_span)
         if (type === 'withdraw' || type === 'withdrawal') {
             if (currentWalletBal < parsedAmount) {
                 return bodyRes.json({ success: false, message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
@@ -1037,7 +1035,8 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             username, 
             socketId: null, 
             timestamp: Date.now(),
-            requestTimeStr: requestTimeStr
+            requestTimeStr: requestTimeStr,
+            status: 'pending' // 🛑 ፔንዲንግ መሆኑ ታይቷል
         };
 
         let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${userWallets[cleanUserId]} ብር*\n📥 የጠየቀው: *${parsedAmount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
@@ -1087,7 +1086,18 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             } catch (e) {}
         }
 
-        bodyRes.json({ success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", newBalance: userWallets[cleanUserId] });
+        bodyRes.json({ 
+            success: true, 
+            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", 
+            newBalance: userWallets[cleanUserId],
+            request: {
+                id: requestId,
+                type: type,
+                amount: parsedAmount,
+                status: 'pending', // 🛑 ክላይንቱ ታሪክ ላይ "Pending" እንዲያሳይ ይረዳዋል
+                time: requestTimeStr
+            }
+        });
     } catch (err) {
         bodyRes.status(500).json({ success: false, message: err.message });
     }
@@ -1405,7 +1415,6 @@ io.on('connection', (socket) => {
         let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
-        // 🛑 ዊዝድሮዋል በሚጠየቅበት ሰዓት ዌብሶኬት (Socket) በኩል ወዲያውኑ ከሂሳቡ ላይ ይቀንሳል[span_5](start_span)[span_5](end_span)
         if (type === 'withdraw' || type === 'withdrawal') {
             if (currentWalletBal < parsedAmount) {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
@@ -1426,11 +1435,23 @@ io.on('connection', (socket) => {
             username, 
             socketId: socket.id, 
             timestamp: Date.now(),
-            requestTimeStr: requestTimeStr
+            requestTimeStr: requestTimeStr,
+            status: 'pending' // 🛑 ፔንዲንግ መሆኑ በሶኬት በኩል ተመዝግቧል
         };
 
         sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId], phone, receipt);
-        socket.emit('requestSubmitted', { success: true, message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", balance: userWallets[cleanUserId] });
+        socket.emit('requestSubmitted', { 
+            success: true, 
+            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", 
+            balance: userWallets[cleanUserId],
+            request: {
+                id: requestId,
+                type: type,
+                amount: parsedAmount,
+                status: 'pending',
+                time: requestTimeStr
+            }
+        });
     });
 
     socket.on('disconnect', () => {
