@@ -666,7 +666,7 @@ function startMainGameLoop() {
                     }, 6000);
                 }
 
-            }, 4500); 
+            }, 5500); 
         }
     }, 1000);
 }
