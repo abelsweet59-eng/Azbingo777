@@ -30,6 +30,7 @@ const allRegisteredUsers = new Set();
 
 const userReferrers = {}; 
 const referralEarnings = {}; 
+const userLastRequestTimeMap = {}; // 🛑 የ 10 ደቂቃ ገደብ መቆጣጠሪያ ማስታወሻ
 
 let isDepositLocked = false;
 let isWithdrawLocked = false;
@@ -487,7 +488,7 @@ function startMainGameLoop() {
                         }, 6000);
                     }
 
-                }, 4500);
+                }, 5500); // 5 sec gap for real mode
 
                 return;
             }
@@ -584,9 +585,6 @@ function startMainGameLoop() {
                     if (preCallSchedule[callStep] !== null) {
                         calledNum = preCallSchedule[callStep];
                     } else {
-                        // 🛑 100% ጥብቅ ማጣሪያ (Strict Guard for Standard Mode):
-                        // አድሚኑ ኦንላይን ይሁን ወይም አፑን ዘግቶ ይውጣ (Standard Bot Mode በሚሆንበት ጊዜ)፥
-                        // ሲስተሙ የሚቀጥለውን ቁጥር በሚመርጥበት ጊዜ የትኛውንም ሪል ዩዘር ካርድ ሙሉ ፖተርን (5/5) የሚያደርግ ቁጥር በጭራሽ እንዳይገባ በጥብቅ ያጣራል።
                         let safeIndex = availableNumbers.findIndex(testNum => {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let wouldRealUserWin = false;
@@ -598,7 +596,7 @@ function startMainGameLoop() {
                                             let cList = getCartelaNumbers(cNum);
                                             let matched = getWinningMatchedIndices(cList, tempCalled);
                                             if (matched) {
-                                                wouldRealUserWin = true; // ይህ ቁጥር ከገባ ሪል ዩዘሩ ይሞላል! ስለዚህ በጭራሽ እንዳይገባ እንዘለዋለን።
+                                                wouldRealUserWin = true; 
                                             }
                                         });
                                     }
@@ -666,7 +664,7 @@ function startMainGameLoop() {
                     }, 6000);
                 }
 
-            }, 5500); 
+            }, 5500); // 🛑 የ 5 ሰከንድ ልዩነት (5500 ms) ለቁጥር ጥሪ
         }
     }, 1000);
 }
@@ -989,11 +987,32 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             return bodyRes.json({ success: false, message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
         }
 
+        let cleanUserId = String(userId || 'unknown');
+
+        // 🛑 1. የ 10 ደቂቃ የሰዓት ገደብ (Cooldown) ማጣሪያ
+        let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
+        let nowTime = Date.now();
+        let cooldownTime = 10 * 60 * 1000; // 10 ደቂቃ (በሚሊሰከንድ)
+        
+        if (nowTime - lastRequestTime < cooldownTime) {
+            let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
+            let remainingMins = Math.ceil(remainingSecs / 60);
+            return bodyRes.json({ success: false, message: `⚠️ እባክዎ ተጨማሪ የክፍያ ጥያቄ ከማስተላለፍዎ በፊት ${remainingMins} ደቂቃ ይጠብቁ!` });
+        }
+
+        // 🛑 2. ገና ያልጸደቀ (Pending) ሌላ ጥያቄ ካለው ማጣራት
+        let existingUserPendingReq = Object.values(pendingRequests).find(r => r.userId === cleanUserId);
+        if (existingUserPendingReq) {
+            return bodyRes.json({ success: false, message: "⚠️ ገና ያልጸደቀ የክፍያ ጥያቄ አለዎት! እባክዎ አድሚኑ እስኪቀበለው ይጠብቁ።" });
+        }
+
+        userLastRequestTimeMap[cleanUserId] = nowTime; // ሰዓቱን መዝግብ
+
         let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
         
         pendingRequests[requestId] = { 
-            userId: String(userId || 'unknown'), 
+            userId: cleanUserId, 
             chatId: userId, 
             type, 
             amount, 
@@ -1344,8 +1363,30 @@ io.on('connection', (socket) => {
             return;
         }
 
-        let parsedAmount = Number(amount) || 0;
         let cleanUserId = String(userId || 'unknown');
+
+        // 🛑 1. የ 10 ደቂቃ የሰዓት ገደብ (Cooldown) ማጣሪያ በሶኬት በኩል
+        let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
+        let nowTime = Date.now();
+        let cooldownTime = 10 * 60 * 1000; // 10 ደቂቃ
+        
+        if (nowTime - lastRequestTime < cooldownTime) {
+            let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
+            let remainingMins = Math.ceil(remainingSecs / 60);
+            socket.emit('financialError', { message: `⚠️ እባክዎ ተጨማሪ የክፍያ ጥያቄ ከማስተላለፍዎ በፊት ${remainingMins} ደቂቃ ይጠብቁ!` });
+            return;
+        }
+
+        // 🛑 2. ገና ያልጸደቀ (Pending) ሌላ ጥያቄ ካለው ማጣራት
+        let existingUserPendingReq = Object.values(pendingRequests).find(r => r.userId === cleanUserId);
+        if (existingUserPendingReq) {
+            socket.emit('financialError', { message: "⚠️ ገና ያልጸደቀ የክፍያ ጥያቄ አለዎት! እባክዎ አድሚኑ እስኪቀበለው ይጠብቁ።" });
+            return;
+        }
+
+        userLastRequestTimeMap[cleanUserId] = nowTime; // ሰዓቱን መዝግብ
+
+        let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
         if (type === 'withdraw' || type === 'withdrawal') {
