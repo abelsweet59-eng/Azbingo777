@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -683,7 +683,6 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
-    // 🛑 እያንዳንዱ ዙር ሲያልቅ የካርድ ምርጫዎች እና ጊዚያዊ ምርጫዎች ሙሉ በሙሉ ይጸዳሉ
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -1044,7 +1043,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             socketId: null, 
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
-            status: 'pending' // 🛑 ፔንዲንግ መሆኑ ታይቷል
+            status: 'pending' 
         };
 
         let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${userWallets[cleanUserId]} ብር*\n📥 የጠየቀው: *${parsedAmount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
@@ -1102,7 +1101,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                 id: requestId,
                 type: type,
                 amount: parsedAmount,
-                status: 'pending', // 🛑 ክላይንቱ ታሪክ ላይ "Pending" እንዲያሳይ ይረዳዋል
+                status: 'pending',
                 time: requestTimeStr
             }
         });
@@ -1144,7 +1143,7 @@ io.on('connection', (socket) => {
                     globalRoom.playerRoundCards[socket.id] = existingData;
                 }
             } else {
-                // 🛑 ጨዋታው ገና ካልጀመረ፣ ተጫዋቹ ሲገባ የድሮ ካርዶቹ ሙሉ በሙሉ ተጸድተው ለአዲስ ምርጫ ክፍት እንዲሆኑ ይደረጋል
+                // 🛑 1. ጨዋታው ገና ካልጀመረ (Waiting Phase) ተጫዋቹ አፑን ከፍቶ ሲገባ የትኛውንም የቆየ ካርድ እናጸዳዋለን (ስታክ እንዳይሆን)
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         delete globalRoom.playerRoundCards[sId];
@@ -1445,7 +1444,7 @@ io.on('connection', (socket) => {
             socketId: socket.id, 
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
-            status: 'pending' // 🛑 ፔንዲንግ መሆኑ በሶኬት በኩል ተመዝግቧል
+            status: 'pending' 
         };
 
         sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId], phone, receipt);
@@ -1467,9 +1466,17 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        // 🛑 ጨዋታው ገና በንቃት ያልጀመረ ከሆነ (Waiting Phase) ተጫዋቹ ሲወጣ የያዘው ካርድ እና ጊዜያዊ ምርጫው ወዲያውኑ ይሰረዛል
+        // 🛑 2. ተጫዋቹ ዲስኮኔክት ሲያደርግም ጨዋታው ገና ካልጀመረ ካርዱ ወዲያውኑ ይለቀቃል
         if (!globalRoom.gameActive) {
+            // በsocket.id የተያዘውን ብቻ ሳይሆን ከዚህ ሰሶኬት ጋር የተያያዙትንም እናጸዳለን
             delete globalRoom.playerRoundCards[socket.id];
+            
+            // የዛን socketId ዩዘር ID ፈልገን ሌላ አሮጌ ካርድ ካለው እናጸዳዋለን
+            Object.keys(globalRoom.playerRoundCards).forEach(sId => {
+                if (sId === socket.id) {
+                    delete globalRoom.playerRoundCards[sId];
+                }
+            });
         }
         delete globalRoom.playerTemporaryCards[socket.id];
         
