@@ -12,11 +12,12 @@
         .custom-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, 0.7); border-radius: 4px; }
+        
         @keyframes pulseGlow {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
-            50% { transform: scale(1.04); box-shadow: 0 0 35px rgba(245, 158, 11, 1); }
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(245, 158, 11, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(245, 158, 11, 1), inset 0 0 10px rgba(255, 255, 255, 0.5); }
         }
-        .pulse-ball { animation: pulseGlow 1.4s infinite ease-in-out; }
+        .pulse-ball { animation: pulseGlow 1.3s infinite ease-in-out; }
         
         @keyframes fastFlameGlow {
             0%, 100% { 
@@ -105,7 +106,7 @@
         <!-- TABS CONTAINER -->
         <div id="tab-container" class="flex-1 overflow-hidden relative flex flex-col">
             
-            <!-- VIEW 0: GAMES HUB (MAIN LOBBY) - Original Look -->
+            <!-- VIEW 0: GAMES HUB (MAIN LOBBY) -->
             <div id="view-hub" class="tab-content flex-1 flex flex-col p-4 space-y-4 overflow-y-auto custom-scroll relative">
                 <div class="absolute -top-10 -left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
                 <div class="absolute top-1/2 -right-10 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -123,7 +124,7 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-2 z-10">
-                    <!-- AZ Bingo Card (Original Lobby Layout) -->
+                    <!-- AZ Bingo Card -->
                     <div onclick="selectGame('bingo')" class="bg-gradient-to-b from-[#091838] via-[#060e22] to-[#030612] p-3 rounded-2xl border-2 border-amber-400/90 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex flex-col justify-between cursor-pointer transform hover:scale-[1.03] transition-all relative overflow-hidden group">
                         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/30 via-transparent to-transparent"></div>
                         
@@ -263,7 +264,7 @@
                     </div>
                 </div>
 
-                <!-- LIVE GAME SECTION (Original Called Ball / Display Layout Restored) -->
+                <!-- LIVE GAME SECTION -->
                 <div id="live-game-section" class="hidden flex-1 flex flex-col space-y-1 pb-1 overflow-hidden">
                     
                     <div class="bg-gradient-to-r from-blue-950 via-[#0d1b3e] to-indigo-950 px-2.5 py-1.5 rounded-lg border border-amber-500/40 flex justify-between items-center shadow-md">
@@ -284,6 +285,7 @@
                     <div class="grid grid-cols-12 gap-1.5 flex-1 overflow-hidden">
                         
                         <div class="col-span-5 flex flex-col bg-[#0b1633] p-1 rounded-lg border border-amber-500/30 overflow-hidden">
+                            <!-- B-I-N-G-O Letters Header with exact respective colors -->
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-0.5">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-purple-600 rounded text-white py-0.5">I</div>
@@ -306,8 +308,9 @@
                                         <div id="in-place-countdown-num" class="text-lg font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
-                                    <div id="main-called-ball" class="hidden w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-white flex flex-col items-center justify-center text-black font-black shadow-xl pulse-ball mx-auto">
-                                        <span id="ball-letter" class="text-[9px] leading-none uppercase font-bold text-amber-950">B</span>
+                                    <!-- Called Ball with Dynamic Background Color matching the letter column -->
+                                    <div id="main-called-ball" class="hidden w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
+                                        <span id="ball-letter" class="text-[9px] leading-none uppercase font-bold text-cyan-200">B</span>
                                         <span id="ball-num" class="text-2xl font-black leading-tight">5</span>
                                     </div>
                                 </div>
@@ -1476,6 +1479,10 @@
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             document.getElementById('ball-letter').innerText = letter;
             document.getElementById('ball-num').innerText = num;
+
+            // Update main called ball background color based on the column/letter
+            mainBall.className = `hidden w-20 h-20 rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
+
             renderRecentBalls();
         }
 
@@ -1486,10 +1493,11 @@
             
             recent.forEach((num, index) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
+                let colBg = getColumnBgColor(num);
                 let isLatest = (index === recent.length - 1);
 
                 const pill = document.createElement('div');
-                pill.className = `rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-black font-black flex flex-col items-center justify-center shadow ${isLatest ? 'w-7 h-7 text-[9px]' : 'w-6 h-6 text-[8px] opacity-75'}`;
+                pill.className = `rounded-full ${colBg} text-white font-black flex flex-col items-center justify-center shadow ${isLatest ? 'w-7 h-7 text-[9px] border border-white' : 'w-6 h-6 text-[8px] opacity-75'}`;
                 pill.innerHTML = `<span style="font-size: 5px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
                 container.appendChild(pill);
             });
