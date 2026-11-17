@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AZ Bingo - Professional Synchronized Multiplayer</title>
+    <title>AZ Games Hub - Professional Synchronized Multiplayer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -88,8 +88,8 @@
 
         <!-- Top Header -->
         <header class="flex justify-between items-center px-3 py-1.5 bg-black/30 border-b border-white/10 backdrop-blur-md z-20">
-            <div class="text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap">
-                AZ Bingo
+            <div id="header-title" class="text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-purple-300 whitespace-nowrap cursor-pointer" onclick="returnToHub()">
+                🎮 AZ Games Hub
             </div>
             <div class="flex items-center gap-2">
                 <div id="connection-status" class="text-[9px] px-2 py-0.5 rounded-full bg-red-600 font-bold whitespace-nowrap">Connecting...</div>
@@ -98,7 +98,7 @@
         </header>
 
         <!-- Stats Bar -->
-        <section id="stats-bar-section" class="grid grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
+        <section id="stats-bar-section" class="hidden grid-cols-5 gap-1 px-2 py-1 bg-black/40 border-b border-white/5 text-center text-xs">
             <div class="bg-purple-950/60 rounded p-1 border border-purple-500/20">
                 <div class="text-[7px] text-gray-400 uppercase">Game ID</div>
                 <div id="stat-gameid" class="text-[9px] font-bold text-amber-400 font-mono truncate">BBO6YYIW</div>
@@ -124,8 +124,92 @@
         <!-- TABS CONTAINER -->
         <div id="tab-container" class="flex-1 overflow-hidden relative flex flex-col">
             
+            <!-- VIEW 0: GAMES HUB (MAIN LOBBY) -->
+            <div id="view-hub" class="tab-content flex-1 flex flex-col p-4 space-y-4 overflow-y-auto custom-scroll">
+                <div class="text-center space-y-1 pt-2">
+                    <h1 class="text-xl font-black text-amber-400 drop-shadow-md">AZ GAMING HUB</h1>
+                    <p class="text-[11px] text-gray-300">እባክዎ የሚፈልጉትን ጨዋታ ይምረጡ 👇</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <!-- AZ Bingo Card (Unlocked) -->
+                    <div onclick="selectGame('bingo')" class="bg-gradient-to-br from-purple-900/80 via-purple-950 to-indigo-950 p-3 rounded-2xl border-2 border-amber-500/60 shadow-xl flex flex-col items-center justify-between text-center cursor-pointer transform hover:scale-[1.02] transition-all relative overflow-hidden group">
+                        <div class="absolute -right-6 -top-6 w-16 h-16 bg-amber-500/20 rounded-full blur-xl"></div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-2xl shadow-inner pulse-ball mb-2">
+                            🎯
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-black text-amber-300">AZ Bingo</h3>
+                            <p class="text-[9px] text-gray-300">ተወዳጅ የብዙዎች የቢንጎ ጨዋታ</p>
+                        </div>
+                        <div class="mt-3 w-full bg-amber-600 hover:bg-amber-500 text-black font-extrabold text-[10px] py-1.5 rounded-xl shadow">
+                            ጀምር (Play) ▶
+                        </div>
+                    </div>
+
+                    <!-- AZ Slot Card (Locked / Coming Soon) -->
+                    <div class="bg-black/50 p-3 rounded-2xl border border-white/10 shadow-inner flex flex-col items-center justify-between text-center relative overflow-hidden opacity-60">
+                        <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
+                            <span class="text-2xl mb-1">🔒</span>
+                            <span class="text-[10px] font-extrabold text-amber-400 bg-black/80 px-2.5 py-1 rounded-full border border-amber-500/40">Coming Soon</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-purple-900/30 border border-purple-500/20 flex items-center justify-center text-2xl mb-2">
+                            🎰
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-bold text-gray-400">AZ Slot</h3>
+                            <p class="text-[9px] text-gray-500">አስደሳች የស្លት ጨዋታ</p>
+                        </div>
+                        <div class="mt-3 w-full bg-white/5 text-gray-500 font-bold text-[10px] py-1.5 rounded-xl">
+                            ተቆልፏል
+                        </div>
+                    </div>
+
+                    <!-- Future Game Box 2 (Locked) -->
+                    <div class="bg-black/50 p-3 rounded-2xl border border-white/10 shadow-inner flex flex-col items-center justify-between text-center relative overflow-hidden opacity-60">
+                        <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
+                            <span class="text-2xl mb-1">🔒</span>
+                            <span class="text-[10px] font-extrabold text-amber-400 bg-black/80 px-2.5 py-1 rounded-full border border-amber-500/40">Coming Soon</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-purple-900/30 border border-purple-500/20 flex items-center justify-center text-2xl mb-2">
+                            🎲
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-bold text-gray-400">AZ Crash</h3>
+                            <p class="text-[9px] text-gray-500">ፈጣን የዕድል ጨዋታ</p>
+                        </div>
+                        <div class="mt-3 w-full bg-white/5 text-gray-500 font-bold text-[10px] py-1.5 rounded-xl">
+                            ተቆልፏል
+                        </div>
+                    </div>
+
+                    <!-- Future Game Box 3 (Locked) -->
+                    <div class="bg-black/50 p-3 rounded-2xl border border-white/10 shadow-inner flex flex-col items-center justify-between text-center relative overflow-hidden opacity-60">
+                        <div class="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
+                            <span class="text-2xl mb-1">🔒</span>
+                            <span class="text-[10px] font-extrabold text-amber-400 bg-black/80 px-2.5 py-1 rounded-full border border-amber-500/40">Coming Soon</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-purple-900/30 border border-purple-500/20 flex items-center justify-center text-2xl mb-2">
+                            🃏
+                        </div>
+                        <div class="space-y-1">
+                            <h3 class="text-sm font-bold text-gray-400">AZ Cards</h3>
+                            <p class="text-[9px] text-gray-500">የካርድ ጨዋታዎች</p>
+                        </div>
+                        <div class="mt-3 w-full bg-white/5 text-gray-500 font-bold text-[10px] py-1.5 rounded-xl">
+                            ተቆልፏል
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-purple-950/40 border border-purple-500/30 rounded-2xl p-3 text-center space-y-1 mt-auto">
+                    <div class="text-[10px] text-gray-300">አጠቃላይ ቀሪ ሂሳብዎ (Central Wallet):</div>
+                    <div class="text-xl font-black text-amber-400 font-mono" id="hub-wallet-balance">0.00 ብር</div>
+                </div>
+            </div>
+
             <!-- TAB 1: GAME -->
-            <div id="tab-game" class="tab-content flex-1 flex flex-col p-2 space-y-1 overflow-y-auto custom-scroll">
+            <div id="tab-game" class="tab-content hidden flex-1 flex flex-col p-2 space-y-1 overflow-y-auto custom-scroll">
                 
                 <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-1 min-h-0">
@@ -389,7 +473,7 @@
             <div id="tab-admin-panel" class="tab-content hidden flex-1 p-3 space-y-3 overflow-y-auto custom-scroll bg-[#120624]">
                 <div class="flex justify-between items-center border-b border-white/10 pb-2">
                     <h2 class="text-sm font-bold text-amber-400">🛡️ የአድሚን መቆጣጠሪያ ፓነል</h2>
-                    <button onclick="switchTab('game', document.querySelector('.nav-btn'))" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
+                    <button onclick="returnToHub()" class="text-xs bg-white/10 py-1 rounded px-2">ዝጋ</button>
                 </div>
 
                 <div class="text-xs text-gray-300 p-2.5 bg-purple-950/60 rounded-xl border border-amber-500/45 space-y-2 shadow-lg">
@@ -577,7 +661,7 @@
         </div>
 
         <!-- BOTTOM NAV -->
-        <nav class="grid grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-1.5 px-3 z-20 gap-2">
+        <nav id="bottom-nav" class="hidden grid-cols-3 bg-[#120624] border-t border-purple-500/20 py-1.5 px-3 z-20 gap-2">
             <button onclick="switchTab('game', this)" class="nav-btn flex items-center justify-center gap-1 text-purple-400 bg-purple-950/50 py-1.5 rounded-xl border border-purple-500/30 shadow transition-all">
                 <span class="text-[11px] font-black tracking-wide">🎮 ጨዋታ</span>
             </button>
@@ -720,15 +804,6 @@
                 }
             }
 
-            const statsBar = document.getElementById('stats-bar-section');
-            if (confirmedCards.length > 0) {
-                document.getElementById('card-selection-section').classList.add('hidden');
-                document.getElementById('live-game-section').classList.remove('hidden');
-                if(statsBar) statsBar.classList.remove('hidden');
-            } else {
-                if(statsBar) statsBar.classList.add('hidden');
-            }
-
             socket.on('connect', () => {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
@@ -850,8 +925,6 @@
                     document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
                 }
 
-                const statsBar = document.getElementById('stats-bar-section');
-
                 if (!room.gameActive) {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
@@ -866,9 +939,6 @@
                                 cBtn.innerText = "✨ ካርድ ተረጋግጧል";
                             }
 
-                            document.getElementById('card-selection-section').classList.add('hidden');
-                            document.getElementById('live-game-section').classList.remove('hidden');
-                            if(statsBar) statsBar.classList.remove('hidden');
                             renderPlayerDualCards();
                         }
                     }
@@ -880,9 +950,6 @@
                         displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
                         document.getElementById('stat-called-count').innerText = calledNumbersList.length;
                     }
-                    document.getElementById('card-selection-section').classList.add('hidden');
-                    document.getElementById('live-game-section').classList.remove('hidden');
-                    if(statsBar) statsBar.classList.remove('hidden');
                     renderVerticalBoard();
                     renderPlayerDualCards();
                 } else {
@@ -890,9 +957,6 @@
                         calledNumbersList = [];
                         manualDaubedNumbers = {};
                         document.getElementById('stat-called-count').innerText = "0";
-                        document.getElementById('card-selection-section').classList.remove('hidden');
-                        document.getElementById('live-game-section').classList.add('hidden');
-                        if(statsBar) statsBar.classList.add('hidden');
                         renderVerticalBoard();
                         generate500CardGrid();
                     }
@@ -900,10 +964,6 @@
             });
 
             socket.on('gameStarted', (data) => {
-                const statsBar = document.getElementById('stats-bar-section');
-                document.getElementById('card-selection-section').classList.add('hidden');
-                document.getElementById('live-game-section').classList.remove('hidden');
-                if(statsBar) statsBar.classList.remove('hidden');
                 renderPlayerDualCards();
             });
 
@@ -973,9 +1033,7 @@
                 try {
                     const winSound = new Audio('/bingo_win.mp3');
                     winSound.play().catch(e => console.log("Audio play blocked:", e));
-                } catch (err) {
-                    console.log("Audio error:", err);
-                }
+                } catch (err) {}
 
                 const winnerModal = document.getElementById('winner-modal');
                 const titleBadge = document.getElementById('winner-title-badge');
@@ -1010,13 +1068,11 @@
                 
                 cartelaGrid.innerHTML = '';
                 let winningCardNumbers = getCartelaNumbers(data.cardNum);
-                
                 let finalCalledList = (data.calledNumbers || calledNumbersList || []).map(n => Number(n));
                 let matchedIndices = data.matchedIndices || [];
 
                 winningCardNumbers.forEach((cn, idx) => {
                     const cell = document.createElement('div');
-                    
                     let isWinningPatternCell = matchedIndices.includes(idx);
                     let isCalled = (cn === "FREE" || finalCalledList.includes(Number(cn)));
 
@@ -1088,13 +1144,38 @@
             });
         });
 
+        // 🚀 HUB NAVIGATION FUNCTIONS
+        function selectGame(gameKey) {
+            if (gameKey === 'bingo') {
+                document.getElementById('view-hub').classList.add('hidden');
+                document.getElementById('header-title').innerText = "AZ Bingo";
+                document.getElementById('stats-bar-section').classList.remove('hidden');
+                document.getElementById('stats-bar-section').classList.add('grid');
+                document.getElementById('bottom-nav').classList.remove('hidden');
+                document.getElementById('bottom-nav').classList.add('grid');
+                
+                switchTab('game', document.querySelector('.nav-btn'));
+            }
+        }
+
+        function returnToHub() {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-hub').classList.remove('hidden');
+            document.getElementById('header-title').innerText = "🎮 AZ Games Hub";
+            document.getElementById('stats-bar-section').classList.add('hidden');
+            document.getElementById('stats-bar-section').classList.remove('grid');
+            document.getElementById('bottom-nav').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.remove('grid');
+            updateWalletUI();
+        }
+
         function shareRefLink() {
             if (!currentReferralLink || currentReferralLink.includes("መጫን ላይ")) {
                 alert("⚠️ የሪፈራል ሊንኩ እስኪመጣ ትንሽ ይጠብቁ!");
                 return;
             }
 
-            let shareText = encodeURIComponent("ኑ በ AZ Bingo አብረን እንጫወት እና ሽልማት እንውሰድ! 🎮💰 በዚህ ሊንክ በመግባት ይቀላቀሉን:");
+            let shareText = encodeURIComponent("ኑ በ AZ Games አብረን እንጫወት እና ሽልማት እንውሰድ! 🎮💰 በዚህ ሊንክ በመግባት ይቀላቀሉን:");
             let telegramShareUrl = `https://t.me/share/url?url=${encodeURIComponent(currentReferralLink)}&text=${shareText}`;
 
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
@@ -1189,10 +1270,7 @@
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let phoneVal = document.getElementById('admin-telebirr-phone').value.trim();
             let nameVal = document.getElementById('admin-telebirr-name').value.trim();
-            if (!phoneVal) {
-                alert("⚠️ እባክዎ አዲስ ስልክ ቁጥር ያስገቡ!");
-                return;
-            }
+            if (!phoneVal) { alert("⚠️ እባክዎ አዲስ ስልክ ቁጥር ያስገቡ!"); return; }
             socket.emit('adminUpdateTelebirr', { phone: phoneVal, name: nameVal });
             document.getElementById('admin-telebirr-phone').value = '';
             document.getElementById('admin-telebirr-name').value = '';
@@ -1202,20 +1280,14 @@
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let minB = document.getElementById('admin-min-bots-input').value.trim();
             let maxB = document.getElementById('admin-max-bots-input').value.trim();
-            if (!minB || !maxB) {
-                alert("⚠️ እባክዎ ሁለቱንም ዝቅተኛ እና ከፍተኛ የቦት ቁጥሮች ያስገቡ!");
-                return;
-            }
+            if (!minB || !maxB) { alert("⚠️ እባክዎ ሁለቱንም ዝቅተኛ እና ከፍተኛ የቦት ቁጥሮች ያስገቡ!"); return; }
             socket.emit('adminUpdateBotConfig', { minBots: minB, maxBots: maxB });
         }
 
         function adminCheckUserBalance() {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let targetUserId = document.getElementById('admin-check-userid').value.trim();
-            if (!targetUserId) {
-                alert("⚠️ እባክዎ የቴሌግራም ዩዘር ID ያስገቡ!");
-                return;
-            }
+            if (!targetUserId) { alert("⚠️ እባክዎ የቴሌግራም ዩዘር ID ያስገቡ!"); return; }
             socket.emit('adminCheckUserBalance', { targetUserId: targetUserId });
         }
 
@@ -1223,10 +1295,7 @@
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             const msgInput = document.getElementById('admin-broadcast-input');
             let msgText = msgInput ? msgInput.value.trim() : '';
-            if (!msgText) {
-                alert("⚠️ እባክዎ የሚላከውን ማስታወቂያ ጽሁፍ ይጻፉ!");
-                return;
-            }
+            if (!msgText) { alert("⚠️ እባክዎ የሚላከውን ማስታወቂያ ጽሁፍ ይጻፉ!"); return; }
             socket.emit('adminBroadcastMessage', { message: msgText });
             if (msgInput) msgInput.value = '';
         }
@@ -1234,8 +1303,7 @@
         function toggleAdminLock(type) {
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             let currentLocked = (type === 'deposit') ? isDepositLockedGlobal : isWithdrawLockedGlobal;
-            let newLockedState = !currentLocked;
-            socket.emit('adminToggleLock', { type: type, locked: newLockedState });
+            socket.emit('adminToggleLock', { type: type, locked: !currentLocked });
         }
 
         function updateAdminLockUIButtons() {
@@ -1243,23 +1311,13 @@
             const withBtn = document.getElementById('admin-lock-with-btn');
 
             if (depBtn) {
-                if (isDepositLockedGlobal) {
-                    depBtn.className = "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow";
-                    depBtn.innerText = "ተቆልፏል (Locked)";
-                } else {
-                    depBtn.className = "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
-                    depBtn.innerText = "ክፈት (Unlocked)";
-                }
+                depBtn.className = isDepositLockedGlobal ? "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow" : "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
+                depBtn.innerText = isDepositLockedGlobal ? "ተቆልፏል (Locked)" : "ክፈት (Unlocked)";
             }
 
             if (withBtn) {
-                if (isWithdrawLockedGlobal) {
-                    withBtn.className = "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow";
-                    withBtn.innerText = "ተቆልፏል (Locked)";
-                } else {
-                    withBtn.className = "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
-                    withBtn.innerText = "ክፈት (Unlocked)";
-                }
+                withBtn.className = isWithdrawLockedGlobal ? "w-full bg-red-700 hover:bg-red-600 text-white font-black py-2 rounded text-xs shadow" : "w-full bg-emerald-700 hover:bg-emerald-600 text-white font-black py-2 rounded text-xs shadow";
+                withBtn.innerText = isWithdrawLockedGlobal ? "ተቆልፏል (Locked)" : "ክፈት (Unlocked)";
             }
         }
 
@@ -1277,10 +1335,7 @@
             if (!isAdmin) { alert("⚠️ ፈቃድ የለዎትም!"); return; }
             const userIdInput = document.getElementById('admin-bonus-userid');
             let targetUserId = userIdInput ? userIdInput.value.trim() : '';
-            if (!targetUserId) {
-                alert("⚠️ እባክዎ ትክክለኛ የዩዘር ID ያስገቡ!");
-                return;
-            }
+            if (!targetUserId) { alert("⚠️ እባክዎ ትክክለኛ የዩዘር ID ያስገቡ!"); return; }
             socket.emit('adminSendBonus', { targetUserId: targetUserId, amount: amount });
         }
 
@@ -1371,12 +1426,9 @@
                 if (timeLeft <= 5 && confirmedCards.length > 0) {
                     const cardSec = document.getElementById('card-selection-section');
                     const liveSec = document.getElementById('live-game-section');
-                    const statsBar = document.getElementById('stats-bar-section');
                     if (cardSec && !cardSec.classList.contains('hidden')) {
                         cardSec.classList.add('hidden');
                         liveSec.classList.remove('hidden');
-                        if(statsBar) statsBar.classList.remove('hidden');
-                        renderPlayerDualCards();
                     }
                 }
 
@@ -1408,14 +1460,6 @@
                 let utterance = new SpeechSynthesisUtterance(speechText);
                 utterance.lang = 'am-ET';
                 utterance.rate = 0.85;
-                utterance.pitch = 1.0;
-                
-                let voices = window.speechSynthesis.getVoices();
-                let targetVoice = voices.find(v => v.lang === 'am-ET' || v.lang.toLowerCase().includes('am') || v.name.toLowerCase().includes('amharic'));
-                if (targetVoice) {
-                    utterance.voice = targetVoice;
-                }
-
                 window.speechSynthesis.speak(utterance);
             }
         }
@@ -1509,8 +1553,6 @@
             setTimeout(() => {
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
-                const statsBar = document.getElementById('stats-bar-section');
-                if(statsBar) statsBar.classList.add('hidden');
                 generate500CardGrid();
                 renderCardSelectionPreviews();
             }, 1000);
@@ -1522,34 +1564,23 @@
 
         function updateWalletUI() {
             document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
+            document.getElementById('hub-wallet-balance').innerText = walletBalance.toFixed(2) + " ብር";
             localStorage.setItem(userLocalStorageKey, walletBalance.toString());
         }
 
         function openDepositModal() { 
-            if (isDepositLockedGlobal) {
-                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!");
-                return;
-            }
+            if (isDepositLockedGlobal) { alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዲፖዚት አገልግሎት አይሰጥም!"); return; }
             document.getElementById('deposit-modal').classList.remove('hidden'); 
         }
 
         function openWithdrawModal() { 
-            if (isWithdrawLockedGlobal) {
-                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!");
-                return;
-            }
+            if (isWithdrawLockedGlobal) { alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት ዊዝድሮዋል አገልግሎት አይሰጥም!"); return; }
             document.getElementById('withdraw-modal').classList.remove('hidden'); 
         }
 
         function submitFinancialRequest(type) {
-            if (type === 'deposit' && isDepositLockedGlobal) {
-                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!");
-                return;
-            }
-            if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLockedGlobal) {
-                alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!");
-                return;
-            }
+            if (type === 'deposit' && isDepositLockedGlobal) { alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!"); return; }
+            if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLockedGlobal) { alert("⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!"); return; }
 
             if (type === 'deposit') {
                 let amount = parseFloat(document.getElementById('dep-amount-input').value);
@@ -1557,22 +1588,15 @@
                 let fileInput = document.getElementById('dep-receipt-file');
                 let receiptFile = fileInput.files[0];
 
-                if (isNaN(amount) || amount < 20) { 
-                    alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); 
-                    return; 
-                }
-                if (!receiptText && !receiptFile) { 
-                    alert("⚠️ እባክዎ የደረሰኝ ጽሑፍ (SMS) ያስገቡ ወይም የክፍያ ፎቶ (Screenshot) ይምረጡ!"); 
-                    return; 
-                }
+                if (isNaN(amount) || amount < 20) { alert("⚠️ ዝቅተኛው የዲፖዚት መጠን 20 ብር ነው።"); return; }
+                if (!receiptText && !receiptFile) { alert("⚠️ እባክዎ የደረሰኝ ጽሑፍ (SMS) ያስገቡ ወይም የክፍያ ፎቶ ይምረጡ!"); return; }
 
                 document.getElementById('deposit-modal').classList.add('hidden');
 
                 if (receiptFile) {
                     let reader = new FileReader();
                     reader.onload = function(e) {
-                        let base64Image = e.target.result;
-                        sendDepositPostRequest(type, amount, receiptText, base64Image);
+                        sendDepositPostRequest(type, amount, receiptText, e.target.result);
                     };
                     reader.readAsDataURL(receiptFile);
                 } else {
@@ -1586,40 +1610,23 @@
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
 
-                // 🛑 ዊዝድሮዋል ሲጠየቅ ከሂሳብ ላይ ተቀንሶ ታሪክ ላይ "Pending" ሆኖ እንዲቀመጥ ይደረጋል
                 walletBalance -= amount;
                 updateWalletUI();
                 addTransactionHistory(`ዊዝድሮዋል (Pending)`, amount, 'expense', 'pending');
 
                 socket.emit('financialRequest', { 
-                    type: type, 
-                    amount: amount, 
-                    username: userFullName, 
-                    userId: telegramUserId, 
-                    currentBalance: walletBalance, 
-                    phone: phone, 
-                    receipt: '', 
-                    telegramChatId: telegramUserId 
+                    type: type, amount: amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, phone: phone, receipt: '', telegramChatId: telegramUserId 
                 });
             }
         }
 
         function sendDepositPostRequest(type, amount, receiptText, receiptImage) {
-            // 🛑 ዲፖዚት ሲላክ በታሪክ ላይ "Pending" ተብሎ እንዲመዘገብ ይደረጋል
             addTransactionHistory(`ዲፖዚት (Pending)`, amount, 'income', 'pending');
 
             fetch('/api/financial-request', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: type,
-                    amount: amount,
-                    username: userFullName,
-                    userId: telegramUserId,
-                    currentBalance: walletBalance,
-                    receiptText: receiptText,
-                    receiptImage: receiptImage
-                })
+                body: JSON.stringify({ type, amount, username: userFullName, userId: telegramUserId, currentBalance: walletBalance, receiptText, receiptImage })
             })
             .then(res => res.json())
             .then(data => {
@@ -1629,9 +1636,7 @@
                     alert("❌ ስህተት: " + (data.message || ''));
                 }
             })
-            .catch(err => {
-                alert("❌ መረጃውን መላክ አልተቻለም።");
-            });
+            .catch(err => { alert("❌ መረጃውን መላክ አልተቻለም።"); });
         }
 
         function generate500CardGrid() {
@@ -1679,16 +1684,13 @@
             const slot2 = document.getElementById('previewCardSlot2');
             if (!slot1 || !slot2) return;
 
-            slot1.innerHTML = '';
-            slot2.innerHTML = '';
-
+            slot1.innerHTML = ''; slot2.innerHTML = '';
             let cardsToPreview = userSelectedCards.length > 0 ? userSelectedCards : confirmedCards;
 
             if (cardsToPreview.length === 0) {
                 slot1.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
                 slot2.className = "bg-black/50 border border-purple-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
-                slot1.innerText = "ካርድ 1 ፕሪቪው";
-                slot2.innerText = "ካርድ 2 ፕሪቪው";
+                slot1.innerText = "ካርድ 1 ፕሪቪው"; slot2.innerText = "ካርድ 2 ፕሪቪው";
                 return;
             }
 
@@ -1731,15 +1733,10 @@
         function confirmCardSelection() {
             if(userSelectedCards.length === 0) { alert("እባክዎ ካርድ ይምረጡ!"); return; }
             
-            let desiredTotalCardsCount = userSelectedCards.length; 
-            let desiredTotalCost = desiredTotalCardsCount * 10;    
-            
+            let desiredTotalCost = userSelectedCards.length * 10;    
             let amountToDeduct = desiredTotalCost - totalPaidForCurrentRound;
 
-            if (amountToDeduct > 0 && walletBalance < amountToDeduct) { 
-                alert("በቂ ሂሳብ የለዎትም! እባክዎ አካውንትዎ ላይ ገንዘብ ያስገቡ።"); 
-                return; 
-            }
+            if (amountToDeduct > 0 && walletBalance < amountToDeduct) { alert("በቂ ሂሳብ የለዎትም!"); return; }
             
             if (amountToDeduct > 0) {
                 walletBalance -= amountToDeduct;
@@ -1763,11 +1760,7 @@
             }
 
             socket.emit('confirmCards', { 
-                cards: confirmedCards, 
-                userId: telegramUserId, 
-                username: userFullName, 
-                telegramChatId: telegramUserId,
-                balance: walletBalance 
+                cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId, balance: walletBalance 
             });
 
             renderCardSelectionPreviews();
@@ -1775,6 +1768,7 @@
 
         function renderVerticalBoard() {
             const board = document.getElementById('vertical-board-75');
+            if(!board) return;
             board.innerHTML = '';
             let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
             for(let r = 1; r <= 15; r++) {
@@ -1806,6 +1800,7 @@
 
         function renderPlayerDualCards() {
             const container = document.getElementById('right-side-dynamic-area');
+            if(!container) return;
             const autoToggle = document.getElementById('auto-daub-toggle');
             let isAutoMode = autoToggle ? autoToggle.checked : true;
             container.innerHTML = '';
