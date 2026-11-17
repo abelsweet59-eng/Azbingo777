@@ -683,6 +683,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
+    // 🛑 1. ዙሩ ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ (Reset)
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -1135,15 +1136,9 @@ io.on('connection', (socket) => {
                 }
             }
 
-            if (globalRoom.gameActive) {
-                let existingKey = Object.keys(globalRoom.playerRoundCards).find(sId => globalRoom.playerRoundCards[sId].userId === userId);
-                if (existingKey) {
-                    let existingData = globalRoom.playerRoundCards[existingKey];
-                    delete globalRoom.playerRoundCards[existingKey];
-                    globalRoom.playerRoundCards[socket.id] = existingData;
-                }
-            } else {
-                // 🛑 1. ጨዋታው ገና ካልጀመረ (Waiting Phase) ተጫዋቹ አፑን ከፍቶ ሲገባ የትኛውንም የቆየ ካርድ እናጸዳዋለን (ስታክ እንዳይሆን)
+            // 🛑 2. ተጫዋቹ ጌሙ ከጀመረ በኋላ አፑን ሚኒማይዝ አድርጎ ወጥቶ, ጌሙ አልቆ አዲስ ዙር ሲጀምር (ወይም ተመልሶ ሲገባ)
+            // የድሮው ካርድ እንዲጸዳ እና በዛ ዩዘር ID የተያዘ ማንኛውም አሮጌ ካርድ እንዳይያዝ ይደረጋል!
+            if (!globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         delete globalRoom.playerRoundCards[sId];
@@ -1466,12 +1461,8 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
-        // 🛑 2. ተጫዋቹ ዲስኮኔክት ሲያደርግም ጨዋታው ገና ካልጀመረ ካርዱ ወዲያውኑ ይለቀቃል
         if (!globalRoom.gameActive) {
-            // በsocket.id የተያዘውን ብቻ ሳይሆን ከዚህ ሰሶኬት ጋር የተያያዙትንም እናጸዳለን
             delete globalRoom.playerRoundCards[socket.id];
-            
-            // የዛን socketId ዩዘር ID ፈልገን ሌላ አሮጌ ካርድ ካለው እናጸዳዋለን
             Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                 if (sId === socket.id) {
                     delete globalRoom.playerRoundCards[sId];
