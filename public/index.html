@@ -298,8 +298,9 @@
 
                         <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
-                                <div class="flex justify-start items-center">
-                                    <div id="recent-balls-container" class="flex flex-wrap gap-1 justify-start items-center"></div>
+                                <!-- Recent Calls layout exactly like the photo (Top row of recent balls) -->
+                                <div class="flex justify-center items-center py-0.5">
+                                    <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
@@ -308,8 +309,8 @@
                                         <div id="in-place-countdown-num" class="text-lg font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
-                                    <!-- Called Ball with Dynamic Background Color matching the letter column -->
-                                    <div id="main-called-ball" class="hidden w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
+                                    <!-- Main Called Ball with Dynamic Background Color matching the column -->
+                                    <div id="main-called-ball" class="hidden w-20 h-20 rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
                                         <span id="ball-letter" class="text-[9px] leading-none uppercase font-bold text-cyan-200">B</span>
                                         <span id="ball-num" class="text-2xl font-black leading-tight">5</span>
                                     </div>
@@ -1489,16 +1490,22 @@
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
-            let recent = calledNumbersList.slice(-5);
             
-            recent.forEach((num, index) => {
+            // Get up to 5 recent calls preceding the current main called ball, in reverse chronological order (matching original screenshot)
+            let recentSlice = [];
+            if (calledNumbersList.length > 1) {
+                let sliceEnd = calledNumbersList.length - 1;
+                let sliceStart = Math.max(0, sliceEnd - 5);
+                recentSlice = calledNumbersList.slice(sliceStart, sliceEnd).reverse();
+            }
+            
+            recentSlice.forEach((num) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 let colBg = getColumnBgColor(num);
-                let isLatest = (index === recent.length - 1);
 
                 const pill = document.createElement('div');
-                pill.className = `rounded-full ${colBg} text-white font-black flex flex-col items-center justify-center shadow ${isLatest ? 'w-7 h-7 text-[9px] border border-white' : 'w-6 h-6 text-[8px] opacity-75'}`;
-                pill.innerHTML = `<span style="font-size: 5px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
+                pill.className = `w-6 h-6 rounded-full ${colBg} text-white font-bold text-[8px] flex flex-col items-center justify-center shadow border border-white/50`;
+                pill.innerHTML = `<span style="font-size: 4px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
                 container.appendChild(pill);
             });
         }
