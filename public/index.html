@@ -298,21 +298,21 @@
 
                         <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
-                                <!-- Recent Calls layout exactly matching the user's screenshot (Top row of recent small balls) -->
+                                <!-- Recent Calls layout exactly matching the user's screenshot layout (Top row of recent small balls) -->
                                 <div class="flex justify-center items-center py-0.5">
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
-                                    <div id="in-place-countdown-box" class="w-20 h-20 rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim">
+                                    <div id="in-place-countdown-box" class="w-[88px] h-[88px] rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim mx-auto">
                                         <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
                                         <div id="in-place-countdown-num" class="text-lg font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
-                                    <!-- Main Called Ball with Dynamic Background Color matching the column -->
-                                    <div id="main-called-ball" class="hidden w-20 h-20 rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
-                                        <span id="ball-letter" class="text-[9px] leading-none uppercase font-bold text-cyan-200">B</span>
-                                        <span id="ball-num" class="text-2xl font-black leading-tight">5</span>
+                                    <!-- Main Called Ball made significantly larger (w-[88px] h-[88px]) with Dynamic Background Color matching the column -->
+                                    <div id="main-called-ball" class="hidden w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
+                                        <span id="ball-letter" class="text-[10px] leading-none uppercase font-bold text-cyan-200">B</span>
+                                        <span id="ball-num" class="text-3xl font-black leading-tight">5</span>
                                     </div>
                                 </div>
                             </div>
@@ -1481,8 +1481,8 @@
             document.getElementById('ball-letter').innerText = letter;
             document.getElementById('ball-num').innerText = num;
 
-            // Update main called ball background color matching the exact column color
-            mainBall.className = `hidden w-20 h-20 rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
+            // Update main called ball background color matching the exact column color with large display size
+            mainBall.className = `hidden w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
 
             renderRecentBalls();
         }
@@ -1503,6 +1503,7 @@
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 let colBg = getColumnBgColor(num);
 
+                // Recent small balls styled with smaller size (w-6 h-6) positioned behind/above the main ball row
                 const pill = document.createElement('div');
                 pill.className = `w-6 h-6 rounded-full ${colBg} text-white font-bold text-[8px] flex flex-col items-center justify-center shadow border border-white/50`;
                 pill.innerHTML = `<span style="font-size: 4px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
