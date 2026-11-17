@@ -916,6 +916,10 @@
                     }
                     renderVerticalBoard();
                     renderPlayerDualCards();
+                    
+                    // 🛑 MULTIPLAYER SYNCHRONIZATION: ጨዋታው ከተጀመረ ሌሎች ተጫዋቾች ጋር ልክ እንደነሱ ስክሪን ላይቭ ጨዋታው ላይ እንዲታይ ማድረግ
+                    document.getElementById('card-selection-section').classList.add('hidden');
+                    document.getElementById('live-game-section').classList.remove('hidden');
                 } else {
                     if (confirmedCards.length === 0) {
                         calledNumbersList = [];
@@ -923,12 +927,17 @@
                         document.getElementById('stat-called-count').innerText = "0";
                         renderVerticalBoard();
                         generate500CardGrid();
+                        
+                        document.getElementById('card-selection-section').classList.remove('hidden');
+                        document.getElementById('live-game-section').classList.add('hidden');
                     }
                 }
             });
 
             socket.on('gameStarted', (data) => {
                 renderPlayerDualCards();
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
             });
 
             socket.on('numberCalled', (data) => {
