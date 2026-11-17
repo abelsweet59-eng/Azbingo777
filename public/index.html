@@ -124,7 +124,6 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3 pt-2 z-10">
-                    <!-- AZ Bingo Card -->
                     <div onclick="selectGame('bingo')" class="bg-gradient-to-b from-[#091838] via-[#060e22] to-[#030612] p-3 rounded-2xl border-2 border-amber-400/90 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex flex-col justify-between cursor-pointer transform hover:scale-[1.03] transition-all relative overflow-hidden group">
                         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/30 via-transparent to-transparent"></div>
                         
@@ -181,7 +180,6 @@
                         </div>
                     </div>
 
-                    <!-- AZ Keno Card (Locked / Coming Soon) -->
                     <div class="bg-black/50 p-3.5 rounded-2xl border border-white/10 shadow-inner flex flex-col items-center justify-between text-center relative overflow-hidden opacity-60">
                         <div class="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10 flex flex-col items-center justify-center">
                             <span class="text-2xl mb-1">🔒</span>
@@ -209,7 +207,6 @@
             <!-- TAB 1: GAME -->
             <div id="tab-game" class="tab-content hidden flex-1 flex flex-col p-2 space-y-1 overflow-y-auto custom-scroll">
                 
-                <!-- Card Selection Section -->
                 <div id="card-selection-section" class="flex-1 flex flex-col space-y-1 min-h-0">
                     <div class="flex justify-between items-center text-xs bg-blue-950/60 px-2.5 py-1.5 rounded-lg border border-amber-500/30 shrink-0">
                         <div>
@@ -223,7 +220,6 @@
 
                     <div class="flex-1 min-h-[180px] overflow-y-auto custom-scroll bg-black/40 p-2 rounded-xl border border-white/10 grid grid-cols-8 gap-1.5 content-start" id="card-grid-500"></div>
 
-                    <!-- Countdown & Confirm Section -->
                     <div class="bg-gradient-to-r from-blue-950/90 via-[#0d1b3e] to-blue-950/90 px-2 py-1 rounded-lg border border-amber-500/50 flex items-center justify-between shadow-xl shrink-0">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-400/60 flex items-center justify-center text-amber-400 text-[10px] shadow-inner pulse-ball">
@@ -241,7 +237,6 @@
                         </div>
                     </div>
 
-                    <!-- Selection & Preview Slots -->
                     <div class="bg-white/5 p-1.5 rounded-xl border border-white/10 flex flex-col space-y-1 text-xs shrink-0">
                         <div class="flex justify-between items-center">
                             <div>
@@ -285,7 +280,6 @@
                     <div class="grid grid-cols-12 gap-1.5 flex-1 overflow-hidden">
                         
                         <div class="col-span-5 flex flex-col bg-[#0b1633] p-1 rounded-lg border border-amber-500/30 overflow-hidden">
-                            <!-- B-I-N-G-O Letters Header with exact respective colors -->
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-0.5">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-purple-600 rounded text-white py-0.5">I</div>
@@ -298,7 +292,7 @@
 
                         <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
-                                <!-- Recent Calls layout exactly matching the user's screenshot layout (Top row of recent small balls) -->
+                                <!-- Recent Calls layout exactly matching the user's screenshot layout -->
                                 <div class="flex justify-center items-center py-0.5">
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
@@ -309,7 +303,7 @@
                                         <div id="in-place-countdown-num" class="text-lg font-black text-amber-400 font-mono">60s</div>
                                     </div>
 
-                                    <!-- Main Called Ball made significantly larger (w-[88px] h-[88px]) with Dynamic Background Color matching the column -->
+                                    <!-- Main Called Ball -->
                                     <div id="main-called-ball" class="hidden w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto">
                                         <span id="ball-letter" class="text-[10px] leading-none uppercase font-bold text-cyan-200">B</span>
                                         <span id="ball-num" class="text-3xl font-black leading-tight">5</span>
@@ -1151,7 +1145,6 @@
             });
         });
 
-        // 🚀 HUB NAVIGATION FUNCTIONS
         function selectGame(gameKey) {
             if (gameKey === 'bingo') {
                 document.getElementById('view-hub').classList.add('hidden');
@@ -1481,7 +1474,6 @@
             document.getElementById('ball-letter').innerText = letter;
             document.getElementById('ball-num').innerText = num;
 
-            // Update main called ball background color matching the exact column color with large display size
             mainBall.className = `hidden w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
 
             renderRecentBalls();
@@ -1491,7 +1483,6 @@
             const container = document.getElementById('recent-balls-container');
             container.innerHTML = '';
             
-            // Get up to 5 recent calls preceding the current main called ball, in reverse chronological order (matching original screenshot)
             let recentSlice = [];
             if (calledNumbersList.length > 1) {
                 let sliceEnd = calledNumbersList.length - 1;
@@ -1503,7 +1494,6 @@
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
                 let colBg = getColumnBgColor(num);
 
-                // Recent small balls styled with smaller size (w-6 h-6) positioned behind/above the main ball row
                 const pill = document.createElement('div');
                 pill.className = `w-6 h-6 rounded-full ${colBg} text-white font-bold text-[8px] flex flex-col items-center justify-center shadow border border-white/50`;
                 pill.innerHTML = `<span style="font-size: 4px; line-height: 1;">${letter}</span><span style="font-weight: 900; line-height: 1;">${num}</span>`;
