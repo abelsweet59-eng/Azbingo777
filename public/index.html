@@ -304,7 +304,7 @@
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
-                                <!-- 2. MAIN CALLED BALL AT THE BOTTOM (እንደ ፎቶው ዋናው ትልቁ ኳስ ከታች) -->
+                                <!-- 2. MAIN CALLED BALL AT THE BOTTOM (እንደ ፎቶው ዋናው ትልቁ ኳስ ከታች - የተስተካከለ) -->
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
                                     <div id="in-place-countdown-box" class="w-[88px] h-[88px] rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim mx-auto">
                                         <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
@@ -1475,20 +1475,23 @@
         function displayCalledBall(num) {
             const countdownBox = document.getElementById('in-place-countdown-box');
             const mainBall = document.getElementById('main-called-ball');
-            countdownBox.classList.add('hidden');
-            mainBall.classList.remove('hidden');
+            if (countdownBox) countdownBox.classList.add('hidden');
+            if (mainBall) mainBall.classList.remove('hidden');
 
             let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
             document.getElementById('ball-letter').innerText = letter;
             document.getElementById('ball-num').innerText = num;
 
-            mainBall.className = `hidden w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
+            if (mainBall) {
+                mainBall.className = `w-[88px] h-[88px] rounded-full border-2 border-white flex flex-col items-center justify-center text-white font-black shadow-xl pulse-ball mx-auto ${getColumnBgColor(num)}`;
+            }
 
             renderRecentBalls();
         }
 
         function renderRecentBalls() {
             const container = document.getElementById('recent-balls-container');
+            if (!container) return;
             container.innerHTML = '';
             
             let recentSlice = [];
