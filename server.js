@@ -528,7 +528,6 @@ function startMainGameLoop() {
                 });
             }
 
-            // 🛑 አድሚኑ ትዕዛዝ ካልሰጠ (Standard Bot Mode) አሸናፊዎቹ ሁልጊዜ ከቦቶች መካከል ብቻ ይመረጣሉ!
             while (winningUsernamesArr.length < winnersCount) {
                 let bName = getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
@@ -564,7 +563,6 @@ function startMainGameLoop() {
             let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
             
-            // 🛡️ የቁጥር ማጣሪያ: አድሚኑ ሪል ዩዘር እንዲያሸንፍ ካላዘዘ, የቁጥር ፍሰቱ የሪል ዩዘር ካርድ እንዳይሞላ ይጠነቀቃል
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
             let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
@@ -598,7 +596,6 @@ function startMainGameLoop() {
                             let tempCalled = [...globalRoom.calledNumbers, testNum];
                             let wouldRealUserWin = false;
 
-                            // 🛑 አድሚኑ ትዕዛዝ ካልሰጠ (ቦት ብቻ እንዲያሸንፍ ከተፈለገ) የሪል ዩዘር ካርድ ከቶ እንዳይሞላ ይደረጋል
                             if (targetRealCount === 0) {
                                 Object.values(globalRoom.playerRoundCards).forEach(pData => {
                                     if (pData && pData.cards) {
@@ -686,6 +683,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
+    // 🛑 እያንዳንዱ ዙር ሲያልቅ የካርድ ምርጫዎች እና ጊዚያዊ ምርጫዎች ሙሉ በሙሉ ይጸዳሉ
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -1146,6 +1144,7 @@ io.on('connection', (socket) => {
                     globalRoom.playerRoundCards[socket.id] = existingData;
                 }
             } else {
+                // 🛑 ጨዋታው ገና ካልጀመረ፣ ተጫዋቹ ሲገባ የድሮ ካርዶቹ ሙሉ በሙሉ ተጸድተው ለአዲስ ምርጫ ክፍት እንዲሆኑ ይደረጋል
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
                         delete globalRoom.playerRoundCards[sId];
@@ -1468,6 +1467,7 @@ io.on('connection', (socket) => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
         
+        // 🛑 ጨዋታው ገና በንቃት ያልጀመረ ከሆነ (Waiting Phase) ተጫዋቹ ሲወጣ የያዘው ካርድ እና ጊዜያዊ ምርጫው ወዲያውኑ ይሰረዛል
         if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
         }
