@@ -463,7 +463,7 @@
                         <h3 class="font-bold text-amber-300 text-xs">2. 🏧 ገንዘብ የማወጫ መመሪያ (Withdraw Rule)</h3>
                         <div class="text-gray-300 space-y-1.5 text-[11px]">
                             <p><b>1ኛ ደረጃ:</b> ገንዘቡን መቀበል የሚፈልጉበትን ትክክለኛ Account ቁጥር ያስገቡ።</p>
-                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
+                            <p><b>2ኛ ደረጃ:</b> ማውጣት የሚፈልጉበትን Account እና ስም የብር መጠን መርጠው/አስገብተው "ማውጫ ላክ" የሚለውን ሲጫኑ ወጪው ይደረጋል (ዝቅተኛው የዊዝድሮዋል ገደብ 100 ብር ነው።)</p>
                         </div>
                     </div>
                 </div>
@@ -1191,7 +1191,7 @@
             copyText.select();
             copyText.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(copyText.value).then(() => {
-                alert("✅ የሪፈራል ሊንኩ ተኮርጅዟል!");
+                alert("✅ የሪፈራል ሊንኩ copy ተደርጓል!");
             }).catch(err => {
                 console.error('ኮፒ ማድረግ አልተቻለም', err);
             });
@@ -1680,7 +1680,7 @@
             if (cardsToPreview.length === 0) {
                 slot1.className = "bg-black/50 border border-amber-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
                 slot2.className = "bg-black/50 border border-amber-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
-                slot1.innerText = "ካርድ 1 ፕሪቪው"; slot2.innerText = "ካርድ 2 ፕሪቪው";
+                slot1.innerText = "ካርድ 1"; slot2.innerText = "ካርድ 2";
                 return;
             }
 
