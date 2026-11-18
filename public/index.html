@@ -299,12 +299,12 @@
                         <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
                                 
-                                <!-- 1. RECENT BALLS ON TOP (እንደ ፎቶው ከላይ ትናናሾቹ ኳሶች) -->
+                                <!-- 1. RECENT BALLS ON TOP -->
                                 <div class="flex justify-center items-center py-0.5">
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
-                                <!-- 2. MAIN CALLED BALL AT THE BOTTOM (እንደ ፎቶው ዋናው ትልቁ ኳስ ከታች - የተስተካከለ) -->
+                                <!-- 2. MAIN CALLED BALL AT THE BOTTOM -->
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
                                     <div id="in-place-countdown-box" class="w-[88px] h-[88px] rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim mx-auto">
                                         <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
@@ -745,18 +745,7 @@
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
-        let amharicVoice = null;
         let isAudioMuted = true;
-
-        function loadVoices() {
-            let voices = window.speechSynthesis.getVoices();
-            amharicVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('am-ET') || v.name.toLowerCase().includes('amharic')) || voices[0];
-        }
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.onvoiceschanged = loadVoices;
-            loadVoices();
-        }
 
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";
@@ -984,7 +973,7 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
                 
-                if (!isAudioMuted) speakCalledNumber(num);
+                if (!isAudioMuted) playCalledNumberAudio(num);
             });
 
             socket.on('roundEnded', (data) => {
@@ -1039,7 +1028,7 @@
 
             socket.on('bingoWinner', (data) => {
                 try {
-                    const winSound = new Audio('/bingo_win.mp3');
+                    const winSound = new Audio('/sound/bingo_win.mp3');
                     winSound.play().catch(e => console.log("Audio play blocked:", e));
                 } catch (err) {}
 
@@ -1451,24 +1440,14 @@
             }, 1000);
         }
 
-        function speakCalledNumber(num) {
+        // 🎵 Amharic Audio Callout Integration using public/sound/ folder
+        function playCalledNumberAudio(num) {
             if (isAudioMuted) return;
-
-            let letterAmharic = "";
-            if (num <= 15) letterAmharic = "ቢ";
-            else if (num <= 30) letterAmharic = "አይ";
-            else if (num <= 45) letterAmharic = "ኤን";
-            else if (num <= 60) letterAmharic = "ጂ";
-            else letterAmharic = "ኦ";
-
-            let speechText = `${letterAmharic} ${num}`;
-            
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                let utterance = new SpeechSynthesisUtterance(speechText);
-                utterance.lang = 'am-ET';
-                utterance.rate = 0.85;
-                window.speechSynthesis.speak(utterance);
+            try {
+                const soundAudio = new Audio(`/sound/${num}.mp3`);
+                soundAudio.play().catch(e => console.log("Audio play blocked or missing:", e));
+            } catch (err) {
+                console.log("Audio error:", err);
             }
         }
 
