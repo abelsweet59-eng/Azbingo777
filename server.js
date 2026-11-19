@@ -22,7 +22,7 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
-const ADMIN_CHAT_IDS = ["371093083", "8648229637"];
+const ADMIN_CHAT_IDS = ["371093083", "7906963841"];
 
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {}; 
