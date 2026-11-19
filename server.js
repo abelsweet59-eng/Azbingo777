@@ -58,8 +58,8 @@ function saveTelebirrConfigToDisk() {
 
 const botConfigFilePath = path.join(__dirname, 'bot_config.json');
 let botConfig = {
-    minBots: 40,
-    maxBots: 250
+    minBots: 23,
+    maxBots: 200
 };
 
 if (fs.existsSync(botConfigFilePath)) {
@@ -78,27 +78,27 @@ function saveBotConfigToDisk() {
 
 const baseNumberFlowSequence = [
     12, 14, 16, 18, 20, 15, 17, 14, 19, 21, 18, 16, 15, 17, 19, 18, 20, 17, 16, 18, 
-    16, 14, 18, 20, 22, 24, 17, 18, 16, 18, 19, 21, 22, 20, 19, 18, 21, 20, 22, 21, 
+    16, 14, 18, 20, 22, 24, 17, 18, 16, 18, 19, 11, 10, 20, 19, 18, 21, 20, 22, 21, 
     19, 18, 20, 22, 19, 18, 16, 17, 16, 20, 19, 16, 18, 22, 17, 19, 18, 16, 19, 22, 
     21, 17, 19, 18, 16, 17, 18, 16, 20, 19, 18, 18, 20, 19, 18, 19, 16, 17, 17, 20, 
-    18, 19
+    18, 13
 ];
 let sequenceIndex = 0;
 
 const ETHIOPIAN_BOT_NAMES = [
-    "Abebaw", "ማርታ", "asrat00", "Melaku tamrat", "በላይ", 
+    "bebaw", "ማርታ", "asrat00", "Melaku tamrat", "በላይ", 
     "kesho", "አብይ", "hamud", "Helen hilu", "ali ali", 
     "aste19", "nati47", "Nati bonga", "kida7k", "ማርቆስ", 
     "natinati", "goshu", "Elias tilahun", "gadeion", "አሰፋ", 
     "aster asta", "yonasjo", "Amina", "temesgen19", "የኔ", 
     "ቤላ", "Dawit Mohamed", "ጥላሁን", "sani", "Babi", 
     "eyobeyob", "0947151407", "halal", "Netsanet", "ebrahim ebra", 
-    "Henok", "Dani", "Simret Getachew", "Pnp", "Anwar", 
+    "Henok", "Dani", "sami Getachew", "Pnp", "Anwar", 
     "Naughty By nature", "Ñãtåñ......", "Online", "kali", "Mohammedsani Sulitan", 
     "Wubamlak Belste", "Lina Habtamu", "Nimo", "ፈ-ሺ", "Šà¥¢ø Qü€€ñ", 
     "Beki", "syf", "Xo", "Time Of", "§mrĕţ", 
     "L F U", "sosi", "Mawlati_ahmed", "Megdi", "Sittina", 
-    "Ibra", "Cr7", "Frew", "Quarezma", "ስንታየሁ", 
+    "Ibro", "Cr7", "Frew", "Quarezma", "ስንታየሁ", 
     "Dibora", "Osmhen", "Chala", "Surafel", "Abela_man", 
     "Zehara", "Worku", "Fiyorina", "Kirra", "Bilal", 
     "Huzefa_jimma_jøey", "Pilatos", "Merlin", "Osmehin", "Denver", 
@@ -116,7 +116,7 @@ const ETHIOPIAN_BOT_NAMES = [
     "Kejelcha Mamo", "Ashagre", "Ed", "Gedefaw Aseffa", "D 7", 
     "Getachew", "Tamirat Girma", "Ashenafi", "Dada", "Demsash", 
     "ድር ድር", "አፒው", "Ahadi Ahemed", "skat mamaniyø", "tamirat", 
-    "kasu", "PPP✌️🔥😋69", "Ad la", "Astu Bast", "getesh aresenal", 
+    "kasu", "PPP😋69", "Ad la", "Astu Bast", "getesh aresenal", 
     "WALEX JOSEF", "Habet", "♠[$]♠", "Ratum yasın", "ˋHEER X MUSICˎ", 
     "Alemayehu Tesema", "habtu moges", "‖꧁Tame꧂‖", "Alexs Kebede", "Dagna King", 
     "Haileyesus_Geremew", "Chicken Road", "nal", "Wase", "Y@imam", 
@@ -328,8 +328,8 @@ let lastSmoothCount = 95;
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
 
-    let minB = Number(botConfig.minBots) || 40;
-    let maxB = Number(botConfig.maxBots) || 250;
+    let minB = Number(botConfig.minBots) || 30;
+    let maxB = Number(botConfig.maxBots) || 221;
     if (minB > maxB) { let tmp = minB; minB = maxB; maxB = tmp; }
 
     const now = new Date();
