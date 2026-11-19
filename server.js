@@ -148,6 +148,9 @@ const WINNING_LINES_ALL = [
     [0,4,20,24]
 ];
 
+const MAX_ALLOWED_HITS_PER_LINE = 2;
+const MAX_STANDARD_BOT_CALLS = 18;
+
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
@@ -260,34 +263,42 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
     return null;
 }
 
-/**
- * በ Standard Bot Mode ጊዜ፡
- * አድሚኑ በግልጽ ካላዘዘ በስተቀር (10 ሪል ዩዘር ቢሆኑም እንኳ)፡
- * - ማንኛውም የሪል ዩዘር ካርድ ሙሉ ማሸነፊያ ፓተርን (አግድም፣ ቋሚ፣ ዲያጎናል፣ 4 ማዕዘን) እንዳይሞላ
- * - በአንድ መስመር ከ 2 ቁጥር በላይ ሳይሞላ (1 ወይም 2 ቁጥር ቀርቶት ማሸነፍ እንዳይጠጋ) ቁጥሩን መከልከል
- */
+function getAllRealUserRoundCards() {
+    let cardsByUserOrSocket = new Map();
+
+    Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
+        if (!pData || !Array.isArray(pData.cards) || pData.cards.length === 0) return;
+        let key = pData.userId ? `uid_${String(pData.userId)}` : `sid_${socketId}`;
+        let existing = cardsByUserOrSocket.get(key) || new Set();
+        pData.cards.forEach(c => existing.add(Number(c)));
+        cardsByUserOrSocket.set(key, existing);
+    });
+
+    let allCardNums = [];
+    cardsByUserOrSocket.forEach(cardSet => {
+        cardSet.forEach(c => allCardNums.push(c));
+    });
+    return allCardNums;
+}
+
 function isSafeNumberForRealUsersInBotMode(testNum, currentCalledNumbers) {
     let candidateCalled = [...currentCalledNumbers.map(n => Number(n)), Number(testNum)];
-    const MAX_ALLOWED_HITS_PER_LINE = 2;
+    let realCards = getAllRealUserRoundCards();
 
-    for (let pData of Object.values(globalRoom.playerRoundCards)) {
-        if (!pData || !Array.isArray(pData.cards) || pData.cards.length === 0) continue;
+    for (let cNum of realCards) {
+        let cardList = getCartelaNumbers(cNum);
 
-        for (let cNum of pData.cards) {
-            let cardList = getCartelaNumbers(cNum);
-
-            for (let line of WINNING_LINES_ALL) {
-                let hitCount = 0;
-                for (let idx of line) {
-                    let cellVal = cardList[idx];
-                    if (cellVal === "FREE" || candidateCalled.includes(Number(cellVal))) {
-                        hitCount++;
-                    }
+        for (let line of WINNING_LINES_ALL) {
+            let hitCount = 0;
+            for (let idx of line) {
+                let cellVal = cardList[idx];
+                if (cellVal === "FREE" || candidateCalled.includes(Number(cellVal))) {
+                    hitCount++;
                 }
+            }
 
-                if (hitCount >= line.length || hitCount > MAX_ALLOWED_HITS_PER_LINE) {
-                    return false;
-                }
+            if (hitCount >= line.length || hitCount > MAX_ALLOWED_HITS_PER_LINE) {
+                return false;
             }
         }
     }
@@ -295,10 +306,6 @@ function isSafeNumberForRealUsersInBotMode(testNum, currentCalledNumbers) {
     return true;
 }
 
-/**
- * በአጋጣሚ ሪል ዩዘር የሚበላበት ወይም ሊያሸንፍ የሚችል ሁኔታ ቢፈጠር፣
- * ከ Random ላይ አንዱን ቦት መርጦ እንዳሸነፈ አድርጎ ጨዋታውን ያስጨርሳል
- */
 function announceRandomBotAndFinishRound(preferredCardNum = null, preferredPattern = null) {
     let randomBotName = getRandomBotNames(1)[0];
     let botCardNum = preferredCardNum || (Math.floor(Math.random() * 450) + 1);
@@ -441,7 +448,6 @@ function announceWinnersAndFinish(winnersDataList) {
 
     let sanitizedWinners = Array.isArray(winnersDataList) ? [...winnersDataList] : [];
 
-    // በ Standard Bot Mode ውስጥ ሪል ዩዘር ካልታዘዘ በስተቀር ሪል አሸናፊ እንዳይገባ ጥብቅ መከላከያ
     if (!enableOnlyRealUsersMode && !globalRoom.allowRealWinnerThisRound) {
         sanitizedWinners = sanitizedWinners.filter(w => w.isBot === true);
         if (sanitizedWinners.length === 0) {
@@ -652,12 +658,14 @@ function startMainGameLoop() {
             
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
-            let totalPreCalls = Math.max(earlyPatternBalls.length, targetCallCount - 1);
+            let totalPreCalls = Math.min(MAX_STANDARD_BOT_CALLS, Math.max(earlyPatternBalls.length, targetCallCount - 1));
             let preCallSchedule = new Array(totalPreCalls).fill(null);
 
             let slotIndices = Array.from({length: totalPreCalls}, (_, i) => i).sort(() => 0.5 - Math.random());
             earlyPatternBalls.forEach((ball, i) => {
-                preCallSchedule[slotIndices[i]] = ball;
+                if (i < slotIndices.length) {
+                    preCallSchedule[slotIndices[i]] = ball;
+                }
             });
 
             io.emit('gameStarted', { calledNumbers: [] });
@@ -693,7 +701,6 @@ function startMainGameLoop() {
                         } else if (globalRoom.allowRealWinnerThisRound) {
                             calledNum = availableNumbers.shift();
                         } else {
-                            // ሪል ዩዘር ፓተርን ሊሞላበት ወይም ሊጠጋበት የሚችል ሁኔታ ቢፈጠር፣ ከራንደም ቦት መርጦ ጨዋታውን አስጨርስ
                             if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
                             announceRandomBotAndFinishRound(winningCardNums[0], sharedPattern);
                             return;
@@ -717,7 +724,6 @@ function startMainGameLoop() {
                 if (callStep === totalPreCalls) {
                     callStep++;
 
-                    // finalWinningBall ሪል ዩዘርን ፓተርን ሊያስጠጋ ወይም ሊሞላ የሚችል ከሆነ በራንደም ቦት ጨዋታውን አስጨርስ
                     if (
                         !globalRoom.allowRealWinnerThisRound &&
                         finalWinningBall !== undefined &&
@@ -1281,7 +1287,6 @@ io.on('connection', (socket) => {
     socket.on('playerClaimBingo', (data) => {
         if (!globalRoom.gameActive || isFinishingRound) return;
 
-        // በ Standard Bot Mode ውስጥ ሪል ዩዘር እንዲያሸንፍ ካልታዘዘ በስተቀር በ playerClaimBingo ሽልማት አይሰጥም
         if (!enableOnlyRealUsersMode && !globalRoom.allowRealWinnerThisRound) {
             socket.emit('cardSelectionError', "⚠️ በዚህ ዙር የእርስዎ ካርድ አሸናፊ አልሆነም!");
             return;
