@@ -640,7 +640,6 @@ function startMainGameLoop() {
             sequenceIndex = (sequenceIndex + 1) % baseNumberFlowSequence.length;
 
             let possiblePatterns = [...WINNING_LINES_ALL];
-
             let sharedPattern = possiblePatterns[Math.floor(Math.random() * possiblePatterns.length)];
 
             let primaryCardList = getCartelaNumbers(winningCardNums[0]);
@@ -784,7 +783,7 @@ function endRoundAndRestart() {
     globalRoom.calledNumbers = []; 
     globalRoom.lastCalledNumber = null;
     
-    // 🛑 1. ዙሩ ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ (Reset)
+    // ዙሩ ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ
     globalRoom.playerRoundCards = {}; 
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
@@ -795,6 +794,7 @@ function endRoundAndRestart() {
     io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
+    updateRoomPlayersAndPot();
 }
 
 startMainGameLoop();
@@ -1231,14 +1231,8 @@ io.on('connection', (socket) => {
             let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
             if (userWallets[userId] === undefined) {
                 userWallets[userId] = clientBalance;
-            } else {
-                if (clientBalance > userWallets[userId]) {
-                    userWallets[userId] = clientBalance;
-                }
             }
 
-            // 🛑 2. ተጫዋቹ ጌሙ ከጀመረ በኋላ አፑን ሚኒማይዝ አድርጎ ወጥቶ, ጌሙ አልቆ አዲስ ዙር ሲጀምር (ወይም ተመልሶ ሲገባ)
-            // የድሮው ካርድ እንዲጸዳ እና በዛ ዩዘር ID የተያዘ ማንኛውም አሮጌ ካርድ እንዳይያዝ ይደረጋል!
             if (!globalRoom.gameActive) {
                 Object.keys(globalRoom.playerRoundCards).forEach(sId => {
                     if (globalRoom.playerRoundCards[sId].userId === userId) {
@@ -1473,7 +1467,7 @@ io.on('connection', (socket) => {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
 
-            if (data.balance !== undefined && !isNaN(data.balance)) {
+            if (userWallets[userId] === undefined && data.balance !== undefined && !isNaN(data.balance)) {
                 userWallets[userId] = parseFloat(data.balance);
             }
 
@@ -1581,11 +1575,6 @@ io.on('connection', (socket) => {
         
         if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
-            Object.keys(globalRoom.playerRoundCards).forEach(sId => {
-                if (sId === socket.id) {
-                    delete globalRoom.playerRoundCards[sId];
-                }
-            });
         }
         delete globalRoom.playerTemporaryCards[socket.id];
         
