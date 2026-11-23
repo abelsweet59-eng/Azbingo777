@@ -678,7 +678,7 @@
 
         const ADMIN_TELEGRAM_IDS = ["371093083", "7906963841"];
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
-        let userFullName = "ተጫዋች"; 
+        let userFullName = "ተጫዋች";
         let userUsername = "guest_user";
         let isAdmin = false;
 
@@ -733,7 +733,7 @@
         }
 
         let userSelectedCards = [];
-        let confirmedCards = []; 
+        let confirmedCards = [];
         let totalPaidForCurrentRound = parseFloat(localStorage.getItem(userCurrentRoundPaidKey)) || 0;
 
         if (localStorage.getItem(userSavedCardsKey)) {
@@ -743,7 +743,7 @@
             } catch(e) { confirmedCards = []; }
         }
 
-        let takenCardsByOthers = []; 
+        let takenCardsByOthers = [];
         let calledNumbersList = [];
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
@@ -758,7 +758,6 @@
             return "bg-amber-600";
         }
 
-        // የተጠሩ ቁጥሮች ማሳያን እና የመጨረሻውን የተጠራ ቁጥር ሙሉ በሙሉ ማጽዳት
         function clearCalledDisplay(statusLabelText = "ጨዋታውን ለመጀመር") {
             calledNumbersList = [];
             manualDaubedNumbers = {};
@@ -789,22 +788,18 @@
             renderVerticalBoard();
         }
 
-        // የጨዋታውን ሁኔታ (State) በግልጽ ማስተዳደር: 'waiting' | 'drawing' | 'ended'
         function setGameStatePhase(phase, options = {}) {
             currentGamePhase = phase;
 
             if (phase === 'waiting') {
-                // Waiting / Countdown: የተጠሩ ቁጥሮች ባዶ እና ቆጣሪው ብቻ ይታያል
                 clearCalledDisplay("ጨዋታውን ለመጀመር");
             } else if (phase === 'drawing') {
-                // Drawing / Active: ቁጥሮች እየተጠሩ ይታያሉ
                 const countdownBox = document.getElementById('in-place-countdown-box');
                 if (countdownBox) countdownBox.classList.add('hidden');
                 if (calledNumbersList.length > 0) {
                     displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
                 }
             } else if (phase === 'ended') {
-                // Round Ended: ዙር ሲያልቅ ይታያል
                 const countdownBox = document.getElementById('in-place-countdown-box');
                 const centerLabelEl = document.getElementById('center-status-label');
                 const countdownNumEl = document.getElementById('in-place-countdown-num');
@@ -874,13 +869,13 @@
                     refInput.value = data.referralLink;
                 }
                 if (refEarnings && data.totalEarnings !== undefined) {
-                    refEarnings.innerText = data.totalEarnings.toFixed(2) + " ብር";
+                    refEarnings.innerText = Number(data.totalEarnings).toFixed(2) + " ብር";
                 }
             });
 
             socket.on('updateBalance', (data) => {
                 if (data && data.balance !== undefined) {
-                    walletBalance = parseFloat(data.balance);
+                    walletBalance = parseFloat(data.balance) || 0;
                     updateWalletUI();
                 }
             });
@@ -937,9 +932,9 @@
 
             socket.on('rewardPrize', (data) => {
                 if (data.balance !== undefined) {
-                    walletBalance = parseFloat(data.balance);
+                    walletBalance = parseFloat(data.balance) || 0;
                 } else {
-                    walletBalance += data.prize;
+                    walletBalance += Number(data.prize) || 0;
                 }
                 updateWalletUI();
                 addTransactionHistory('የቢንጎ ሽልማት 🏆', data.prize, 'income');
@@ -1044,7 +1039,6 @@
                 userSelectedCards = [];
                 totalPaidForCurrentRound = 0;
 
-                // ዙር ሲያልቅ ወዲያውኑ ወደ Countdown / Waiting ሲገባ ማሳያውን ማጽዳት
                 setTimeout(() => {
                     setGameStatePhase('waiting');
                     resetPlayerSelectionForNewRound();
@@ -1053,7 +1047,7 @@
 
             socket.on('cardSelectionSuccess', (data) => {
                 if (data && data.balance !== undefined) {
-                    walletBalance = parseFloat(data.balance);
+                    walletBalance = parseFloat(data.balance) || 0;
                     updateWalletUI();
                 }
                 document.getElementById('reg-status-badge').innerText = "ካርድዎ ተይዟል! (ቆጠራው እስኪያልቅ ይጠብቁ)";
@@ -1165,12 +1159,12 @@
 
             socket.on('financialApproved', (data) => {
                 if (data.balance !== undefined) {
-                    walletBalance = parseFloat(data.balance);
+                    walletBalance = parseFloat(data.balance) || 0;
                 } else {
                     if (data.type === 'deposit' || data.type === 'bonus') {
-                        walletBalance += data.amount;
+                        walletBalance += Number(data.amount) || 0;
                     } else if (data.type === 'withdraw' || data.type === 'withdrawal') {
-                        walletBalance -= data.amount;
+                        walletBalance -= Number(data.amount) || 0;
                     }
                 }
                 updateWalletUI();
@@ -1189,7 +1183,7 @@
 
             socket.on('financialRejected', (data) => {
                 if (data.balance !== undefined) {
-                    walletBalance = parseFloat(data.balance);
+                    walletBalance = parseFloat(data.balance) || 0;
                     updateWalletUI();
                 }
                 addTransactionHistory('ጥያቄ ተሰርዟል (ተመልሷል)', data.amount || 0, 'income', 'rejected');
@@ -1621,9 +1615,9 @@
         }
 
         function updateWalletUI() {
-            document.getElementById('wallet-balance').innerText = walletBalance.toFixed(2);
-            document.getElementById('hub-wallet-balance').innerText = walletBalance.toFixed(2) + " ብር";
-            localStorage.setItem(userLocalStorageKey, walletBalance.toString());
+            document.getElementById('wallet-balance').innerText = Number(walletBalance || 0).toFixed(2);
+            document.getElementById('hub-wallet-balance').innerText = Number(walletBalance || 0).toFixed(2) + " ብር";
+            localStorage.setItem(userLocalStorageKey, String(Number(walletBalance || 0).toFixed(2)));
         }
 
         function openDepositModal() { 
@@ -1668,7 +1662,7 @@
                 if (walletBalance < amount) { alert("⚠️ በቂ ሂሳብ የለዎትም!"); return; }
                 document.getElementById('withdraw-modal').classList.add('hidden');
 
-                walletBalance -= amount;
+                walletBalance = Number((walletBalance - amount).toFixed(2));
                 updateWalletUI();
                 addTransactionHistory(`ዊዝድሮዋል (Pending)`, amount, 'expense', 'pending');
 
@@ -1797,19 +1791,21 @@
             if (amountToDeduct > 0 && walletBalance < amountToDeduct) { alert("በቂ ሂሳብ የለዎትም!"); return; }
             
             if (amountToDeduct > 0) {
-                walletBalance -= amountToDeduct;
+                walletBalance = Number((walletBalance - amountToDeduct).toFixed(2));
                 updateWalletUI();
                 addTransactionHistory('ካርድ ግዢ', amountToDeduct, 'expense', 'completed');
                 totalPaidForCurrentRound = desiredTotalCost;
             } else if (amountToDeduct < 0) {
                 let refundAmount = Math.abs(amountToDeduct);
-                walletBalance += refundAmount;
+                walletBalance = Number((walletBalance + refundAmount).toFixed(2));
                 updateWalletUI();
                 addTransactionHistory('ካርድ ቅናሽ ተመላሽ', refundAmount, 'income', 'completed');
                 totalPaidForCurrentRound = desiredTotalCost;
             }
 
             confirmedCards = [...userSelectedCards];
+            localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
+            localStorage.setItem(userCurrentRoundPaidKey, String(totalPaidForCurrentRound));
             
             const confirmBtn = document.getElementById('confirm-card-btn');
             if (confirmBtn) {
