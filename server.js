@@ -8,7 +8,7 @@ const fs = require('fs');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  maxHttpBufferSize: 1e8 
+  maxHttpBufferSize: 1e8
 });
 
 app.express = express;
@@ -25,12 +25,12 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETw
 const ADMIN_CHAT_IDS = ["371093083", "7906963841"];
 
 const claimedWelcomeBonusUsers = new Set();
-const userWallets = {}; 
+const userWallets = {};
 const allRegisteredUsers = new Set();
 
-const userReferrers = {}; 
-const referralEarnings = {}; 
-const userLastRequestTimeMap = {}; 
+const userReferrers = {};
+const referralEarnings = {};
+const userLastRequestTimeMap = {};
 
 let isDepositLocked = false;
 let isWithdrawLocked = false;
@@ -77,67 +77,67 @@ function saveBotConfigToDisk() {
 }
 
 const baseNumberFlowSequence = [
-    12, 14, 16, 18, 20, 15, 17, 14, 19, 20, 18, 16, 15, 17, 19, 18, 20, 17, 16, 18, 
-    16, 14, 18, 20, 22, 24, 17, 18, 16, 18, 19, 11, 10, 20, 19, 18, 21, 20, 16, 21, 
-    19, 18, 20, 16, 19, 18, 16, 17, 16, 20, 19, 16, 18, 20, 17, 19, 18, 16, 19, 22, 
-    21, 17, 19, 18, 16, 17, 18, 16, 20, 19, 18, 18, 20, 19, 18, 19, 16, 17, 17, 20, 
+    12, 14, 16, 18, 20, 15, 17, 14, 19, 20, 18, 16, 15, 17, 19, 18, 20, 17, 16, 18,
+    16, 14, 18, 20, 22, 24, 17, 18, 16, 18, 19, 11, 10, 20, 19, 18, 21, 20, 16, 21,
+    19, 18, 20, 16, 19, 18, 16, 17, 16, 20, 19, 16, 18, 20, 17, 19, 18, 16, 19, 22,
+    21, 17, 19, 18, 16, 17, 18, 16, 20, 19, 18, 18, 20, 19, 18, 19, 16, 17, 17, 20,
     18, 13
 ];
 let sequenceIndex = 0;
 
 const ETHIOPIAN_BOT_NAMES = [
-    "bebaw", "ማርታ", "asrat00", "Melaku tamrat", "በላይ", 
-    "kesho", "አብይ", "hamud", "Helen hilu", "ali ali", 
-    "aste19", "nati47", "Nati bonga", "kida7k", "ማርቆስ", 
-    "natinati", "goshu", "Elias tilahun", "gadeion", "አሰፋ", 
-    "aster asta", "yonasjo", "Amina", "temesgen19", "የኔ", 
-    "ቤላ", "Dawit Mohamed", "ጥላሁን", "sani", "Babi", 
-    "eyobeyob", "0947151407", "halal", "Netsanet", "ebrahim ebra", 
-    "Henok", "Dani", "sami Getachew", "Pnp", "Anwar", 
-    "Naughty By nature", "Ñãtåñ......", "Online", "kali", "Mohammedsani Sulitan", 
-    "Wubamlak Belste", "Lina Habtamu", "Nimo", "ፈ-ሺ", "Šà¥¢ø Qü€€ñ", 
-    "Beki", "syf", "Xo", "Time Of", "§mrĕţ", 
-    "L F U", "sosi", "Mawlati_ahmed", "Megdi", "Sittina", 
-    "Ibro", "Cr7", "Frew", "Quarezma", "ስንታየሁ", 
-    "Dibora", "Osmhen", "Chala", "Surafel", "Abela_man", 
-    "Zehara", "Worku", "Fiyorina", "Kirra", "Bilal", 
-    "Huzefa_jimma_jøey", "Pilatos", "Merlin", "Osmehin", "Denver", 
-    "Belew", "Jilalu", "Gizachew Kassahun", "bereket dagne", "Mesfin", 
-    "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "ንስር", "🦋Meklit🦋", "Abel x", 
-    "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ", "Goyta Miraw ጣምራው", 
-    "0919091129", "Gdg", "Mohammed_tesema", "Lai", "Sintayehu Getachew", 
-    "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝", 
-    "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Robel_tullu", "Aman yi", "Ahmed Basher", 
-    "Wenda last King", "Abonesh Kinfu", "Lij yalfex jinka 🫅", "Big Boss 💪", "Firde Nigus", 
-    "ANIE X YUKKI", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim", "Asbada Abubakar", 
-    "Ebrahim M/d Ebrahim", "Abdu Shekna", "Abdujalil Ahmed Detolale", "Mugabe_abate", "urjii 🥷", 
-    "Amoo", "Assistant 2", "Anu 28", "ማኅበል", "Yd", 
-    "Girmay Nigus", "Yohannes", "H 5", "አበነህ 💕💕💕", "Tolosa", 
-    "Kejelcha Mamo", "Ashagre", "Ed", "Gedefaw Aseffa", "D 7", 
-    "Getachew", "Tamirat Girma", "Ashenafi", "Dada", "Demsash", 
-    "ድር ድር", "አፒው", "Ahadi Ahemed", "skat mamaniyø", "tamirat", 
-    "kasu", "PPP😋69", "Ad la", "Astu Bast", "getesh aresenal", 
-    "WALEX JOSEF", "Habet", "♠[$]♠", "Ratum yasın", "ˋHEER X MUSICˎ", 
-    "Alemayehu Tesema", "habtu moges", "‖꧁Tame꧂‖", "Alexs Kebede", "Dagna King", 
-    "Haileyesus_Geremew", "Chicken Road", "nal", "Wase", "Y@imam", 
-    "Current thing", "Wizzy", "weyn Ter", "Tedi", "Tame 😍", 
-    "Fenaan_Fenaan", "Barbaadi", "Fire Tesfaye", "Samii", "Tesfaye_Asnake", 
-    "Teg_0920", "Mitiku57 Kibatu", "yohannes online", "Melkamnew", "L14", 
-    "Terryson Cruzman", "Teddy", "kefle birhane", "Abushi 💀💀", "Yonase Tesema", 
-    "Mulugeta Fantahun", "Kifle Møk", "Pro max", "Nscros", "የማርያም", 
-    "አቤል", "Tloya", "ተሜ", "bakle", "ናቲና", 
-    "Dj", "wanaw", "Falcon", "Dawit", "Ermias_99", 
-    "Solomon", "Bethel_M", "Miki_Bingo", "Hanna", "Natnael", 
-    "Kidist", "Bereket", "Samson_tefera", "Yordanos", "Feven_A", 
-    "Henok_Z", "Meron", "Rediet", "Abel_kassu", "Tsion", 
-    "Brook", "Lidya", "Michael", "Nahom", "Rut_K", 
-    "Robel", "Tigist", "Biniyam", "Kalkidan", "Ephrem", 
-    "Rahel", "Yonas", "Semhar", "አበበ", "መርየም", 
-    "ጌታቸው", "ሰሎሞን", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ", 
-    "ምህረት", "ተስፋዬ", "አንለይ", "ፍቅሩ", "እዮብ", 
-    "አማኑኤል", "ኤልያስ", "ብርሃኑ", "ታደሰ", "መኮንን", 
-    "ጌታነህ", "ሰለሞን", "አበራ", "ተክሌ", "መላኩ", "አምሳሉ", 
-    "በለጠ", "ተፈራ", "እንዳለ", "ኃይሌ", "በቀለ", "ደሳለኝ", 
+    "bebaw", "ማርታ", "asrat00", "Melaku tamrat", "በላይ",
+    "kesho", "አብይ", "hamud", "Helen hilu", "ali ali",
+    "aste19", "nati47", "Nati bonga", "kida7k", "ማርቆስ",
+    "natinati", "goshu", "Elias tilahun", "gadeion", "አሰፋ",
+    "aster asta", "yonasjo", "Amina", "temesgen19", "የኔ",
+    "ቤላ", "Dawit Mohamed", "ጥላሁን", "sani", "Babi",
+    "eyobeyob", "0947151407", "halal", "Netsanet", "ebrahim ebra",
+    "Henok", "Dani", "sami Getachew", "Pnp", "Anwar",
+    "Naughty By nature", "Ñãtåñ......", "Online", "kali", "Mohammedsani Sulitan",
+    "Wubamlak Belste", "Lina Habtamu", "Nimo", "ፈ-ሺ", "Šà¥¢ø Qü€€ñ",
+    "Beki", "syf", "Xo", "Time Of", "§mrĕţ",
+    "L F U", "sosi", "Mawlati_ahmed", "Megdi", "Sittina",
+    "Ibro", "Cr7", "Frew", "Quarezma", "ስንታየሁ",
+    "Dibora", "Osmhen", "Chala", "Surafel", "Abela_man",
+    "Zehara", "Worku", "Fiyorina", "Kirra", "Bilal",
+    "Huzefa_jimma_jøey", "Pilatos", "Merlin", "Osmehin", "Denver",
+    "Belew", "Jilalu", "Gizachew Kassahun", "bereket dagne", "Mesfin",
+    "ሞለፍን ኔትስት ገበየሁ", "Birukte#🦋", "ንስር", "🦋Meklit🦋", "Abel x",
+    "Farhewot Yashtla", "🅖ⓞⓞⓓ🌹", "YO", "እያሱ", "Goyta Miraw ጣምራው",
+    "0919091129", "Gdg", "Mohammed_tesema", "Lai", "Sintayehu Getachew",
+    "Pipo Kassa", "ገብርኤል አባቴ", "Yohannes Ng", "Gech man", "Devido ✝",
+    "Seydou Kamite", "Mamush Kasim Mucaa Kakuuuu", "Robel_tullu", "Aman yi", "Ahmed Basher",
+    "Wenda last King", "Abonesh Kinfu", "Lij yalfex jinka 🫅", "Big Boss 💪", "Firde Nigus",
+    "ANIE X YUKKI", "Girum Edeshawu", "Bini Teketele", "Abdella Mohammed Ebrahim", "Asbada Abubakar",
+    "Ebrahim M/d Ebrahim", "Abdu Shekna", "Abdujalil Ahmed Detolale", "Mugabe_abate", "urjii 🥷",
+    "Amoo", "Assistant 2", "Anu 28", "ማኅበል", "Yd",
+    "Girmay Nigus", "Yohannes", "H 5", "አበነህ 💕💕💕", "Tolosa",
+    "Kejelcha Mamo", "Ashagre", "Ed", "Gedefaw Aseffa", "D 7",
+    "Getachew", "Tamirat Girma", "Ashenafi", "Dada", "Demsash",
+    "ድር ድር", "አፒው", "Ahadi Ahemed", "skat mamaniyø", "tamirat",
+    "kasu", "PPP😋69", "Ad la", "Astu Bast", "getesh aresenal",
+    "WALEX JOSEF", "Habet", "♠[$]♠", "Ratum yasın", "ˋHEER X MUSICˎ",
+    "Alemayehu Tesema", "habtu moges", "‖꧁Tame꧂‖", "Alexs Kebede", "Dagna King",
+    "Haileyesus_Geremew", "Chicken Road", "nal", "Wase", "Y@imam",
+    "Current thing", "Wizzy", "weyn Ter", "Tedi", "Tame 😍",
+    "Fenaan_Fenaan", "Barbaadi", "Fire Tesfaye", "Samii", "Tesfaye_Asnake",
+    "Teg_0920", "Mitiku57 Kibatu", "yohannes online", "Melkamnew", "L14",
+    "Terryson Cruzman", "Teddy", "kefle birhane", "Abushi 💀💀", "Yonase Tesema",
+    "Mulugeta Fantahun", "Kifle Møk", "Pro max", "Nscros", "የማርያም",
+    "አቤል", "Tloya", "ተሜ", "bakle", "ናቲና",
+    "Dj", "wanaw", "Falcon", "Dawit", "Ermias_99",
+    "Solomon", "Bethel_M", "Miki_Bingo", "Hanna", "Natnael",
+    "Kidist", "Bereket", "Samson_tefera", "Yordanos", "Feven_A",
+    "Henok_Z", "Meron", "Rediet", "Abel_kassu", "Tsion",
+    "Brook", "Lidya", "Michael", "Nahom", "Rut_K",
+    "Robel", "Tigist", "Biniyam", "Kalkidan", "Ephrem",
+    "Rahel", "Yonas", "Semhar", "አበበ", "መርየም",
+    "ጌታቸው", "ሰሎሞን", "መሳይ", "ዮሐንስ", "አንዋር", "ፈቀደ",
+    "ምህረት", "ተስፋዬ", "አንለይ", "ፍቅሩ", "እዮብ",
+    "አማኑኤል", "ኤልያስ", "ብርሃኑ", "ታደሰ", "መኮንን",
+    "ጌታነህ", "ሰለሞን", "አበራ", "ተክሌ", "መላኩ", "አምሳሉ",
+    "በለጠ", "ተፈራ", "እንዳለ", "ኃይሌ", "በቀለ", "ደሳለኝ",
     "መሰለ", "አለሙ", "ተገኝ", "ከበደ", "አሰፋ"
 ];
 
@@ -162,7 +162,7 @@ let globalRoom = {
     gameStartTime: Date.now() + 60000,
     playersCount: 140,
     takenCards: [],
-    playerRoundCards: {}, 
+    playerRoundCards: {},
     playerTemporaryCards: {},
     lastCalledNumber: null,
     targetWinCallCount: 12,
@@ -170,11 +170,11 @@ let globalRoom = {
     allowRealWinnerThisRound: false
 };
 
-let forcedNextWinner = null; 
-let enableOnlyRealUsersMode = false; 
+let forcedNextWinner = null;
+let enableOnlyRealUsersMode = false;
 let onlineRealUsers = [];
 let pendingRequests = {};
-let offlineApprovedQueue = {}; 
+let offlineApprovedQueue = {};
 let gameInterval = null;
 let numberCallInterval = null;
 let winGraceTimeout = null;
@@ -215,10 +215,10 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
 
     let grid2D = [];
     let cleanCalled = calledNumbers.map(n => Number(n));
-    
-    for(let r=0; r<5; r++) {
+
+    for (let r = 0; r < 5; r++) {
         let row = [];
-        for(let c=0; c<5; c++) {
+        for (let c = 0; c < 5; c++) {
             let idx = r * 5 + c;
             let val = winningCardNumbers[idx];
             let isHit = (val === "FREE" || cleanCalled.includes(Number(val)));
@@ -227,36 +227,36 @@ function getWinningMatchedIndices(winningCardNumbers, calledNumbers) {
         grid2D.push(row);
     }
 
-    for(let r=0; r<5; r++) {
-        if(grid2D[r].every(cell => cell.isHit)) {
+    for (let r = 0; r < 5; r++) {
+        if (grid2D[r].every(cell => cell.isHit)) {
             return grid2D[r].map(cell => cell.idx);
         }
     }
 
-    for(let c=0; c<5; c++) {
+    for (let c = 0; c < 5; c++) {
         let colHits = true;
         let colCells = [];
-        for(let r=0; r<5; r++) {
+        for (let r = 0; r < 5; r++) {
             colCells.push(grid2D[r][c]);
-            if(!grid2D[r][c].isHit) colHits = false;
+            if (!grid2D[r][c].isHit) colHits = false;
         }
-        if(colHits) {
+        if (colHits) {
             return colCells.map(cell => cell.idx);
         }
     }
 
     let diag1Hits = true, diag2Hits = true;
     let diag1Cells = [], diag2Cells = [];
-    for(let i=0; i<5; i++) {
+    for (let i = 0; i < 5; i++) {
         diag1Cells.push(grid2D[i][i]);
-        diag2Cells.push(grid2D[i][4-i]);
-        if(!grid2D[i][i].isHit) diag1Hits = false;
-        if(!grid2D[i][4-i].isHit) diag2Hits = false;
+        diag2Cells.push(grid2D[i][4 - i]);
+        if (!grid2D[i][i].isHit) diag1Hits = false;
+        if (!grid2D[i][4 - i].isHit) diag2Hits = false;
     }
-    if(diag1Hits) return diag1Cells.map(cell => cell.idx);
-    if(diag2Hits) return diag2Cells.map(cell => cell.idx);
+    if (diag1Hits) return diag1Cells.map(cell => cell.idx);
+    if (diag2Hits) return diag2Cells.map(cell => cell.idx);
 
-    if(grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
+    if (grid2D[0][0].isHit && grid2D[0][4].isHit && grid2D[4][0].isHit && grid2D[4][4].isHit) {
         return [0, 4, 20, 24];
     }
 
@@ -323,7 +323,7 @@ function announceRandomBotAndFinishRound(preferredCardNum = null, preferredPatte
     }]);
 }
 
-let lastSmoothCount = 95; 
+let lastSmoothCount = 95;
 
 function getRealisticBotsCount(realCount, isGameActive = false) {
     if (enableOnlyRealUsersMode) return 0;
@@ -334,24 +334,24 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
 
     const now = new Date();
     let utcHours = now.getUTCHours();
-    let ethiopianHour = (utcHours + 3) % 24; 
+    let ethiopianHour = (utcHours + 3) % 24;
     let targetBase = Math.floor((minB + maxB) / 2);
 
     if (ethiopianHour >= 6 && ethiopianHour < 12) {
-        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.3));
     } else if (ethiopianHour >= 12 && ethiopianHour < 19) {
-        let progress = (ethiopianHour - 12) / 7; 
-        targetBase = Math.floor(minB + (progress * (maxB - minB) * 0.6)); 
+        let progress = (ethiopianHour - 12) / 7;
+        targetBase = Math.floor(minB + (progress * (maxB - minB) * 0.6));
     } else if (ethiopianHour >= 19 || ethiopianHour < 3) {
-        targetBase = Math.floor(minB + ((maxB - minB) * 0.7) + Math.random() * Math.max(1, (maxB - minB) * 0.3)); 
+        targetBase = Math.floor(minB + ((maxB - minB) * 0.7) + Math.random() * Math.max(1, (maxB - minB) * 0.3));
     } else {
-        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.4)); 
+        targetBase = minB + Math.floor(Math.random() * Math.max(1, (maxB - minB) * 0.4));
     }
 
     if (isGameActive) {
         lastSmoothCount = targetBase;
     } else {
-        let step = Math.floor(Math.random() * 5) + 1; 
+        let step = Math.floor(Math.random() * 5) + 1;
         if (lastSmoothCount < targetBase) {
             lastSmoothCount += step;
             if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
@@ -373,7 +373,7 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
 function updateRoomPlayersAndPot() {
     let realCount = connectedRealPlayers.length;
     let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
-    
+
     if (enableOnlyRealUsersMode) {
         let uniqueRealCardsCount = 0;
         activeRealEntries.forEach(([sId, data]) => {
@@ -383,7 +383,7 @@ function updateRoomPlayersAndPot() {
         if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
     } else {
         let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
-        globalRoom.playersCount = currentBotsCount + realCount; 
+        globalRoom.playersCount = currentBotsCount + realCount;
     }
     io.emit('updatePlayersCount', globalRoom.playersCount);
 }
@@ -409,14 +409,14 @@ function refreshTakenCardsList() {
 function simulateBotCardSelections() {
     if (globalRoom.gameActive || enableOnlyRealUsersMode) return;
     let available = [];
-    for(let i = 1; i <= 500; i++) {
-        if(!globalRoom.takenCards.includes(i)) available.push(i);
+    for (let i = 1; i <= 500; i++) {
+        if (!globalRoom.takenCards.includes(i)) available.push(i);
     }
     let botPicksCount = Math.floor(Math.random() * 15) + 10;
-    for(let i = 0; i < botPicksCount && available.length > 0; i++) {
+    for (let i = 0; i < botPicksCount && available.length > 0; i++) {
         let randIdx = Math.floor(Math.random() * available.length);
         let cardToTake = available.splice(randIdx, 1)[0];
-        if(!globalRoom.takenCards.includes(cardToTake)) {
+        if (!globalRoom.takenCards.includes(cardToTake)) {
             globalRoom.takenCards.push(cardToTake);
         }
     }
@@ -428,7 +428,7 @@ setInterval(simulateBotCardSelections, 6000);
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
     let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
-    
+
     for (let adminChatId of ADMIN_CHAT_IDS) {
         try {
             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -478,7 +478,7 @@ function announceWinnersAndFinish(winnersDataList) {
 
     sanitizedWinners.forEach(w => {
         if (!w.isBot && w.userId) {
-            userWallets[w.userId] = (userWallets[w.userId] || 0) + prizePerWinner;
+            userWallets[w.userId] = Number(((userWallets[w.userId] || 0) + prizePerWinner).toFixed(2));
         }
     });
 
@@ -516,18 +516,18 @@ function startMainGameLoop() {
 
         if (timeLeft <= 0 && !globalRoom.gameActive && !isFinishingRound) {
             globalRoom.gameActive = true;
-            globalRoom.calledNumbers = []; 
+            globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
-            
+
             updateRoomPlayersAndPot();
 
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
-            forcedNextWinner = null; 
+            forcedNextWinner = null;
 
             if (enableOnlyRealUsersMode) {
                 globalRoom.allowRealWinnerThisRound = true;
-                let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+                let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
                 io.emit('gameStarted', { calledNumbers: [] });
@@ -563,7 +563,7 @@ function startMainGameLoop() {
                             pData.cards.forEach(cNum => {
                                 let cList = getCartelaNumbers(cNum);
                                 let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-                                if (matched) { 
+                                if (matched) {
                                     winningWinnersList.push({
                                         username: pData.username || 'ተጫዋች',
                                         socketId: socketId,
@@ -590,17 +590,17 @@ function startMainGameLoop() {
             }
 
             let winningUsernamesArr = [];
-            let winningSocketData = []; 
-            let winnersCount = 1; 
+            let winningSocketData = [];
+            let winnersCount = 1;
             let winningCardNums = [];
 
             let targetRealCount = 0;
             let explicitRealForced = (
-                currentWinnerType === 'only_real_users' || 
-                currentWinnerType === 'random_real' || 
-                currentWinnerType === 'random_3_real' || 
-                currentWinnerType === 'multi_real_3' || 
-                currentWinnerType === 'real_user' || 
+                currentWinnerType === 'only_real_users' ||
+                currentWinnerType === 'random_real' ||
+                currentWinnerType === 'random_3_real' ||
+                currentWinnerType === 'multi_real_3' ||
+                currentWinnerType === 'real_user' ||
                 currentWinnerType === 'single_real'
             );
 
@@ -609,10 +609,10 @@ function startMainGameLoop() {
             if (explicitRealForced && activeRealEntries.length > 0) {
                 if ((currentWinnerType && (currentWinnerType.includes('3') || currentWinnerType === 'multi_real_3' || currentWinnerType === 'random_3_real')) && activeRealEntries.length >= 3) {
                     targetRealCount = 3;
-                    winnersCount = 3; 
+                    winnersCount = 3;
                 } else {
                     targetRealCount = 1;
-                    winnersCount = 1; 
+                    winnersCount = 1;
                 }
             }
 
@@ -635,7 +635,7 @@ function startMainGameLoop() {
 
             winnersCount = winningUsernamesArr.length > 0 ? winningUsernamesArr.length : 1;
             globalRoom.forcedWinningCardNums = winningCardNums;
-            
+
             let targetCallCount = Math.max(6, baseNumberFlowSequence[sequenceIndex]);
             sequenceIndex = (sequenceIndex + 1) % baseNumberFlowSequence.length;
 
@@ -649,18 +649,18 @@ function startMainGameLoop() {
                 .map(n => Number(n));
 
             let shuffledPatternNums = [...primaryPatternNumbers].sort(() => 0.5 - Math.random());
-            let finalWinningBall = shuffledPatternNums.pop(); 
-            let earlyPatternBalls = shuffledPatternNums;     
+            let finalWinningBall = shuffledPatternNums.pop();
+            let earlyPatternBalls = shuffledPatternNums;
 
-            let availableNumbers = Array.from({length: 75}, (_, i) => i + 1);
+            let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
             availableNumbers.sort(() => 0.5 - Math.random());
-            
+
             availableNumbers = availableNumbers.filter(n => !primaryPatternNumbers.includes(n));
 
             let totalPreCalls = Math.min(MAX_STANDARD_BOT_CALLS, Math.max(earlyPatternBalls.length, targetCallCount - 1));
             let preCallSchedule = new Array(totalPreCalls).fill(null);
 
-            let slotIndices = Array.from({length: totalPreCalls}, (_, i) => i).sort(() => 0.5 - Math.random());
+            let slotIndices = Array.from({ length: totalPreCalls }, (_, i) => i).sort(() => 0.5 - Math.random());
             earlyPatternBalls.forEach((ball, i) => {
                 if (i < slotIndices.length) {
                     preCallSchedule[slotIndices[i]] = ball;
@@ -671,7 +671,7 @@ function startMainGameLoop() {
             io.emit('gameStartedBroadcast');
 
             if (numberCallInterval) clearInterval(numberCallInterval);
-            
+
             let callStep = 0;
 
             numberCallInterval = setInterval(() => {
@@ -769,7 +769,7 @@ function startMainGameLoop() {
                     }, 6000);
                 }
 
-            }, 5500); 
+            }, 5500);
         }
     }, 1000);
 }
@@ -780,17 +780,16 @@ function endRoundAndRestart() {
     globalRoom.gameActive = false;
     isFinishingRound = false;
     globalRoom.allowRealWinnerThisRound = false;
-    globalRoom.calledNumbers = []; 
+    globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
-    
-    // ዙሩ ሲያልቅ የሁሉም ተጫዋቾች ካርዶች ሙሉ በሙሉ ይጸዳሉ
-    globalRoom.playerRoundCards = {}; 
+
+    globalRoom.playerRoundCards = {};
     globalRoom.playerTemporaryCards = {};
     globalRoom.takenCards = [];
 
-    globalRoom.gameStartTime = Date.now() + 60000; 
+    globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
-    
+
     io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
@@ -810,7 +809,7 @@ async function pollTelegramUpdates() {
             let updates = response.data.result;
             for (let update of updates) {
                 telegramOffset = update.update_id + 1;
-                
+
                 let nowTs = Date.now();
                 Object.keys(pendingRequests).forEach(k => {
                     if (nowTs - pendingRequests[k].timestamp > 86400000) {
@@ -821,7 +820,7 @@ async function pollTelegramUpdates() {
                 if (update.message && update.message.text) {
                     let msgText = update.message.text.trim();
                     let senderChatId = String(update.message.chat.id);
-                    
+
                     if (ADMIN_CHAT_IDS.includes(senderChatId)) {
                         let parts = msgText.split(' ');
                         let cmd = parts[0].toLowerCase();
@@ -830,7 +829,7 @@ async function pollTelegramUpdates() {
                         if (cmd === '/settelebirr' && parts[1]) {
                             let newPhone = parts[1];
                             let newName = parts.slice(2).join(' ') || telebirrConfig.name;
-                            
+
                             telebirrConfig.phone = newPhone;
                             telebirrConfig.name = newName;
 
@@ -846,8 +845,8 @@ async function pollTelegramUpdates() {
 
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
-                            
-                            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+
+                            userWallets[targetUserId] = Number(((userWallets[targetUserId] || 0) + bonusAmount).toFixed(2));
 
                             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
                             let bonusPayload = {
@@ -861,7 +860,7 @@ async function pollTelegramUpdates() {
                                 let targetSocket = io.sockets.sockets.get(targetUserSocketObj.socketId);
                                 if (targetSocket) {
                                     targetSocket.emit('financialApproved', bonusPayload);
-                                    
+
                                     for (let adminChatId of ADMIN_CHAT_IDS) {
                                         await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                             chat_id: adminChatId,
@@ -901,21 +900,21 @@ async function pollTelegramUpdates() {
 
                 if (update.callback_query) {
                     let callbackQuery = update.callback_query;
-                    let data = callbackQuery.data; 
+                    let data = callbackQuery.data;
                     let chatId = callbackQuery.message.chat.id;
                     let messageId = callbackQuery.message.message_id;
-                    
+
                     let parts = data.split('_');
-                    let action = parts[0]; 
+                    let action = parts[0];
                     let requestId = parts.slice(1).join('_');
                     let reqData = pendingRequests[requestId];
 
                     if (!reqData) {
                         try {
-                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { 
+                            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
                                 callback_query_id: callbackQuery.id,
                                 text: "⚠️ ይህ ጥያቄ አስቀድሞ በሌላ አድሚን ጸድቋል ወይም ተሰርዟል!",
-                                show_alert: true 
+                                show_alert: true
                             });
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageReplyMarkup`, {
                                 chat_id: chatId,
@@ -933,13 +932,13 @@ async function pollTelegramUpdates() {
 
                     if (action === 'app') {
                         if (reqType === 'deposit' || reqType === 'bonus') {
-                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                            userWallets[reqData.userId] = Number(((userWallets[reqData.userId] || 0) + Math.abs(rawAmount)).toFixed(2));
 
                             let referrerId = userReferrers[reqData.userId];
                             if (referrerId) {
                                 let bonusForReferrer = 5;
-                                userWallets[referrerId] = (userWallets[referrerId] || 0) + bonusForReferrer;
-                                referralEarnings[referrerId] = (referralEarnings[referrerId] || 0) + bonusForReferrer;
+                                userWallets[referrerId] = Number(((userWallets[referrerId] || 0) + bonusForReferrer).toFixed(2));
+                                referralEarnings[referrerId] = Number(((referralEarnings[referrerId] || 0) + bonusForReferrer).toFixed(2));
 
                                 let refPayload = {
                                     type: 'bonus',
@@ -970,9 +969,9 @@ async function pollTelegramUpdates() {
                             }
                         }
 
-                        let successPayload = { 
-                            type: reqData.type, 
-                            amount: rawAmount, 
+                        let successPayload = {
+                            type: reqData.type,
+                            amount: rawAmount,
                             adjustedAmount: finalAmountForClient,
                             balance: userWallets[reqData.userId] || 0
                         };
@@ -1015,7 +1014,7 @@ async function pollTelegramUpdates() {
 
                     } else {
                         if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                            userWallets[reqData.userId] = (userWallets[reqData.userId] || 0) + Math.abs(rawAmount);
+                            userWallets[reqData.userId] = Number(((userWallets[reqData.userId] || 0) + Math.abs(rawAmount)).toFixed(2));
                         }
 
                         if (reqData.chatId) {
@@ -1028,8 +1027,8 @@ async function pollTelegramUpdates() {
                         }
 
                         let finalRejectedBalance = userWallets[reqData.userId] || 0;
-                        if (targetSocket) { 
-                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: finalRejectedBalance, status: 'rejected' }); 
+                        if (targetSocket) {
+                            targetSocket.emit('financialRejected', { type: reqData.type, amount: rawAmount, balance: finalRejectedBalance, status: 'rejected' });
                             targetSocket.emit('updateBalance', { balance: finalRejectedBalance });
                         } else {
                             if (!offlineApprovedQueue[reqData.userId]) offlineApprovedQueue[reqData.userId] = [];
@@ -1058,10 +1057,10 @@ async function pollTelegramUpdates() {
                         }
                     }
 
-                    delete pendingRequests[requestId]; 
+                    delete pendingRequests[requestId];
 
-                    try { 
-                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id }); 
+                    try {
+                        await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, { callback_query_id: callbackQuery.id });
                     } catch (e) {}
                 }
             }
@@ -1078,18 +1077,18 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
 
     let message = `🔔 *AZ BINGO - ${reqTypeTitle}*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${currentBalance} ብር*\n📥 የጠየቀው: *${amount} ብር*\n📱 ስልክ: ${phone || 'አልተሰጠም'}\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
     if (receipt) message += `\n\n📄 *ደረሰኝ / SMS:*\n\`${receipt}\``;
-    
+
     for (let adminChatId of ADMIN_CHAT_IDS) {
         try {
             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 chat_id: adminChatId, text: message, parse_mode: 'Markdown',
-                reply_markup: { 
+                reply_markup: {
                     inline_keyboard: [
                         [
-                            { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                            { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
                             { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
                         ]
-                    ] 
+                    ]
                 }
             });
         } catch (error) {}
@@ -1108,8 +1107,8 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
-        let cooldownTime = 10 * 60 * 1000; 
-        
+        let cooldownTime = 10 * 60 * 1000;
+
         if (nowTime - lastRequestTime < cooldownTime) {
             let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
             let remainingMins = Math.ceil(remainingSecs / 60);
@@ -1128,28 +1127,28 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             if (currentWalletBal < parsedAmount) {
                 return bodyRes.json({ success: false, message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
             }
-            userWallets[cleanUserId] = currentWalletBal - parsedAmount;
+            userWallets[cleanUserId] = Number((currentWalletBal - parsedAmount).toFixed(2));
         }
 
-        userLastRequestTimeMap[cleanUserId] = nowTime; 
+        userLastRequestTimeMap[cleanUserId] = nowTime;
 
         let requestId = 'req_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
-        
-        pendingRequests[requestId] = { 
-            userId: cleanUserId, 
-            chatId: userId, 
-            type, 
-            amount: parsedAmount, 
-            username, 
-            socketId: null, 
+
+        pendingRequests[requestId] = {
+            userId: cleanUserId,
+            chatId: userId,
+            type,
+            amount: parsedAmount,
+            username,
+            socketId: null,
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
-            status: 'pending' 
+            status: 'pending'
         };
 
         let caption = `🔔 *AZ BINGO - 💳 ቴሌብር ዲፖዚት*\n\n👤 ስም: *${username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${userId}\`\n💰 ቀሪ ሂሳብ: *${userWallets[cleanUserId]} ብር*\n📥 የጠየቀው: *${parsedAmount} ብር*\n⏱ የላከበት ሰዓት: _${requestTimeStr}_\n🆔 ሪኩዌስት ID: \`${requestId}\``;
-        
+
         if (receiptText) {
             caption += `\n\n📄 *የደረሰኝ ጽሑፍ (SMS):*\n\`${receiptText}\``;
         }
@@ -1159,7 +1158,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                 if (receiptImage && receiptImage.startsWith('data:image')) {
                     let base64Data = receiptImage.replace(/^data:image\/\w+;base64,/, "");
                     let buffer = Buffer.from(base64Data, 'base64');
-                    
+
                     let formDataTelegram = new (require('form-data'))();
                     formDataTelegram.append('chat_id', adminChatId);
                     formDataTelegram.append('photo', buffer, { filename: 'receipt.jpg' });
@@ -1168,7 +1167,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                     formDataTelegram.append('reply_markup', JSON.stringify({
                         inline_keyboard: [
                             [
-                                { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                                { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
                                 { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
                             ]
                         ]
@@ -1179,25 +1178,25 @@ app.post('/api/financial-request', async (req, bodyRes) => {
                     }).catch(() => {});
                 } else {
                     axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                        chat_id: adminChatId, 
-                        text: caption, 
+                        chat_id: adminChatId,
+                        text: caption,
                         parse_mode: 'Markdown',
-                        reply_markup: { 
+                        reply_markup: {
                             inline_keyboard: [
                                 [
-                                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId }, 
+                                    { text: "✅ አጽድቅ", callback_data: "app_" + requestId },
                                     { text: "❌ ሰርዝ", callback_data: "rej_" + requestId }
                                 ]
-                            ] 
+                            ]
                         }
                     }).catch(() => {});
                 }
             } catch (e) {}
         }
 
-        bodyRes.json({ 
-            success: true, 
-            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", 
+        bodyRes.json({
+            success: true,
+            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!",
             newBalance: userWallets[cleanUserId],
             request: {
                 id: requestId,
@@ -1220,17 +1219,19 @@ io.on('connection', (socket) => {
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
     socket.emit('telebirrConfigUpdated', telebirrConfig);
-    socket.emit('botConfigUpdated', botConfig); 
+    socket.emit('botConfigUpdated', botConfig);
 
     socket.on('registerRealUser', (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
-            
+
             allRegisteredUsers.add(userId);
 
             let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
+            if (isNaN(clientBalance) || clientBalance < 0) clientBalance = 0;
+
             if (userWallets[userId] === undefined) {
-                userWallets[userId] = clientBalance;
+                userWallets[userId] = Number(clientBalance.toFixed(2));
             }
 
             if (!globalRoom.gameActive) {
@@ -1245,14 +1246,14 @@ io.on('connection', (socket) => {
 
             onlineRealUsers = onlineRealUsers.filter(u => u.userId !== userId);
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
-            
+
             if (!claimedWelcomeBonusUsers.has(userId) && userWallets[userId] === 0) {
                 claimedWelcomeBonusUsers.add(userId);
-                userWallets[userId] += 20;
-                socket.emit('welcomeBonusGranted', { 
-                    amount: 20, 
+                userWallets[userId] = Number((userWallets[userId] + 20).toFixed(2));
+                socket.emit('welcomeBonusGranted', {
+                    amount: 20,
                     balance: userWallets[userId],
-                    message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!" 
+                    message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!"
                 });
             } else {
                 claimedWelcomeBonusUsers.add(userId);
@@ -1265,10 +1266,10 @@ io.on('connection', (socket) => {
                 delete offlineApprovedQueue[userId];
             }
 
-            let botUsername = "AzBIng2obot"; 
+            let botUsername = "AzBIng2obot";
             let myReferralLink = `https://t.me/${botUsername}?start=${userId}`;
             let myTotalEarnings = referralEarnings[userId] || 0;
-            
+
             socket.emit('updateBalance', { balance: userWallets[userId] });
             socket.emit('referralData', { referralLink: myReferralLink, totalEarnings: myTotalEarnings });
 
@@ -1299,10 +1300,10 @@ io.on('connection', (socket) => {
             socket.emit('cardSelectionError', "⚠️ ይህ ካርድ በአሁኑ ዙር በእርስዎ ስም አልተመዘገበም!");
             return;
         }
-        
+
         let cList = getCartelaNumbers(cardNum);
         let matched = getWinningMatchedIndices(cList, globalRoom.calledNumbers);
-        
+
         if (matched) {
             announceWinnersAndFinish([{
                 username: data.username || 'ተጫዋች',
@@ -1333,12 +1334,12 @@ io.on('connection', (socket) => {
                     foundBalance = parseFloat(userWallets[matchedKey]);
                 }
             }
-            
-            socket.emit('adminUserBalanceResponse', { 
-                success: true, 
-                targetUserId: tId, 
+
+            socket.emit('adminUserBalanceResponse', {
+                success: true,
+                targetUserId: tId,
                 balance: foundBalance,
-                message: `👤 ዩዘር ID (${tId}) ቀሪ ሂሳብ: ${foundBalance} ብር` 
+                message: `👤 ዩዘር ID (${tId}) ቀሪ ሂሳብ: ${foundBalance} ብር`
             });
         }
     });
@@ -1392,7 +1393,7 @@ io.on('connection', (socket) => {
             let targetUserId = String(data.targetUserId).trim();
             let bonusAmount = Number(data.amount) || 20;
 
-            userWallets[targetUserId] = (userWallets[targetUserId] || 0) + bonusAmount;
+            userWallets[targetUserId] = Number(((userWallets[targetUserId] || 0) + bonusAmount).toFixed(2));
 
             let bonusPayload = {
                 type: 'bonus',
@@ -1420,7 +1421,7 @@ io.on('connection', (socket) => {
 
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data ? data.message : null;
-        
+
         if (!messageText) {
             socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
             return;
@@ -1441,9 +1442,9 @@ io.on('connection', (socket) => {
             }
         })();
 
-        socket.emit('adminBroadcastResponse', { 
-            success: true, 
-            message: `✅ ማስታወቂያው ለተጠቃሚዎች በሂደት ላይ ይላካል! (አጠቃላይ ተመዝጋቢዎች: ${allUserIds.length})` 
+        socket.emit('adminBroadcastResponse', {
+            success: true,
+            message: `✅ ማስታወቂያው ለተጠቃሚዎች በሂደት ላይ ይላካል! (አጠቃላይ ተመዝጋቢዎች: ${allUserIds.length})`
         });
     });
 
@@ -1457,9 +1458,41 @@ io.on('connection', (socket) => {
     socket.on('confirmCards', (data) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             let userId = String(data.userId || 'unknown');
-            
+            let cleanCards = data.cards.map(Number).filter(n => n >= 1 && n <= 500);
+
+            if (cleanCards.length === 0 || cleanCards.length > 2) {
+                socket.emit('cardSelectionError', "⚠️ ከ 1 እስከ 2 ካርድ ብቻ መምረጥ ይችላሉ!");
+                return;
+            }
+
+            if (globalRoom.gameActive) {
+                socket.emit('cardSelectionError', "⚠️ ጨዋታው ተጀምሯል! በቀጣዩ ዙር ይሞክሩ።");
+                return;
+            }
+
+            if (userWallets[userId] === undefined) {
+                let initBal = (data.balance !== undefined && !isNaN(data.balance)) ? parseFloat(data.balance) : 0;
+                userWallets[userId] = Number(Math.max(0, initBal).toFixed(2));
+            }
+
+            let prevCards = (globalRoom.playerRoundCards[socket.id] && Array.isArray(globalRoom.playerRoundCards[socket.id].cards))
+                ? globalRoom.playerRoundCards[socket.id].cards
+                : [];
+            let prevCost = prevCards.length * 10;
+            let newCost = cleanCards.length * 10;
+            let diffCost = newCost - prevCost;
+
+            let currentBal = parseFloat(userWallets[userId] || 0);
+            if (diffCost > 0 && currentBal < diffCost) {
+                socket.emit('cardSelectionError', "⚠️ በቂ ሂሳብ የለዎትም!");
+                socket.emit('updateBalance', { balance: currentBal });
+                return;
+            }
+
+            userWallets[userId] = Number(Math.max(0, currentBal - diffCost).toFixed(2));
+
             globalRoom.playerRoundCards[socket.id] = {
-                cards: data.cards,
+                cards: cleanCards,
                 username: data.username || 'ተጫዋች',
                 userId: userId
             };
@@ -1467,20 +1500,17 @@ io.on('connection', (socket) => {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
 
-            if (userWallets[userId] === undefined && data.balance !== undefined && !isNaN(data.balance)) {
-                userWallets[userId] = parseFloat(data.balance);
-            }
-
             refreshTakenCardsList();
             updateRoomPlayersAndPot();
-            
+
             socket.emit('cardSelectionSuccess', { balance: userWallets[userId] });
+            socket.emit('updateBalance', { balance: userWallets[userId] });
         }
     });
 
     socket.on('adminSetNextWinner', (data) => {
         let winnerType = data.winnerType ? String(data.winnerType).trim() : null;
-        
+
         if (winnerType === 'only_real_users_mode') {
             enableOnlyRealUsersMode = true;
             forcedNextWinner = 'random_real';
@@ -1500,7 +1530,7 @@ io.on('connection', (socket) => {
     socket.on('financialRequest', async (data) => {
         data.type = data.type || 'deposit';
         let { type, amount, username, userId, currentBalance, phone, receipt, telegramChatId } = data;
-        
+
         if ((type === 'withdraw' || type === 'withdrawal') && isWithdrawLocked) {
             socket.emit('financialError', { message: "⚠️ ለጊዜው በሲስተም ጥገና ምክንያት አገልግሎት አይሰጥም!" });
             return;
@@ -1510,8 +1540,8 @@ io.on('connection', (socket) => {
 
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
-        let cooldownTime = 10 * 60 * 1000; 
-        
+        let cooldownTime = 10 * 60 * 1000;
+
         if (nowTime - lastRequestTime < cooldownTime) {
             let remainingSecs = Math.ceil((cooldownTime - (nowTime - lastRequestTime)) / 1000);
             let remainingMins = Math.ceil(remainingSecs / 60);
@@ -1525,7 +1555,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        userLastRequestTimeMap[cleanUserId] = nowTime; 
+        userLastRequestTimeMap[cleanUserId] = nowTime;
 
         let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
@@ -1535,29 +1565,29 @@ io.on('connection', (socket) => {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
                 return;
             }
-            userWallets[cleanUserId] = currentWalletBal - parsedAmount;
+            userWallets[cleanUserId] = Number((currentWalletBal - parsedAmount).toFixed(2));
             socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
         }
 
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
         let requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
-        
-        pendingRequests[requestId] = { 
-            userId: cleanUserId, 
-            chatId: telegramChatId || cleanUserId, 
-            type, 
-            amount: parsedAmount, 
-            username, 
-            socketId: socket.id, 
+
+        pendingRequests[requestId] = {
+            userId: cleanUserId,
+            chatId: telegramChatId || cleanUserId,
+            type,
+            amount: parsedAmount,
+            username,
+            socketId: socket.id,
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
-            status: 'pending' 
+            status: 'pending'
         };
 
         sendAdminFinancialRequest(requestId, type, parsedAmount, username, cleanUserId, userWallets[cleanUserId], phone, receipt);
-        socket.emit('requestSubmitted', { 
-            success: true, 
-            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!", 
+        socket.emit('requestSubmitted', {
+            success: true,
+            message: "✅ ጥያቄዎ ለአድሚን ተልኳል!",
             balance: userWallets[cleanUserId],
             request: {
                 id: requestId,
@@ -1572,12 +1602,12 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
-        
+
         if (!globalRoom.gameActive) {
             delete globalRoom.playerRoundCards[socket.id];
         }
         delete globalRoom.playerTemporaryCards[socket.id];
-        
+
         refreshTakenCardsList();
         updateRoomPlayersAndPot();
     });
