@@ -285,7 +285,6 @@
                     <div class="grid grid-cols-12 gap-1.5 flex-1 overflow-hidden">
                         
                         <div class="col-span-5 flex flex-col bg-[#0b1633] p-1 rounded-lg border border-amber-500/30 overflow-hidden">
-                            <!-- B-I-N-G-O Letters Header with exact respective colors -->
                             <div class="grid grid-cols-5 gap-0.5 text-center font-bold text-[9px] mb-0.5">
                                 <div class="bg-blue-600 rounded text-white py-0.5">B</div>
                                 <div class="bg-purple-600 rounded text-white py-0.5">I</div>
@@ -300,11 +299,11 @@
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
                                 
                                 <!-- 1. RECENT BALLS ON TOP -->
-                                <div class="flex justify-center items-center py-0.5">
+                                <div class="flex justify-center items-center py-0.5 min-h-[28px]">
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
-                                <!-- 2. MAIN CALLED BALL AT THE BOTTOM -->
+                                <!-- 2. MAIN CALLED BALL OR COUNTDOWN AT THE BOTTOM -->
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
                                     <div id="in-place-countdown-box" class="w-[88px] h-[88px] rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim mx-auto">
                                         <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
@@ -392,7 +391,7 @@
                         <ul class="list-disc list-inside text-gray-300 space-y-1 text-[11px]">
                             <li>በየዙሩ ከ 1 እስከ 500 ካሉት ካርዶች ውስጥ 1 ወይም 2 ካርዶችን ይምረጡ።</li>
                             <li>የአንድ ካርድ ዋጋ 10 ብር ነው።</li>
-                            <li>1 ደቂቃ (60 ሰከንድ) ቆጥሮ ጨዋታው ሲጀመር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
+                            <li>1 ደቂቃ (60 ሰከንድ) ቆጥሮ ጨዋታው ሲጀምር ቦርዱ ቁጥሮችን በቅደም ተከተል መጥራት ይጀምራል።</li>
                             <li>አውቶማቲክ ዳብ (Auto Daub) በመጠቀም ቁጥሮቹ በራሳቸው ይሞራሉ፤ ወይም ደግሞ ማኑዋል (Manual) በማድረግ በራስዎ እጅ እየነኩ (እየመረጡ) መጫወት ይችላሉ።</li>
                         </ul>
                     </div>
@@ -612,7 +611,7 @@
                 <div class="space-y-2">
                     <div class="bg-black/60 p-2 rounded-lg border border-amber-500/30 text-center space-y-0.5 cursor-pointer" onclick="copyAccountInfo(document.getElementById('telebirr-phone-text').innerText, 'telebirr-copy-msg')">
                         <div class="text-[9px] text-sky-400 font-bold" id="telebirr-name-label">ከቴሌብር ብቻ (ለመቅዳት ይጫኑ)</div>
-                        <div id="telebirr-phone-text" class="text-amber-400 font-black text-xs tracking-wider">0900015260</div>
+                        <div id="telebirr-phone-text" class="text-amber-400 font-black text-xs tracking-wider">0940272544</div>
                         <div id="telebirr-copy-msg" class="text-[8px] text-emerald-400 font-bold hidden">✅ ኮፒ ተደርጓል!</div>
                     </div>
 
@@ -677,7 +676,7 @@
     <script>
         const socket = io();
 
-        const ADMIN_TELEGRAM_IDS = ["371093083", "8648229637"];
+        const ADMIN_TELEGRAM_IDS = ["371093083", "7906963841"];
         let telegramUserId = "user_" + Math.floor(Math.random() * 100000);
         let userFullName = "ተጫዋች"; 
         let userUsername = "guest_user";
@@ -686,6 +685,9 @@
         let isDepositLockedGlobal = false;
         let isWithdrawLockedGlobal = false;
         let currentReferralLink = "";
+
+        // የጨዋታውን State በግልጽ ለመለየት: 'waiting' | 'drawing' | 'ended'
+        let currentGamePhase = 'waiting';
 
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
@@ -746,6 +748,7 @@
         let gameStartTimeServer = Date.now() + 60000;
         let manualDaubedNumbers = {};
         let isAudioMuted = true;
+        let currentAudioObj = null;
 
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";
@@ -753,6 +756,62 @@
             if (num <= 45) return "bg-pink-600";
             if (num <= 60) return "bg-emerald-600";
             return "bg-amber-600";
+        }
+
+        // የተጠሩ ቁጥሮች ማሳያን እና የመጨረሻውን የተጠራ ቁጥር ሙሉ በሙሉ ማጽዳት
+        function clearCalledDisplay(statusLabelText = "ጨዋታውን ለመጀመር") {
+            calledNumbersList = [];
+            manualDaubedNumbers = {};
+
+            const countEl = document.getElementById('stat-called-count');
+            if (countEl) countEl.innerText = "0";
+
+            const recentContainer = document.getElementById('recent-balls-container');
+            if (recentContainer) recentContainer.innerHTML = '';
+
+            const mainBall = document.getElementById('main-called-ball');
+            if (mainBall) {
+                mainBall.classList.add('hidden');
+                document.getElementById('ball-letter').innerText = '';
+                document.getElementById('ball-num').innerText = '';
+            }
+
+            const countdownBox = document.getElementById('in-place-countdown-box');
+            const centerLabelEl = document.getElementById('center-status-label');
+            const countdownNumEl = document.getElementById('in-place-countdown-num');
+            if (countdownBox) countdownBox.classList.remove('hidden');
+            if (centerLabelEl) centerLabelEl.innerText = statusLabelText;
+            if (countdownNumEl) {
+                let timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
+                countdownNumEl.innerText = `${timeLeft}s`;
+            }
+
+            renderVerticalBoard();
+        }
+
+        // የጨዋታውን ሁኔታ (State) በግልጽ ማስተዳደር: 'waiting' | 'drawing' | 'ended'
+        function setGameStatePhase(phase, options = {}) {
+            currentGamePhase = phase;
+
+            if (phase === 'waiting') {
+                // Waiting / Countdown: የተጠሩ ቁጥሮች ባዶ እና ቆጣሪው ብቻ ይታያል
+                clearCalledDisplay("ጨዋታውን ለመጀመር");
+            } else if (phase === 'drawing') {
+                // Drawing / Active: ቁጥሮች እየተጠሩ ይታያሉ
+                const countdownBox = document.getElementById('in-place-countdown-box');
+                if (countdownBox) countdownBox.classList.add('hidden');
+                if (calledNumbersList.length > 0) {
+                    displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
+                }
+            } else if (phase === 'ended') {
+                // Round Ended: ዙር ሲያልቅ ይታያል
+                const countdownBox = document.getElementById('in-place-countdown-box');
+                const centerLabelEl = document.getElementById('center-status-label');
+                const countdownNumEl = document.getElementById('in-place-countdown-num');
+                if (countdownBox) countdownBox.classList.remove('hidden');
+                if (centerLabelEl) centerLabelEl.innerText = "ዙር ተጠናቋል";
+                if (countdownNumEl) countdownNumEl.innerText = "END";
+            }
         }
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -781,6 +840,7 @@
             renderPlayerDualCards();
             updateAudioButtonUI();
             renderCardSelectionPreviews();
+            setGameStatePhase('waiting');
 
             const confirmBtn = document.getElementById('confirm-card-btn');
             if (confirmBtn) {
@@ -934,24 +994,17 @@
                 }
 
                 if (room.gameActive) {
-                    calledNumbersList = room.calledNumbers || [];
-                    if (calledNumbersList.length > 0) {
-                        displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
-                        document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                    }
-                    renderVerticalBoard();
+                    calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
+                    document.getElementById('stat-called-count').innerText = calledNumbersList.length;
+                    setGameStatePhase('drawing');
                     renderPlayerDualCards();
                     
                     document.getElementById('card-selection-section').classList.add('hidden');
                     document.getElementById('live-game-section').classList.remove('hidden');
                 } else {
+                    setGameStatePhase('waiting');
                     if (confirmedCards.length === 0) {
-                        calledNumbersList = [];
-                        manualDaubedNumbers = {};
-                        document.getElementById('stat-called-count').innerText = "0";
-                        renderVerticalBoard();
                         generate500CardGrid();
-                        
                         document.getElementById('card-selection-section').classList.remove('hidden');
                         document.getElementById('live-game-section').classList.add('hidden');
                     }
@@ -959,15 +1012,20 @@
             });
 
             socket.on('gameStarted', (data) => {
+                calledNumbersList = Array.isArray(data?.calledNumbers) ? data.calledNumbers.map(Number) : [];
+                setGameStatePhase('drawing');
                 renderPlayerDualCards();
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
             });
 
             socket.on('numberCalled', (data) => {
-                let num = data.number;
+                if (currentGamePhase !== 'drawing') {
+                    setGameStatePhase('drawing');
+                }
+                let num = Number(data.number);
                 let cleanCalledList = calledNumbersList.map(n => Number(n));
-                if (!cleanCalledList.includes(Number(num))) calledNumbersList.push(Number(num));
+                if (!cleanCalledList.includes(num)) calledNumbersList.push(num);
                 displayCalledBall(num);
                 document.getElementById('stat-called-count').innerText = calledNumbersList.length;
                 renderVerticalBoard();
@@ -977,6 +1035,7 @@
             });
 
             socket.on('roundEnded', (data) => {
+                setGameStatePhase('ended');
                 gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
                 
                 localStorage.removeItem(userSavedCardsKey);
@@ -985,7 +1044,11 @@
                 userSelectedCards = [];
                 totalPaidForCurrentRound = 0;
 
-                resetPlayerSelectionForNewRound();
+                // ዙር ሲያልቅ ወዲያውኑ ወደ Countdown / Waiting ሲገባ ማሳያውን ማጽዳት
+                setTimeout(() => {
+                    setGameStatePhase('waiting');
+                    resetPlayerSelectionForNewRound();
+                }, 400);
             });
 
             socket.on('cardSelectionSuccess', (data) => {
@@ -1027,8 +1090,10 @@
             });
 
             socket.on('bingoWinner', (data) => {
+                setGameStatePhase('ended');
                 try {
                     const winSound = new Audio('/sound/bingo_win.mp3');
+                    currentAudioObj = winSound;
                     winSound.play().catch(e => console.log("Audio play blocked:", e));
                 } catch (err) {}
 
@@ -1141,7 +1206,6 @@
             });
         });
 
-        // 🚀 HUB NAVIGATION FUNCTIONS
         function selectGame(gameKey) {
             if (gameKey === 'bingo') {
                 document.getElementById('view-hub').classList.add('hidden');
@@ -1348,6 +1412,10 @@
 
         function toggleAudioMute() {
             isAudioMuted = !isAudioMuted;
+            if (isAudioMuted && currentAudioObj) {
+                currentAudioObj.pause();
+                currentAudioObj.currentTime = 0;
+            }
             updateAudioButtonUI();
         }
 
@@ -1420,7 +1488,7 @@
                     bigTimerEl.innerText = `${timeLeft}s`;
                 }
 
-                if (timeLeft <= 5 && confirmedCards.length > 0) {
+                if (timeLeft <= 5 && confirmedCards.length > 0 && currentGamePhase !== 'waiting') {
                     const cardSec = document.getElementById('card-selection-section');
                     const liveSec = document.getElementById('live-game-section');
                     if (cardSec && !cardSec.classList.contains('hidden')) {
@@ -1429,7 +1497,7 @@
                     }
                 }
 
-                if (calledNumbersList.length === 0) {
+                if (currentGamePhase === 'waiting' && calledNumbersList.length === 0) {
                     const countdownNumEl = document.getElementById('in-place-countdown-num');
                     const centerLabelEl = document.getElementById('center-status-label');
                     if (countdownNumEl && centerLabelEl) {
@@ -1440,11 +1508,15 @@
             }, 1000);
         }
 
-        // 🎵 Amharic Audio Callout Integration using public/sound/ folder
         function playCalledNumberAudio(num) {
             if (isAudioMuted) return;
             try {
+                if (currentAudioObj) {
+                    currentAudioObj.pause();
+                    currentAudioObj.currentTime = 0;
+                }
                 const soundAudio = new Audio(`/sound/${num}.mp3`);
+                currentAudioObj = soundAudio;
                 soundAudio.play().catch(e => console.log("Audio play blocked or missing:", e));
             } catch (err) {
                 console.log("Audio error:", err);
@@ -1452,6 +1524,7 @@
         }
 
         function displayCalledBall(num) {
+            if (currentGamePhase !== 'drawing') return;
             const countdownBox = document.getElementById('in-place-countdown-box');
             const mainBall = document.getElementById('main-called-ball');
             if (countdownBox) countdownBox.classList.add('hidden');
@@ -1473,12 +1546,11 @@
             if (!container) return;
             container.innerHTML = '';
             
-            let recentSlice = [];
-            if (calledNumbersList.length > 1) {
-                let sliceEnd = calledNumbersList.length - 1;
-                let sliceStart = Math.max(0, sliceEnd - 5);
-                recentSlice = calledNumbersList.slice(sliceStart, sliceEnd).reverse();
-            }
+            if (currentGamePhase !== 'drawing' || calledNumbersList.length <= 1) return;
+
+            let sliceEnd = calledNumbersList.length - 1;
+            let sliceStart = Math.max(0, sliceEnd - 5);
+            let recentSlice = calledNumbersList.slice(sliceStart, sliceEnd).reverse();
             
             recentSlice.forEach((num) => {
                 let letter = num <= 15 ? "B" : num <= 30 ? "I" : num <= 45 ? "N" : num <= 60 ? "G" : "O";
@@ -1525,8 +1597,6 @@
             userSelectedCards = [];
             confirmedCards = [];
             totalPaidForCurrentRound = 0;
-            calledNumbersList = [];
-            manualDaubedNumbers = {};
             localStorage.removeItem(userSavedCardsKey);
             localStorage.setItem(userCurrentRoundPaidKey, "0");
             document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
@@ -1535,7 +1605,7 @@
             confirmBtn.className = "blink-btn text-white px-2.5 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
             confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
 
-            document.getElementById('stat-called-count').innerText = "0";
+            setGameStatePhase('waiting');
             
             const grid = document.getElementById('card-grid-500');
             if (grid) grid.innerHTML = `<div class="col-span-8 text-center text-amber-400 text-xs py-10 font-bold">አዲስ ዙር ካርዶች እየተዘጋጁ ነው...</div>`;
@@ -1547,8 +1617,6 @@
                 renderCardSelectionPreviews();
             }, 1000);
 
-            renderVerticalBoard();
-            renderRecentBalls();
             renderPlayerDualCards();
         }
 
@@ -1760,11 +1828,12 @@
             const board = document.getElementById('vertical-board-75');
             if(!board) return;
             board.innerHTML = '';
-            let lastCalledNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : null;
+            let activeCalled = (currentGamePhase === 'drawing') ? calledNumbersList : [];
+            let lastCalledNum = activeCalled.length > 0 ? activeCalled[activeCalled.length - 1] : null;
             for(let r = 1; r <= 15; r++) {
                 let colsData = [r, r + 15, r + 30, r + 45, r + 60];
                 colsData.forEach(num => {
-                    const isCalled = calledNumbersList.includes(num);
+                    const isCalled = activeCalled.includes(num);
                     const isLatest = (num === lastCalledNum);
                     const cell = document.createElement('div');
                     
@@ -1834,8 +1903,8 @@
 
                 numbers.forEach(cellNum => {
                     const isFreeCenter = (cellNum === "FREE");
-                    const isCalled = calledNumbersList.includes(cellNum);
-                    const isManuallyDaubed = manualDaubedNumbers[cardNum].includes(cellNum);
+                    const isCalled = (currentGamePhase === 'drawing') && calledNumbersList.includes(cellNum);
+                    const isManuallyDaubed = (currentGamePhase === 'drawing') && manualDaubedNumbers[cardNum].includes(cellNum);
 
                     const cell = document.createElement('div');
                     cell.style.height = "26px";
