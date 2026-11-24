@@ -161,6 +161,8 @@ let globalRoom = {
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
     playersCount: 140,
+    lockedRoundPlayersCount: null,
+    lockedRoundPrize: null,
     takenCards: [],
     playerRoundCards: {},
     playerTemporaryCards: {},
@@ -349,19 +351,19 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     }
 
     if (isGameActive) {
-        lastSmoothCount = targetBase;
+        return lastSmoothCount;
+    }
+
+    let step = Math.floor(Math.random() * 2) + 1;
+    if (lastSmoothCount < targetBase) {
+        lastSmoothCount += step;
+        if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
+    } else if (lastSmoothCount > targetBase) {
+        lastSmoothCount -= step;
+        if (lastSmoothCount < targetBase) lastSmoothCount = targetBase;
     } else {
-        let step = Math.floor(Math.random() * 5) + 1;
-        if (lastSmoothCount < targetBase) {
-            lastSmoothCount += step;
-            if (lastSmoothCount > targetBase) lastSmoothCount = targetBase;
-        } else if (lastSmoothCount > targetBase) {
-            lastSmoothCount -= step;
-            if (lastSmoothCount < targetBase) lastSmoothCount = targetBase;
-        } else {
-            let minorDelta = (Math.floor(Math.random() * 3) + 1) * (Math.random() < 0.5 ? 1 : -1);
-            lastSmoothCount += minorDelta;
-        }
+        let minorDelta = (Math.random() < 0.5 ? 1 : -1);
+        lastSmoothCount += minorDelta;
     }
 
     if (lastSmoothCount < minB) lastSmoothCount = minB;
@@ -370,7 +372,19 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     return lastSmoothCount;
 }
 
-function updateRoomPlayersAndPot() {
+function updateRoomPlayersAndPot(forceBroadcast = true) {
+    if (globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null) {
+        globalRoom.playersCount = globalRoom.lockedRoundPlayersCount;
+        if (forceBroadcast) {
+            io.emit('updatePlayersCount', {
+                playersCount: globalRoom.playersCount,
+                prize: globalRoom.lockedRoundPrize,
+                locked: true
+            });
+        }
+        return;
+    }
+
     let realCount = connectedRealPlayers.length;
     let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
 
@@ -382,15 +396,24 @@ function updateRoomPlayersAndPot() {
         globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
         if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
     } else {
-        let currentBotsCount = getRealisticBotsCount(realCount, globalRoom.gameActive);
-        globalRoom.playersCount = currentBotsCount + realCount;
+        let currentBotsCount = getRealisticBotsCount(realCount, false);
+        globalRoom.playersCount = Math.max(1, currentBotsCount);
     }
-    io.emit('updatePlayersCount', globalRoom.playersCount);
+
+    let currentPrize = Math.floor((globalRoom.playersCount * 10) * 0.90);
+
+    if (forceBroadcast) {
+        io.emit('updatePlayersCount', {
+            playersCount: globalRoom.playersCount,
+            prize: currentPrize,
+            locked: false
+        });
+    }
 }
 
 setInterval(() => {
     if (!globalRoom.gameActive) {
-        updateRoomPlayersAndPot();
+        updateRoomPlayersAndPot(true);
     }
 }, 4000);
 
@@ -425,9 +448,9 @@ function simulateBotCardSelections() {
 
 setInterval(simulateBotCardSelections, 6000);
 
-async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser) {
+async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser, playersCountForRound) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
-    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${globalRoom.playersCount}`;
+    let message = `🏆 *AZ BINGO - 👤 አሸናፊ(ዎች)*\n\n🎉 አሸናፊዎች: *${winnerNamesStr}*\n🔢 ዋና ካርድ ቁጥር: \`#${cardNum}\`\n💰 የተሸለመው የድርሻ ብር (ለእያንዳንዱ): *${prizePerWinner} ብር*\n👥 ተጫዋቾች ብዛት: ${playersCountForRound}`;
 
     for (let adminChatId of ADMIN_CHAT_IDS) {
         try {
@@ -472,8 +495,11 @@ function announceWinnersAndFinish(winnersDataList) {
     let winnerNamesStr = sanitizedWinners.map(w => w.username).join(', ');
     let winnersCount = sanitizedWinners.length;
 
-    let totalPot = (globalRoom.playersCount || 1) * 10;
-    let prizePerWinner = Math.floor(((totalPot * 0.90) / winnersCount));
+    let roundPlayersCount = globalRoom.lockedRoundPlayersCount || globalRoom.playersCount || 1;
+    let roundTotalPrize = globalRoom.lockedRoundPrize !== null
+        ? globalRoom.lockedRoundPrize
+        : Math.floor((roundPlayersCount * 10) * 0.90);
+    let prizePerWinner = Math.floor(roundTotalPrize / winnersCount);
     let hasRealWinner = sanitizedWinners.some(w => !w.isBot);
 
     sanitizedWinners.forEach(w => {
@@ -482,7 +508,7 @@ function announceWinnersAndFinish(winnersDataList) {
         }
     });
 
-    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner);
+    sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner, roundPlayersCount);
 
     sanitizedWinners.forEach(w => {
         if (!w.isBot && w.socketId) {
@@ -501,7 +527,7 @@ function announceWinnersAndFinish(winnersDataList) {
         calledNumbers: globalRoom.calledNumbers,
         matchedIndices: matchedIndices,
         winnersCount: winnersCount,
-        playersCount: globalRoom.playersCount
+        playersCount: roundPlayersCount
     });
 
     setTimeout(() => { endRoundAndRestart(); }, 6000);
@@ -519,7 +545,19 @@ function startMainGameLoop() {
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
 
-            updateRoomPlayersAndPot();
+            updateRoomPlayersAndPot(false);
+            let startPlayersCount = Math.max(1, Number(globalRoom.playersCount) || 1);
+            let startTotalPrize = Math.floor((startPlayersCount * 10) * 0.90);
+
+            globalRoom.lockedRoundPlayersCount = startPlayersCount;
+            globalRoom.lockedRoundPrize = startTotalPrize;
+            globalRoom.playersCount = startPlayersCount;
+
+            io.emit('updatePlayersCount', {
+                playersCount: globalRoom.lockedRoundPlayersCount,
+                prize: globalRoom.lockedRoundPrize,
+                locked: true
+            });
 
             let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([socketId, data]) => data.cards && data.cards.length > 0);
             let currentWinnerType = forcedNextWinner;
@@ -530,7 +568,11 @@ function startMainGameLoop() {
                 let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
-                io.emit('gameStarted', { calledNumbers: [] });
+                io.emit('gameStarted', {
+                    calledNumbers: [],
+                    playersCount: globalRoom.lockedRoundPlayersCount,
+                    prize: globalRoom.lockedRoundPrize
+                });
                 io.emit('gameStartedBroadcast');
 
                 if (numberCallInterval) clearInterval(numberCallInterval);
@@ -667,7 +709,11 @@ function startMainGameLoop() {
                 }
             });
 
-            io.emit('gameStarted', { calledNumbers: [] });
+            io.emit('gameStarted', {
+                calledNumbers: [],
+                playersCount: globalRoom.lockedRoundPlayersCount,
+                prize: globalRoom.lockedRoundPrize
+            });
             io.emit('gameStartedBroadcast');
 
             if (numberCallInterval) clearInterval(numberCallInterval);
@@ -780,6 +826,8 @@ function endRoundAndRestart() {
     globalRoom.gameActive = false;
     isFinishingRound = false;
     globalRoom.allowRealWinnerThisRound = false;
+    globalRoom.lockedRoundPlayersCount = null;
+    globalRoom.lockedRoundPrize = null;
     globalRoom.calledNumbers = [];
     globalRoom.lastCalledNumber = null;
 
@@ -793,7 +841,7 @@ function endRoundAndRestart() {
     io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
-    updateRoomPlayersAndPot();
+    updateRoomPlayersAndPot(true);
 }
 
 startMainGameLoop();
@@ -1213,8 +1261,19 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
-    updateRoomPlayersAndPot();
-    socket.emit('syncGameState', globalRoom);
+    if (!globalRoom.gameActive) {
+        updateRoomPlayersAndPot(true);
+    }
+
+    socket.emit('syncGameState', {
+        ...globalRoom,
+        playersCount: globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
+            ? globalRoom.lockedRoundPlayersCount
+            : globalRoom.playersCount,
+        prize: globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
+            ? globalRoom.lockedRoundPrize
+            : Math.floor((globalRoom.playersCount * 10) * 0.90)
+    });
     refreshTakenCardsList();
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
@@ -1274,8 +1333,18 @@ io.on('connection', (socket) => {
             socket.emit('referralData', { referralLink: myReferralLink, totalEarnings: myTotalEarnings });
 
             refreshTakenCardsList();
-            updateRoomPlayersAndPot();
-            socket.emit('syncGameState', globalRoom);
+            if (!globalRoom.gameActive) {
+                updateRoomPlayersAndPot(true);
+            }
+            socket.emit('syncGameState', {
+                ...globalRoom,
+                playersCount: globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
+                    ? globalRoom.lockedRoundPlayersCount
+                    : globalRoom.playersCount,
+                prize: globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
+                    ? globalRoom.lockedRoundPrize
+                    : Math.floor((globalRoom.playersCount * 10) * 0.90)
+            });
         }
     });
 
@@ -1379,7 +1448,9 @@ io.on('connection', (socket) => {
 
                 saveBotConfigToDisk();
                 io.emit('botConfigUpdated', botConfig);
-                updateRoomPlayersAndPot();
+                if (!globalRoom.gameActive) {
+                    updateRoomPlayersAndPot(true);
+                }
 
                 socket.emit('adminBotResponse', { success: true, message: `✅ የቦቶች ብዛት (Min: ${minB}, Max: ${maxB}) ተስተካክሏል!` });
             } else {
@@ -1501,7 +1572,9 @@ io.on('connection', (socket) => {
             }
 
             refreshTakenCardsList();
-            updateRoomPlayersAndPot();
+            if (!globalRoom.gameActive) {
+                updateRoomPlayersAndPot(true);
+            }
 
             socket.emit('cardSelectionSuccess', { balance: userWallets[userId] });
             socket.emit('updateBalance', { balance: userWallets[userId] });
@@ -1514,12 +1587,12 @@ io.on('connection', (socket) => {
         if (winnerType === 'only_real_users_mode') {
             enableOnlyRealUsersMode = true;
             forcedNextWinner = 'random_real';
-            updateRoomPlayersAndPot();
+            if (!globalRoom.gameActive) updateRoomPlayersAndPot(true);
             socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [ሪል ዩዘሮች ብቻ - True Random] ተቀይሯል!` });
         } else if (winnerType === 'standard_bot_mode') {
             enableOnlyRealUsersMode = false;
             forcedNextWinner = null;
-            updateRoomPlayersAndPot();
+            if (!globalRoom.gameActive) updateRoomPlayersAndPot(true);
             socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [መደበኛ (ቦቶች + ሪል)] ተመለሰ!` });
         } else {
             forcedNextWinner = winnerType;
@@ -1609,7 +1682,9 @@ io.on('connection', (socket) => {
         delete globalRoom.playerTemporaryCards[socket.id];
 
         refreshTakenCardsList();
-        updateRoomPlayersAndPot();
+        if (!globalRoom.gameActive) {
+            updateRoomPlayersAndPot(true);
+        }
     });
 });
 
