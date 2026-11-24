@@ -750,6 +750,19 @@
         let isAudioMuted = true;
         let currentAudioObj = null;
 
+        function renderPlayersAndDerash(playersCount, prizeValue = null) {
+            const parsedCount = Math.max(1, parseInt(playersCount, 10) || 1);
+            const parsedPrize = (prizeValue !== null && prizeValue !== undefined && !Number.isNaN(Number(prizeValue)))
+                ? Math.floor(Number(prizeValue))
+                : Math.floor((parsedCount * 10) * 0.90);
+
+            const playersEl = document.getElementById('stat-players');
+            const derashEl = document.getElementById('stat-derash');
+
+            if (playersEl) playersEl.innerText = parsedCount;
+            if (derashEl) derashEl.innerText = parsedPrize;
+        }
+
         function getColumnBgColor(num) {
             if (num <= 15) return "bg-blue-600";
             if (num <= 30) return "bg-purple-600";
@@ -963,10 +976,8 @@
 
             socket.on('syncGameState', (room) => {
                 if (room.gameStartTime) gameStartTimeServer = room.gameStartTime;
-                if (room.playersCount) {
-                    document.getElementById('stat-players').innerText = room.playersCount;
-                    let totalPot = room.playersCount * 10;
-                    document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
+                if (room && (currentGamePhase !== 'drawing' || !room.gameActive)) {
+                    renderPlayersAndDerash(room.playersCount, room.prize);
                 }
 
                 if (!room.gameActive) {
@@ -1009,6 +1020,9 @@
             socket.on('gameStarted', (data) => {
                 calledNumbersList = Array.isArray(data?.calledNumbers) ? data.calledNumbers.map(Number) : [];
                 setGameStatePhase('drawing');
+                if (data && data.playersCount !== undefined) {
+                    renderPlayersAndDerash(data.playersCount, data.prize);
+                }
                 renderPlayerDualCards();
                 document.getElementById('card-selection-section').classList.add('hidden');
                 document.getElementById('live-game-section').classList.remove('hidden');
@@ -1151,10 +1165,15 @@
                 }, 6000);
             });
 
-            socket.on('updatePlayersCount', (count) => {
-                document.getElementById('stat-players').innerText = count;
-                let totalPot = count * 10;
-                document.getElementById('stat-derash').innerText = Math.floor(totalPot * 0.90);
+            socket.on('updatePlayersCount', (payload) => {
+                if (currentGamePhase === 'drawing') {
+                    return;
+                }
+                if (payload && typeof payload === 'object') {
+                    renderPlayersAndDerash(payload.playersCount, payload.prize);
+                } else {
+                    renderPlayersAndDerash(payload, null);
+                }
             });
 
             socket.on('financialApproved', (data) => {
