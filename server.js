@@ -58,8 +58,8 @@ function saveTelebirrConfigToDisk() {
 
 const botConfigFilePath = path.join(__dirname, 'bot_config.json');
 let botConfig = {
-    minBots: 23,
-    maxBots: 350
+    minBots: 7,
+    maxBots: 370
 };
 
 if (fs.existsSync(botConfigFilePath)) {
