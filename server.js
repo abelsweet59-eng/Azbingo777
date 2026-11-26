@@ -163,6 +163,19 @@ let isWithdrawLocked = false;
 let isFinishingRound = false;
 let roundCounter = 1;
 
+function generateDateSeedRoundId() {
+    const now = new Date(Date.now() + 3 * 60 * 60 * 1000); // Africa/Addis_Ababa (UTC+3)
+    const yy = String(now.getUTCFullYear()).slice(-2);
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(now.getUTCDate()).padStart(2, '0');
+    const dateSeed = `${yy}${mm}${dd}`;
+
+    const seq = String(roundCounter++).padStart(3, '0');
+    const randomPart = Math.floor(100 + Math.random() * 900);
+
+    return `${dateSeed}-${seq}${randomPart}`;
+}
+
 const configFilePath = path.join(__dirname, 'telebirr_config.json');
 let telebirrConfig = {
     phone: "0940272544",
@@ -287,7 +300,7 @@ function getRandomBotNames(count) {
 }
 
 let globalRoom = {
-    roundId: `R-${roundCounter}`,
+    roundId: generateDateSeedRoundId(),
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
@@ -1090,8 +1103,7 @@ function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
 
-    roundCounter++;
-    globalRoom.roundId = `R-${roundCounter}`;
+    globalRoom.roundId = generateDateSeedRoundId();
 
     globalRoom.gameActive = false;
     isFinishingRound = false;
