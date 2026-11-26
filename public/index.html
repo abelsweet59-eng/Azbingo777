@@ -686,6 +686,9 @@
         let isWithdrawLockedGlobal = false;
         let currentReferralLink = "";
 
+        // 'hub' = ሎቢው ላይ (የAZ Bingo UI ሙሉ በሙሉ የተደበቀበት) | 'bingo' = ወደ AZ Bingo ውስጥ የገባ
+        let activeScreenContext = 'hub';
+
         // የጨዋታውን State በግልጽ ለመለየት: 'waiting' | 'drawing' | 'ended'
         let currentGamePhase = 'waiting';
 
@@ -749,6 +752,61 @@
         let manualDaubedNumbers = {};
         let isAudioMuted = true;
         let currentAudioObj = null;
+
+        function enforceHubVisualIsolation() {
+            if (activeScreenContext === 'hub') {
+                const winnerModal = document.getElementById('winner-modal');
+                if (winnerModal) winnerModal.classList.add('hidden');
+                const statsBar = document.getElementById('stats-bar-section');
+                if (statsBar) {
+                    statsBar.classList.add('hidden');
+                    statsBar.classList.remove('grid');
+                }
+                const bottomNav = document.getElementById('bottom-nav');
+                if (bottomNav) {
+                    bottomNav.classList.add('hidden');
+                    bottomNav.classList.remove('grid');
+                }
+            }
+        }
+
+        function syncBingoGameScreenFromState() {
+            const countEl = document.getElementById('stat-called-count');
+            if (countEl) countEl.innerText = calledNumbersList.length;
+
+            if (currentGamePhase === 'drawing') {
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
+
+                const countdownBox = document.getElementById('in-place-countdown-box');
+                if (countdownBox) countdownBox.classList.add('hidden');
+
+                if (calledNumbersList.length > 0) {
+                    displayCalledBall(calledNumbersList[calledNumbersList.length - 1]);
+                }
+                renderVerticalBoard();
+                renderPlayerDualCards();
+            } else if (currentGamePhase === 'ended') {
+                document.getElementById('card-selection-section').classList.add('hidden');
+                document.getElementById('live-game-section').classList.remove('hidden');
+                setGameStatePhase('ended');
+                renderVerticalBoard();
+                renderPlayerDualCards();
+            } else {
+                // 'waiting'
+                if (confirmedCards.length > 0) {
+                    document.getElementById('card-selection-section').classList.remove('hidden');
+                    document.getElementById('live-game-section').classList.add('hidden');
+                    renderCardSelectionPreviews();
+                } else {
+                    document.getElementById('card-selection-section').classList.remove('hidden');
+                    document.getElementById('live-game-section').classList.add('hidden');
+                }
+                generate500CardGrid();
+                renderVerticalBoard();
+                renderPlayerDualCards();
+            }
+        }
 
         function renderPlayersAndDerash(playersCount, prizeValue = null) {
             const parsedCount = Math.max(1, parseInt(playersCount, 10) || 1);
@@ -823,6 +881,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            enforceHubVisualIsolation();
+
             setTimeout(() => {
                 if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
                     let realTgId = String(window.Telegram.WebApp.initDataUnsafe.user.id);
@@ -970,21 +1030,24 @@
             });
 
             socket.on('updateTakenCards', (takenList) => {
-                takenCardsByOthers = takenList;
-                generate500CardGrid();
+                takenCardsByOthers = Array.isArray(takenList) ? takenList : [];
+                if (activeScreenContext === 'bingo') {
+                    generate500CardGrid();
+                }
             });
 
             socket.on('syncGameState', (room) => {
+                if (!room) return;
                 if (room.gameStartTime) gameStartTimeServer = room.gameStartTime;
-                if (room && (currentGamePhase !== 'drawing' || !room.gameActive)) {
+                if (currentGamePhase !== 'drawing' || !room.gameActive) {
                     renderPlayersAndDerash(room.playersCount, room.prize);
                 }
 
                 if (!room.gameActive) {
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
-                        if (myData && myData.cards) {
-                            confirmedCards = myData.cards;
+                        if (myData && Array.isArray(myData.cards) && myData.cards.length > 0) {
+                            confirmedCards = myData.cards.map(Number);
                             userSelectedCards = [...confirmedCards];
                             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
                             
@@ -993,27 +1056,21 @@
                                 cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
                                 cBtn.innerText = "✨ ካርድ ተረጋግጧል";
                             }
-
-                            renderPlayerDualCards();
                         }
                     }
                 }
 
                 if (room.gameActive) {
                     calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
-                    document.getElementById('stat-called-count').innerText = calledNumbersList.length;
                     setGameStatePhase('drawing');
-                    renderPlayerDualCards();
-                    
-                    document.getElementById('card-selection-section').classList.add('hidden');
-                    document.getElementById('live-game-section').classList.remove('hidden');
                 } else {
                     setGameStatePhase('waiting');
-                    if (confirmedCards.length === 0) {
-                        generate500CardGrid();
-                        document.getElementById('card-selection-section').classList.remove('hidden');
-                        document.getElementById('live-game-section').classList.add('hidden');
-                    }
+                }
+
+                if (activeScreenContext === 'bingo') {
+                    syncBingoGameScreenFromState();
+                } else {
+                    enforceHubVisualIsolation();
                 }
             });
 
@@ -1023,29 +1080,41 @@
                 if (data && data.playersCount !== undefined) {
                     renderPlayersAndDerash(data.playersCount, data.prize);
                 }
-                renderPlayerDualCards();
-                document.getElementById('card-selection-section').classList.add('hidden');
-                document.getElementById('live-game-section').classList.remove('hidden');
+
+                if (activeScreenContext === 'bingo') {
+                    syncBingoGameScreenFromState();
+                } else {
+                    enforceHubVisualIsolation();
+                }
             });
 
             socket.on('numberCalled', (data) => {
                 if (currentGamePhase !== 'drawing') {
                     setGameStatePhase('drawing');
                 }
-                let num = Number(data.number);
-                let cleanCalledList = calledNumbersList.map(n => Number(n));
-                if (!cleanCalledList.includes(num)) calledNumbersList.push(num);
-                displayCalledBall(num);
-                document.getElementById('stat-called-count').innerText = calledNumbersList.length;
-                renderVerticalBoard();
-                renderPlayerDualCards();
-                
-                if (!isAudioMuted) playCalledNumberAudio(num);
+                if (Array.isArray(data.calledNumbers) && data.calledNumbers.length > 0) {
+                    calledNumbersList = data.calledNumbers.map(Number);
+                } else if (data.number !== undefined) {
+                    let num = Number(data.number);
+                    if (!calledNumbersList.includes(num)) calledNumbersList.push(num);
+                }
+
+                const latestNum = calledNumbersList.length > 0 ? calledNumbersList[calledNumbersList.length - 1] : Number(data.number);
+
+                if (activeScreenContext === 'bingo') {
+                    displayCalledBall(latestNum);
+                    document.getElementById('stat-called-count').innerText = calledNumbersList.length;
+                    renderVerticalBoard();
+                    renderPlayerDualCards();
+                    if (!isAudioMuted && latestNum) playCalledNumberAudio(latestNum);
+                } else {
+                    enforceHubVisualIsolation();
+                }
             });
 
             socket.on('roundEnded', (data) => {
                 setGameStatePhase('ended');
-                gameStartTimeServer = Date.now() + (data.nextGameIn || 60000);
+                gameStartTimeServer = Date.now() + ((data && data.nextGameIn) || 60000);
                 
                 localStorage.removeItem(userSavedCardsKey);
                 localStorage.removeItem(userCurrentRoundPaidKey);
@@ -1099,10 +1168,18 @@
 
             socket.on('bingoWinner', (data) => {
                 setGameStatePhase('ended');
+
+                if (activeScreenContext !== 'bingo') {
+                    enforceHubVisualIsolation();
+                    return;
+                }
+
                 try {
                     const winSound = new Audio('/sound/bingo_win.mp3');
                     currentAudioObj = winSound;
-                    winSound.play().catch(e => console.log("Audio play blocked:", e));
+                    if (!isAudioMuted) {
+                        winSound.play().catch(e => console.log("Audio play blocked:", e));
+                    }
                 } catch (err) {}
 
                 const winnerModal = document.getElementById('winner-modal');
@@ -1221,6 +1298,7 @@
 
         function selectGame(gameKey) {
             if (gameKey === 'bingo') {
+                activeScreenContext = 'bingo';
                 document.getElementById('view-hub').classList.add('hidden');
                 document.getElementById('header-title').innerHTML = `<span>🎯</span> AZ Bingo`;
                 document.getElementById('stats-bar-section').classList.remove('hidden');
@@ -1229,17 +1307,16 @@
                 document.getElementById('bottom-nav').classList.add('grid');
                 
                 switchTab('game', document.querySelector('.nav-btn'));
+                syncBingoGameScreenFromState();
             }
         }
 
         function returnToHub() {
+            activeScreenContext = 'hub';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('view-hub').classList.remove('hidden');
             document.getElementById('header-title').innerHTML = `<span>🎯</span> AZ GAMING HUB`;
-            document.getElementById('stats-bar-section').classList.add('hidden');
-            document.getElementById('stats-bar-section').classList.remove('grid');
-            document.getElementById('bottom-nav').classList.add('hidden');
-            document.getElementById('bottom-nav').classList.remove('grid');
+            enforceHubVisualIsolation();
             updateWalletUI();
         }
 
@@ -1501,10 +1578,10 @@
                     bigTimerEl.innerText = `${timeLeft}s`;
                 }
 
-                if (timeLeft <= 5 && confirmedCards.length > 0 && currentGamePhase !== 'waiting') {
+                if (activeScreenContext === 'bingo' && timeLeft <= 2 && currentGamePhase !== 'waiting') {
                     const cardSec = document.getElementById('card-selection-section');
                     const liveSec = document.getElementById('live-game-section');
-                    if (cardSec && !cardSec.classList.contains('hidden')) {
+                    if (cardSec && liveSec && !cardSec.classList.contains('hidden')) {
                         cardSec.classList.add('hidden');
                         liveSec.classList.remove('hidden');
                     }
@@ -1522,7 +1599,7 @@
         }
 
         function playCalledNumberAudio(num) {
-            if (isAudioMuted) return;
+            if (isAudioMuted || activeScreenContext !== 'bingo') return;
             try {
                 if (currentAudioObj) {
                     currentAudioObj.pause();
@@ -1624,10 +1701,14 @@
             if (grid) grid.innerHTML = `<div class="col-span-8 text-center text-amber-400 text-xs py-10 font-bold">አዲስ ዙር ካርዶች እየተዘጋጁ ነው...</div>`;
 
             setTimeout(() => {
-                document.getElementById('card-selection-section').classList.remove('hidden');
-                document.getElementById('live-game-section').classList.add('hidden');
-                generate500CardGrid();
-                renderCardSelectionPreviews();
+                if (activeScreenContext === 'bingo') {
+                    document.getElementById('card-selection-section').classList.remove('hidden');
+                    document.getElementById('live-game-section').classList.add('hidden');
+                    generate500CardGrid();
+                    renderCardSelectionPreviews();
+                } else {
+                    enforceHubVisualIsolation();
+                }
             }, 1000);
 
             renderPlayerDualCards();
@@ -1957,6 +2038,7 @@
 
         function openAdminPanel() {
             if (!isAdmin) { alert("⚠️ ይቅርታ! ፈቃድ የለዎትም!"); return; }
+            activeScreenContext = 'bingo';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-admin-panel').classList.remove('hidden');
             requestRealUsersList();
@@ -1964,6 +2046,7 @@
         }
 
         let switchTab = function(tabId, btn) {
+            activeScreenContext = 'bingo';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => {
@@ -1973,6 +2056,9 @@
             if(btn) {
                 btn.classList.remove('text-gray-400', 'bg-white/5', 'border-white/10');
                 btn.classList.add('text-amber-400', 'bg-blue-950/60', 'border-amber-500/40');
+            }
+            if (tabId === 'game') {
+                syncBingoGameScreenFromState();
             }
         }
     </script>
