@@ -276,10 +276,9 @@ const WINNING_LINES_ALL = [
 
 const MAX_ALLOWED_HITS_PER_LINE = 3;
 const MAX_STANDARD_BOT_CALLS = 24;
-const EMPTY_CARD_GRACE_MS = 3000;
-const BOT_CARD_STEP_INTERVAL_MS = 4500;
-const INITIAL_BURST_RATIO = 0.70;
-const SLOW_TRANSITION_RATIO = 0.10;
+const EMPTY_CARD_GRACE_MS = 3500;
+const BOT_TICK_INTERVAL_MS = 3500;
+const TEN_PERCENT_FLICKER_RATIO = 0.10;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -291,7 +290,6 @@ let globalRoom = {
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
     emptyCardGraceUntil: 0,
-    initialBurstApplied: false,
     playersCount: 140,
     lockedRoundPlayersCount: null,
     lockedRoundPrize: null,
@@ -530,63 +528,16 @@ function pickAvailableCardNumber(excludedSet) {
     return available[randIdx];
 }
 
-function seedInitialSeventyPercentBurst(neededBotCards, realTakenSet) {
-    globalRoom.botTakenCards = [];
-    let initialBurstCount = Math.min(
-        neededBotCards,
-        Math.max(1, Math.round(neededBotCards * INITIAL_BURST_RATIO))
-    );
-
-    for (let i = 0; i < initialBurstCount; i++) {
-        let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
-        let picked = pickAvailableCardNumber(currentTakenSet);
-        if (picked !== null) {
-            globalRoom.botTakenCards.push(picked);
-        }
-    }
-    globalRoom.initialBurstApplied = true;
-}
-
-function stepTenPercentSlowTransition(neededBotCards, realTakenSet) {
-    let tenPercentCap = Math.min(
-        neededBotCards,
-        Math.round(neededBotCards * (INITIAL_BURST_RATIO + SLOW_TRANSITION_RATIO))
-    );
-
-    if (globalRoom.botTakenCards.length < tenPercentCap) {
-        let addStep = Math.min(tenPercentCap - globalRoom.botTakenCards.length, 1);
-        for (let i = 0; i < addStep; i++) {
-            let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
-            let picked = pickAvailableCardNumber(currentTakenSet);
-            if (picked !== null) {
-                globalRoom.botTakenCards.push(picked);
-            }
-        }
-    }
-
-    let tenPercentWindowSize = Math.max(1, Math.round(neededBotCards * SLOW_TRANSITION_RATIO));
-    let poolStartIdx = Math.max(0, globalRoom.botTakenCards.length - tenPercentWindowSize);
-    if (globalRoom.botTakenCards.length > poolStartIdx && Math.random() < 0.65) {
-        let swapIdx = poolStartIdx + Math.floor(Math.random() * (globalRoom.botTakenCards.length - poolStartIdx));
-        let removed = globalRoom.botTakenCards.splice(swapIdx, 1)[0];
-        if (removed !== undefined) {
-            let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
-            let replacement = pickAvailableCardNumber(currentTakenSet);
-            if (replacement !== null) {
-                globalRoom.botTakenCards.push(replacement);
-            }
-        }
-    }
-}
-
-function syncBotCardsToPlayersCount() {
+function syncBotCardsToPlayersCount(allowGradualStep = false) {
     if (enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) {
         globalRoom.botTakenCards = [];
         return;
     }
 
     let realTakenSet = getRealTakenCardSet();
-    globalRoom.botTakenCards = globalRoom.botTakenCards.filter(c => !realTakenSet.has(Number(c)));
+    globalRoom.botTakenCards = Array.from(new Set(
+        globalRoom.botTakenCards.map(Number).filter(c => c >= 1 && c <= 500 && !realTakenSet.has(c))
+    ));
 
     let targetTotalCards = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
     let neededBotCards = Math.max(0, targetTotalCards - realTakenSet.size);
@@ -595,10 +546,49 @@ function syncBotCardsToPlayersCount() {
         globalRoom.botTakenCards = globalRoom.botTakenCards.slice(0, neededBotCards);
     }
 
-    if (!globalRoom.initialBurstApplied && neededBotCards > 0) {
-        seedInitialSeventyPercentBurst(neededBotCards, realTakenSet);
-    } else if (neededBotCards > 0) {
-        stepTenPercentSlowTransition(neededBotCards, realTakenSet);
+    if (neededBotCards <= 0) {
+        globalRoom.botTakenCards = [];
+        return;
+    }
+
+    if (globalRoom.botTakenCards.length === 0) {
+        let initialCount = Math.min(neededBotCards, Math.max(2, Math.min(6, Math.ceil(neededBotCards * 0.08))));
+        for (let i = 0; i < initialCount; i++) {
+            let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+            let picked = pickAvailableCardNumber(takenNow);
+            if (picked !== null) globalRoom.botTakenCards.push(picked);
+        }
+        return;
+    }
+
+    if (allowGradualStep) {
+        let tenPercentPoolSize = Math.max(1, Math.round(neededBotCards * TEN_PERCENT_FLICKER_RATIO));
+
+        if (globalRoom.botTakenCards.length < neededBotCards) {
+            let stepAdd = Math.min(
+                neededBotCards - globalRoom.botTakenCards.length,
+                Math.max(1, Math.min(tenPercentPoolSize, Math.ceil(neededBotCards * 0.03)))
+            );
+            for (let i = 0; i < stepAdd; i++) {
+                let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+                let picked = pickAvailableCardNumber(takenNow);
+                if (picked !== null) globalRoom.botTakenCards.push(picked);
+            }
+        }
+
+        if (globalRoom.botTakenCards.length > 1 && Math.random() < 0.7) {
+            let windowStart = Math.max(0, globalRoom.botTakenCards.length - tenPercentPoolSize);
+            let removeIdx = windowStart + Math.floor(Math.random() * (globalRoom.botTakenCards.length - windowStart));
+            let removed = globalRoom.botTakenCards.splice(removeIdx, 1)[0];
+
+            if (removed !== undefined && (globalRoom.botTakenCards.length < neededBotCards || Math.random() < 0.65)) {
+                let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+                let replacement = pickAvailableCardNumber(takenNow);
+                if (replacement !== null) {
+                    globalRoom.botTakenCards.push(replacement);
+                }
+            }
+        }
     }
 }
 
@@ -639,7 +629,7 @@ function updateRoomPlayersAndPot(forceBroadcast = true) {
             prize: currentPrize,
             locked: false
         });
-        refreshTakenCardsList();
+        refreshTakenCardsList(false);
     }
 }
 
@@ -649,7 +639,7 @@ setInterval(() => {
     }
 }, 4000);
 
-function refreshTakenCardsList() {
+function refreshTakenCardsList(allowGradualStep = false) {
     if (isInEmptyCardGracePeriod()) {
         globalRoom.botTakenCards = [];
         globalRoom.takenCards = [];
@@ -657,7 +647,7 @@ function refreshTakenCardsList() {
         return;
     }
 
-    syncBotCardsToPlayersCount();
+    syncBotCardsToPlayersCount(allowGradualStep);
 
     let allTaken = [...globalRoom.botTakenCards];
     Object.values(globalRoom.playerRoundCards).forEach(p => {
@@ -672,10 +662,10 @@ function refreshTakenCardsList() {
 
 function simulateBotCardSelections() {
     if (globalRoom.gameActive || enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) return;
-    refreshTakenCardsList();
+    refreshTakenCardsList(true);
 }
 
-setInterval(simulateBotCardSelections, BOT_CARD_STEP_INTERVAL_MS);
+setInterval(simulateBotCardSelections, BOT_TICK_INTERVAL_MS);
 
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser, playersCountForRound) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
@@ -773,7 +763,6 @@ function startMainGameLoop() {
         if (timeLeft <= 0 && !globalRoom.gameActive && !isFinishingRound) {
             globalRoom.gameActive = true;
             globalRoom.emptyCardGraceUntil = 0;
-            globalRoom.initialBurstApplied = false;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
 
@@ -1067,7 +1056,6 @@ function endRoundAndRestart() {
     globalRoom.playerTemporaryCards = {};
     globalRoom.botTakenCards = [];
     globalRoom.takenCards = [];
-    globalRoom.initialBurstApplied = false;
     globalRoom.emptyCardGraceUntil = Date.now() + EMPTY_CARD_GRACE_MS;
 
     globalRoom.gameStartTime = Date.now() + 60000;
@@ -1075,12 +1063,12 @@ function endRoundAndRestart() {
 
     io.emit('roundEnded', { nextGameIn: 60000 });
     io.emit('gameEndedBroadcast');
-    refreshTakenCardsList();
+    refreshTakenCardsList(false);
     updateRoomPlayersAndPot(true);
 
     setTimeout(() => {
         if (!globalRoom.gameActive && !isFinishingRound) {
-            refreshTakenCardsList();
+            refreshTakenCardsList(true);
             updateRoomPlayersAndPot(true);
         }
     }, EMPTY_CARD_GRACE_MS + 50);
@@ -1518,7 +1506,7 @@ io.on('connection', (socket) => {
             ? globalRoom.lockedRoundPrize
             : Math.floor((globalRoom.playersCount * 10) * 0.90)
     });
-    refreshTakenCardsList();
+    refreshTakenCardsList(false);
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
     socket.emit('telebirrConfigUpdated', telebirrConfig);
@@ -1578,7 +1566,7 @@ io.on('connection', (socket) => {
             socket.emit('updateBalance', { balance: userWallets[userId] });
             socket.emit('referralData', { referralLink: myReferralLink, totalEarnings: myTotalEarnings });
 
-            refreshTakenCardsList();
+            refreshTakenCardsList(false);
             if (!globalRoom.gameActive) {
                 updateRoomPlayersAndPot(true);
             }
@@ -1785,7 +1773,7 @@ io.on('connection', (socket) => {
     socket.on('tempSelectCards', (cards) => {
         if (Array.isArray(cards)) {
             globalRoom.playerTemporaryCards[socket.id] = cards;
-            refreshTakenCardsList();
+            refreshTakenCardsList(false);
         }
     });
 
@@ -1835,7 +1823,7 @@ io.on('connection', (socket) => {
                 delete globalRoom.playerTemporaryCards[socket.id];
             }
 
-            refreshTakenCardsList();
+            refreshTakenCardsList(false);
             if (!globalRoom.gameActive) {
                 updateRoomPlayersAndPot(true);
             }
@@ -1946,7 +1934,7 @@ io.on('connection', (socket) => {
         }
         delete globalRoom.playerTemporaryCards[socket.id];
 
-        refreshTakenCardsList();
+        refreshTakenCardsList(false);
         if (!globalRoom.gameActive) {
             updateRoomPlayersAndPot(true);
         }
