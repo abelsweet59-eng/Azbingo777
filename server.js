@@ -290,6 +290,7 @@ let globalRoom = {
     lockedRoundPlayersCount: null,
     lockedRoundPrize: null,
     takenCards: [],
+    botTakenCards: [],
     playerRoundCards: {},
     playerTemporaryCards: {},
     lastCalledNumber: null,
@@ -498,6 +499,45 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     return lastSmoothCount;
 }
 
+function syncBotCardsToPlayersCount() {
+    if (enableOnlyRealUsersMode) {
+        globalRoom.botTakenCards = [];
+        return;
+    }
+
+    let realTakenSet = new Set();
+    Object.values(globalRoom.playerRoundCards).forEach(p => {
+        if (p && Array.isArray(p.cards)) p.cards.forEach(c => realTakenSet.add(Number(c)));
+    });
+    Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
+        if (Array.isArray(cards)) cards.forEach(c => realTakenSet.add(Number(c)));
+    });
+
+    globalRoom.botTakenCards = globalRoom.botTakenCards.filter(c => !realTakenSet.has(Number(c)));
+
+    let targetTotalCards = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
+    let neededBotCards = Math.max(0, targetTotalCards - realTakenSet.size);
+
+    if (globalRoom.botTakenCards.length > neededBotCards) {
+        globalRoom.botTakenCards = globalRoom.botTakenCards.slice(0, neededBotCards);
+    }
+
+    if (globalRoom.botTakenCards.length < neededBotCards) {
+        let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+        let available = [];
+        for (let i = 1; i <= 500; i++) {
+            if (!currentTakenSet.has(i)) available.push(i);
+        }
+
+        let toAddCount = neededBotCards - globalRoom.botTakenCards.length;
+        for (let i = 0; i < toAddCount && available.length > 0; i++) {
+            let randIdx = Math.floor(Math.random() * available.length);
+            let picked = available.splice(randIdx, 1)[0];
+            globalRoom.botTakenCards.push(picked);
+        }
+    }
+}
+
 function updateRoomPlayersAndPot(forceBroadcast = true) {
     if (globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null) {
         globalRoom.playersCount = globalRoom.lockedRoundPlayersCount;
@@ -514,16 +554,17 @@ function updateRoomPlayersAndPot(forceBroadcast = true) {
     let realCount = connectedRealPlayers.length;
     let activeRealEntries = Object.entries(globalRoom.playerRoundCards).filter(([sId, data]) => data.cards && data.cards.length > 0);
 
+    let uniqueRealCardsCount = 0;
+    activeRealEntries.forEach(([sId, data]) => {
+        if (data.cards) uniqueRealCardsCount += data.cards.length;
+    });
+
     if (enableOnlyRealUsersMode) {
-        let uniqueRealCardsCount = 0;
-        activeRealEntries.forEach(([sId, data]) => {
-            if (data.cards) uniqueRealCardsCount += data.cards.length;
-        });
         globalRoom.playersCount = uniqueRealCardsCount > 0 ? uniqueRealCardsCount : activeRealEntries.length;
         if (globalRoom.playersCount === 0) globalRoom.playersCount = realCount > 0 ? realCount : 1;
     } else {
         let currentBotsCount = getRealisticBotsCount(realCount, false);
-        globalRoom.playersCount = Math.max(1, currentBotsCount);
+        globalRoom.playersCount = Math.min(500, Math.max(1, currentBotsCount + uniqueRealCardsCount));
     }
 
     let currentPrize = Math.floor((globalRoom.playersCount * 10) * 0.90);
@@ -534,6 +575,7 @@ function updateRoomPlayersAndPot(forceBroadcast = true) {
             prize: currentPrize,
             locked: false
         });
+        refreshTakenCardsList();
     }
 }
 
@@ -544,12 +586,14 @@ setInterval(() => {
 }, 4000);
 
 function refreshTakenCardsList() {
-    let allTaken = [];
+    syncBotCardsToPlayersCount();
+
+    let allTaken = [...globalRoom.botTakenCards];
     Object.values(globalRoom.playerRoundCards).forEach(p => {
-        if (p.cards) allTaken.push(...p.cards);
+        if (p && Array.isArray(p.cards)) allTaken.push(...p.cards.map(Number));
     });
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
-        if (cards) allTaken.push(...cards);
+        if (Array.isArray(cards)) allTaken.push(...cards.map(Number));
     });
     globalRoom.takenCards = Array.from(new Set(allTaken));
     io.emit('updateTakenCards', globalRoom.takenCards);
@@ -557,19 +601,7 @@ function refreshTakenCardsList() {
 
 function simulateBotCardSelections() {
     if (globalRoom.gameActive || enableOnlyRealUsersMode) return;
-    let available = [];
-    for (let i = 1; i <= 500; i++) {
-        if (!globalRoom.takenCards.includes(i)) available.push(i);
-    }
-    let botPicksCount = Math.floor(Math.random() * 15) + 10;
-    for (let i = 0; i < botPicksCount && available.length > 0; i++) {
-        let randIdx = Math.floor(Math.random() * available.length);
-        let cardToTake = available.splice(randIdx, 1)[0];
-        if (!globalRoom.takenCards.includes(cardToTake)) {
-            globalRoom.takenCards.push(cardToTake);
-        }
-    }
-    io.emit('updateTakenCards', globalRoom.takenCards);
+    refreshTakenCardsList();
 }
 
 setInterval(simulateBotCardSelections, 6000);
@@ -960,6 +992,7 @@ function endRoundAndRestart() {
 
     globalRoom.playerRoundCards = {};
     globalRoom.playerTemporaryCards = {};
+    globalRoom.botTakenCards = [];
     globalRoom.takenCards = [];
 
     globalRoom.gameStartTime = Date.now() + 60000;
