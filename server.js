@@ -274,8 +274,8 @@ const WINNING_LINES_ALL = [
     [0,4,20,24]
 ];
 
-const MAX_ALLOWED_HITS_PER_LINE = 2;
-const MAX_STANDARD_BOT_CALLS = 18;
+const MAX_ALLOWED_HITS_PER_LINE = 3;
+const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
 
 function getRandomBotNames(count) {
