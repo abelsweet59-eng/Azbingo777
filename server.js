@@ -1489,26 +1489,32 @@ io.on('connection', (socket) => {
             }
         }
     });
-
     socket.on('adminBroadcastMessage', async (data) => {
-        let messageText = data ? data.message : null;
+        let messageText = data && data.message ? String(data.message).trim() : null;
 
         if (!messageText) {
             socket.emit('adminBroadcastResponse', { success: false, message: "⚠️ እባክዎ የሚላከውን መልእክት ይጻፉ!" });
             return;
         }
 
-        let allUserIds = [...allRegisteredUsers];
+        const allKnownIds = new Set([
+            ...allRegisteredUsers,
+            ...Object.keys(userWallets || {}),
+            ...claimedWelcomeBonusUsers,
+            ...Object.keys(userReferrers || {}),
+            ...Object.values(userReferrers || {})
+        ]);
+
+        const allUserIds = [...allKnownIds].filter(id => /^\d+$/.test(String(id).trim()));
 
         (async () => {
             for (let uId of allUserIds) {
                 try {
                     await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                         chat_id: uId,
-                        text: `📢 *AZ BINGO - ማስታወቂያ*\n\n${messageText}`,
-                        parse_mode: 'Markdown'
+                        text: `📢 AZ BINGO - ማስታወቂያ\n\n${messageText}`
                     });
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    await new Promise(resolve => setTimeout(resolve, 150));
                 } catch (e) {}
             }
         })();
