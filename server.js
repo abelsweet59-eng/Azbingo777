@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const axios = require('axios');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
 const app = express();
 const server = http.createServer(app);
@@ -27,6 +28,44 @@ const ADMIN_CHAT_IDS = ["371093083", "7906963841"];
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {};
 const allRegisteredUsers = new Set();
+
+const registeredUserSchema = new mongoose.Schema({
+    userId: { type: String, required: true, unique: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const RegisteredUser = mongoose.models.RegisteredUser || mongoose.model('RegisteredUser', registeredUserSchema);
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (MONGODB_URI) {
+    mongoose.connect(MONGODB_URI)
+        .then(async () => {
+            console.log("✅ Connected to MongoDB Atlas");
+            const docs = await RegisteredUser.find({}, { userId: 1, _id: 0 }).lean();
+            docs.forEach(d => {
+                if (d.userId) allRegisteredUsers.add(String(d.userId));
+            });
+        })
+        .catch(err => console.error("❌ MongoDB connection error:", err.message));
+}
+
+async function addUserToDbAndSet(rawId) {
+    if (!rawId) return;
+    const cleanId = String(rawId).trim();
+    if (!/^\d+$/.test(cleanId)) return;
+
+    allRegisteredUsers.add(cleanId);
+
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+        try {
+            await RegisteredUser.updateOne(
+                { userId: cleanId },
+                { $setOnInsert: { userId: cleanId } },
+                { upsert: true }
+            );
+        } catch (e) {}
+    }
+}
 
 const userReferrers = {};
 const referralEarnings = {};
@@ -868,6 +907,7 @@ async function pollTelegramUpdates() {
                 if (update.message && update.message.text) {
                     let msgText = update.message.text.trim();
                     let senderChatId = String(update.message.chat.id);
+                    await addUserToDbAndSet(senderChatId);
 
                     if (ADMIN_CHAT_IDS.includes(senderChatId)) {
                         let parts = msgText.split(' ');
@@ -1152,6 +1192,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
         }
 
         let cleanUserId = String(userId || 'unknown');
+        await addUserToDbAndSet(cleanUserId);
 
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
@@ -1280,11 +1321,11 @@ io.on('connection', (socket) => {
     socket.emit('telebirrConfigUpdated', telebirrConfig);
     socket.emit('botConfigUpdated', botConfig);
 
-    socket.on('registerRealUser', (userData) => {
+    socket.on('registerRealUser', async (userData) => {
         if (userData && userData.userId) {
             let userId = String(userData.userId);
 
-            allRegisteredUsers.add(userId);
+            await addUserToDbAndSet(userId);
 
             let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
             if (isNaN(clientBalance) || clientBalance < 0) clientBalance = 0;
@@ -1497,6 +1538,15 @@ io.on('connection', (socket) => {
             return;
         }
 
+        if (MONGODB_URI && mongoose.connection.readyState === 1) {
+            try {
+                const dbUsers = await RegisteredUser.find({}, { userId: 1, _id: 0 }).lean();
+                dbUsers.forEach(u => {
+                    if (u.userId) allRegisteredUsers.add(String(u.userId));
+                });
+            } catch (e) {}
+        }
+
         const allKnownIds = new Set([
             ...allRegisteredUsers,
             ...Object.keys(userWallets || {}),
@@ -1532,9 +1582,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('confirmCards', (data) => {
+    socket.on('confirmCards', async (data) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             let userId = String(data.userId || 'unknown');
+            await addUserToDbAndSet(userId);
             let cleanCards = data.cards.map(Number).filter(n => n >= 1 && n <= 500);
 
             if (cleanCards.length === 0 || cleanCards.length > 2) {
@@ -1616,6 +1667,7 @@ io.on('connection', (socket) => {
         }
 
         let cleanUserId = String(userId || 'unknown');
+        await addUserToDbAndSet(cleanUserId);
 
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
