@@ -35,7 +35,92 @@ const registeredUserSchema = new mongoose.Schema({
 });
 
 const RegisteredUser = mongoose.models.RegisteredUser || mongoose.model('RegisteredUser', registeredUserSchema);
+
+const userWalletSchema = new mongoose.Schema({
+    userId: { type: String, required: true, unique: true },
+    balance: { type: Number, default: 0 },
+    updatedAt: { type: Date, default: Date.now }
+});
+
+const UserWallet = mongoose.models.UserWallet || mongoose.model('UserWallet', userWalletSchema);
+
+const welcomeBonusClaimedSchema = new mongoose.Schema({
+    userId: { type: String, required: true, unique: true },
+    claimedAt: { type: Date, default: Date.now }
+});
+
+const WelcomeBonusClaimed = mongoose.models.WelcomeBonusClaimed || mongoose.model('WelcomeBonusClaimed', welcomeBonusClaimedSchema);
 const MONGODB_URI = process.env.MONGODB_URI;
+
+async function markWelcomeBonusClaimed(userId) {
+    if (!userId) return;
+    const cleanId = String(userId).trim();
+    if (!cleanId) return;
+
+    claimedWelcomeBonusUsers.add(cleanId);
+
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+        try {
+            await WelcomeBonusClaimed.updateOne(
+                { userId: cleanId },
+                { $setOnInsert: { userId: cleanId, claimedAt: new Date() } },
+                { upsert: true }
+            );
+        } catch (e) {}
+    }
+}
+
+async function loadClaimedWelcomeBonusUsersFromDb() {
+    if (!MONGODB_URI || mongoose.connection.readyState !== 1) return;
+    try {
+        const docs = await WelcomeBonusClaimed.find({}, { userId: 1, _id: 0 }).lean();
+        docs.forEach(d => {
+            if (d && d.userId) {
+                claimedWelcomeBonusUsers.add(String(d.userId).trim());
+            }
+        });
+    } catch (e) {}
+}
+
+async function saveWalletToDb(userId, balance) {
+    if (!userId) return;
+    const cleanId = String(userId).trim();
+    if (!cleanId) return;
+    const cleanBal = Number((Number(balance) || 0).toFixed(2));
+
+    if (MONGODB_URI && mongoose.connection.readyState === 1) {
+        try {
+            await UserWallet.updateOne(
+                { userId: cleanId },
+                { $set: { balance: cleanBal, updatedAt: new Date() } },
+                { upsert: true }
+            );
+        } catch (e) {}
+    }
+}
+
+async function setWalletBalance(userId, newBalance) {
+    if (!userId) return 0;
+    const cleanId = String(userId).trim();
+    const cleanBal = Number(Math.max(0, Number(newBalance) || 0).toFixed(2));
+    userWallets[cleanId] = cleanBal;
+    await saveWalletToDb(cleanId, cleanBal);
+    return cleanBal;
+}
+
+async function loadWalletsFromDb() {
+    if (!MONGODB_URI || mongoose.connection.readyState !== 1) return;
+    try {
+        const walletDocs = await UserWallet.find({}, { userId: 1, balance: 1, _id: 0 }).lean();
+        walletDocs.forEach(w => {
+            if (w && w.userId) {
+                const cleanId = String(w.userId).trim();
+                const parsedBal = Number(w.balance);
+                userWallets[cleanId] = Number.isFinite(parsedBal) ? Number(parsedBal.toFixed(2)) : 0;
+            }
+        });
+    } catch (e) {}
+}
 
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI)
@@ -45,6 +130,8 @@ if (MONGODB_URI) {
             docs.forEach(d => {
                 if (d.userId) allRegisteredUsers.add(String(d.userId));
             });
+            await loadWalletsFromDb();
+            await loadClaimedWelcomeBonusUsersFromDb();
         })
         .catch(err => console.error("❌ MongoDB connection error:", err.message));
 }
@@ -500,7 +587,7 @@ async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWi
     }
 }
 
-function announceWinnersAndFinish(winnersDataList) {
+async function announceWinnersAndFinish(winnersDataList) {
     if (!globalRoom.gameActive || isFinishingRound) return;
     isFinishingRound = true;
     globalRoom.gameActive = false;
@@ -541,11 +628,12 @@ function announceWinnersAndFinish(winnersDataList) {
     let prizePerWinner = Math.floor(roundTotalPrize / winnersCount);
     let hasRealWinner = sanitizedWinners.some(w => !w.isBot);
 
-    sanitizedWinners.forEach(w => {
+    for (let w of sanitizedWinners) {
         if (!w.isBot && w.userId) {
-            userWallets[w.userId] = Number(((userWallets[w.userId] || 0) + prizePerWinner).toFixed(2));
+            let nextBal = Number(((userWallets[w.userId] || 0) + prizePerWinner).toFixed(2));
+            await setWalletBalance(w.userId, nextBal);
         }
-    });
+    }
 
     sendWinnerNotificationToAdmin(winnerNamesStr, primaryCardNum, prizePerWinner, hasRealWinner, roundPlayersCount);
 
@@ -934,14 +1022,14 @@ async function pollTelegramUpdates() {
                         if ((cmd === '/bonus20' || cmd === '/bonus50') && targetUserId) {
                             let bonusAmount = cmd === '/bonus20' ? 20 : 50;
 
-                            userWallets[targetUserId] = Number(((userWallets[targetUserId] || 0) + bonusAmount).toFixed(2));
+                            let updatedBal = await setWalletBalance(targetUserId, (userWallets[targetUserId] || 0) + bonusAmount);
 
                             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
                             let bonusPayload = {
                                 type: 'bonus',
                                 amount: bonusAmount,
                                 adjustedAmount: bonusAmount,
-                                balance: userWallets[targetUserId]
+                                balance: updatedBal
                             };
 
                             if (targetUserSocketObj) {
@@ -1020,19 +1108,19 @@ async function pollTelegramUpdates() {
 
                     if (action === 'app') {
                         if (reqType === 'deposit' || reqType === 'bonus') {
-                            userWallets[reqData.userId] = Number(((userWallets[reqData.userId] || 0) + Math.abs(rawAmount)).toFixed(2));
+                            await setWalletBalance(reqData.userId, (userWallets[reqData.userId] || 0) + Math.abs(rawAmount));
 
                             let referrerId = userReferrers[reqData.userId];
                             if (referrerId) {
                                 let bonusForReferrer = 5;
-                                userWallets[referrerId] = Number(((userWallets[referrerId] || 0) + bonusForReferrer).toFixed(2));
+                                let updatedRefBal = await setWalletBalance(referrerId, (userWallets[referrerId] || 0) + bonusForReferrer);
                                 referralEarnings[referrerId] = Number(((referralEarnings[referrerId] || 0) + bonusForReferrer).toFixed(2));
 
                                 let refPayload = {
                                     type: 'bonus',
                                     amount: bonusForReferrer,
                                     adjustedAmount: bonusForReferrer,
-                                    balance: userWallets[referrerId]
+                                    balance: updatedRefBal
                                 };
 
                                 let refSocketObj = onlineRealUsers.find(u => u.userId === referrerId);
@@ -1102,7 +1190,7 @@ async function pollTelegramUpdates() {
 
                     } else {
                         if (reqType === 'withdraw' || reqType === 'withdrawal') {
-                            userWallets[reqData.userId] = Number(((userWallets[reqData.userId] || 0) + Math.abs(rawAmount)).toFixed(2));
+                            await setWalletBalance(reqData.userId, (userWallets[reqData.userId] || 0) + Math.abs(rawAmount));
                         }
 
                         if (reqData.chatId) {
@@ -1216,7 +1304,7 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             if (currentWalletBal < parsedAmount) {
                 return bodyRes.json({ success: false, message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
             }
-            userWallets[cleanUserId] = Number((currentWalletBal - parsedAmount).toFixed(2));
+            await setWalletBalance(cleanUserId, currentWalletBal - parsedAmount);
         }
 
         userLastRequestTimeMap[cleanUserId] = nowTime;
@@ -1326,12 +1414,14 @@ io.on('connection', (socket) => {
             let userId = String(userData.userId);
 
             await addUserToDbAndSet(userId);
+            await loadWalletsFromDb();
+            await loadClaimedWelcomeBonusUsersFromDb();
 
             let clientBalance = userData.balance !== undefined ? parseFloat(userData.balance) : 0;
             if (isNaN(clientBalance) || clientBalance < 0) clientBalance = 0;
 
             if (userWallets[userId] === undefined) {
-                userWallets[userId] = Number(clientBalance.toFixed(2));
+                await setWalletBalance(userId, clientBalance);
             }
 
             if (!globalRoom.gameActive) {
@@ -1348,15 +1438,15 @@ io.on('connection', (socket) => {
             onlineRealUsers.push({ socketId: socket.id, userId: userId, username: userData.username || 'No Username', fullName: userData.fullName || 'ተጫዋች' });
 
             if (!claimedWelcomeBonusUsers.has(userId) && userWallets[userId] === 0) {
-                claimedWelcomeBonusUsers.add(userId);
-                userWallets[userId] = Number((userWallets[userId] + 20).toFixed(2));
+                await markWelcomeBonusClaimed(userId);
+                let updatedWelcomeBal = await setWalletBalance(userId, (userWallets[userId] || 0) + 20);
                 socket.emit('welcomeBonusGranted', {
                     amount: 20,
-                    balance: userWallets[userId],
+                    balance: updatedWelcomeBal,
                     message: "እንኳን ደህና መጡ! የመጀመሪያ የአንድ ጊዜ የ20 ብር ቦነስ ተሰጥቷል!"
                 });
             } else {
-                claimedWelcomeBonusUsers.add(userId);
+                await markWelcomeBonusClaimed(userId);
             }
 
             if (offlineApprovedQueue[userId] && offlineApprovedQueue[userId].length > 0) {
@@ -1432,9 +1522,10 @@ io.on('connection', (socket) => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
     });
 
-    socket.on('adminCheckUserBalance', (data) => {
+    socket.on('adminCheckUserBalance', async (data) => {
         if (data && data.targetUserId) {
             let tId = String(data.targetUserId).trim();
+            await loadWalletsFromDb();
             let foundBalance = 0.00;
             if (userWallets[tId] !== undefined) {
                 foundBalance = parseFloat(userWallets[tId]);
@@ -1500,18 +1591,18 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('adminSendBonus', (data) => {
+    socket.on('adminSendBonus', async (data) => {
         if (socket.id) {
             let targetUserId = String(data.targetUserId).trim();
             let bonusAmount = Number(data.amount) || 20;
 
-            userWallets[targetUserId] = Number(((userWallets[targetUserId] || 0) + bonusAmount).toFixed(2));
+            let updatedBal = await setWalletBalance(targetUserId, (userWallets[targetUserId] || 0) + bonusAmount);
 
             let bonusPayload = {
                 type: 'bonus',
                 amount: bonusAmount,
                 adjustedAmount: bonusAmount,
-                balance: userWallets[targetUserId]
+                balance: updatedBal
             };
 
             let targetUserSocketObj = onlineRealUsers.find(u => u.userId === targetUserId);
@@ -1530,6 +1621,7 @@ io.on('connection', (socket) => {
             }
         }
     });
+
     socket.on('adminBroadcastMessage', async (data) => {
         let messageText = data && data.message ? String(data.message).trim() : null;
 
@@ -1600,7 +1692,7 @@ io.on('connection', (socket) => {
 
             if (userWallets[userId] === undefined) {
                 let initBal = (data.balance !== undefined && !isNaN(data.balance)) ? parseFloat(data.balance) : 0;
-                userWallets[userId] = Number(Math.max(0, initBal).toFixed(2));
+                await setWalletBalance(userId, Math.max(0, initBal));
             }
 
             let prevCards = (globalRoom.playerRoundCards[socket.id] && Array.isArray(globalRoom.playerRoundCards[socket.id].cards))
@@ -1617,7 +1709,7 @@ io.on('connection', (socket) => {
                 return;
             }
 
-            userWallets[userId] = Number(Math.max(0, currentBal - diffCost).toFixed(2));
+            let nextBal = await setWalletBalance(userId, Math.max(0, currentBal - diffCost));
 
             globalRoom.playerRoundCards[socket.id] = {
                 cards: cleanCards,
@@ -1633,8 +1725,8 @@ io.on('connection', (socket) => {
                 updateRoomPlayersAndPot(true);
             }
 
-            socket.emit('cardSelectionSuccess', { balance: userWallets[userId] });
-            socket.emit('updateBalance', { balance: userWallets[userId] });
+            socket.emit('cardSelectionSuccess', { balance: nextBal });
+            socket.emit('updateBalance', { balance: nextBal });
         }
     });
 
@@ -1696,8 +1788,8 @@ io.on('connection', (socket) => {
                 socket.emit('financialError', { message: "⚠️ በቂ ቀሪ ሂሳብ የለዎትም!" });
                 return;
             }
-            userWallets[cleanUserId] = Number((currentWalletBal - parsedAmount).toFixed(2));
-            socket.emit('updateBalance', { balance: userWallets[cleanUserId] });
+            let updatedWithdrawBal = await setWalletBalance(cleanUserId, currentWalletBal - parsedAmount);
+            socket.emit('updateBalance', { balance: updatedWithdrawBal });
         }
 
         let requestId = 'req_' + socket.id.substring(0, 5) + '_' + Math.floor(Math.random() * 1000000) + '_' + Date.now();
