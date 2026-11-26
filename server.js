@@ -306,12 +306,22 @@ let globalRoom = {
 let forcedNextWinner = null;
 let enableOnlyRealUsersMode = false;
 let onlineRealUsers = [];
+let bingoGameActiveSockets = new Set();
 let pendingRequests = {};
 let offlineApprovedQueue = {};
 let gameInterval = null;
 let numberCallInterval = null;
 let winGraceTimeout = null;
 let connectedRealPlayers = [];
+
+function emitToBingoGameViewers(eventName, payload) {
+    bingoGameActiveSockets.forEach(sId => {
+        const s = io.sockets.sockets.get(sId);
+        if (s) {
+            s.emit(eventName, payload);
+        }
+    });
+}
 
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -763,7 +773,7 @@ async function announceWinnersAndFinish(winnersDataList) {
         }
     });
 
-    io.emit('bingoWinner', {
+    const winnerPayload = {
         username: winnerNamesStr,
         userId: sanitizedWinners.find(w => !w.isBot)?.socketId || null,
         cardNum: primaryCardNum,
@@ -771,8 +781,12 @@ async function announceWinnersAndFinish(winnersDataList) {
         calledNumbers: globalRoom.calledNumbers,
         matchedIndices: matchedIndices,
         winnersCount: winnersCount,
-        playersCount: roundPlayersCount
-    });
+        playersCount: roundPlayersCount,
+        targetRoom: 'bingo_game',
+        requiresBingoGameActive: true
+    };
+
+    emitToBingoGameViewers('bingoWinner', winnerPayload);
 
     setTimeout(() => { endRoundAndRestart(); }, 6000);
 }
@@ -838,11 +852,11 @@ function startMainGameLoop() {
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
 
-                    io.emit('numberCalled', {
+                    emitToBingoGameViewers('numberCalled', {
                         number: Number(calledNum),
                         calledNumbers: globalRoom.calledNumbers
                     });
-                    io.emit('numberCalledBroadcast', Number(calledNum));
+                    emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
 
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
@@ -1002,11 +1016,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        io.emit('numberCalled', {
+                        emitToBingoGameViewers('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        io.emit('numberCalledBroadcast', Number(calledNum));
+                        emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
                     }
                     return;
                 }
@@ -1030,11 +1044,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        io.emit('numberCalled', {
+                        emitToBingoGameViewers('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        io.emit('numberCalledBroadcast', Number(calledNum));
+                        emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
                     }
 
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
@@ -1521,6 +1535,14 @@ io.on('connection', (socket) => {
         updateRoomPlayersAndPot(true);
     }
 
+    socket.on('enterBingoGame', () => {
+        bingoGameActiveSockets.add(socket.id);
+    });
+
+    socket.on('leaveBingoGame', () => {
+        bingoGameActiveSockets.delete(socket.id);
+    });
+
     socket.emit('syncGameState', {
         ...globalRoom,
         playersCount: globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
@@ -1951,6 +1973,7 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
+        bingoGameActiveSockets.delete(socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
 
         if (!globalRoom.gameActive) {
