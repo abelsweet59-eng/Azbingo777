@@ -306,37 +306,12 @@ let globalRoom = {
 let forcedNextWinner = null;
 let enableOnlyRealUsersMode = false;
 let onlineRealUsers = [];
-let bingoGameActiveSockets = new Set();
 let pendingRequests = {};
 let offlineApprovedQueue = {};
 let gameInterval = null;
 let numberCallInterval = null;
 let winGraceTimeout = null;
 let connectedRealPlayers = [];
-
-function emitToBingoGame(eventName, payload) {
-    bingoGameActiveSockets.forEach(sId => {
-        const s = io.sockets.sockets.get(sId);
-        if (s) {
-            s.emit(eventName, payload);
-        }
-    });
-}
-
-function getLiveBingoSnapshot() {
-    const playersCount = globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
-        ? globalRoom.lockedRoundPlayersCount
-        : globalRoom.playersCount;
-    const prize = globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
-        ? globalRoom.lockedRoundPrize
-        : Math.floor((globalRoom.playersCount * 10) * 0.90);
-
-    return {
-        ...globalRoom,
-        playersCount,
-        prize
-    };
-}
 
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -788,7 +763,7 @@ async function announceWinnersAndFinish(winnersDataList) {
         }
     });
 
-    emitToBingoGame('bingoWinner', {
+    io.emit('bingoWinner', {
         username: winnerNamesStr,
         userId: sanitizedWinners.find(w => !w.isBot)?.socketId || null,
         cardNum: primaryCardNum,
@@ -838,12 +813,12 @@ function startMainGameLoop() {
                 let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
-                emitToBingoGame('gameStarted', {
+                io.emit('gameStarted', {
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
                 });
-                emitToBingoGame('gameStartedBroadcast', {
+                io.emit('gameStartedBroadcast', {
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
@@ -867,11 +842,11 @@ function startMainGameLoop() {
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
 
-                    emitToBingoGame('numberCalled', {
+                    io.emit('numberCalled', {
                         number: Number(calledNum),
                         calledNumbers: globalRoom.calledNumbers
                     });
-                    emitToBingoGame('numberCalledBroadcast', Number(calledNum));
+                    io.emit('numberCalledBroadcast', Number(calledNum));
 
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
@@ -983,12 +958,12 @@ function startMainGameLoop() {
                 }
             });
 
-            emitToBingoGame('gameStarted', {
+            io.emit('gameStarted', {
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
             });
-            emitToBingoGame('gameStartedBroadcast', {
+            io.emit('gameStartedBroadcast', {
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
@@ -1035,11 +1010,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        emitToBingoGame('numberCalled', {
+                        io.emit('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        emitToBingoGame('numberCalledBroadcast', Number(calledNum));
+                        io.emit('numberCalledBroadcast', Number(calledNum));
                     }
                     return;
                 }
@@ -1063,11 +1038,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        emitToBingoGame('numberCalled', {
+                        io.emit('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        emitToBingoGame('numberCalledBroadcast', Number(calledNum));
+                        io.emit('numberCalledBroadcast', Number(calledNum));
                     }
 
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
@@ -1118,8 +1093,8 @@ function endRoundAndRestart() {
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
 
-    emitToBingoGame('roundEnded', { nextGameIn: 60000 });
-    emitToBingoGame('gameEndedBroadcast', { nextGameIn: 60000 });
+    io.emit('roundEnded', { nextGameIn: 60000 });
+    io.emit('gameEndedBroadcast', { nextGameIn: 60000 });
     refreshTakenCardsList(false);
     updateRoomPlayersAndPot(true);
 
@@ -1554,22 +1529,7 @@ io.on('connection', (socket) => {
         updateRoomPlayersAndPot(true);
     }
 
-    socket.on('enterBingoGame', (ackCallback) => {
-        bingoGameActiveSockets.add(socket.id);
-        const liveSnapshot = getLiveBingoSnapshot();
-        socket.emit('syncGameState', liveSnapshot);
-        if (typeof ackCallback === 'function') {
-            ackCallback({ ok: true, state: liveSnapshot });
-        }
-    });
-
-    socket.on('leaveBingoGame', (ackCallback) => {
-        bingoGameActiveSockets.delete(socket.id);
-        if (typeof ackCallback === 'function') {
-            ackCallback({ ok: true });
-        }
-    });
-
+    socket.emit('syncGameState', globalRoom);
     refreshTakenCardsList(false);
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
@@ -1634,9 +1594,7 @@ io.on('connection', (socket) => {
             if (!globalRoom.gameActive) {
                 updateRoomPlayersAndPot(true);
             }
-            if (bingoGameActiveSockets.has(socket.id)) {
-                socket.emit('syncGameState', getLiveBingoSnapshot());
-            }
+            socket.emit('syncGameState', globalRoom);
         }
     });
 
@@ -1985,7 +1943,6 @@ io.on('connection', (socket) => {
 
     socket.on('disconnect', () => {
         connectedRealPlayers = connectedRealPlayers.filter(id => id !== socket.id);
-        bingoGameActiveSockets.delete(socket.id);
         onlineRealUsers = onlineRealUsers.filter(u => u.socketId !== socket.id);
 
         if (!globalRoom.gameActive) {
