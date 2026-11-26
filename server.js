@@ -161,6 +161,7 @@ const userLastRequestTimeMap = {};
 let isDepositLocked = false;
 let isWithdrawLocked = false;
 let isFinishingRound = false;
+let roundCounter = 1;
 
 const configFilePath = path.join(__dirname, 'telebirr_config.json');
 let telebirrConfig = {
@@ -286,6 +287,7 @@ function getRandomBotNames(count) {
 }
 
 let globalRoom = {
+    roundId: `R-${roundCounter}`,
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
@@ -621,6 +623,7 @@ function updateRoomPlayersAndPot(forceBroadcast = true) {
         globalRoom.playersCount = globalRoom.lockedRoundPlayersCount;
         if (forceBroadcast) {
             io.emit('updatePlayersCount', {
+                roundId: globalRoom.roundId,
                 playersCount: globalRoom.playersCount,
                 prize: globalRoom.lockedRoundPrize,
                 locked: true
@@ -649,6 +652,7 @@ function updateRoomPlayersAndPot(forceBroadcast = true) {
 
     if (forceBroadcast) {
         io.emit('updatePlayersCount', {
+            roundId: globalRoom.roundId,
             playersCount: globalRoom.playersCount,
             prize: currentPrize,
             locked: false
@@ -764,6 +768,7 @@ async function announceWinnersAndFinish(winnersDataList) {
     });
 
     io.emit('bingoWinner', {
+        roundId: globalRoom.roundId,
         username: winnerNamesStr,
         userId: sanitizedWinners.find(w => !w.isBot)?.socketId || null,
         cardNum: primaryCardNum,
@@ -799,6 +804,7 @@ function startMainGameLoop() {
             globalRoom.playersCount = startPlayersCount;
 
             io.emit('updatePlayersCount', {
+                roundId: globalRoom.roundId,
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize,
                 locked: true
@@ -814,11 +820,13 @@ function startMainGameLoop() {
                 availableNumbers.sort(() => 0.5 - Math.random());
 
                 io.emit('gameStarted', {
+                    roundId: globalRoom.roundId,
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
                 });
                 io.emit('gameStartedBroadcast', {
+                    roundId: globalRoom.roundId,
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
@@ -843,6 +851,7 @@ function startMainGameLoop() {
                     globalRoom.lastCalledNumber = Number(calledNum);
 
                     io.emit('numberCalled', {
+                        roundId: globalRoom.roundId,
                         number: Number(calledNum),
                         calledNumbers: globalRoom.calledNumbers
                     });
@@ -959,11 +968,13 @@ function startMainGameLoop() {
             });
 
             io.emit('gameStarted', {
+                roundId: globalRoom.roundId,
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
             });
             io.emit('gameStartedBroadcast', {
+                roundId: globalRoom.roundId,
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
@@ -1011,6 +1022,7 @@ function startMainGameLoop() {
                         globalRoom.lastCalledNumber = Number(calledNum);
 
                         io.emit('numberCalled', {
+                            roundId: globalRoom.roundId,
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
@@ -1039,6 +1051,7 @@ function startMainGameLoop() {
                         globalRoom.lastCalledNumber = Number(calledNum);
 
                         io.emit('numberCalled', {
+                            roundId: globalRoom.roundId,
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
@@ -1076,6 +1089,10 @@ function startMainGameLoop() {
 function endRoundAndRestart() {
     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
     if (winGraceTimeout) { clearTimeout(winGraceTimeout); winGraceTimeout = null; }
+
+    roundCounter++;
+    globalRoom.roundId = `R-${roundCounter}`;
+
     globalRoom.gameActive = false;
     isFinishingRound = false;
     globalRoom.allowRealWinnerThisRound = false;
@@ -1093,8 +1110,8 @@ function endRoundAndRestart() {
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
 
-    io.emit('roundEnded', { nextGameIn: 60000 });
-    io.emit('gameEndedBroadcast', { nextGameIn: 60000 });
+    io.emit('roundEnded', { roundId: globalRoom.roundId, nextGameIn: 60000 });
+    io.emit('gameEndedBroadcast', { roundId: globalRoom.roundId, nextGameIn: 60000 });
     refreshTakenCardsList(false);
     updateRoomPlayersAndPot(true);
 
@@ -1844,7 +1861,7 @@ io.on('connection', (socket) => {
                 updateRoomPlayersAndPot(true);
             }
 
-            socket.emit('cardSelectionSuccess', { balance: nextBal });
+            socket.emit('cardSelectionSuccess', { roundId: globalRoom.roundId, balance: nextBal });
             socket.emit('updateBalance', { balance: nextBal });
         }
     });
