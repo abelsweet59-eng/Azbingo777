@@ -278,6 +278,7 @@ const MAX_ALLOWED_HITS_PER_LINE = 3;
 const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
 const BOT_TICK_INTERVAL_MS = 3500;
+const PROPORTIONAL_BASE_RATIO = 0.50;
 const TEN_PERCENT_FLICKER_RATIO = 0.10;
 
 function getRandomBotNames(count) {
@@ -539,21 +540,33 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
         globalRoom.botTakenCards.map(Number).filter(c => c >= 1 && c <= 500 && !realTakenSet.has(c))
     ));
 
-    let targetTotalCards = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
-    let neededBotCards = Math.max(0, targetTotalCards - realTakenSet.size);
+    let currentPlayersTotal = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
+    let proportionalTargetCards = Math.min(
+        500,
+        Math.max(realTakenSet.size, Math.round(currentPlayersTotal * PROPORTIONAL_BASE_RATIO))
+    );
+    let desiredBotCards = Math.max(0, proportionalTargetCards - realTakenSet.size);
 
-    if (globalRoom.botTakenCards.length > neededBotCards) {
-        globalRoom.botTakenCards = globalRoom.botTakenCards.slice(0, neededBotCards);
+    if (globalRoom.botTakenCards.length > desiredBotCards) {
+        let excess = globalRoom.botTakenCards.length - desiredBotCards;
+        let trimCount = allowGradualStep ? Math.max(1, Math.ceil(excess * 0.25)) : excess;
+        for (let i = 0; i < trimCount && globalRoom.botTakenCards.length > desiredBotCards; i++) {
+            let dropIdx = Math.floor(Math.random() * globalRoom.botTakenCards.length);
+            globalRoom.botTakenCards.splice(dropIdx, 1);
+        }
     }
 
-    if (neededBotCards <= 0) {
+    if (desiredBotCards <= 0) {
         globalRoom.botTakenCards = [];
         return;
     }
 
     if (globalRoom.botTakenCards.length === 0) {
-        let initialCount = Math.min(neededBotCards, Math.max(2, Math.min(6, Math.ceil(neededBotCards * 0.08))));
-        for (let i = 0; i < initialCount; i++) {
+        let initialSeedCount = Math.min(
+            desiredBotCards,
+            Math.max(2, Math.min(12, Math.ceil(desiredBotCards * 0.12)))
+        );
+        for (let i = 0; i < initialSeedCount; i++) {
             let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
             let picked = pickAvailableCardNumber(takenNow);
             if (picked !== null) globalRoom.botTakenCards.push(picked);
@@ -562,12 +575,12 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
     }
 
     if (allowGradualStep) {
-        let tenPercentPoolSize = Math.max(1, Math.round(neededBotCards * TEN_PERCENT_FLICKER_RATIO));
+        let tenPercentWindowSize = Math.max(1, Math.round(desiredBotCards * TEN_PERCENT_FLICKER_RATIO));
 
-        if (globalRoom.botTakenCards.length < neededBotCards) {
+        if (globalRoom.botTakenCards.length < desiredBotCards) {
             let stepAdd = Math.min(
-                neededBotCards - globalRoom.botTakenCards.length,
-                Math.max(1, Math.min(tenPercentPoolSize, Math.ceil(neededBotCards * 0.03)))
+                desiredBotCards - globalRoom.botTakenCards.length,
+                Math.max(1, Math.min(tenPercentWindowSize, Math.ceil(desiredBotCards * 0.04)))
             );
             for (let i = 0; i < stepAdd; i++) {
                 let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
@@ -576,12 +589,12 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
             }
         }
 
-        if (globalRoom.botTakenCards.length > 1 && Math.random() < 0.7) {
-            let windowStart = Math.max(0, globalRoom.botTakenCards.length - tenPercentPoolSize);
+        if (globalRoom.botTakenCards.length > 1 && Math.random() < 0.72) {
+            let windowStart = Math.max(0, globalRoom.botTakenCards.length - tenPercentWindowSize);
             let removeIdx = windowStart + Math.floor(Math.random() * (globalRoom.botTakenCards.length - windowStart));
             let removed = globalRoom.botTakenCards.splice(removeIdx, 1)[0];
 
-            if (removed !== undefined && (globalRoom.botTakenCards.length < neededBotCards || Math.random() < 0.65)) {
+            if (removed !== undefined && (globalRoom.botTakenCards.length < desiredBotCards || Math.random() < 0.65)) {
                 let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
                 let replacement = pickAvailableCardNumber(takenNow);
                 if (replacement !== null) {
