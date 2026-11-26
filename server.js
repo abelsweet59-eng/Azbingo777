@@ -323,6 +323,21 @@ function emitToBingoGameViewers(eventName, payload) {
     });
 }
 
+function getRoomStatePayload() {
+    const activePlayersCount = globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
+        ? globalRoom.lockedRoundPlayersCount
+        : globalRoom.playersCount;
+    const activePrize = globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
+        ? globalRoom.lockedRoundPrize
+        : Math.floor((globalRoom.playersCount * 10) * 0.90);
+
+    return {
+        ...globalRoom,
+        playersCount: activePlayersCount,
+        prize: activePrize
+    };
+}
+
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
     let colRanges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
@@ -827,12 +842,16 @@ function startMainGameLoop() {
                 let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
-                io.emit('gameStarted', {
+                emitToBingoGameViewers('gameStarted', {
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
                 });
-                io.emit('gameStartedBroadcast');
+                emitToBingoGameViewers('gameStartedBroadcast', {
+                    calledNumbers: [],
+                    playersCount: globalRoom.lockedRoundPlayersCount,
+                    prize: globalRoom.lockedRoundPrize
+                });
 
                 if (numberCallInterval) clearInterval(numberCallInterval);
 
@@ -968,12 +987,16 @@ function startMainGameLoop() {
                 }
             });
 
-            io.emit('gameStarted', {
+            emitToBingoGameViewers('gameStarted', {
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
             });
-            io.emit('gameStartedBroadcast');
+            emitToBingoGameViewers('gameStartedBroadcast', {
+                calledNumbers: [],
+                playersCount: globalRoom.lockedRoundPlayersCount,
+                prize: globalRoom.lockedRoundPrize
+            });
 
             if (numberCallInterval) clearInterval(numberCallInterval);
 
@@ -1099,8 +1122,8 @@ function endRoundAndRestart() {
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
 
-    io.emit('roundEnded', { nextGameIn: 60000 });
-    io.emit('gameEndedBroadcast');
+    emitToBingoGameViewers('roundEnded', { nextGameIn: 60000 });
+    emitToBingoGameViewers('gameEndedBroadcast', { nextGameIn: 60000 });
     refreshTakenCardsList(false);
     updateRoomPlayersAndPot(true);
 
@@ -1535,23 +1558,34 @@ io.on('connection', (socket) => {
         updateRoomPlayersAndPot(true);
     }
 
-    socket.on('enterBingoGame', () => {
+    socket.on('enterBingoGame', (ackCallback) => {
         bingoGameActiveSockets.add(socket.id);
+        const statePayload = getRoomStatePayload();
+        socket.emit('syncGameState', statePayload);
+        socket.emit('bingoGameEntered', {
+            ack: true,
+            gameActive: statePayload.gameActive,
+            calledNumbers: statePayload.calledNumbers,
+            lastCalledNumber: statePayload.lastCalledNumber
+        });
+        if (typeof ackCallback === 'function') {
+            ackCallback({
+                ack: true,
+                gameActive: statePayload.gameActive,
+                calledNumbers: statePayload.calledNumbers,
+                lastCalledNumber: statePayload.lastCalledNumber
+            });
+        }
     });
 
-    socket.on('leaveBingoGame', () => {
+    socket.on('leaveBingoGame', (ackCallback) => {
         bingoGameActiveSockets.delete(socket.id);
+        if (typeof ackCallback === 'function') {
+            ackCallback({ ack: true });
+        }
     });
 
-    socket.emit('syncGameState', {
-        ...globalRoom,
-        playersCount: globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
-            ? globalRoom.lockedRoundPlayersCount
-            : globalRoom.playersCount,
-        prize: globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
-            ? globalRoom.lockedRoundPrize
-            : Math.floor((globalRoom.playersCount * 10) * 0.90)
-    });
+    socket.emit('syncGameState', getRoomStatePayload());
     refreshTakenCardsList(false);
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
@@ -1616,15 +1650,7 @@ io.on('connection', (socket) => {
             if (!globalRoom.gameActive) {
                 updateRoomPlayersAndPot(true);
             }
-            socket.emit('syncGameState', {
-                ...globalRoom,
-                playersCount: globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
-                    ? globalRoom.lockedRoundPlayersCount
-                    : globalRoom.playersCount,
-                prize: globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
-                    ? globalRoom.lockedRoundPrize
-                    : Math.floor((globalRoom.playersCount * 10) * 0.90)
-            });
+            socket.emit('syncGameState', getRoomStatePayload());
         }
     });
 
