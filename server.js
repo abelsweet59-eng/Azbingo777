@@ -276,6 +276,7 @@ const WINNING_LINES_ALL = [
 
 const MAX_ALLOWED_HITS_PER_LINE = 2;
 const MAX_STANDARD_BOT_CALLS = 18;
+const EMPTY_CARD_GRACE_MS = 1500;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -286,6 +287,7 @@ let globalRoom = {
     gameActive: false,
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
+    emptyCardGraceUntil: 0,
     playersCount: 140,
     lockedRoundPlayersCount: null,
     lockedRoundPrize: null,
@@ -499,8 +501,12 @@ function getRealisticBotsCount(realCount, isGameActive = false) {
     return lastSmoothCount;
 }
 
+function isInEmptyCardGracePeriod() {
+    return !globalRoom.gameActive && Date.now() < (globalRoom.emptyCardGraceUntil || 0);
+}
+
 function syncBotCardsToPlayersCount() {
-    if (enableOnlyRealUsersMode) {
+    if (enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) {
         globalRoom.botTakenCards = [];
         return;
     }
@@ -586,6 +592,13 @@ setInterval(() => {
 }, 4000);
 
 function refreshTakenCardsList() {
+    if (isInEmptyCardGracePeriod()) {
+        globalRoom.botTakenCards = [];
+        globalRoom.takenCards = [];
+        io.emit('updateTakenCards', []);
+        return;
+    }
+
     syncBotCardsToPlayersCount();
 
     let allTaken = [...globalRoom.botTakenCards];
@@ -600,7 +613,7 @@ function refreshTakenCardsList() {
 }
 
 function simulateBotCardSelections() {
-    if (globalRoom.gameActive || enableOnlyRealUsersMode) return;
+    if (globalRoom.gameActive || enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) return;
     refreshTakenCardsList();
 }
 
@@ -701,6 +714,7 @@ function startMainGameLoop() {
 
         if (timeLeft <= 0 && !globalRoom.gameActive && !isFinishingRound) {
             globalRoom.gameActive = true;
+            globalRoom.emptyCardGraceUntil = 0;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
 
@@ -994,6 +1008,7 @@ function endRoundAndRestart() {
     globalRoom.playerTemporaryCards = {};
     globalRoom.botTakenCards = [];
     globalRoom.takenCards = [];
+    globalRoom.emptyCardGraceUntil = Date.now() + EMPTY_CARD_GRACE_MS;
 
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
@@ -1002,6 +1017,13 @@ function endRoundAndRestart() {
     io.emit('gameEndedBroadcast');
     refreshTakenCardsList();
     updateRoomPlayersAndPot(true);
+
+    setTimeout(() => {
+        if (!globalRoom.gameActive && !isFinishingRound) {
+            refreshTakenCardsList();
+            updateRoomPlayersAndPot(true);
+        }
+    }, EMPTY_CARD_GRACE_MS + 50);
 }
 
 startMainGameLoop();
