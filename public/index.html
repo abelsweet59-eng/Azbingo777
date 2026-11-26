@@ -690,6 +690,11 @@
         let currentGamePhase = 'waiting';
         let activeRoundGameId = null;
 
+        // ወደ Chrome ሲሄድ የነበረውን ዙር/ጊዜ ለመከታተል
+        let wasHiddenDuringRound = false;
+        let hiddenPhaseSnapshot = 'waiting';
+        let hiddenStartTimeSnapshot = 0;
+
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
             if (window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
@@ -752,7 +757,6 @@
         let isAudioMuted = true;
         let currentAudioObj = null;
 
-        // ዙር ሲቀየር ብቻ የሚጠራ ሙሉ ጽዳት (በተመሳሳይ ዙር ካርድ ተረጋግጦ እየጠበቀ ሳለ አይጠራም)
         function resetForNewRoundOnly() {
             userSelectedCards = [];
             confirmedCards = [];
@@ -835,7 +839,7 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
-                // 'waiting' — የካርድ መምረጫ ሜኑ (በተመሳሳይ ዙር የተያዘ ካርድ ካለ ይጠበቃል)
+                // 'waiting' — የካርድ መምረጫ ሜኑ
                 document.getElementById('card-selection-section').classList.remove('hidden');
                 document.getElementById('live-game-section').classList.add('hidden');
                 const badgeEl = document.getElementById('selected-cards-badge');
@@ -922,8 +926,13 @@
             }
         }
 
+        // ወደ Chrome ሲሄድ እና ሲመለስ (minimize ተደርጎ ሲከፈት) ያለውን ዙር በትክክል አድስ እና ጨዋታ አልቆ ከሆነ ሙሉ በሙሉ Clear አድርግ
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
+            if (document.hidden) {
+                wasHiddenDuringRound = true;
+                hiddenPhaseSnapshot = currentGamePhase;
+                hiddenStartTimeSnapshot = gameStartTimeServer;
+            } else {
                 if (socket && !socket.connected) {
                     socket.connect();
                 } else if (socket && socket.connected) {
@@ -935,15 +944,27 @@
                     });
                 }
 
-                // ጊዜው አልፎ አዲስ ዙር ላይ ተገኝቶ ከሆነ (ወይም የቆጠራ ጊዜው አልቆ ከነበረ) ንጹህ በሆነ አዲስ ዙር ይጀምር
+                // ቀድሞ ጨዋታ ('drawing') ላይ ሳለ ወደ Chrome ወጥቶ፣ አሁን ሲመለስ ጨዋታው አልቆ 'waiting' ሜኑ ላይ ከደረሰ ካርዱንና የዙር ክፍያን ሙሉ በሙሉ Clear አድርግ
+                const finishedWhileAway = wasHiddenDuringRound && (
+                    hiddenPhaseSnapshot === 'drawing' ||
+                    hiddenPhaseSnapshot === 'ended' ||
+                    currentGamePhase === 'ended' ||
+                    (hiddenStartTimeSnapshot && Math.abs(gameStartTimeServer - hiddenStartTimeSnapshot) > 2000)
+                );
+
+                wasHiddenDuringRound = false;
+
                 if (activeScreenContext === 'bingo') {
-                    const timeLeft = Math.max(0, Math.ceil((gameStartTimeServer - Date.now()) / 1000));
-                    if (currentGamePhase === 'ended' || (currentGamePhase === 'waiting' && gameStartTimeServer < Date.now() - 5000)) {
+                    if (finishedWhileAway && currentGamePhase !== 'drawing') {
                         resetForNewRoundOnly();
                         setGameStatePhase('waiting');
                     }
                     syncBingoGameScreenFromState();
                 } else {
+                    if (finishedWhileAway && currentGamePhase !== 'drawing') {
+                        resetForNewRoundOnly();
+                        setGameStatePhase('waiting');
+                    }
                     enforceHubVisualIsolation();
                 }
             }
