@@ -314,7 +314,7 @@ let numberCallInterval = null;
 let winGraceTimeout = null;
 let connectedRealPlayers = [];
 
-function emitToBingoGameViewers(eventName, payload) {
+function emitToBingoGame(eventName, payload) {
     bingoGameActiveSockets.forEach(sId => {
         const s = io.sockets.sockets.get(sId);
         if (s) {
@@ -323,18 +323,18 @@ function emitToBingoGameViewers(eventName, payload) {
     });
 }
 
-function getRoomStatePayload() {
-    const activePlayersCount = globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
+function getLiveBingoSnapshot() {
+    const playersCount = globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
         ? globalRoom.lockedRoundPlayersCount
         : globalRoom.playersCount;
-    const activePrize = globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
+    const prize = globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
         ? globalRoom.lockedRoundPrize
         : Math.floor((globalRoom.playersCount * 10) * 0.90);
 
     return {
         ...globalRoom,
-        playersCount: activePlayersCount,
-        prize: activePrize
+        playersCount,
+        prize
     };
 }
 
@@ -788,7 +788,7 @@ async function announceWinnersAndFinish(winnersDataList) {
         }
     });
 
-    const winnerPayload = {
+    emitToBingoGame('bingoWinner', {
         username: winnerNamesStr,
         userId: sanitizedWinners.find(w => !w.isBot)?.socketId || null,
         cardNum: primaryCardNum,
@@ -796,12 +796,8 @@ async function announceWinnersAndFinish(winnersDataList) {
         calledNumbers: globalRoom.calledNumbers,
         matchedIndices: matchedIndices,
         winnersCount: winnersCount,
-        playersCount: roundPlayersCount,
-        targetRoom: 'bingo_game',
-        requiresBingoGameActive: true
-    };
-
-    emitToBingoGameViewers('bingoWinner', winnerPayload);
+        playersCount: roundPlayersCount
+    });
 
     setTimeout(() => { endRoundAndRestart(); }, 6000);
 }
@@ -842,12 +838,12 @@ function startMainGameLoop() {
                 let availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
                 availableNumbers.sort(() => 0.5 - Math.random());
 
-                emitToBingoGameViewers('gameStarted', {
+                emitToBingoGame('gameStarted', {
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
                 });
-                emitToBingoGameViewers('gameStartedBroadcast', {
+                emitToBingoGame('gameStartedBroadcast', {
                     calledNumbers: [],
                     playersCount: globalRoom.lockedRoundPlayersCount,
                     prize: globalRoom.lockedRoundPrize
@@ -871,11 +867,11 @@ function startMainGameLoop() {
                     globalRoom.calledNumbers.push(Number(calledNum));
                     globalRoom.lastCalledNumber = Number(calledNum);
 
-                    emitToBingoGameViewers('numberCalled', {
+                    emitToBingoGame('numberCalled', {
                         number: Number(calledNum),
                         calledNumbers: globalRoom.calledNumbers
                     });
-                    emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
+                    emitToBingoGame('numberCalledBroadcast', Number(calledNum));
 
                     let winningWinnersList = [];
                     Object.entries(globalRoom.playerRoundCards).forEach(([socketId, pData]) => {
@@ -987,12 +983,12 @@ function startMainGameLoop() {
                 }
             });
 
-            emitToBingoGameViewers('gameStarted', {
+            emitToBingoGame('gameStarted', {
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
             });
-            emitToBingoGameViewers('gameStartedBroadcast', {
+            emitToBingoGame('gameStartedBroadcast', {
                 calledNumbers: [],
                 playersCount: globalRoom.lockedRoundPlayersCount,
                 prize: globalRoom.lockedRoundPrize
@@ -1039,11 +1035,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        emitToBingoGameViewers('numberCalled', {
+                        emitToBingoGame('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
+                        emitToBingoGame('numberCalledBroadcast', Number(calledNum));
                     }
                     return;
                 }
@@ -1067,11 +1063,11 @@ function startMainGameLoop() {
                         globalRoom.calledNumbers.push(Number(calledNum));
                         globalRoom.lastCalledNumber = Number(calledNum);
 
-                        emitToBingoGameViewers('numberCalled', {
+                        emitToBingoGame('numberCalled', {
                             number: Number(calledNum),
                             calledNumbers: globalRoom.calledNumbers
                         });
-                        emitToBingoGameViewers('numberCalledBroadcast', Number(calledNum));
+                        emitToBingoGame('numberCalledBroadcast', Number(calledNum));
                     }
 
                     if (numberCallInterval) { clearInterval(numberCallInterval); numberCallInterval = null; }
@@ -1122,8 +1118,8 @@ function endRoundAndRestart() {
     globalRoom.gameStartTime = Date.now() + 60000;
     globalRoom.forcedWinningCardNums = [];
 
-    emitToBingoGameViewers('roundEnded', { nextGameIn: 60000 });
-    emitToBingoGameViewers('gameEndedBroadcast', { nextGameIn: 60000 });
+    emitToBingoGame('roundEnded', { nextGameIn: 60000 });
+    emitToBingoGame('gameEndedBroadcast', { nextGameIn: 60000 });
     refreshTakenCardsList(false);
     updateRoomPlayersAndPot(true);
 
@@ -1560,32 +1556,20 @@ io.on('connection', (socket) => {
 
     socket.on('enterBingoGame', (ackCallback) => {
         bingoGameActiveSockets.add(socket.id);
-        const statePayload = getRoomStatePayload();
-        socket.emit('syncGameState', statePayload);
-        socket.emit('bingoGameEntered', {
-            ack: true,
-            gameActive: statePayload.gameActive,
-            calledNumbers: statePayload.calledNumbers,
-            lastCalledNumber: statePayload.lastCalledNumber
-        });
+        const liveSnapshot = getLiveBingoSnapshot();
+        socket.emit('syncGameState', liveSnapshot);
         if (typeof ackCallback === 'function') {
-            ackCallback({
-                ack: true,
-                gameActive: statePayload.gameActive,
-                calledNumbers: statePayload.calledNumbers,
-                lastCalledNumber: statePayload.lastCalledNumber
-            });
+            ackCallback({ ok: true, state: liveSnapshot });
         }
     });
 
     socket.on('leaveBingoGame', (ackCallback) => {
         bingoGameActiveSockets.delete(socket.id);
         if (typeof ackCallback === 'function') {
-            ackCallback({ ack: true });
+            ackCallback({ ok: true });
         }
     });
 
-    socket.emit('syncGameState', getRoomStatePayload());
     refreshTakenCardsList(false);
 
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
@@ -1650,7 +1634,9 @@ io.on('connection', (socket) => {
             if (!globalRoom.gameActive) {
                 updateRoomPlayersAndPot(true);
             }
-            socket.emit('syncGameState', getRoomStatePayload());
+            if (bingoGameActiveSockets.has(socket.id)) {
+                socket.emit('syncGameState', getLiveBingoSnapshot());
+            }
         }
     });
 
