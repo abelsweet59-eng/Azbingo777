@@ -277,8 +277,7 @@ const WINNING_LINES_ALL = [
 const MAX_ALLOWED_HITS_PER_LINE = 3;
 const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
-const BOT_TICK_INTERVAL_MS = 3500;
-const PROPORTIONAL_BASE_RATIO = 0.50;
+const BOT_TICK_INTERVAL_MS = 2000;
 const TEN_PERCENT_FLICKER_RATIO = 0.10;
 
 function getRandomBotNames(count) {
@@ -529,6 +528,13 @@ function pickAvailableCardNumber(excludedSet) {
     return available[randIdx];
 }
 
+function getCountdownProgressRatio() {
+    let remainingMs = Math.max(0, (globalRoom.gameStartTime || (Date.now() + 60000)) - Date.now());
+    let totalCountdownMs = 60000;
+    let elapsedRatio = 1 - Math.min(1, remainingMs / totalCountdownMs);
+    return Math.max(0.08, Math.min(1, elapsedRatio));
+}
+
 function syncBotCardsToPlayersCount(allowGradualStep = false) {
     if (enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) {
         globalRoom.botTakenCards = [];
@@ -541,15 +547,16 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
     ));
 
     let currentPlayersTotal = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
-    let proportionalTargetCards = Math.min(
+    let progressRatio = getCountdownProgressRatio();
+    let desiredTotalCards = Math.min(
         500,
-        Math.max(realTakenSet.size, Math.round(currentPlayersTotal * PROPORTIONAL_BASE_RATIO))
+        Math.max(realTakenSet.size, Math.round(currentPlayersTotal * progressRatio))
     );
-    let desiredBotCards = Math.max(0, proportionalTargetCards - realTakenSet.size);
+    let desiredBotCards = Math.max(0, desiredTotalCards - realTakenSet.size);
 
     if (globalRoom.botTakenCards.length > desiredBotCards) {
         let excess = globalRoom.botTakenCards.length - desiredBotCards;
-        let trimCount = allowGradualStep ? Math.max(1, Math.ceil(excess * 0.25)) : excess;
+        let trimCount = allowGradualStep ? Math.max(1, Math.ceil(excess * 0.35)) : excess;
         for (let i = 0; i < trimCount && globalRoom.botTakenCards.length > desiredBotCards; i++) {
             let dropIdx = Math.floor(Math.random() * globalRoom.botTakenCards.length);
             globalRoom.botTakenCards.splice(dropIdx, 1);
@@ -564,7 +571,7 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
     if (globalRoom.botTakenCards.length === 0) {
         let initialSeedCount = Math.min(
             desiredBotCards,
-            Math.max(2, Math.min(12, Math.ceil(desiredBotCards * 0.12)))
+            Math.max(4, Math.min(25, Math.ceil(desiredBotCards * 0.2)))
         );
         for (let i = 0; i < initialSeedCount; i++) {
             let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
@@ -575,13 +582,14 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
     }
 
     if (allowGradualStep) {
-        let tenPercentWindowSize = Math.max(1, Math.round(desiredBotCards * TEN_PERCENT_FLICKER_RATIO));
+        let remainingTicks = Math.max(1, Math.ceil(Math.max(0, (globalRoom.gameStartTime || Date.now()) - Date.now()) / BOT_TICK_INTERVAL_MS));
 
         if (globalRoom.botTakenCards.length < desiredBotCards) {
-            let stepAdd = Math.min(
-                desiredBotCards - globalRoom.botTakenCards.length,
-                Math.max(1, Math.min(tenPercentWindowSize, Math.ceil(desiredBotCards * 0.04)))
-            );
+            let gap = desiredBotCards - globalRoom.botTakenCards.length;
+            let paceStep = Math.max(2, Math.ceil(gap / Math.min(remainingTicks, 6)));
+            let jitter = Math.floor(Math.random() * 4);
+            let stepAdd = Math.min(gap, paceStep + jitter);
+
             for (let i = 0; i < stepAdd; i++) {
                 let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
                 let picked = pickAvailableCardNumber(takenNow);
@@ -589,12 +597,15 @@ function syncBotCardsToPlayersCount(allowGradualStep = false) {
             }
         }
 
-        if (globalRoom.botTakenCards.length > 1 && Math.random() < 0.72) {
-            let windowStart = Math.max(0, globalRoom.botTakenCards.length - tenPercentWindowSize);
-            let removeIdx = windowStart + Math.floor(Math.random() * (globalRoom.botTakenCards.length - windowStart));
-            let removed = globalRoom.botTakenCards.splice(removeIdx, 1)[0];
+        let tenPercentWindowSize = Math.max(1, Math.round(globalRoom.botTakenCards.length * TEN_PERCENT_FLICKER_RATIO));
+        if (globalRoom.botTakenCards.length > 2 && Math.random() < 0.75) {
+            let swapCount = Math.min(tenPercentWindowSize, Math.max(1, Math.ceil(tenPercentWindowSize * 0.25)));
+            for (let s = 0; s < swapCount; s++) {
+                if (globalRoom.botTakenCards.length <= 1) break;
+                let windowStart = Math.max(0, globalRoom.botTakenCards.length - tenPercentWindowSize);
+                let removeIdx = windowStart + Math.floor(Math.random() * (globalRoom.botTakenCards.length - windowStart));
+                globalRoom.botTakenCards.splice(removeIdx, 1);
 
-            if (removed !== undefined && (globalRoom.botTakenCards.length < desiredBotCards || Math.random() < 0.65)) {
                 let takenNow = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
                 let replacement = pickAvailableCardNumber(takenNow);
                 if (replacement !== null) {
