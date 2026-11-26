@@ -686,11 +686,9 @@
         let isWithdrawLockedGlobal = false;
         let currentReferralLink = "";
 
-        // 'hub' = ሎቢው ላይ (የAZ Bingo UI ሙሉ በሙሉ የተደበቀበት) | 'bingo' = ወደ AZ Bingo ውስጥ የገባ
         let activeScreenContext = 'hub';
-
-        // የጨዋታውን State በግልጽ ለመለየት: 'waiting' | 'drawing' | 'ended'
         let currentGamePhase = 'waiting';
+        let activeRoundGameId = null;
 
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
@@ -716,19 +714,19 @@
         const userHistoryKey = `az_bingo_history_v17_${telegramUserId}`;
         const userSavedCardsKey = `az_bingo_saved_cards_v17_${telegramUserId}`;
         const userCurrentRoundPaidKey = `az_bingo_round_paid_v17_${telegramUserId}`;
+        const userRoundGameIdKey = `az_bingo_round_gameid_v17_${telegramUserId}`;
 
-        if (sessionStorage.getItem('az_session_started') === null) {
-            localStorage.removeItem(userSavedCardsKey);
-            localStorage.removeItem(userCurrentRoundPaidKey);
-            sessionStorage.setItem('az_session_started', 'true');
-        }
+        // አዲስ session ሲከፈት የቆየ የካርድ እና የዙር ክፍያ state ሙሉ በሙሉ ይጸዳል
+        localStorage.removeItem(userSavedCardsKey);
+        localStorage.setItem(userCurrentRoundPaidKey, "0");
+        localStorage.removeItem(userRoundGameIdKey);
+        sessionStorage.setItem('az_session_started', 'true');
 
         if (localStorage.getItem(userLocalStorageKey) !== null) {
             walletBalance = parseFloat(localStorage.getItem(userLocalStorageKey)) || 0.00;
         } else {
             walletBalance = 0.00;
             localStorage.setItem(userLocalStorageKey, "0.00");
-            localStorage.setItem(userCurrentRoundPaidKey, "0");
         }
 
         if (localStorage.getItem(userHistoryKey)) {
@@ -737,14 +735,7 @@
 
         let userSelectedCards = [];
         let confirmedCards = [];
-        let totalPaidForCurrentRound = parseFloat(localStorage.getItem(userCurrentRoundPaidKey)) || 0;
-
-        if (localStorage.getItem(userSavedCardsKey)) {
-            try {
-                confirmedCards = JSON.parse(localStorage.getItem(userSavedCardsKey)) || [];
-                if (confirmedCards.length > 0) userSelectedCards = [...confirmedCards];
-            } catch(e) { confirmedCards = []; }
-        }
+        let totalPaidForCurrentRound = 0;
 
         let takenCardsByOthers = [];
         let calledNumbersList = [];
@@ -752,6 +743,40 @@
         let manualDaubedNumbers = {};
         let isAudioMuted = true;
         let currentAudioObj = null;
+
+        // ጊዜ አልፎ ወይም ከChrome ሲመለስ ዙር የተቀየረ ከሆነ ካርድና የዙር ክፍያ ሙሉ በሙሉ Clear የሚያደርግ ተግባር
+        function clearSelectionAndRoundState(clearStorage = true) {
+            userSelectedCards = [];
+            confirmedCards = [];
+            totalPaidForCurrentRound = 0;
+            manualDaubedNumbers = {};
+
+            if (clearStorage) {
+                localStorage.removeItem(userSavedCardsKey);
+                localStorage.setItem(userCurrentRoundPaidKey, "0");
+                localStorage.removeItem(userRoundGameIdKey);
+            }
+
+            const badgeEl = document.getElementById('selected-cards-badge');
+            if (badgeEl) badgeEl.innerText = "ምንም የለም";
+
+            const cBtn = document.getElementById('confirm-card-btn');
+            if (cBtn) {
+                cBtn.className = "blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
+                cBtn.innerText = "✨ ካርድ አረጋግጥ";
+            }
+
+            const slot1 = document.getElementById('previewCardSlot1');
+            const slot2 = document.getElementById('previewCardSlot2');
+            if (slot1) {
+                slot1.className = "bg-black/50 border border-amber-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
+                slot1.innerText = "ካርድ 1";
+            }
+            if (slot2) {
+                slot2.className = "bg-black/50 border border-amber-500/30 rounded-lg p-1.5 min-h-[85px] flex flex-col items-center justify-center text-gray-400 text-[9px]";
+                slot2.innerText = "ካርድ 2";
+            }
+        }
 
         function enforceHubVisualIsolation() {
             if (activeScreenContext === 'hub') {
@@ -793,16 +818,12 @@
                 renderVerticalBoard();
                 renderPlayerDualCards();
             } else {
-                // 'waiting'
-                if (confirmedCards.length > 0) {
-                    document.getElementById('card-selection-section').classList.remove('hidden');
-                    document.getElementById('live-game-section').classList.add('hidden');
-                    renderCardSelectionPreviews();
-                } else {
-                    document.getElementById('card-selection-section').classList.remove('hidden');
-                    document.getElementById('live-game-section').classList.add('hidden');
-                }
+                // 'waiting' — የካርድ መምረጫ ሜኑ
+                clearSelectionAndRoundState(true);
+                document.getElementById('card-selection-section').classList.remove('hidden');
+                document.getElementById('live-game-section').classList.add('hidden');
                 generate500CardGrid();
+                renderCardSelectionPreviews();
                 renderVerticalBoard();
                 renderPlayerDualCards();
             }
@@ -880,6 +901,32 @@
             }
         }
 
+        // ወደ Chrome ሄዶ ሲመለስ (minimize ተደርጎ ሲከፈት) የዙር ሁኔታን በትክክል አድስ
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                if (socket && !socket.connected) {
+                    socket.connect();
+                } else if (socket && socket.connected) {
+                    socket.emit('registerRealUser', {
+                        userId: telegramUserId,
+                        username: userUsername,
+                        fullName: userFullName,
+                        balance: walletBalance
+                    });
+                }
+
+                if (activeScreenContext === 'bingo') {
+                    // ጊዜው አልፎ ወደ Card Selection ተመልሶ ከሆነ ሙሉ በሙሉ Clear አድርግ
+                    if (!socket.connected || currentGamePhase === 'waiting') {
+                        clearSelectionAndRoundState(true);
+                    }
+                    syncBingoGameScreenFromState();
+                } else {
+                    enforceHubVisualIsolation();
+                }
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', () => {
             enforceHubVisualIsolation();
 
@@ -901,6 +948,7 @@
             if (adminBtnInit && isAdmin) adminBtnInit.classList.remove('hidden');
 
             document.getElementById('user-welcome-info').innerHTML = `ሰላም <b>${userFullName}</b>`;
+            clearSelectionAndRoundState(true);
             updateWalletUI();
             renderHistoryUI();
             generate500CardGrid();
@@ -910,27 +958,19 @@
             renderCardSelectionPreviews();
             setGameStatePhase('waiting');
 
-            const confirmBtn = document.getElementById('confirm-card-btn');
-            if (confirmBtn) {
-                if (confirmedCards.length > 0) {
-                    confirmBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
-                    confirmBtn.innerText = "✨ ካርድ ተረጋግጧል";
-                } else {
-                    confirmBtn.className = "blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
-                    confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
-                }
-            }
-
             socket.on('connect', () => {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'text-[9px] px-2 py-0.5 rounded-full bg-emerald-600 font-bold whitespace-nowrap';
                 
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName, balance: walletBalance });
 
-                if (confirmedCards.length > 0) {
-                    socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId, balance: walletBalance });
-                } else if (userSelectedCards.length > 0) {
-                    socket.emit('tempSelectCards', userSelectedCards);
+                // በአዲስ ዙር ላይ ያለክፍያ ካርድ እንዳይላክ በየአዲስ connect ወቅት የቆየ መረጃ አይላክም
+                if (currentGamePhase === 'waiting') {
+                    clearSelectionAndRoundState(true);
+                    if (activeScreenContext === 'bingo') {
+                        generate500CardGrid();
+                        renderCardSelectionPreviews();
+                    }
                 }
             });
 
@@ -1031,7 +1071,7 @@
 
             socket.on('updateTakenCards', (takenList) => {
                 takenCardsByOthers = Array.isArray(takenList) ? takenList : [];
-                if (activeScreenContext === 'bingo') {
+                if (activeScreenContext === 'bingo' && currentGamePhase === 'waiting') {
                     generate500CardGrid();
                 }
             });
@@ -1039,31 +1079,43 @@
             socket.on('syncGameState', (room) => {
                 if (!room) return;
                 if (room.gameStartTime) gameStartTimeServer = room.gameStartTime;
+
+                const incomingGameId = room.gameId || room.roundId || null;
+                const savedGameId = localStorage.getItem(userRoundGameIdKey);
+
+                // አዲስ ዙር (አዲስ gameId) ከሆነ የቀድሞውን ዙር ካርድ እና ክፍያ ሙሉ በሙሉ አጽዳ
+                if (incomingGameId && ((savedGameId && savedGameId !== String(incomingGameId)) || (activeRoundGameId && activeRoundGameId !== String(incomingGameId)))) {
+                    clearSelectionAndRoundState(true);
+                }
+                if (incomingGameId) {
+                    activeRoundGameId = String(incomingGameId);
+                    localStorage.setItem(userRoundGameIdKey, activeRoundGameId);
+                    const statGameIdEl = document.getElementById('stat-gameid');
+                    if (statGameIdEl) statGameIdEl.innerText = activeRoundGameId;
+                }
+
                 if (currentGamePhase !== 'drawing' || !room.gameActive) {
                     renderPlayersAndDerash(room.playersCount, room.prize);
                 }
 
-                if (!room.gameActive) {
+                if (room.gameActive) {
+                    calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && Array.isArray(myData.cards) && myData.cards.length > 0) {
                             confirmedCards = myData.cards.map(Number);
                             userSelectedCards = [...confirmedCards];
                             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
-                            
-                            const cBtn = document.getElementById('confirm-card-btn');
-                            if(cBtn) {
-                                cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
-                                cBtn.innerText = "✨ ካርድ ተረጋግጧል";
-                            }
                         }
+                    } else {
+                        // በዚህ ንቁ ዙር ካርድ ያልያዘ ተጠቃሚ ከሆነ ባዶ ይሁን
+                        confirmedCards = [];
+                        userSelectedCards = [];
                     }
-                }
-
-                if (room.gameActive) {
-                    calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
                     setGameStatePhase('drawing');
                 } else {
+                    // ጨዋታው በመጠባበቅ ላይ ('waiting') ሲሆን ካርዶች እና የዙር ክፍያ ሙሉ በሙሉ Clear ይሁኑ
+                    clearSelectionAndRoundState(true);
                     setGameStatePhase('waiting');
                 }
 
@@ -1075,6 +1127,12 @@
             });
 
             socket.on('gameStarted', (data) => {
+                if (data && (data.gameId || data.roundId)) {
+                    activeRoundGameId = String(data.gameId || data.roundId);
+                    localStorage.setItem(userRoundGameIdKey, activeRoundGameId);
+                    const statGameIdEl = document.getElementById('stat-gameid');
+                    if (statGameIdEl) statGameIdEl.innerText = activeRoundGameId;
+                }
                 calledNumbersList = Array.isArray(data?.calledNumbers) ? data.calledNumbers.map(Number) : [];
                 setGameStatePhase('drawing');
                 if (data && data.playersCount !== undefined) {
@@ -1115,14 +1173,10 @@
             socket.on('roundEnded', (data) => {
                 setGameStatePhase('ended');
                 gameStartTimeServer = Date.now() + ((data && data.nextGameIn) || 60000);
-                
-                localStorage.removeItem(userSavedCardsKey);
-                localStorage.removeItem(userCurrentRoundPaidKey);
-                confirmedCards = [];
-                userSelectedCards = [];
-                totalPaidForCurrentRound = 0;
+                clearSelectionAndRoundState(true);
 
                 setTimeout(() => {
+                    clearSelectionAndRoundState(true);
                     setGameStatePhase('waiting');
                     resetPlayerSelectionForNewRound();
                 }, 400);
@@ -1146,7 +1200,18 @@
                 renderCardSelectionPreviews();
             });
 
-            socket.on('cardSelectionError', (msg) => { alert(msg); });
+            socket.on('cardSelectionError', (msg) => {
+                const liveSection = document.getElementById('live-game-section');
+                const isLiveVisible = liveSection && !liveSection.classList.contains('hidden');
+
+                if (currentGamePhase === 'drawing' || isLiveVisible) {
+                    if (activeScreenContext === 'bingo') {
+                        syncBingoGameScreenFromState();
+                    }
+                    return;
+                }
+                alert(msg);
+            });
 
             socket.on('adminWinnerResponse', (data) => {
                 let msgEl = document.getElementById('admin-winner-status-msg');
@@ -1168,6 +1233,7 @@
 
             socket.on('bingoWinner', (data) => {
                 setGameStatePhase('ended');
+                clearSelectionAndRoundState(true);
 
                 if (activeScreenContext !== 'bingo') {
                     enforceHubVisualIsolation();
@@ -1684,17 +1750,7 @@
         }
 
         function resetPlayerSelectionForNewRound() {
-            userSelectedCards = [];
-            confirmedCards = [];
-            totalPaidForCurrentRound = 0;
-            localStorage.removeItem(userSavedCardsKey);
-            localStorage.setItem(userCurrentRoundPaidKey, "0");
-            document.getElementById('selected-cards-badge').innerText = "ምንም የለም";
-
-            const confirmBtn = document.getElementById('confirm-card-btn');
-            confirmBtn.className = "blink-btn text-white px-2.5 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
-            confirmBtn.innerText = "✨ ካርድ አረጋግጥ";
-
+            clearSelectionAndRoundState(true);
             setGameStatePhase('waiting');
             
             const grid = document.getElementById('card-grid-500');
@@ -1702,6 +1758,7 @@
 
             setTimeout(() => {
                 if (activeScreenContext === 'bingo') {
+                    clearSelectionAndRoundState(true);
                     document.getElementById('card-selection-section').classList.remove('hidden');
                     document.getElementById('live-game-section').classList.add('hidden');
                     generate500CardGrid();
