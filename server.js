@@ -276,7 +276,10 @@ const WINNING_LINES_ALL = [
 
 const MAX_ALLOWED_HITS_PER_LINE = 3;
 const MAX_STANDARD_BOT_CALLS = 24;
-const EMPTY_CARD_GRACE_MS = 3500;
+const EMPTY_CARD_GRACE_MS = 3000;
+const BOT_CARD_STEP_INTERVAL_MS = 4500;
+const INITIAL_BURST_RATIO = 0.70;
+const SLOW_TRANSITION_RATIO = 0.10;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -288,6 +291,7 @@ let globalRoom = {
     calledNumbers: [],
     gameStartTime: Date.now() + 60000,
     emptyCardGraceUntil: 0,
+    initialBurstApplied: false,
     playersCount: 140,
     lockedRoundPlayersCount: null,
     lockedRoundPrize: null,
@@ -505,12 +509,7 @@ function isInEmptyCardGracePeriod() {
     return !globalRoom.gameActive && Date.now() < (globalRoom.emptyCardGraceUntil || 0);
 }
 
-function syncBotCardsToPlayersCount() {
-    if (enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) {
-        globalRoom.botTakenCards = [];
-        return;
-    }
-
+function getRealTakenCardSet() {
     let realTakenSet = new Set();
     Object.values(globalRoom.playerRoundCards).forEach(p => {
         if (p && Array.isArray(p.cards)) p.cards.forEach(c => realTakenSet.add(Number(c)));
@@ -518,7 +517,75 @@ function syncBotCardsToPlayersCount() {
     Object.values(globalRoom.playerTemporaryCards).forEach(cards => {
         if (Array.isArray(cards)) cards.forEach(c => realTakenSet.add(Number(c)));
     });
+    return realTakenSet;
+}
 
+function pickAvailableCardNumber(excludedSet) {
+    let available = [];
+    for (let i = 1; i <= 500; i++) {
+        if (!excludedSet.has(i)) available.push(i);
+    }
+    if (available.length === 0) return null;
+    let randIdx = Math.floor(Math.random() * available.length);
+    return available[randIdx];
+}
+
+function seedInitialSeventyPercentBurst(neededBotCards, realTakenSet) {
+    globalRoom.botTakenCards = [];
+    let initialBurstCount = Math.min(
+        neededBotCards,
+        Math.max(1, Math.round(neededBotCards * INITIAL_BURST_RATIO))
+    );
+
+    for (let i = 0; i < initialBurstCount; i++) {
+        let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+        let picked = pickAvailableCardNumber(currentTakenSet);
+        if (picked !== null) {
+            globalRoom.botTakenCards.push(picked);
+        }
+    }
+    globalRoom.initialBurstApplied = true;
+}
+
+function stepTenPercentSlowTransition(neededBotCards, realTakenSet) {
+    let tenPercentCap = Math.min(
+        neededBotCards,
+        Math.round(neededBotCards * (INITIAL_BURST_RATIO + SLOW_TRANSITION_RATIO))
+    );
+
+    if (globalRoom.botTakenCards.length < tenPercentCap) {
+        let addStep = Math.min(tenPercentCap - globalRoom.botTakenCards.length, 1);
+        for (let i = 0; i < addStep; i++) {
+            let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+            let picked = pickAvailableCardNumber(currentTakenSet);
+            if (picked !== null) {
+                globalRoom.botTakenCards.push(picked);
+            }
+        }
+    }
+
+    let tenPercentWindowSize = Math.max(1, Math.round(neededBotCards * SLOW_TRANSITION_RATIO));
+    let poolStartIdx = Math.max(0, globalRoom.botTakenCards.length - tenPercentWindowSize);
+    if (globalRoom.botTakenCards.length > poolStartIdx && Math.random() < 0.65) {
+        let swapIdx = poolStartIdx + Math.floor(Math.random() * (globalRoom.botTakenCards.length - poolStartIdx));
+        let removed = globalRoom.botTakenCards.splice(swapIdx, 1)[0];
+        if (removed !== undefined) {
+            let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
+            let replacement = pickAvailableCardNumber(currentTakenSet);
+            if (replacement !== null) {
+                globalRoom.botTakenCards.push(replacement);
+            }
+        }
+    }
+}
+
+function syncBotCardsToPlayersCount() {
+    if (enableOnlyRealUsersMode || isInEmptyCardGracePeriod()) {
+        globalRoom.botTakenCards = [];
+        return;
+    }
+
+    let realTakenSet = getRealTakenCardSet();
     globalRoom.botTakenCards = globalRoom.botTakenCards.filter(c => !realTakenSet.has(Number(c)));
 
     let targetTotalCards = Math.min(500, Math.max(realTakenSet.size, Number(globalRoom.playersCount) || 0));
@@ -528,19 +595,10 @@ function syncBotCardsToPlayersCount() {
         globalRoom.botTakenCards = globalRoom.botTakenCards.slice(0, neededBotCards);
     }
 
-    if (globalRoom.botTakenCards.length < neededBotCards) {
-        let currentTakenSet = new Set([...realTakenSet, ...globalRoom.botTakenCards]);
-        let available = [];
-        for (let i = 1; i <= 500; i++) {
-            if (!currentTakenSet.has(i)) available.push(i);
-        }
-
-        let toAddCount = neededBotCards - globalRoom.botTakenCards.length;
-        for (let i = 0; i < toAddCount && available.length > 0; i++) {
-            let randIdx = Math.floor(Math.random() * available.length);
-            let picked = available.splice(randIdx, 1)[0];
-            globalRoom.botTakenCards.push(picked);
-        }
+    if (!globalRoom.initialBurstApplied && neededBotCards > 0) {
+        seedInitialSeventyPercentBurst(neededBotCards, realTakenSet);
+    } else if (neededBotCards > 0) {
+        stepTenPercentSlowTransition(neededBotCards, realTakenSet);
     }
 }
 
@@ -617,7 +675,7 @@ function simulateBotCardSelections() {
     refreshTakenCardsList();
 }
 
-setInterval(simulateBotCardSelections, 6000);
+setInterval(simulateBotCardSelections, BOT_CARD_STEP_INTERVAL_MS);
 
 async function sendWinnerNotificationToAdmin(winnerNamesStr, cardNum, prizePerWinner, isRealUser, playersCountForRound) {
     if (!TELEGRAM_BOT_TOKEN || !ADMIN_CHAT_IDS.length || !isRealUser) return;
@@ -715,6 +773,7 @@ function startMainGameLoop() {
         if (timeLeft <= 0 && !globalRoom.gameActive && !isFinishingRound) {
             globalRoom.gameActive = true;
             globalRoom.emptyCardGraceUntil = 0;
+            globalRoom.initialBurstApplied = false;
             globalRoom.calledNumbers = [];
             globalRoom.lastCalledNumber = null;
 
@@ -1008,6 +1067,7 @@ function endRoundAndRestart() {
     globalRoom.playerTemporaryCards = {};
     globalRoom.botTakenCards = [];
     globalRoom.takenCards = [];
+    globalRoom.initialBurstApplied = false;
     globalRoom.emptyCardGraceUntil = Date.now() + EMPTY_CARD_GRACE_MS;
 
     globalRoom.gameStartTime = Date.now() + 60000;
