@@ -934,13 +934,9 @@
                 
                 socket.emit('registerRealUser', { userId: telegramUserId, username: userUsername, fullName: userFullName, balance: walletBalance });
 
-                // ጨዋታው ገና ያልተጀመረ ('waiting') ከሆነ ብቻ ካርድ ማረጋገጫ ወይም ጊዜያዊ ምርጫ ላክ
-                if (currentGamePhase === 'waiting') {
-                    if (confirmedCards.length > 0) {
-                        socket.emit('confirmCards', { cards: confirmedCards, userId: telegramUserId, username: userFullName, telegramChatId: telegramUserId, balance: walletBalance });
-                    } else if (userSelectedCards.length > 0) {
-                        socket.emit('tempSelectCards', userSelectedCards);
-                    }
+                // በአዲስ ዙር ላይ ሳይከፈል ካርድ እንዳይረጋገጥ የቆየ confirmedCards በ connect ላይ አይላክም
+                if (currentGamePhase === 'waiting' && userSelectedCards.length > 0 && confirmedCards.length === 0) {
+                    socket.emit('tempSelectCards', userSelectedCards);
                 }
             });
 
@@ -1053,27 +1049,30 @@
                     renderPlayersAndDerash(room.playersCount, room.prize);
                 }
 
-                if (!room.gameActive) {
+                if (room.gameActive) {
+                    calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
                     if (room.playerRoundCards && socket.id && room.playerRoundCards[socket.id]) {
                         let myData = room.playerRoundCards[socket.id];
                         if (myData && Array.isArray(myData.cards) && myData.cards.length > 0) {
                             confirmedCards = myData.cards.map(Number);
                             userSelectedCards = [...confirmedCards];
                             localStorage.setItem(userSavedCardsKey, JSON.stringify(confirmedCards));
-                            
-                            const cBtn = document.getElementById('confirm-card-btn');
-                            if(cBtn) {
-                                cBtn.className = "bg-amber-600 text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl border border-amber-300";
-                                cBtn.innerText = "✨ ካርድ ተረጋግጧል";
-                            }
                         }
                     }
-                }
-
-                if (room.gameActive) {
-                    calledNumbersList = Array.isArray(room.calledNumbers) ? room.calledNumbers.map(Number) : [];
                     setGameStatePhase('drawing');
                 } else {
+                    // ጨዋታው በመጠባበቅ ላይ ('waiting') ሲሆን የቀድሞ ዙር ካርዶች ንጹህ መሆናቸውን አረጋግጥ
+                    confirmedCards = [];
+                    userSelectedCards = [];
+                    totalPaidForCurrentRound = 0;
+                    localStorage.removeItem(userSavedCardsKey);
+                    localStorage.setItem(userCurrentRoundPaidKey, "0");
+
+                    const cBtn = document.getElementById('confirm-card-btn');
+                    if (cBtn) {
+                        cBtn.className = "blink-btn text-white px-2 py-1 rounded-lg font-extrabold text-[10px] shadow-xl transition-all border border-amber-300";
+                        cBtn.innerText = "✨ ካርድ አረጋግጥ";
+                    }
                     setGameStatePhase('waiting');
                 }
 
