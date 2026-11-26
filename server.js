@@ -276,7 +276,7 @@ const WINNING_LINES_ALL = [
 
 const MAX_ALLOWED_HITS_PER_LINE = 2;
 const MAX_STANDARD_BOT_CALLS = 18;
-const EMPTY_CARD_GRACE_MS = 1500;
+const EMPTY_CARD_GRACE_MS = 2000;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
