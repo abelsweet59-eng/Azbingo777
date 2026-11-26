@@ -293,6 +293,7 @@ const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
 const BOT_TICK_INTERVAL_MS = 2000;
 const TEN_PERCENT_FLICKER_RATIO = 0.10;
+const MULTI_BOT_WIN_CHANCE = 0.20; // 20% እድል አልፎ አልፎ 2 ወይም 3 ቦቶች እንዲያሸንፉ
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -927,6 +928,9 @@ function startMainGameLoop() {
                     targetRealCount = 1;
                     winnersCount = 1;
                 }
+            } else if (!explicitRealForced && Math.random() < MULTI_BOT_WIN_CHANCE) {
+                // በ Standard Bot Mode (ሪል ዩዘር ሳይታዘዝ) በ 20% እድል 2 ወይም 3 ቦቶች ያሸንፋሉ
+                winnersCount = Math.random() < 0.5 ? 2 : 3;
             }
 
             if (targetRealCount > 0 && activeRealEntries.length > 0) {
@@ -939,8 +943,11 @@ function startMainGameLoop() {
                 });
             }
 
+            let neededBotCount = Math.max(0, winnersCount - winningUsernamesArr.length);
+            let chosenBotNames = neededBotCount > 0 ? getRandomBotNames(neededBotCount) : [];
+
             while (winningUsernamesArr.length < winnersCount) {
-                let bName = getRandomBotNames(1)[0];
+                let bName = chosenBotNames.shift() || getRandomBotNames(1)[0];
                 winningUsernamesArr.push(bName);
                 winningSocketData.push({ socketId: null, userId: null, isBot: true });
                 winningCardNums.push(Math.floor(Math.random() * 450) + 1);
