@@ -30,6 +30,7 @@ const claimedWelcomeBonusUsers = new Set();
 const userWallets = {};
 const allRegisteredUsers = new Set();
 const processedMacrodroidTx = new Set();
+const receivedTelebirrSmsList = []; // ከ127 የገቡ ትክክለኛ SMS ዝርዝር { amount, transactionId, rawMessage, receivedAt }
 
 const registeredUserSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
@@ -1486,6 +1487,41 @@ function extractTxIdFromUserReceipt(receiptStr) {
     return tokenMatch ? tokenMatch[1].toUpperCase() : null;
 }
 
+// ተጠቃሚው በአፕ ውስጥ ሲጠይቅ SMS (127) የገባ መሆኑን እና Amount + Transaction ID መዛመዱን ማረጋገጫ
+function validateDepositAgainstSms(claimedAmount, receiptStr) {
+    const cleanReceipt = String(receiptStr || "").trim();
+    const parsedReceipt = parseTelebirrSms(cleanReceipt);
+    const txId = (parsedReceipt.transactionId || extractTxIdFromUserReceipt(cleanReceipt) || "").toUpperCase();
+    const amt = parsedReceipt.amount || Number(claimedAmount) || 0;
+
+    if (!amt || amt <= 0 || !txId) {
+        return {
+            valid: false,
+            reason: "በደረሰኙ ውስጥ ትክክለኛ Amount ወይም Transaction ID አልተገኘም"
+        };
+    }
+
+    if (processedMacrodroidTx.has(txId)) {
+        return {
+            valid: false,
+            reason: "ይህ Transaction ID ቀድሞ ጥቅም ላይ ውሏል"
+        };
+    }
+
+    const hasMatchingSms = receivedTelebirrSmsList.some(
+        sms => Number(sms.amount) === Number(amt) && String(sms.transactionId).toUpperCase() === txId
+    );
+
+    if (!hasMatchingSms) {
+        return {
+            valid: false,
+            reason: "ከቴሌብር (127) የተላከ የሚዛመድ SMS አልተገኘም (የውሸት ወይም SMS ያልገባ ደረሰኝ)"
+        };
+    }
+
+    return { valid: true, amount: amt, transactionId: txId };
+}
+
 async function creditDepositToUser(targetUserId, amount, txId, sourceLabel = "Telebirr SMS") {
     const cleanId = String(targetUserId || "").trim();
     if (!cleanId || !/^\d+$/.test(cleanId)) return null;
@@ -1572,7 +1608,6 @@ app.post('/api/macrodroid-payment', async (req, res) => {
         const { amount, transactionId, embeddedUserId } = parseTelebirrSms(cleanMessage);
         const requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
 
-        // 1. Amount እና Transaction ID ሁለቱም መገኘታቸውን ማረጋገጥ
         if (!amount || !transactionId) {
             const missingReason = !amount && !transactionId
                 ? 'Amount እና Transaction ID በSMS ውስጥ አልተገኙም'
@@ -1583,8 +1618,7 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             for (let adminChatId of ADMIN_CHAT_IDS) {
                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     chat_id: adminChatId,
-                    text: `❌ *AZ BINGO - ደረሰኝ Reject ተደርጓል*\n\n⚠️ *ምክንያት:* ${missingReason}\n💰 Amount: *${amount || 'N/A'}*\n🧾 Tx ID: *${transactionId || 'N/A'}*\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
-                    parse_mode: 'Markdown'
+                    text: `❌ AZ BINGO - ደረሰኝ Reject ተደርጓል\n\n⚠️ ምክንያት: ${missingReason}\n💰 Amount: ${amount || 'N/A'}\n🧾 Tx ID: ${transactionId || 'N/A'}\n⏱ ሰዓት: ${requestTimeStr}\n\n📄 SMS:\n${cleanMessage}`
                 }).catch(() => {});
             }
 
@@ -1597,7 +1631,6 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             });
         }
 
-        // 2. ተመሳሳይ Transaction ID ቀድሞ ጥቅም ላይ መዋሉን ማረጋገጥ
         if (processedMacrodroidTx.has(transactionId)) {
             return res.status(200).json({
                 success: true,
@@ -1608,7 +1641,14 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             });
         }
 
-        // 3. በ pendingRequests ውስጥ Amount እና Transaction ID (ካለ) የሚያዛምድ ጥያቄ መፈለግ
+        // ከ127 የገባ ትክክለኛ SMS መሆኑን መዝግብ
+        receivedTelebirrSmsList.push({
+            amount: Number(amount),
+            transactionId: String(transactionId).toUpperCase(),
+            rawMessage: cleanMessage,
+            receivedAt: Date.now()
+        });
+
         const matchedPendingEntry = Object.entries(pendingRequests).find(([_, r]) => {
             const isDep = String(r.type || 'deposit').toLowerCase() === 'deposit';
             if (!isDep) return false;
@@ -1617,10 +1657,7 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             if (!amountMatches) return false;
 
             const userProvidedTx = extractTxIdFromUserReceipt(r.receipt || r.receiptText || '');
-            if (!userProvidedTx) return false;
-
-            const txMatches = userProvidedTx === transactionId;
-            if (!txMatches) return false;
+            if (!userProvidedTx || userProvidedTx !== transactionId) return false;
 
             if (embeddedUserId) {
                 return String(r.userId).trim() === String(embeddedUserId).trim();
@@ -1639,8 +1676,7 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             for (let adminChatId of ADMIN_CHAT_IDS) {
                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     chat_id: adminChatId,
-                    text: `✅ *AZ BINGO - ዲፖዚት በAmount & Tx ID Match ጸድቋል*\n\n👤 ስም: *${reqData.username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 Amount: *${amount} ብር*\n🧾 Tx ID: \`${transactionId}\`\n💼 አዲስ ሂሳብ: *${newBal} ብር*\n🆔 ሪኩዌስት ID: \`${reqId}\`\n⏱ ሰዓት: _${requestTimeStr}_`,
-                    parse_mode: 'Markdown'
+                    text: `✅ AZ BINGO - ዲፖዚት በAmount & Tx ID Match ጸድቋል\n\n👤 ስም: ${reqData.username || 'ተጫዋች'}\n🆔 ዩዘር ID: ${reqData.userId}\n💰 Amount: ${amount} ብር\n🧾 Tx ID: ${transactionId}\n💼 አዲስ ሂሳብ: ${newBal} ብር\n🆔 ሪኩዌስት ID: ${reqId}\n⏱ ሰዓት: ${requestTimeStr}`
                 }).catch(() => {});
             }
 
@@ -1656,22 +1692,11 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             });
         }
 
-        // 4. Amount እና Tx ID ቢገኙም የሚዛመድ Pending Request ካልተገኘ Reject ማድረግ
-        const noMatchReason = 'Amount እና Transaction ID ከተጠቃሚው pending deposit ጥያቄ ጋር አልተዛመዱም';
-
-        for (let adminChatId of ADMIN_CHAT_IDS) {
-            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-                chat_id: adminChatId,
-                text: `❌ *AZ BINGO - ደረሰኝ Reject ተደርጓል (No Match)*\n\n⚠️ *ምክንያት:* ${noMatchReason}\n💰 Amount: *${amount} ብር*\n🧾 Tx ID: \`${transactionId}\`\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
-                parse_mode: 'Markdown'
-            }).catch(() => {});
-        }
-
         return res.status(200).json({
             success: true,
             autoApproved: false,
-            rejected: true,
-            reason: noMatchReason,
+            rejected: false,
+            smsRecorded: true,
             parsed: { amount, transactionId, embeddedUserId }
         });
     } catch (err) {
@@ -1691,6 +1716,26 @@ app.post('/api/financial-request', async (req, bodyRes) => {
         let cleanUserId = String(userId || 'unknown');
         await addUserToDbAndSet(cleanUserId);
 
+        let parsedAmount = Number(amount) || 0;
+
+        // SMS ሳይላክ ወይም የውሸት Amount / Transaction ID ቢጽፍ ወዲያው Reject ማድረግ
+        if (type === 'deposit') {
+            const checkResult = validateDepositAgainstSms(parsedAmount, receiptText || '');
+            if (!checkResult.valid) {
+                for (let adminChatId of ADMIN_CHAT_IDS) {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: adminChatId,
+                        text: `❌ AZ BINGO - የውሸት ወይም SMS ያልገባ ዲፖዚት Reject ተደርጓል\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: ${cleanUserId}\n💰 Amount: ${parsedAmount} ብር\n⚠️ ምክንያት: ${checkResult.reason}`
+                    }).catch(() => {});
+                }
+                return bodyRes.json({
+                    success: false,
+                    rejected: true,
+                    message: `❌ ደረሰኝዎ Reject ተደርጓል፦ ${checkResult.reason}`
+                });
+            }
+        }
+
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
         let cooldownTime = 10 * 60 * 1000;
@@ -1706,7 +1751,6 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             return bodyRes.json({ success: false, message: "⚠️ ገና ያልጸደቀ የክፍያ ጥያቄ አለዎት! እባክዎ አድሚኑ እስኪቀበለው ይጠብቁ።" });
         }
 
-        let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
         if (type === 'withdraw' || type === 'withdrawal') {
@@ -2156,6 +2200,30 @@ io.on('connection', (socket) => {
         let cleanUserId = String(userId || 'unknown');
         await addUserToDbAndSet(cleanUserId);
 
+        let parsedAmount = Number(amount) || 0;
+
+        // SMS ሳይላክ ወይም የውሸት Amount / Transaction ID ቢጽፍ ወዲያው Reject ማድረግ
+        if (type === 'deposit') {
+            const checkResult = validateDepositAgainstSms(parsedAmount, receipt || '');
+            if (!checkResult.valid) {
+                for (let adminChatId of ADMIN_CHAT_IDS) {
+                    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                        chat_id: adminChatId,
+                        text: `❌ AZ BINGO - የውሸት ወይም SMS ያልገባ ዲፖዚት Reject ተደርጓል\n\n👤 ስም: ${username || 'ተጫዋች'}\n🆔 ዩዘር ID: ${cleanUserId}\n💰 Amount: ${parsedAmount} ብር\n⚠️ ምክንያት: ${checkResult.reason}`
+                    }).catch(() => {});
+                }
+                socket.emit('financialRejected', {
+                    type,
+                    amount: parsedAmount,
+                    balance: userWallets[cleanUserId] || 0,
+                    status: 'rejected',
+                    reason: checkResult.reason
+                });
+                socket.emit('financialError', { message: `❌ ደረሰኝዎ Reject ተደርጓል፦ ${checkResult.reason}` });
+                return;
+            }
+        }
+
         let lastRequestTime = userLastRequestTimeMap[cleanUserId] || 0;
         let nowTime = Date.now();
         let cooldownTime = 10 * 60 * 1000;
@@ -2175,7 +2243,6 @@ io.on('connection', (socket) => {
 
         userLastRequestTimeMap[cleanUserId] = nowTime;
 
-        let parsedAmount = Number(amount) || 0;
         let currentWalletBal = userWallets[cleanUserId] || 0;
 
         if (type === 'withdraw' || type === 'withdrawal') {
