@@ -1461,7 +1461,6 @@ function parseTelebirrSms(message) {
     );
     const transactionId = txMatch ? txMatch[1].toUpperCase() : null;
 
-    // በSMS ውስጥ የTelegram User ID (ለምሳሌ "ID: 123456789" ወይም "UID 123456789") ተጽፎ ከሆነ ለማውጣት
     const uidMatch = cleanMsg.match(/(?:user\s*id|uid|id)[:\s#-]*(\d{5,15})/i);
     const embeddedUserId = uidMatch ? uidMatch[1] : null;
 
@@ -1470,6 +1469,21 @@ function parseTelebirrSms(message) {
         transactionId,
         embeddedUserId
     };
+}
+
+function extractTxIdFromUserReceipt(receiptStr) {
+    const cleanReceipt = String(receiptStr || "").trim().toUpperCase();
+    if (!cleanReceipt) return null;
+
+    const labeledMatch = cleanReceipt.match(
+        /(?:transaction\s*(?:id|no|number)?[:\s#-]*|ref[:\s#-]*|receipt\s*(?:no|number|id)?[:\s#-]*)([A-Z0-9]{5,25})/i
+    );
+    if (labeledMatch && labeledMatch[1]) {
+        return labeledMatch[1].toUpperCase();
+    }
+
+    const tokenMatch = cleanReceipt.match(/\b([A-Z0-9]{8,25})\b/i);
+    return tokenMatch ? tokenMatch[1].toUpperCase() : null;
 }
 
 async function creditDepositToUser(targetUserId, amount, txId, sourceLabel = "Telebirr SMS") {
@@ -1556,62 +1570,76 @@ app.post('/api/macrodroid-payment', async (req, res) => {
 
         const cleanMessage = message.trim();
         const { amount, transactionId, embeddedUserId } = parseTelebirrSms(cleanMessage);
-
-        if (transactionId && processedMacrodroidTx.has(transactionId)) {
-            return res.status(200).json({
-                success: true,
-                duplicate: true,
-                transactionId,
-                message: 'Transaction already processed'
-            });
-        }
-
-        if (transactionId) {
-            processedMacrodroidTx.add(transactionId);
-        }
-
         const requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
 
-        // በSMS ውስጥ embeddedUserId ካለ በቀጥታ ዲፖዚት እናደርጋለን
-        if (embeddedUserId && amount) {
-            const newBal = await creditDepositToUser(embeddedUserId, amount, transactionId, 'MacroDroid Auto SMS');
+        // 1. Amount እና Transaction ID ሁለቱም መገኘታቸውን ማረጋገጥ
+        if (!amount || !transactionId) {
+            const missingReason = !amount && !transactionId
+                ? 'Amount እና Transaction ID በSMS ውስጥ አልተገኙም'
+                : !amount
+                    ? 'Amount በSMS ውስጥ አልተገኘም'
+                    : 'Transaction ID በSMS ውስጥ አልተገኘም';
 
             for (let adminChatId of ADMIN_CHAT_IDS) {
                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     chat_id: adminChatId,
-                    text: `🤖 *AZ BINGO - አውቶማቲክ ቴሌብር ዲፖዚት ጸድቋል*\n\n🆔 ዩዘር ID: \`${embeddedUserId}\`\n💰 የተጨመረ: *${amount} ብር*\n💼 አዲስ ሂሳብ: *${newBal} ብር*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
+                    text: `❌ *AZ BINGO - ደረሰኝ Reject ተደርጓል*\n\n⚠️ *ምክንያት:* ${missingReason}\n💰 Amount: *${amount || 'N/A'}*\n🧾 Tx ID: *${transactionId || 'N/A'}*\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
                     parse_mode: 'Markdown'
                 }).catch(() => {});
             }
 
             return res.status(200).json({
                 success: true,
-                autoApproved: true,
-                userId: embeddedUserId,
-                amount,
-                transactionId,
-                balance: newBal
+                autoApproved: false,
+                rejected: true,
+                reason: missingReason,
+                parsed: { amount, transactionId, embeddedUserId }
             });
         }
 
-        // በpendingRequests ውስጥ ተመሳሳይ መጠን ያለው ዲፖዚት ጥያቄ ካለ በራስ-ሰር ለማጽደቅ
-        const matchedPendingEntry = amount
-            ? Object.entries(pendingRequests).find(([_, r]) => {
-                const isDep = String(r.type || 'deposit').toLowerCase() === 'deposit';
-                return isDep && Number(r.amount) === Number(amount);
-            })
-            : null;
+        // 2. ተመሳሳይ Transaction ID ቀድሞ ጥቅም ላይ መዋሉን ማረጋገጥ
+        if (processedMacrodroidTx.has(transactionId)) {
+            return res.status(200).json({
+                success: true,
+                duplicate: true,
+                rejected: true,
+                transactionId,
+                reason: 'ይህ Transaction ID ቀድሞ ጥቅም ላይ ውሏል'
+            });
+        }
+
+        // 3. በ pendingRequests ውስጥ Amount እና Transaction ID (ካለ) የሚያዛምድ ጥያቄ መፈለግ
+        const matchedPendingEntry = Object.entries(pendingRequests).find(([_, r]) => {
+            const isDep = String(r.type || 'deposit').toLowerCase() === 'deposit';
+            if (!isDep) return false;
+
+            const amountMatches = Number(r.amount) === Number(amount);
+            if (!amountMatches) return false;
+
+            const userProvidedTx = extractTxIdFromUserReceipt(r.receipt || r.receiptText || '');
+            if (!userProvidedTx) return false;
+
+            const txMatches = userProvidedTx === transactionId;
+            if (!txMatches) return false;
+
+            if (embeddedUserId) {
+                return String(r.userId).trim() === String(embeddedUserId).trim();
+            }
+
+            return true;
+        });
 
         if (matchedPendingEntry) {
             const [reqId, reqData] = matchedPendingEntry;
             delete pendingRequests[reqId];
+            processedMacrodroidTx.add(transactionId);
 
-            const newBal = await creditDepositToUser(reqData.userId, amount, transactionId, 'MacroDroid Matched Request');
+            const newBal = await creditDepositToUser(reqData.userId, amount, transactionId, 'MacroDroid Strict Match');
 
             for (let adminChatId of ADMIN_CHAT_IDS) {
                 await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     chat_id: adminChatId,
-                    text: `🤖✅ *AZ BINGO - የቀረበ ዲፖዚት በSMS ተረጋግጦ ጸድቋል*\n\n👤 ስም: *${reqData.username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${amount} ብር*\n💼 አዲስ ሂሳብ: *${newBal} ብር*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n🆔 ሪኩዌስት ID: \`${reqId}\`\n⏱ ሰዓት: _${requestTimeStr}_`,
+                    text: `✅ *AZ BINGO - ዲፖዚት በAmount & Tx ID Match ጸድቋል*\n\n👤 ስም: *${reqData.username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 Amount: *${amount} ብር*\n🧾 Tx ID: \`${transactionId}\`\n💼 አዲስ ሂሳብ: *${newBal} ብር*\n🆔 ሪኩዌስት ID: \`${reqId}\`\n⏱ ሰዓት: _${requestTimeStr}_`,
                     parse_mode: 'Markdown'
                 }).catch(() => {});
             }
@@ -1619,6 +1647,7 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             return res.status(200).json({
                 success: true,
                 autoApproved: true,
+                rejected: false,
                 matchedRequestId: reqId,
                 userId: reqData.userId,
                 amount,
@@ -1627,11 +1656,13 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             });
         }
 
-        // ተጠቃሚው በSMS ውስጥ ID ሳይጽፍ ወይም pending request ሳይኖር SMS ሲገባ ለአድሚን ማሳወቂያ መላክ
+        // 4. Amount እና Tx ID ቢገኙም የሚዛመድ Pending Request ካልተገኘ Reject ማድረግ
+        const noMatchReason = 'Amount እና Transaction ID ከተጠቃሚው pending deposit ጥያቄ ጋር አልተዛመዱም';
+
         for (let adminChatId of ADMIN_CHAT_IDS) {
             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                 chat_id: adminChatId,
-                text: `📩 *AZ BINGO - አዲስ የቴሌብር SMS ደርሷል (MacroDroid)*\n\n💰 የተገኘ መጠን: *${amount !== null ? `${amount} ብር` : 'አልተለየም'}*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *ሙሉ SMS:*\n\`${cleanMessage}\``,
+                text: `❌ *AZ BINGO - ደረሰኝ Reject ተደርጓል (No Match)*\n\n⚠️ *ምክንያት:* ${noMatchReason}\n💰 Amount: *${amount} ብር*\n🧾 Tx ID: \`${transactionId}\`\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
                 parse_mode: 'Markdown'
             }).catch(() => {});
         }
@@ -1639,6 +1670,8 @@ app.post('/api/macrodroid-payment', async (req, res) => {
         return res.status(200).json({
             success: true,
             autoApproved: false,
+            rejected: true,
+            reason: noMatchReason,
             parsed: { amount, transactionId, embeddedUserId }
         });
     } catch (err) {
@@ -1694,6 +1727,8 @@ app.post('/api/financial-request', async (req, bodyRes) => {
             type,
             amount: parsedAmount,
             username,
+            receipt: receiptText || '',
+            receiptText: receiptText || '',
             socketId: null,
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
@@ -2161,6 +2196,8 @@ io.on('connection', (socket) => {
             type,
             amount: parsedAmount,
             username,
+            receipt: receipt || '',
+            receiptText: receipt || '',
             socketId: socket.id,
             timestamp: Date.now(),
             requestTimeStr: requestTimeStr,
