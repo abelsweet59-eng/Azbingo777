@@ -16,6 +16,16 @@ app.express = express;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        return res.status(400).json({
+            success: false,
+            error: 'Invalid JSON body from MacroDroid (check newlines or quotes in SMS)'
+        });
+    }
+    next(err);
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -31,6 +41,15 @@ const userWallets = {};
 const allRegisteredUsers = new Set();
 const processedMacrodroidTx = new Set();
 const receivedTelebirrSmsList = []; // ከ127 የገቡ ትክክለኛ SMS ዝርዝር { amount, transactionId, rawMessage, receivedAt }
+
+const COMMON_SMS_WORDS = new Set([
+    "DEAR", "ABEL", "YOU", "HAVE", "RECEIVED", "FROM", "ON", "YOUR",
+    "TRANSACTION", "NUMBER", "IS", "ID", "NO", "CURRENT", "EMONEY",
+    "ACCOUNT", "BALANCE", "THANK", "THANKYOU", "FOR", "USING",
+    "TELEBIRR", "ETHIO", "TELECOM", "ETHIOTELECOM", "BIRR", "ETB",
+    "WITH", "TO", "SENT", "PAID", "CREDIT", "SERVICE", "FEE", "REF",
+    "REFERENCE", "RECEIPT", "STATUS", "SUCCESS", "SUCCESSFUL"
+]);
 
 const registeredUserSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
@@ -1458,9 +1477,19 @@ function parseTelebirrSms(message) {
     const amount = rawAmount ? parseFloat(rawAmount.replace(/,/g, "")) : null;
 
     const txMatch = cleanMsg.match(
-        /(?:transaction\s*(?:id|no|number)?[:\s#-]*|ref[:\s#-]*|receipt\s*(?:no|number|id)?[:\s#-]*)([A-Z0-9]{5,25})/i
+        /(?:transaction\s*(?:number\s+is|id|no|number)?[:\s#-]*|ref(?:erence)?[:\s#-]*|receipt\s*(?:no|number|id)?[:\s#-]*|tx\s*id[:\s#-]*)([A-Z0-9]{5,25})/i
     );
-    const transactionId = txMatch ? txMatch[1].toUpperCase() : null;
+    let transactionId = txMatch ? txMatch[1].toUpperCase() : null;
+
+    if (!transactionId || COMMON_SMS_WORDS.has(transactionId)) {
+        const candidates = cleanMsg.toUpperCase().match(/\b[A-Z0-9]{6,25}\b/g) || [];
+        transactionId = candidates.find(tok =>
+            !COMMON_SMS_WORDS.has(tok) &&
+            !/^\d+$/.test(tok) &&
+            /[A-Z]/.test(tok) &&
+            /\d/.test(tok)
+        ) || candidates.find(tok => !COMMON_SMS_WORDS.has(tok) && !/^\d+$/.test(tok)) || null;
+    }
 
     const uidMatch = cleanMsg.match(/(?:user\s*id|uid|id)[:\s#-]*(\d{5,15})/i);
     const embeddedUserId = uidMatch ? uidMatch[1] : null;
@@ -1473,38 +1502,41 @@ function parseTelebirrSms(message) {
 }
 
 function extractTxIdFromUserReceipt(receiptStr) {
-    const cleanReceipt = String(receiptStr || "").trim().toUpperCase();
+    const cleanReceipt = String(receiptStr || "").trim();
     if (!cleanReceipt) return null;
 
-    const labeledMatch = cleanReceipt.match(
-        /(?:transaction\s*(?:id|no|number)?[:\s#-]*|ref[:\s#-]*|receipt\s*(?:no|number|id)?[:\s#-]*)([A-Z0-9]{5,25})/i
-    );
-    if (labeledMatch && labeledMatch[1]) {
-        return labeledMatch[1].toUpperCase();
-    }
+    const parsed = parseTelebirrSms(cleanReceipt);
+    if (parsed.transactionId) return parsed.transactionId;
 
-    const tokenMatch = cleanReceipt.match(/\b([A-Z0-9]{8,25})\b/i);
-    return tokenMatch ? tokenMatch[1].toUpperCase() : null;
+    const upper = cleanReceipt.toUpperCase();
+    const candidates = upper.match(/\b[A-Z0-9]{5,25}\b/g) || [];
+    const bestCandidate = candidates.find(tok =>
+        !COMMON_SMS_WORDS.has(tok) &&
+        !/^\d+$/.test(tok) &&
+        /[A-Z]/.test(tok) &&
+        /\d/.test(tok)
+    ) || candidates.find(tok => !COMMON_SMS_WORDS.has(tok) && !/^\d+$/.test(tok)) || null;
+
+    return bestCandidate ? bestCandidate.toUpperCase() : null;
 }
 
-// ተጠቃሚው በአፕ ውስጥ ሲጠይቅ SMS (127) የገባ መሆኑን እና Amount + Transaction ID መዛመዱን ማረጋገጫ
 function validateDepositAgainstSms(claimedAmount, receiptStr) {
     const cleanReceipt = String(receiptStr || "").trim();
     const parsedReceipt = parseTelebirrSms(cleanReceipt);
     const txId = (parsedReceipt.transactionId || extractTxIdFromUserReceipt(cleanReceipt) || "").toUpperCase();
-    const amt = parsedReceipt.amount || Number(claimedAmount) || 0;
+    const amt = Number(claimedAmount) > 0 ? Number(claimedAmount) : (parsedReceipt.amount || 0);
 
     if (!amt || amt <= 0 || !txId) {
         return {
             valid: false,
-            reason: "በደረሰኙ ውስጥ ትክክለኛ Amount ወይም Transaction ID አልተገኘም"
+            reason: "በደረሰኙ ውስጥ ትክክለኛ Amount ወይም Transaction Number አልተገኘም"
         };
     }
 
     if (processedMacrodroidTx.has(txId)) {
         return {
             valid: false,
-            reason: "ይህ Transaction ID ቀድሞ ጥቅም ላይ ውሏል"
+            reason: "ይህ Transaction Number ቀድሞ ጥቅም ላይ ውሏል"
         };
     }
 
@@ -1594,7 +1626,10 @@ app.get('/api/macrodroid-payment', (req, res) => {
 
 app.post('/api/macrodroid-payment', async (req, res) => {
     try {
-        const { secret, message } = req.body || {};
+        const rawBody = typeof req.body === 'string' ? req.body : null;
+        const { secret, message } = typeof req.body === 'object' && req.body !== null
+            ? req.body
+            : { secret: MACRODROID_SECRET, message: rawBody };
 
         if (!secret || secret !== MACRODROID_SECRET) {
             return res.status(401).json({ success: false, error: 'Unauthorized' });
@@ -1641,7 +1676,6 @@ app.post('/api/macrodroid-payment', async (req, res) => {
             });
         }
 
-        // ከ127 የገባ ትክክለኛ SMS መሆኑን መዝግብ
         receivedTelebirrSmsList.push({
             amount: Number(amount),
             transactionId: String(transactionId).toUpperCase(),
@@ -1718,7 +1752,6 @@ app.post('/api/financial-request', async (req, bodyRes) => {
 
         let parsedAmount = Number(amount) || 0;
 
-        // SMS ሳይላክ ወይም የውሸት Amount / Transaction ID ቢጽፍ ወዲያው Reject ማድረግ
         if (type === 'deposit') {
             const checkResult = validateDepositAgainstSms(parsedAmount, receiptText || '');
             if (!checkResult.valid) {
@@ -2202,7 +2235,6 @@ io.on('connection', (socket) => {
 
         let parsedAmount = Number(amount) || 0;
 
-        // SMS ሳይላክ ወይም የውሸት Amount / Transaction ID ቢጽፍ ወዲያው Reject ማድረግ
         if (type === 'deposit') {
             const checkResult = validateDepositAgainstSms(parsedAmount, receipt || '');
             if (!checkResult.valid) {
