@@ -24,10 +24,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8816726564:AAG3ETwx98oBfjDV8I-BipzEXGZCnJPFezg";
 const ADMIN_CHAT_IDS = ["371093083", "7906963841"];
+const MACRODROID_SECRET = process.env.MACRODROID_SECRET || "azbingo_pay_2026_key";
 
 const claimedWelcomeBonusUsers = new Set();
 const userWallets = {};
 const allRegisteredUsers = new Set();
+const processedMacrodroidTx = new Set();
 
 const registeredUserSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
@@ -293,7 +295,7 @@ const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
 const BOT_TICK_INTERVAL_MS = 2000;
 const TEN_PERCENT_FLICKER_RATIO = 0.10;
-const MULTI_BOT_WIN_CHANCE = 0.20; // 20% እድል አልፎ አልፎ 2 ወይም 3 ቦቶች እንዲያሸንፉ
+const MULTI_BOT_WIN_CHANCE = 0.20;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -929,7 +931,6 @@ function startMainGameLoop() {
                     winnersCount = 1;
                 }
             } else if (!explicitRealForced && Math.random() < MULTI_BOT_WIN_CHANCE) {
-                // በ Standard Bot Mode (ሪል ዩዘር ሳይታዘዝ) በ 20% እድል 2 ወይም 3 ቦቶች ያሸንፋሉ
                 winnersCount = Math.random() < 0.5 ? 2 : 3;
             }
 
@@ -1272,7 +1273,11 @@ async function pollTelegramUpdates() {
                         continue;
                     }
 
-                    let targetSocket = io.sockets.sockets.get(reqData.socketId);
+                    let targetSocket = reqData.socketId ? io.sockets.sockets.get(reqData.socketId) : null;
+                    if (!targetSocket && reqData.userId) {
+                        let onlineObj = onlineRealUsers.find(u => u.userId === String(reqData.userId));
+                        if (onlineObj) targetSocket = io.sockets.sockets.get(onlineObj.socketId);
+                    }
                     let reqType = String(reqData.type || 'deposit').toLowerCase().trim();
                     let rawAmount = Number(reqData.amount) || 0;
                     let finalAmountForClient = (reqType === 'withdraw' || reqType === 'withdrawal') ? -Math.abs(rawAmount) : Math.abs(rawAmount);
@@ -1332,7 +1337,7 @@ async function pollTelegramUpdates() {
                             offlineApprovedQueue[reqData.userId].push(successPayload);
                         }
 
-                        if (reqData.chatId) {
+                        if (reqData.chatId && /^\d+$/.test(String(reqData.chatId))) {
                             let successMsg = `🎉 *AZ BINGO - የገንዘብ ጥያቄዎ ጸድቋል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት ${rawAmount} ብር ተስተካክሏል። እናመሰግናለን! 🙏`;
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                 chat_id: reqData.chatId,
@@ -1364,7 +1369,7 @@ async function pollTelegramUpdates() {
                             await setWalletBalance(reqData.userId, (userWallets[reqData.userId] || 0) + Math.abs(rawAmount));
                         }
 
-                        if (reqData.chatId) {
+                        if (reqData.chatId && /^\d+$/.test(String(reqData.chatId))) {
                             let rejectMsg = `❌ *AZ BINGO - የገንዘብ ጥያቄዎ ተሰርዟል!*\n\nሰላም *${reqData.username}*፣ የጠየቁት የክፍያ ጥያቄ (${reqData.amount} ብር) በአድሚኑ ተሰርዟል።\n\n⚠️ *ምክንያት:* ያስገቡት ደረሰኝ ወይም መረጃ ልክ አይደለም። እባክዎ ትክክለኛውን ደረሰኝ በማስገባት እንደገና ይሞክሩ። 🙏`;
                             await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                                 chat_id: reqData.chatId,
@@ -1441,6 +1446,206 @@ async function sendAdminFinancialRequest(requestId, type, amount, username, user
         } catch (error) {}
     }
 }
+
+function parseTelebirrSms(message) {
+    const cleanMsg = String(message || "").trim();
+
+    const amountMatch = cleanMsg.match(
+        /(?:ETB|Birr)\s*([\d,]+(?:\.\d{1,2})?)|([\d,]+(?:\.\d{1,2})?)\s*(?:ETB|Birr)/i
+    );
+    const rawAmount = amountMatch ? (amountMatch[1] || amountMatch[2]) : null;
+    const amount = rawAmount ? parseFloat(rawAmount.replace(/,/g, "")) : null;
+
+    const txMatch = cleanMsg.match(
+        /(?:transaction\s*(?:id|no|number)?[:\s#-]*|ref[:\s#-]*|receipt\s*(?:no|number|id)?[:\s#-]*)([A-Z0-9]{5,25})/i
+    );
+    const transactionId = txMatch ? txMatch[1].toUpperCase() : null;
+
+    // በSMS ውስጥ የTelegram User ID (ለምሳሌ "ID: 123456789" ወይም "UID 123456789") ተጽፎ ከሆነ ለማውጣት
+    const uidMatch = cleanMsg.match(/(?:user\s*id|uid|id)[:\s#-]*(\d{5,15})/i);
+    const embeddedUserId = uidMatch ? uidMatch[1] : null;
+
+    return {
+        amount: Number.isFinite(amount) && amount > 0 ? amount : null,
+        transactionId,
+        embeddedUserId
+    };
+}
+
+async function creditDepositToUser(targetUserId, amount, txId, sourceLabel = "Telebirr SMS") {
+    const cleanId = String(targetUserId || "").trim();
+    if (!cleanId || !/^\d+$/.test(cleanId)) return null;
+
+    await addUserToDbAndSet(cleanId);
+    const addAmt = Number(Math.abs(Number(amount) || 0).toFixed(2));
+    if (addAmt <= 0) return null;
+
+    const updatedBal = await setWalletBalance(cleanId, (userWallets[cleanId] || 0) + addAmt);
+
+    let referrerId = userReferrers[cleanId];
+    if (referrerId) {
+        let bonusForReferrer = 5;
+        let updatedRefBal = await setWalletBalance(referrerId, (userWallets[referrerId] || 0) + bonusForReferrer);
+        referralEarnings[referrerId] = Number(((referralEarnings[referrerId] || 0) + bonusForReferrer).toFixed(2));
+
+        let refPayload = {
+            type: 'bonus',
+            amount: bonusForReferrer,
+            adjustedAmount: bonusForReferrer,
+            balance: updatedRefBal
+        };
+
+        let refSocketObj = onlineRealUsers.find(u => u.userId === referrerId);
+        if (refSocketObj) {
+            let refSocket = io.sockets.sockets.get(refSocketObj.socketId);
+            if (refSocket) {
+                refSocket.emit('financialApproved', refPayload);
+                refSocket.emit('chatNotification', { message: `🎁 ዎው! ጓደኛዎ የመጀመሪያውን ዲፖዚት በማድረጉ 5 ብር የሪፈራል ቦነስ አግኝተዋል!` });
+            }
+        } else {
+            if (!offlineApprovedQueue[referrerId]) offlineApprovedQueue[referrerId] = [];
+            offlineApprovedQueue[referrerId].push(refPayload);
+        }
+    }
+
+    const payload = {
+        type: 'deposit',
+        amount: addAmt,
+        adjustedAmount: addAmt,
+        balance: updatedBal,
+        txId: txId || null,
+        source: sourceLabel
+    };
+
+    const userSocketObj = onlineRealUsers.find(u => u.userId === cleanId);
+    if (userSocketObj) {
+        const targetSocket = io.sockets.sockets.get(userSocketObj.socketId);
+        if (targetSocket) {
+            targetSocket.emit('financialApproved', payload);
+            targetSocket.emit('updateBalance', { balance: updatedBal });
+        }
+    } else {
+        if (!offlineApprovedQueue[cleanId]) offlineApprovedQueue[cleanId] = [];
+        offlineApprovedQueue[cleanId].push(payload);
+    }
+
+    await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        chat_id: cleanId,
+        text: `🎉 *AZ BINGO - ዲፖዚትዎ በራስ-ሰር ተረጋግጦ ገቢ ሆኗል!*\n\n💰 የተጨመረው መጠን: *${addAmt} ብር*\n💼 አዲስ ቀሪ ሂሳብ: *${updatedBal} ብር*${txId ? `\n🧾 ደረሰኝ / Tx ID: \`${txId}\`` : ''}`,
+        parse_mode: 'Markdown'
+    }).catch(() => {});
+
+    return updatedBal;
+}
+
+app.get('/api/macrodroid-payment', (req, res) => {
+    res.status(200).json({ ok: true, service: 'azbingo777-macrodroid-webhook' });
+});
+
+app.post('/api/macrodroid-payment', async (req, res) => {
+    try {
+        const { secret, message } = req.body || {};
+
+        if (!secret || secret !== MACRODROID_SECRET) {
+            return res.status(401).json({ success: false, error: 'Unauthorized' });
+        }
+
+        if (!message || typeof message !== 'string' || !message.trim()) {
+            return res.status(400).json({ success: false, error: 'Missing message' });
+        }
+
+        const cleanMessage = message.trim();
+        const { amount, transactionId, embeddedUserId } = parseTelebirrSms(cleanMessage);
+
+        if (transactionId && processedMacrodroidTx.has(transactionId)) {
+            return res.status(200).json({
+                success: true,
+                duplicate: true,
+                transactionId,
+                message: 'Transaction already processed'
+            });
+        }
+
+        if (transactionId) {
+            processedMacrodroidTx.add(transactionId);
+        }
+
+        const requestTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Africa/Addis_Ababa' });
+
+        // በSMS ውስጥ embeddedUserId ካለ በቀጥታ ዲፖዚት እናደርጋለን
+        if (embeddedUserId && amount) {
+            const newBal = await creditDepositToUser(embeddedUserId, amount, transactionId, 'MacroDroid Auto SMS');
+
+            for (let adminChatId of ADMIN_CHAT_IDS) {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: adminChatId,
+                    text: `🤖 *AZ BINGO - አውቶማቲክ ቴሌብር ዲፖዚት ጸድቋል*\n\n🆔 ዩዘር ID: \`${embeddedUserId}\`\n💰 የተጨመረ: *${amount} ብር*\n💼 አዲስ ሂሳብ: *${newBal} ብር*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *SMS:*\n\`${cleanMessage}\``,
+                    parse_mode: 'Markdown'
+                }).catch(() => {});
+            }
+
+            return res.status(200).json({
+                success: true,
+                autoApproved: true,
+                userId: embeddedUserId,
+                amount,
+                transactionId,
+                balance: newBal
+            });
+        }
+
+        // በpendingRequests ውስጥ ተመሳሳይ መጠን ያለው ዲፖዚት ጥያቄ ካለ በራስ-ሰር ለማጽደቅ
+        const matchedPendingEntry = amount
+            ? Object.entries(pendingRequests).find(([_, r]) => {
+                const isDep = String(r.type || 'deposit').toLowerCase() === 'deposit';
+                return isDep && Number(r.amount) === Number(amount);
+            })
+            : null;
+
+        if (matchedPendingEntry) {
+            const [reqId, reqData] = matchedPendingEntry;
+            delete pendingRequests[reqId];
+
+            const newBal = await creditDepositToUser(reqData.userId, amount, transactionId, 'MacroDroid Matched Request');
+
+            for (let adminChatId of ADMIN_CHAT_IDS) {
+                await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    chat_id: adminChatId,
+                    text: `🤖✅ *AZ BINGO - የቀረበ ዲፖዚት በSMS ተረጋግጦ ጸድቋል*\n\n👤 ስም: *${reqData.username || 'ተጫዋች'}*\n🆔 ዩዘር ID: \`${reqData.userId}\`\n💰 መጠን: *${amount} ብር*\n💼 አዲስ ሂሳብ: *${newBal} ብር*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n🆔 ሪኩዌስት ID: \`${reqId}\`\n⏱ ሰዓት: _${requestTimeStr}_`,
+                    parse_mode: 'Markdown'
+                }).catch(() => {});
+            }
+
+            return res.status(200).json({
+                success: true,
+                autoApproved: true,
+                matchedRequestId: reqId,
+                userId: reqData.userId,
+                amount,
+                transactionId,
+                balance: newBal
+            });
+        }
+
+        // ተጠቃሚው በSMS ውስጥ ID ሳይጽፍ ወይም pending request ሳይኖር SMS ሲገባ ለአድሚን ማሳወቂያ መላክ
+        for (let adminChatId of ADMIN_CHAT_IDS) {
+            await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                chat_id: adminChatId,
+                text: `📩 *AZ BINGO - አዲስ የቴሌብር SMS ደርሷል (MacroDroid)*\n\n💰 የተገኘ መጠን: *${amount !== null ? `${amount} ብር` : 'አልተለየም'}*${transactionId ? `\n🧾 Tx ID: \`${transactionId}\`` : ''}\n⏱ ሰዓት: _${requestTimeStr}_\n\n📄 *ሙሉ SMS:*\n\`${cleanMessage}\``,
+                parse_mode: 'Markdown'
+            }).catch(() => {});
+        }
+
+        return res.status(200).json({
+            success: true,
+            autoApproved: false,
+            parsed: { amount, transactionId, embeddedUserId }
+        });
+    } catch (err) {
+        console.error('MacroDroid webhook error:', err);
+        return res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
 
 app.post('/api/financial-request', async (req, bodyRes) => {
     try {
