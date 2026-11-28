@@ -62,6 +62,19 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
+
+        .az-ludo-hub-logo-box {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+
+        .az-ludo-hub-logo-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -190,14 +203,223 @@
                             <div class="text-[10px] font-bold text-amber-300/90 leading-tight">ኢዜድ ሉዶ</div>
                         </div>
 
-                        <div class="relative py-2 flex flex-col items-center justify-center z-10">
-                            <div class="w-full max-w-[130px] bg-[#0f2356]/90 border border-amber-500/50 rounded-lg p-1.5 shadow-xl">
-                                <div class="grid grid-cols-2 grid-rows-2 gap-1 h-[96px]">
-                                    <div class="rounded bg-rose-600 border border-white/30 flex items-center justify-center text-base font-black shadow">🎲</div>
-                                    <div class="rounded bg-emerald-600 border border-white/30 flex items-center justify-center text-base font-black shadow">👑</div>
-                                    <div class="rounded bg-sky-600 border border-white/30 flex items-center justify-center text-base font-black shadow">🎯</div>
-                                    <div class="rounded bg-amber-500 border border-white/30 text-slate-950 flex items-center justify-center text-sm font-black shadow">★</div>
-                                </div>
+                        <!-- AZ LUDO Lobby Logo (Final HTML + CSS + SVG Code) -->
+                        <div class="relative py-1.5 flex flex-col items-center justify-center z-10" id="azLudoLobbyLogo">
+                            <div class="az-ludo-hub-logo-box w-full">
+                                <svg class="az-ludo-hub-logo-svg" viewBox="0 0 380 250" width="100%" height="auto" role="img" aria-label="AZ LUDO Logo">
+                                    <defs>
+                                        <radialGradient id="azBgGrad" cx="50%" cy="35%" r="65%">
+                                            <stop offset="0%" stop-color="#1e4e8c" />
+                                            <stop offset="55%" stop-color="#0d2547" />
+                                            <stop offset="100%" stop-color="#061224" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azFloorGlow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" stop-color="#000000" stop-opacity="0.72" />
+                                            <stop offset="70%" stop-color="#000000" stop-opacity="0.25" />
+                                            <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+                                        </radialGradient>
+
+                                        <linearGradient id="azCrownGold" x1="15%" y1="0%" x2="85%" y2="100%">
+                                            <stop offset="0%" stop-color="#fff7b2" />
+                                            <stop offset="28%" stop-color="#ffd02f" />
+                                            <stop offset="68%" stop-color="#e68a00" />
+                                            <stop offset="100%" stop-color="#995200" />
+                                        </linearGradient>
+
+                                        <radialGradient id="azBallBlue" cx="32%" cy="24%" r="72%">
+                                            <stop offset="0%" stop-color="#7dd3fc" />
+                                            <stop offset="45%" stop-color="#0284c7" />
+                                            <stop offset="100%" stop-color="#082f49" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azBallRed" cx="32%" cy="24%" r="72%">
+                                            <stop offset="0%" stop-color="#fca5a5" />
+                                            <stop offset="45%" stop-color="#dc2626" />
+                                            <stop offset="100%" stop-color="#450a0a" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azBallGreen" cx="32%" cy="24%" r="72%">
+                                            <stop offset="0%" stop-color="#86efac" />
+                                            <stop offset="45%" stop-color="#16a34a" />
+                                            <stop offset="100%" stop-color="#052e16" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azBallYellow" cx="32%" cy="24%" r="72%">
+                                            <stop offset="0%" stop-color="#fde047" />
+                                            <stop offset="45%" stop-color="#eab308" />
+                                            <stop offset="100%" stop-color="#422006" />
+                                        </radialGradient>
+
+                                        <linearGradient id="azDieTop" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#ffffff" />
+                                            <stop offset="100%" stop-color="#f1f5f9" />
+                                        </linearGradient>
+
+                                        <linearGradient id="azDieLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#e2e8f0" />
+                                            <stop offset="100%" stop-color="#cbd5e1" />
+                                        </linearGradient>
+
+                                        <linearGradient id="azDieRight" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" stop-color="#cbd5e1" />
+                                            <stop offset="100%" stop-color="#94a3b8" />
+                                        </linearGradient>
+
+                                        <radialGradient id="azPawnBlue" cx="32%" cy="22%" r="72%">
+                                            <stop offset="0%" stop-color="#93c5fd" />
+                                            <stop offset="50%" stop-color="#2563eb" />
+                                            <stop offset="100%" stop-color="#172554" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azPawnRed" cx="32%" cy="22%" r="72%">
+                                            <stop offset="0%" stop-color="#fca5a5" />
+                                            <stop offset="50%" stop-color="#dc2626" />
+                                            <stop offset="100%" stop-color="#450a0a" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azPawnGreen" cx="32%" cy="22%" r="72%">
+                                            <stop offset="0%" stop-color="#86efac" />
+                                            <stop offset="50%" stop-color="#16a34a" />
+                                            <stop offset="100%" stop-color="#052e16" />
+                                        </radialGradient>
+
+                                        <radialGradient id="azPawnYellow" cx="32%" cy="22%" r="72%">
+                                            <stop offset="0%" stop-color="#fde047" />
+                                            <stop offset="50%" stop-color="#eab308" />
+                                            <stop offset="100%" stop-color="#422006" />
+                                        </radialGradient>
+
+                                        <filter id="azDropShadow" x="-20%" y="-20%" width="140%" height="145%">
+                                            <feDropShadow dx="0" dy="7" stdDeviation="5.5" flood-color="#01060f" flood-opacity="0.65" />
+                                        </filter>
+                                    </defs>
+
+                                    <!-- Background -->
+                                    <rect x="0" y="0" width="380" height="250" rx="20" fill="url(#azBgGrad)" />
+                                    <ellipse cx="190" cy="192" rx="142" ry="22" fill="url(#azFloorGlow)" />
+
+                                    <!-- AZ LUDO Top Brand Label -->
+                                    <g transform="translate(215, 22)" filter="url(#azDropShadow)">
+                                        <rect x="0" y="0" width="118" height="28" rx="14" fill="#132b4f" stroke="#ffd54f" stroke-width="1.6" />
+                                        <text x="59" y="19" text-anchor="middle" fill="#ffe082"
+                                              font-family="'Segoe UI', Arial, sans-serif" font-size="14" font-weight="800" letter-spacing="2">
+                                            AZ LUDO
+                                        </text>
+                                    </g>
+
+                                    <!-- Golden Crown -->
+                                    <g transform="translate(96, 10)" filter="url(#azDropShadow)">
+                                        <path d="M14 36 L5 10 L30 22 L48 4 L66 22 L91 10 L82 36 Z"
+                                              fill="url(#azCrownGold)" stroke="#451a03" stroke-width="2.2" stroke-linejoin="round" />
+                                        <rect x="15" y="34" width="66" height="7.5" rx="3.8"
+                                              fill="url(#azCrownGold)" stroke="#451a03" stroke-width="2" />
+                                        <circle cx="48" cy="23" r="4.5" fill="#dc2626" stroke="#fff" stroke-width="1.1" />
+                                        <circle cx="28" cy="27.5" r="3.2" fill="#2563eb" stroke="#fff" stroke-width="1" />
+                                        <circle cx="68" cy="27.5" r="3.2" fill="#16a34a" stroke="#fff" stroke-width="1" />
+                                    </g>
+
+                                    <!-- Glossy LUDO Circular Letter Badges -->
+                                    <g transform="translate(76, 48)" filter="url(#azDropShadow)">
+                                        <circle cx="28" cy="26" r="24" fill="#ffffff" />
+                                        <circle cx="28" cy="26" r="21" fill="url(#azBallBlue)" />
+                                        <text x="28" y="35" text-anchor="middle" fill="#ffffff"
+                                              font-family="'Arial Black', Impact, sans-serif" font-size="25" font-weight="900">L</text>
+
+                                        <circle cx="82" cy="26" r="24" fill="#ffffff" />
+                                        <circle cx="82" cy="26" r="21" fill="url(#azBallRed)" />
+                                        <text x="82" y="35" text-anchor="middle" fill="#ffffff"
+                                              font-family="'Arial Black', Impact, sans-serif" font-size="25" font-weight="900">U</text>
+
+                                        <circle cx="136" cy="26" r="24" fill="#ffffff" />
+                                        <circle cx="136" cy="26" r="21" fill="url(#azBallGreen)" />
+                                        <text x="136" y="35" text-anchor="middle" fill="#ffffff"
+                                              font-family="'Arial Black', Impact, sans-serif" font-size="25" font-weight="900">D</text>
+
+                                        <circle cx="190" cy="26" r="24" fill="#ffffff" />
+                                        <circle cx="190" cy="26" r="21" fill="url(#azBallYellow)" />
+                                        <text x="190" y="35" text-anchor="middle" fill="#ffffff"
+                                              font-family="'Arial Black', Impact, sans-serif" font-size="25" font-weight="900">O</text>
+                                    </g>
+
+                                    <!-- 3D Ludo Board -->
+                                    <g transform="translate(96, 110) skewX(-14)" filter="url(#azDropShadow)">
+                                        <rect x="0" y="5" width="188" height="84" rx="10" fill="#0f172a" />
+                                        <rect x="0" y="0" width="188" height="82" rx="10" fill="#f8fafc" stroke="#1e293b" stroke-width="2.2" />
+
+                                        <rect x="4" y="4" width="72" height="32" rx="4" fill="#dc2626" />
+                                        <rect x="13" y="9" width="54" height="22" rx="3" fill="#ffffff" />
+                                        <circle cx="27" cy="15.5" r="3" fill="#1e293b" />
+                                        <circle cx="53" cy="15.5" r="3" fill="#1e293b" />
+                                        <circle cx="27" cy="24.5" r="3" fill="#1e293b" />
+                                        <circle cx="53" cy="24.5" r="3" fill="#1e293b" />
+
+                                        <rect x="112" y="4" width="72" height="32" rx="4" fill="#16a34a" />
+                                        <rect x="121" y="9" width="54" height="22" rx="3" fill="#ffffff" />
+                                        <circle cx="135" cy="15.5" r="3" fill="#1e293b" />
+                                        <circle cx="161" cy="15.5" r="3" fill="#1e293b" />
+                                        <circle cx="135" cy="24.5" r="3" fill="#1e293b" />
+                                        <circle cx="161" cy="24.5" r="3" fill="#1e293b" />
+
+                                        <rect x="4" y="46" width="72" height="32" rx="4" fill="#2563eb" />
+                                        <rect x="13" y="51" width="54" height="22" rx="3" fill="#ffffff" />
+                                        <circle cx="27" cy="57.5" r="3" fill="#1e293b" />
+                                        <circle cx="53" cy="57.5" r="3" fill="#1e293b" />
+                                        <circle cx="27" cy="66.5" r="3" fill="#1e293b" />
+                                        <circle cx="53" cy="66.5" r="3" fill="#1e293b" />
+
+                                        <rect x="112" y="46" width="72" height="32" rx="4" fill="#eab308" />
+                                        <rect x="121" y="51" width="54" height="22" rx="3" fill="#ffffff" />
+                                        <circle cx="135" cy="57.5" r="3" fill="#1e293b" />
+                                        <circle cx="161" cy="57.5" r="3" fill="#1e293b" />
+                                        <circle cx="135" cy="66.5" r="3" fill="#1e293b" />
+                                        <circle cx="161" cy="66.5" r="3" fill="#1e293b" />
+
+                                        <rect x="76" y="4" width="36" height="74" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+                                        <rect x="4" y="36" width="180" height="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" />
+                                        <polygon points="94,36 112,41 94,46 76,41" fill="#f59e0b" stroke="#1e293b" stroke-width="1.2" />
+                                    </g>
+
+                                    <!-- Pawns -->
+                                    <g transform="translate(68, 114)" filter="url(#azDropShadow)">
+                                        <path d="M13 24 C4 24 2 38 2 43 L24 43 C24 38 22 24 13 24 Z" fill="url(#azPawnRed)" stroke="#ffffff" stroke-width="1.3" />
+                                        <circle cx="13" cy="14" r="7.5" fill="url(#azPawnRed)" stroke="#ffffff" stroke-width="1.3" />
+                                    </g>
+
+                                    <g transform="translate(24, 140)" filter="url(#azDropShadow)">
+                                        <path d="M18 32 C6 32 2 50 2 56 L34 56 C34 50 30 32 18 32 Z" fill="url(#azPawnBlue)" stroke="#ffffff" stroke-width="1.5" />
+                                        <circle cx="18" cy="19" r="10.5" fill="url(#azPawnBlue)" stroke="#ffffff" stroke-width="1.5" />
+                                    </g>
+
+                                    <g transform="translate(284, 114)" filter="url(#azDropShadow)">
+                                        <path d="M13 24 C4 24 2 38 2 43 L24 43 C24 38 22 24 13 24 Z" fill="url(#azPawnGreen)" stroke="#ffffff" stroke-width="1.3" />
+                                        <circle cx="13" cy="14" r="7.5" fill="url(#azPawnGreen)" stroke="#ffffff" stroke-width="1.3" />
+                                    </g>
+
+                                    <g transform="translate(318, 140)" filter="url(#azDropShadow)">
+                                        <path d="M18 32 C6 32 2 50 2 56 L34 56 C34 50 30 32 18 32 Z" fill="url(#azPawnYellow)" stroke="#ffffff" stroke-width="1.5" />
+                                        <circle cx="18" cy="19" r="10.5" fill="url(#azPawnYellow)" stroke="#ffffff" stroke-width="1.5" />
+                                    </g>
+
+                                    <!-- 3D White Die -->
+                                    <g transform="translate(190, 142)" filter="url(#azDropShadow)">
+                                        <polygon points="0,-24 22,-13 0,-2 -22,-13" fill="url(#azDieTop)" stroke="#334155" stroke-width="1.6" stroke-linejoin="round" />
+                                        <polygon points="-22,-13 0,-2 0,22 -22,11" fill="url(#azDieLeft)" stroke="#334155" stroke-width="1.6" stroke-linejoin="round" />
+                                        <polygon points="0,-2 22,-13 22,11 0,22" fill="url(#azDieRight)" stroke="#334155" stroke-width="1.6" stroke-linejoin="round" />
+
+                                        <circle cx="0" cy="-18" r="2.1" fill="#111827" />
+                                        <circle cx="-9" cy="-13" r="2.1" fill="#111827" />
+                                        <circle cx="9" cy="-13" r="2.1" fill="#111827" />
+                                        <circle cx="0" cy="-8" r="2.1" fill="#111827" />
+
+                                        <circle cx="-15" cy="-4" r="2.1" fill="#111827" />
+                                        <circle cx="-11" cy="5" r="2.1" fill="#111827" />
+                                        <circle cx="-7" cy="14" r="2.1" fill="#111827" />
+
+                                        <circle cx="8" cy="3" r="2.2" fill="#111827" />
+                                        <circle cx="14" cy="12" r="2.2" fill="#111827" />
+                                    </g>
+                                </svg>
                             </div>
                         </div>
 
