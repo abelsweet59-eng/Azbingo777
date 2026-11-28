@@ -63,7 +63,7 @@
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
 
-        /* AZ LUDO KING EDITION STYLES (Large Front 3D Spinner + Clear Step Hop) */
+        /* AZ LUDO KING EDITION STYLES */
         .ludo-shell {
             --red-main: #e11d48;
             --red-dark: #881337;
@@ -592,7 +592,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: AZ LUDO LIVE (50 ብር - LARGE FRONT 3D DICE + CLEAR STEP HOP) -->
+            <!-- VIEW: AZ LUDO LIVE (50 ብር - COLOR MENU + STANDBY SWAP + MEDIUM BOTS) -->
             <div id="view-ludo-live" class="tab-content hidden flex-1 flex flex-col p-2 space-y-1.5 overflow-y-auto custom-scroll ludo-shell">
                 <header class="royal-topbar rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
                     <div class="flex items-center gap-1.5 min-w-0">
@@ -627,7 +627,7 @@
                     <div class="flex items-center gap-1 font-extrabold text-amber-200">
                         <span>🎫 50 ብር</span>
                         <span class="text-slate-400">•</span>
-                        <span id="ludoRosterBadge" class="text-cyan-300">1 Real + 3 Bot</span>
+                        <span id="ludoRosterBadge" class="text-cyan-300">1 Real + 3 Medium Bot</span>
                     </div>
 
                     <div class="pot-pill rounded-full px-2.5 py-0.5 font-black text-[11px] tracking-tight">
@@ -641,6 +641,26 @@
                     >
                         ህግ • RULES
                     </button>
+                </section>
+
+                <!-- Color (Card) Selection Menu Bar -->
+                <section class="bg-[#08153d]/95 border border-amber-400/50 rounded-xl p-1.5 space-y-1">
+                    <div class="flex items-center justify-between text-[10px] px-1">
+                        <span class="font-black text-amber-300">🎨 ቀለም (ካርድ) ይምረጡ:</span>
+                        <span id="ludoSelectedColorLabel" class="font-bold text-cyan-300">RED</span>
+                    </div>
+                    <div id="ludoColorMenuGrid" class="grid grid-cols-4 gap-1.5"></div>
+                </section>
+
+                <!-- Standby / Pending Banner when game is running and player just joined -->
+                <section id="ludoStandbyNotice" class="hidden bg-amber-950/85 border border-amber-400/80 rounded-xl p-2 text-[10px] text-amber-100 space-y-1">
+                    <div class="font-black text-amber-300 flex items-center justify-between">
+                        <span>⏳ PENDING / STANDBY • ጨዋታ እየተካሄደ ነው</span>
+                        <span id="ludoStandbyColorBadge" class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 font-black">RED</span>
+                    </div>
+                    <p class="leading-snug text-amber-100/95">
+                        አሁን ጨዋታ ስለሚካሄድ ቆጠራ ሳይኖር በ Pending ተጠብቀዋል። ቀለምዎን ይያዙ — ጨዋታው ሲያልቅ ከተሸናፊው ቦታ ወዲያውኑ ይገባሉ!
+                    </p>
                 </section>
 
                 <!-- All 4 Players Distinctly Highlighted (Top: Red & Green) -->
@@ -681,7 +701,7 @@
                     </button>
 
                     <div id="ludoTurnBannerText" class="text-[11px] font-extrabold text-amber-200 text-center min-h-[16px]">
-                        50 ብር በመክፈል ዙር ይጀምሩ
+                        ቀለም ይምረጡ እና 50 ብር በመክፈል ይጀምሩ
                     </div>
                 </section>
 
@@ -689,13 +709,13 @@
                 <section class="grid grid-cols-2 gap-1.5">
                     <button
                         type="button"
-                        onclick="startNewLudoPaidRound()"
+                        onclick="requestStartLudoWithConfirmation()"
                         class="gold-mode-btn rounded-xl py-1.5 px-2.5 flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                         <span class="text-sm">🎲</span>
                         <div class="text-left leading-tight">
-                            <div class="text-[10px] font-black text-amber-300">አዲስ ዙር (50 ብር ቆርጥ)</div>
-                            <div class="text-[9px] font-bold text-white">PAY 50 ETB & START</div>
+                            <div class="text-[10px] font-black text-amber-300">አዲስ ዙር (50 ብር)</div>
+                            <div class="text-[9px] font-bold text-white">CONFIRM & PAY 50</div>
                         </div>
                     </button>
 
@@ -707,7 +727,7 @@
                         <span class="text-sm">👥</span>
                         <div class="text-left leading-tight">
                             <div class="text-[10px] font-black text-emerald-300">ተጫዋች ፈልግ (50 ብር)</div>
-                            <div class="text-[9px] font-bold text-white">MATCHMAKE + BOT</div>
+                            <div class="text-[9px] font-bold text-white">REAL + MEDIUM BOT</div>
                         </div>
                     </button>
                 </section>
@@ -805,12 +825,10 @@
                         <div class="col-span-7 flex flex-col space-y-1 overflow-hidden">
                             <div class="bg-[#0b1633] rounded-lg p-1.5 border border-amber-500/40 text-center space-y-1 shadow-md relative">
                                 
-                                <!-- 1. RECENT BALLS ON TOP -->
                                 <div class="flex justify-center items-center py-0.5 min-h-[28px]">
                                     <div id="recent-balls-container" class="flex gap-1 justify-center items-center"></div>
                                 </div>
 
-                                <!-- 2. MAIN CALLED BALL OR COUNTDOWN AT THE BOTTOM -->
                                 <div id="live-display-area" class="relative flex items-center justify-center py-0.5">
                                     <div id="in-place-countdown-box" class="w-[88px] h-[88px] rounded-full bg-gradient-to-br from-amber-500/20 to-blue-900/40 border-2 border-amber-400/60 flex flex-col items-center justify-center shadow-lg countdown-anim mx-auto">
                                         <div class="text-[7px] text-amber-300 uppercase font-bold text-center leading-tight px-1" id="center-status-label">ጨዋታውን ለመጀመር</div>
@@ -826,7 +844,6 @@
 
                             <div id="right-side-dynamic-area" class="bg-[#0b1633] rounded-lg p-1 border border-amber-500/30 flex flex-col items-center justify-start overflow-y-auto custom-scroll space-y-1 flex-1"></div>
                             
-                            <!-- BINGO Button -->
                             <div class="w-full pt-0.5">
                                 <button onclick="triggerPlayerBingo()" class="w-full py-2.5 rounded-xl text-white font-black text-xs tracking-wider uppercase bingo-3d-btn border border-amber-200/60 flex items-center justify-center gap-1.5 shadow-xl">
                                     <span class="text-sm">🎉</span> BINGO! <span class="text-sm">🏆</span>
@@ -859,7 +876,6 @@
                     </div>
                 </div>
 
-                <!-- 🎁 ሪፈራል እና ሼር ማድረጊያ ቦክስ -->
                 <div class="bg-[#0d1b3e] border border-amber-500/30 rounded-2xl p-3 space-y-2 shadow-xl">
                     <div class="flex items-center gap-1.5">
                         <span class="text-base">🎁</span>
@@ -1091,19 +1107,21 @@
             </div>
         </div>
 
-        <!-- LUDO MODAL (Rules & Match Alerts) -->
+        <!-- LUDO MODAL (Rules, 50 ETB Pre-Deduction Confirmation & Alerts) -->
         <div id="ludoModalOverlay" class="hidden absolute inset-0 bg-black/85 backdrop-blur-sm items-center justify-center p-3 z-50">
             <div class="bg-gradient-to-b from-[#172b69] to-[#0a1436] rounded-2xl max-w-sm w-full max-h-[82vh] flex flex-col p-4 text-center space-y-3 border-2 border-amber-400 shadow-2xl">
                 <div id="ludoModalIcon" class="text-3xl shrink-0">👑</div>
                 <h2 id="ludoModalTitle" class="text-base font-black text-amber-300 shrink-0">LUDO KING RULES</h2>
                 <div id="ludoModalBody" class="text-xs text-slate-200 leading-relaxed whitespace-pre-line text-left overflow-y-auto custom-scroll pr-1 flex-1"></div>
-                <button
-                    type="button"
-                    onclick="closeLudoModal()"
-                    class="w-full py-2.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow cursor-pointer shrink-0"
-                >
-                    OK • ቀጥል
-                </button>
+                <div id="ludoModalActions" class="flex gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onclick="closeLudoModal()"
+                        class="flex-1 py-2.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow cursor-pointer"
+                    >
+                        OK • ቀጥል
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1313,12 +1331,27 @@
             enforceHubVisualIsolation();
             document.getElementById('header-title').innerHTML = `<span>🎲</span> AZ LUDO KING`;
             document.getElementById('view-ludo-live').classList.remove('hidden');
+
+            if (ludoMatchState.status === 'playing') {
+                ludoStandbyState.isStandby = true;
+                ludoStandbyState.reservedColor = ludoSelectedColor;
+                if (socket && socket.connected) {
+                    socket.emit('ludoStandbyReserve', {
+                        userId: telegramUserId,
+                        username: userUsername,
+                        fullName: userFullName,
+                        color: ludoSelectedColor
+                    });
+                }
+            }
+
             renderLudoAll();
             scheduleLudoAiIfNeeded();
         }
 
         // ============================================================
-        // AZ LUDO KING • 50 ብር • ADMIN ONLY + LARGE FRONT 3D DICE
+        // AZ LUDO KING • 50 ብር • COLOR MENU + PRE-DEDUCT CONFIRM +
+        // 1/2/3 REAL + MEDIUM BOTS + STAND-BY / SWAP ON ROUND END
         // ============================================================
         const LUDO_ENTRY_FEE = 50;
         const LUDO_WIN_POT_RATIO = 0.90;
@@ -1352,17 +1385,17 @@
         const LUDO_SAFE_CELL_KEYS = new Set(['6,1', '2,6', '1,8', '6,12', '8,13', '12,8', '13,6', '8,2']);
         const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
         const LUDO_COLOR_PALETTE = {
-            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', badgeBg: 'bg-rose-600' },
-            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', badgeBg: 'bg-emerald-600' },
-            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', badgeBg: 'bg-amber-500' },
-            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', badgeBg: 'bg-sky-600' }
+            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (Red)' },
+            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (Green)' },
+            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', badgeBg: 'bg-amber-500', labelAm: 'ቢጫ (Yellow)' },
+            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', badgeBg: 'bg-sky-600', labelAm: 'ሰማያዊ (Blue)' }
         };
         const LUDO_DICE_UNICODE = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
         const LUDO_DICE_FACE_PIPS = {
             1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
         };
 
-        const LUDO_BOT_NAMES = ['Bot • Dawit', 'Bot • Hana', 'Bot • Selam', 'Bot • Bereket'];
+        const LUDO_MEDIUM_BOT_NAMES = ['MedBot • Dawit', 'MedBot • Hana', 'MedBot • Selam', 'MedBot • Bereket'];
 
         let ludoSoundEnabled = true;
         let ludoIsAnimating = false;
@@ -1376,6 +1409,12 @@
         let ludoAudioCtx = null;
         let ludoEntryPaidForCurrentMatch = false;
         let ludoMatchedRealPlayers = [];
+        let ludoSelectedColor = 'red';
+        let ludoStandbyState = {
+            isStandby: false,
+            reservedColor: 'red',
+            paid50: false
+        };
 
         function makeFreshTokens() {
             return [
@@ -1386,7 +1425,7 @@
             ];
         }
 
-        function buildLudoPlayersFromRoster(realPlayersList = []) {
+        function buildLudoPlayersFromRoster(realPlayersList = [], preferredHumanColor = ludoSelectedColor) {
             const selfEntry = {
                 userId: telegramUserId,
                 name: `${userFullName} (እርስዎ)`,
@@ -1406,22 +1445,31 @@
                     isHuman: false
                 }));
 
-            const combined = [selfEntry, ...othersReal];
-            let botIdx = 0;
-            while (combined.length < 4) {
-                const bName = LUDO_BOT_NAMES[botIdx % LUDO_BOT_NAMES.length];
-                combined.push({
-                    userId: `bot_${botIdx + 1}`,
-                    name: bName,
-                    shortName: bName,
-                    isReal: false,
-                    isHuman: false
-                });
-                botIdx++;
-            }
+            const otherSeats = LUDO_SEAT_ORDER.filter(c => c !== preferredHumanColor);
+            const seatMap = new Map();
+            seatMap.set(preferredHumanColor, selfEntry);
 
-            return LUDO_SEAT_ORDER.map((color, idx) => {
-                const entry = combined[idx];
+            let realIdx = 0;
+            let botIdx = 0;
+            otherSeats.forEach((seatColor) => {
+                if (realIdx < othersReal.length) {
+                    seatMap.set(seatColor, othersReal[realIdx]);
+                    realIdx++;
+                } else {
+                    const bName = LUDO_MEDIUM_BOT_NAMES[botIdx % LUDO_MEDIUM_BOT_NAMES.length];
+                    seatMap.set(seatColor, {
+                        userId: `medbot_${botIdx + 1}`,
+                        name: `${bName} [Medium]`,
+                        shortName: bName,
+                        isReal: false,
+                        isHuman: false
+                    });
+                    botIdx++;
+                }
+            });
+
+            return LUDO_SEAT_ORDER.map((color) => {
+                const entry = seatMap.get(color);
                 return {
                     id: color,
                     userId: entry.userId,
@@ -1437,7 +1485,7 @@
         }
 
         let ludoMatchState = {
-            status: 'lobby',
+            status: 'pending_players',
             players: buildLudoPlayersFromRoster([]),
             turnIndex: 0,
             lastDice: 5,
@@ -1472,7 +1520,7 @@
             const updatedBal = Number((walletBalance - LUDO_ENTRY_FEE).toFixed(2));
             syncCentralWalletBalance(updatedBal);
             ludoEntryPaidForCurrentMatch = true;
-            addTransactionHistory('AZ Ludo መግቢያ (50 ብር)', LUDO_ENTRY_FEE, 'expense', 'completed');
+            addTransactionHistory(`AZ Ludo መግቢያ (${ludoSelectedColor.toUpperCase()} • 50 ብር)`, LUDO_ENTRY_FEE, 'expense', 'completed');
             return true;
         }
 
@@ -1481,7 +1529,103 @@
             if (!badge) return;
             const realCount = ludoMatchState.players.filter(p => p.isReal).length;
             const botCount = ludoMatchState.players.length - realCount;
-            badge.textContent = `${realCount} Real + ${botCount} Bot`;
+            badge.textContent = `${realCount} Real + ${botCount} MedBot`;
+        }
+
+        function selectLudoColorCard(colorKey) {
+            if (!LUDO_COLOR_PALETTE[colorKey]) return;
+            ludoSelectedColor = colorKey;
+            ludoStandbyState.reservedColor = colorKey;
+
+            if (ludoMatchState.status === 'playing' && ludoStandbyState.isStandby) {
+                if (socket && socket.connected) {
+                    socket.emit('ludoStandbyReserve', {
+                        userId: telegramUserId,
+                        username: userUsername,
+                        fullName: userFullName,
+                        color: colorKey
+                    });
+                }
+                renderLudoAll();
+                return;
+            }
+
+            if (ludoMatchState.status !== 'playing') {
+                ludoMatchState.players = buildLudoPlayersFromRoster(ludoMatchedRealPlayers, colorKey);
+                ludoMatchState.turnIndex = Math.max(0, ludoMatchState.players.findIndex(p => p.isHuman));
+            }
+            renderLudoAll();
+        }
+
+        function renderLudoColorMenu() {
+            const grid = document.getElementById('ludoColorMenuGrid');
+            const label = document.getElementById('ludoSelectedColorLabel');
+            if (!grid) return;
+
+            if (label) {
+                label.textContent = LUDO_COLOR_PALETTE[ludoSelectedColor].labelAm;
+            }
+
+            grid.innerHTML = '';
+            LUDO_SEAT_ORDER.forEach((cKey) => {
+                const pal = LUDO_COLOR_PALETTE[cKey];
+                const isPicked = ludoSelectedColor === cKey;
+                const occupant = ludoMatchState.players.find(p => p.color === cKey);
+                const occupiedByOtherReal = Boolean(occupant && occupant.isReal && !occupant.isHuman && ludoMatchState.status === 'playing');
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.disabled = occupiedByOtherReal && !ludoStandbyState.isStandby;
+                btn.onclick = () => selectLudoColorCard(cKey);
+                btn.className = `rounded-lg py-1 px-1.5 text-[9px] font-black flex items-center justify-center gap-1 border transition cursor-pointer ${
+                    isPicked
+                        ? 'bg-white text-slate-950 border-amber-300 ring-2 ring-amber-400 scale-[1.02]'
+                        : 'bg-slate-900/90 text-white border-white/20 hover:border-amber-300/70'
+                } ${btn.disabled ? 'opacity-45 cursor-not-allowed' : ''}`;
+
+                btn.innerHTML = `
+                    <span class="w-2.5 h-2.5 rounded-full shrink-0 border border-black/40" style="background:${pal.fill}"></span>
+                    <span class="truncate">${cKey.toUpperCase()}</span>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function requestStartLudoWithConfirmation() {
+            if (!isAdmin) return;
+            const otherRealCount = ludoMatchState.players.filter(p => p.isReal && !p.isHuman).length;
+            const missingRealCount = Math.max(0, 3 - otherRealCount);
+            const colorLabel = LUDO_COLOR_PALETTE[ludoSelectedColor].labelAm;
+
+            const statusNote = missingRealCount > 0
+                ? `⚠️ አሁን ሙሉ እውነተኛ ተጫዋች የለም (${otherRealCount}/3 ሌላ ሪል ተጫዋች አለ)።\nየቀሩትን ${missingRealCount} ቦታዎች መሃከለኛ (Medium) ቦቶች እንዲሞሉ ይደረጋል።`
+                : `✅ 3 ሌሎች እውነተኛ ተጫዋቾች ተገኝተዋል (4/4 ሙሉ)።`;
+
+            openLudoModal(
+                '🎲',
+                '50 ብር ከመቆረጡ በፊት ማረጋገጫ',
+                `የመረጡት ቀለም: ${colorLabel}\n\n${statusNote}\n\nከ Central Wallet 50.00 ብር ተቆርጦ ጨዋታው ይጀምር?`,
+                null,
+                [
+                    {
+                        label: 'ሰርዝ (Cancel)',
+                        cls: 'flex-1 py-2.5 rounded-xl bg-white/15 text-white font-bold text-xs cursor-pointer',
+                        onClick: () => closeLudoModal()
+                    },
+                    {
+                        label: 'አዎ • 50 ብር ቁረጥና ጀምር',
+                        cls: 'flex-1 py-2.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 font-black text-xs shadow cursor-pointer',
+                        onClick: () => {
+                            closeLudoModal();
+                            ludoStandbyState.isStandby = false;
+                            ludoEntryPaidForCurrentMatch = false;
+                            if (!chargeLudoEntryFeeFromCentralWallet()) return;
+                            playLudoFx('six');
+                            beginLudoBoardMatch(ludoMatchedRealPlayers, ludoSelectedColor);
+                        }
+                    }
+                ]
+            );
         }
 
         function playLudoFx(type) {
@@ -1536,11 +1680,37 @@
             document.getElementById('ludoSoundToggleBtn').textContent = ludoSoundEnabled ? '🔊' : '🔇';
         }
 
-        function openLudoModal(icon, title, body, onClose = null) {
+        function openLudoModal(icon, title, body, onClose = null, customButtons = null) {
             document.getElementById('ludoModalIcon').textContent = icon;
             document.getElementById('ludoModalTitle').textContent = title;
             document.getElementById('ludoModalBody').textContent = body;
             ludoModalCloseHandler = onClose;
+
+            const actionsEl = document.getElementById('ludoModalActions');
+            if (actionsEl) {
+                if (Array.isArray(customButtons) && customButtons.length > 0) {
+                    actionsEl.innerHTML = '';
+                    customButtons.forEach((b) => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = b.cls;
+                        btn.textContent = b.label;
+                        btn.onclick = b.onClick;
+                        actionsEl.appendChild(btn);
+                    });
+                } else {
+                    actionsEl.innerHTML = `
+                        <button
+                            type="button"
+                            onclick="closeLudoModal()"
+                            class="flex-1 py-2.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow cursor-pointer"
+                        >
+                            OK • ቀጥል
+                        </button>
+                    `;
+                }
+            }
+
             const ov = document.getElementById('ludoModalOverlay');
             ov.classList.remove('hidden');
             ov.classList.add('flex');
@@ -1561,16 +1731,14 @@
             openLudoModal(
                 '👑',
                 'LUDO KING RULES • የሉዶ ኪንግ ህጎች',
-                `• አድሚን ሙከራ ሁነታ: ለጊዜው ለአድሚን ብቻ ክፍት ነው።
-• መግቢያ ክፍያ (50 ብር): ጨዋታ ከመጀመሩ በፊት 50 ብር ከ Central Wallet ይቆረጣል። 90% ፖት ለአሸናፊ ይሰጣል።
-• ሪል ተጫዋቾች እና Medium ቦቶች: ሌሎች ሪል ተጫዋቾች በተለያየ ሰዓት ሲገቡ ይጣመራሉ፤ ቦታ ካልሞላ ቦቶች በ Medium ስታንዳርድ ይጫወታሉ።
-• RULE #1 (2–4 Players): እያንዳንዱ ተጫዋች 4 ቶከኖች አሉት። 4ቱንም ቶከኖች ወደ Home መጀመሪያ ያደረሰ ያሸንፋል።
-• RULE #2 (Roll 6 to Exit): ቶከን ከቤት (Yard) ለማውጣት 6 መውጣት አለበት።
-• RULE #3 (Bonus Roll on 6): 6 ሲወጣ ተጨማሪ ዳይስ የማንከባለል እድል (Another Turn) ይሰጣል።
-• RULE #4 (3 Sixes Skip): በተከታታይ 3 ጊዜ 6 ቢወጣ፣ 3ኛው ተራ ይታለፋል (Skipped)።
-• RULE #5 (Finish Line Bonus): ቶከን የመጨረሻውን መስመር (Home) ሲያቋርጥ ተጨማሪ ዳይስ ይሰጣል።
-• RULE #6 (Capture Bonus): የተቃዋሚን ቶከን ሲበላ/ሲመልስ (Capture) ተጨማሪ ዳይስ ይሰጣል።
-• RULE #7 (Safe Zones): የኮከብ (★) እና የቀለም መነሻ ሳጥኖች ለሁሉም ቶከኖች አስተማማኝ (Safe) ናቸው።`
+                `• ቀለም መምረጥ እና 50 ብር ማረጋገጫ: መጀመሪያ ቀለም ይመርጣሉ፤ 50 ብር ከመቆረጡ በፊት ሙሉ እውነተኛ ተጫዋች አለመኖሩ ይነገርዎታል።
+• 1፣ 2 እና 3 እውነተኛ ተጫዋቾች: ሙሉ ካልሆነ ቀሪው በመሃከለኛ (Medium) ቦቶች ይሞላል፤ 3 ሌላ ሪል ሲገቡ 4 ይሞላል።
+• ጨዋታ እየተካሄደ ሲገቡ (Standby / Pending): ጊዜ ሳይቆጥር በ Pending ተጠብቀው ቀለም ይይዛሉ፤ ጨዋታው ሲያልቅ ከተሸናፊው ቦታ ይገባሉ።
+• RULE #1 (2–4 Players): 4ቱንም ቶከኖች ወደ Home መጀመሪያ ያደረሰ ያሸንፋል።
+• RULE #2 (Roll 6 to Exit): ከቤት ለማውጣት 6 ያስፈልጋል።
+• RULE #3 & #4: 6 ሲወጣ ተጨማሪ ተራ፤ 3 ተከታታይ 6 ቢወጣ ተራ ይታለፋል።
+• RULE #5 & #6: Home መግባት እና ተቃዋሚ መብላት (Capture) ተጨማሪ ዳይስ ይሰጣሉ።
+• RULE #7 (Safe Zones): የኮከብ (★) እና የቀለም መነሻ ሳጥኖች አስተማማኝ ናቸው።`
             );
         }
 
@@ -1595,7 +1763,7 @@
             return LUDO_HOME_CROWN_COORDS[color];
         }
 
-        function beginLudoBoardMatch(rosterList = []) {
+        function beginLudoBoardMatch(rosterList = [], preferredColor = ludoSelectedColor) {
             if (!isAdmin) return;
             if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
             if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
@@ -1603,8 +1771,9 @@
             ludoIsAnimating = false;
             ludoActiveHoppingToken = null;
             ludoStepPulseCellKey = null;
+            ludoStandbyState.isStandby = false;
 
-            const players = buildLudoPlayersFromRoster(rosterList);
+            const players = buildLudoPlayersFromRoster(rosterList, preferredColor);
             const firstTurnIdx = Math.max(0, players.findIndex(p => p.isHuman));
 
             ludoMatchState = {
@@ -1621,58 +1790,88 @@
             scheduleLudoAiIfNeeded();
         }
 
-        function startNewLudoPaidRound() {
+        function findRealOrBotMatch() {
             if (!isAdmin) return;
-            ludoEntryPaidForCurrentMatch = false;
-            if (!chargeLudoEntryFeeFromCentralWallet()) return;
+            const otherRealCount = ludoMatchState.players.filter(p => p.isReal && !p.isHuman).length;
+            const missingRealCount = Math.max(0, 3 - otherRealCount);
 
-            playLudoFx('six');
-            beginLudoBoardMatch(ludoMatchedRealPlayers);
-
-            const realCount = ludoMatchState.players.filter(p => p.isReal).length;
-            const botCount = 4 - realCount;
             openLudoModal(
-                '🎲',
-                '50 ብር ተቆርጧል • ጨዋታ ተጀምሯል!',
-                `ከ Central Wallet 50.00 ብር ተቆርጧል።\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር\nየሽልማት ፖት: ${getLudoPrizePot()} ብር\nተጫዋቾች: ${realCount} Real + ${botCount} Medium Bot`
+                '👥',
+                'ተጫዋች ማጣመር • 50 ብር ማረጋገጫ',
+                missingRealCount > 0
+                    ? `አሁን ሙሉ እውነተኛ ተጫዋች የለም (${otherRealCount}/3 ሌላ ሪል ተጫዋች አለ)።\nየቀሩትን ${missingRealCount} ቦታዎች መሃከለኛ (Medium) ቦቶች ይሞላሉ።\n\n50.00 ብር ተቆርጦ ማጣመር ይጀመር?`
+                    : `3 ሌሎች እውነተኛ ተጫዋቾች ተገኝተዋል።\n\n50.00 ብር ተቆርጦ ጨዋታው ይጀምር?`,
+                null,
+                [
+                    {
+                        label: 'ሰርዝ',
+                        cls: 'flex-1 py-2.5 rounded-xl bg-white/15 text-white font-bold text-xs cursor-pointer',
+                        onClick: () => closeLudoModal()
+                    },
+                    {
+                        label: 'አዎ • 50 ብር ቁረጥ',
+                        cls: 'flex-1 py-2.5 rounded-xl bg-gradient-to-b from-emerald-400 to-emerald-600 text-slate-950 font-black text-xs shadow cursor-pointer',
+                        onClick: () => {
+                            closeLudoModal();
+                            ludoStandbyState.isStandby = false;
+                            ludoEntryPaidForCurrentMatch = false;
+                            if (!chargeLudoEntryFeeFromCentralWallet()) return;
+
+                            if (ludoMatchmakeTimer) clearTimeout(ludoMatchmakeTimer);
+                            ludoMatchState.status = 'matchmaking';
+                            renderLudoAll();
+
+                            const banner = document.getElementById('ludoTurnBannerText');
+                            if (banner) banner.textContent = '🔍 ሌሎች ሪል ተጫዋቾች እየተፈለጉ ነው...';
+
+                            if (socket && socket.connected) {
+                                socket.emit('ludoJoinQueue', {
+                                    userId: telegramUserId,
+                                    username: userUsername,
+                                    fullName: userFullName,
+                                    color: ludoSelectedColor,
+                                    entryFee: LUDO_ENTRY_FEE,
+                                    adminOnlyTest: true
+                                });
+                            }
+
+                            ludoMatchmakeTimer = setTimeout(() => {
+                                if (!isAdmin || activeScreenContext !== 'ludo_live') return;
+                                if (ludoMatchState.status === 'matchmaking') {
+                                    beginLudoBoardMatch(ludoMatchedRealPlayers, ludoSelectedColor);
+                                }
+                            }, 1800);
+                        }
+                    }
+                ]
             );
         }
 
-        function findRealOrBotMatch() {
-            if (!isAdmin) return;
-            ludoEntryPaidForCurrentMatch = false;
-            if (!chargeLudoEntryFeeFromCentralWallet()) return;
+        function applyStandbyPlayerSwapOnRoundEnd(winnerId) {
+            if (!ludoStandbyState.isStandby) return;
+            const reservedColor = ludoStandbyState.reservedColor || ludoSelectedColor;
+            const targetIdx = ludoMatchState.players.findIndex(p => p.color === reservedColor && p.id !== winnerId);
+            const fallbackIdx = targetIdx !== -1
+                ? targetIdx
+                : ludoMatchState.players.findIndex(p => !p.isHuman && p.id !== winnerId);
 
-            if (ludoMatchmakeTimer) clearTimeout(ludoMatchmakeTimer);
-            ludoMatchState.status = 'matchmaking';
-            renderLudoAll();
-
-            const banner = document.getElementById('ludoTurnBannerText');
-            if (banner) banner.textContent = '🔍 ሌሎች ሪል ተጫዋቾች እየተፈለጉ ነው...';
-
-            if (socket && socket.connected) {
-                socket.emit('ludoJoinQueue', {
+            if (fallbackIdx !== -1) {
+                const replacedColor = ludoMatchState.players[fallbackIdx].color;
+                ludoSelectedColor = replacedColor;
+                ludoMatchState.players[fallbackIdx] = {
+                    id: replacedColor,
                     userId: telegramUserId,
-                    username: userUsername,
-                    fullName: userFullName,
-                    entryFee: LUDO_ENTRY_FEE,
-                    adminOnlyTest: true
-                });
+                    name: `${userFullName} (እርስዎ)`,
+                    shortName: userFullName || 'እርስዎ',
+                    color: replacedColor,
+                    isReal: true,
+                    isHuman: true,
+                    consecutiveSixes: 0,
+                    tokens: makeFreshTokens()
+                };
             }
-
-            ludoMatchmakeTimer = setTimeout(() => {
-                if (!isAdmin || activeScreenContext !== 'ludo_live') return;
-                if (ludoMatchState.status === 'matchmaking') {
-                    beginLudoBoardMatch(ludoMatchedRealPlayers);
-                    const realCount = ludoMatchState.players.filter(p => p.isReal).length;
-                    const botCount = 4 - realCount;
-                    openLudoModal(
-                        '👥',
-                        'ጨዋታው ተዘጋጅቷል!',
-                        `50.00 ብር ከ Central Wallet ተቆርጧል።\n${realCount} ሪል ተጫዋች እና ${botCount} Medium ቦቶች ተመድበዋል።`
-                    );
-                }
-            }, 2200);
+            ludoStandbyState.isStandby = false;
+            updateRosterBadge();
         }
 
         function nextLudoPlayerTurn() {
@@ -1823,6 +2022,7 @@
                                     syncCentralWalletBalance(walletBalance + potWon);
                                     addTransactionHistory('AZ Ludo ሽልማት 🏆', potWon, 'income', 'completed');
                                 }
+                                applyStandbyPlayerSwapOnRoundEnd(player.id);
                                 playLudoFx('win');
                                 renderLudoAll();
 
@@ -1831,7 +2031,7 @@
                                     player.isHuman ? 'እንኳን ደስ አለዎት! አሸንፈዋል!' : `${player.shortName} (${player.color.toUpperCase()}) አሸነፈ!`,
                                     player.isHuman
                                         ? `የ ${potWon} ብር ሽልማት ወደ Central Wallet ገብቷል!\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
-                                        : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። አዲስ 50 ብር ዙር ለመጀመር "አዲስ ዙር" ይጫኑ።`
+                                        : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። ዙር ተጠናቋል።`
                                 );
                                 return;
                             }
@@ -1899,6 +2099,7 @@
             animateLudoTokenStepByStep(activeP, tokenId, ludoMatchState.lastDice);
         }
 
+        // Medium Bot AI: balanced mid-level decision making
         function chooseMediumBotToken(botPlayer, validTokens, diceVal) {
             let bestToken = validTokens[0];
             let bestScore = -999;
@@ -1907,27 +2108,27 @@
                 let score = 0;
                 const targetProg = tok.progress === -1 ? 0 : tok.progress + diceVal;
 
-                if (tok.progress === -1 && diceVal === 6) score += 55;
-                if (targetProg === LUDO_GOAL_STEP) score += 100;
-                if (targetProg >= 51) score += 35;
+                if (tok.progress === -1 && diceVal === 6) score += 45;
+                if (targetProg === LUDO_GOAL_STEP) score += 85;
+                if (targetProg >= 51) score += 25;
 
                 if (targetProg >= 0 && targetProg <= 50) {
                     const [tr, tc] = resolveLudoBoardCoords(botPlayer.color, targetProg);
                     const key = `${tr},${tc}`;
-                    if (LUDO_SAFE_CELL_KEYS.has(key)) score += 30;
+                    if (LUDO_SAFE_CELL_KEYS.has(key)) score += 22;
 
                     ludoMatchState.players.forEach((opp) => {
                         if (opp.id === botPlayer.id) return;
                         opp.tokens.forEach((ot) => {
                             if (ot.progress >= 0 && ot.progress <= 50 && !LUDO_SAFE_CELL_KEYS.has(key)) {
                                 const [or, oc] = resolveLudoBoardCoords(opp.color, ot.progress);
-                                if (or === tr && oc === tc) score += 110;
+                                if (or === tr && oc === tc) score += 70;
                             }
                         });
                     });
                 }
 
-                score += tok.progress * 0.35 + (Math.random() * 14);
+                score += tok.progress * 0.25 + (Math.random() * 24);
 
                 if (score > bestScore) {
                     bestScore = score;
@@ -2045,9 +2246,19 @@
             if (balEl) balEl.textContent = `${Number(walletBalance || 0).toFixed(2)} ብር`;
             if (potEl) potEl.textContent = `${getLudoPrizePot()} ብር`;
             updateRosterBadge();
+            renderLudoColorMenu();
+
+            const standbyBox = document.getElementById('ludoStandbyNotice');
+            const standbyColorBadge = document.getElementById('ludoStandbyColorBadge');
+            if (standbyBox) {
+                standbyBox.classList.toggle('hidden', !(ludoMatchState.status === 'playing' && ludoStandbyState.isStandby));
+            }
+            if (standbyColorBadge) {
+                standbyColorBadge.textContent = (ludoStandbyState.reservedColor || ludoSelectedColor).toUpperCase();
+            }
 
             const activePlayer = ludoMatchState.players[ludoMatchState.turnIndex] || ludoMatchState.players[0] || null;
-            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && activePlayer && activePlayer.isHuman);
+            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && !ludoStandbyState.isStandby && activePlayer && activePlayer.isHuman);
 
             ludoMatchState.players.forEach((p, idx) => {
                 const podEl = document.getElementById(`ludo-hud-${p.color}`);
@@ -2060,7 +2271,7 @@
                 const activeCount = p.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
                 const pal = LUDO_COLOR_PALETTE[p.color];
                 const initial = p.shortName.charAt(0).toUpperCase();
-                const tagText = p.isReal ? 'REAL' : 'BOT';
+                const tagText = p.isReal ? 'REAL' : 'MED-BOT';
 
                 podEl.innerHTML = `
                     <div class="flex items-center gap-1.5 min-w-0">
@@ -2083,7 +2294,6 @@
                 `;
             });
 
-            // Front Spotlight: Shows who is rolling/playing and the large 3D dice in front
             const rollerInfoEl = document.getElementById('ludoActiveRollerInfo');
             const heroDiceSlot = document.getElementById('ludoHeroDiceSlot');
             if (rollerInfoEl && activePlayer) {
@@ -2118,6 +2328,8 @@
             if (!banner) return;
             if (ludoMatchState.winner) {
                 banner.textContent = `🏆 አሸናፊ: ${ludoMatchState.winner.shortName} (${ludoMatchState.winner.prize} ብር)`;
+            } else if (ludoMatchState.status === 'playing' && ludoStandbyState.isStandby) {
+                banner.textContent = `⏳ በ Pending ላይ (${ludoSelectedColor.toUpperCase()} ተይዟል) — ጨዋታው ሲያልቅ ይገባሉ`;
             } else if (ludoMatchState.status === 'matchmaking') {
                 banner.textContent = `🔍 ሪል ተጫዋቾች በመፈለግ ላይ...`;
             } else if (ludoIsAnimating && ludoActiveHoppingToken) {
@@ -2239,7 +2451,7 @@
             boardEl.appendChild(crownHub);
 
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex] || null;
-            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && activeP && activeP.isHuman);
+            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && !ludoStandbyState.isStandby && activeP && activeP.isHuman);
             const tokensByCell = new Map();
 
             ludoMatchState.players.forEach((player) => {
@@ -2582,9 +2794,14 @@
             socket.on('ludoMatchFound', (payload) => {
                 if (!isAdmin || !payload || !Array.isArray(payload.players)) return;
                 ludoMatchedRealPlayers = payload.players;
-                if (activeScreenContext === 'ludo_live' && ludoMatchState.status === 'matchmaking') {
-                    if (ludoMatchmakeTimer) { clearTimeout(ludoMatchmakeTimer); ludoMatchmakeTimer = null; }
-                    beginLudoBoardMatch(ludoMatchedRealPlayers);
+                if (activeScreenContext === 'ludo_live') {
+                    if (ludoMatchState.status === 'matchmaking') {
+                        if (ludoMatchmakeTimer) { clearTimeout(ludoMatchmakeTimer); ludoMatchmakeTimer = null; }
+                        beginLudoBoardMatch(ludoMatchedRealPlayers, ludoSelectedColor);
+                    } else if (ludoMatchState.status !== 'playing') {
+                        ludoMatchState.players = buildLudoPlayersFromRoster(ludoMatchedRealPlayers, ludoSelectedColor);
+                        renderLudoAll();
+                    }
                 }
             });
 
