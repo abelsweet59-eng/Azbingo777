@@ -78,16 +78,16 @@
             box-shadow: 0 2px 10px rgba(234, 179, 8, 0.45);
         }
 
-        /* Individual Player Seat Pod with its own side dice slot */
+        /* Individual Player Seat Pod with larger side dice */
         .seat-pod {
             background: linear-gradient(180deg, #162a66 0%, #091333 100%);
             border: 2px solid rgba(148, 163, 184, 0.42);
-            border-radius: 13px;
-            padding: 5px 7px;
+            border-radius: 14px;
+            padding: 6px 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 6px;
+            gap: 7px;
             position: relative;
             overflow: visible;
             transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
@@ -102,84 +102,87 @@
         }
 
         .avatar-ring {
-            width: 28px;
-            height: 28px;
-            border-radius: 9px;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 11px;
+            font-size: 12px;
             color: #fff;
             position: relative;
             flex-shrink: 0;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45);
         }
 
-        /* Per-player dice box next to player info */
+        /* Larger Per-player dice box */
         .seat-dice-box {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: rgba(5, 13, 38, 0.92);
-            border: 1.5px solid rgba(255, 255, 255, 0.22);
+            width: 52px;
+            height: 52px;
+            border-radius: 13px;
+            background: rgba(5, 13, 38, 0.95);
+            border: 2px solid rgba(255, 255, 255, 0.24);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             flex-shrink: 0;
+            perspective: 360px;
             cursor: pointer;
-            transition: transform 0.24s cubic-bezier(0.22, 1.35, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.25s cubic-bezier(0.22, 1.35, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .seat-dice-box.can-roll {
             border-color: #fde047;
-            box-shadow: 0 0 12px rgba(250, 204, 21, 0.65);
+            box-shadow: 0 0 14px rgba(250, 204, 21, 0.72);
         }
         .seat-dice-box.rolling-pop {
-            transform: translateY(-10px) scale(1.18);
-            z-index: 30;
-            border-color: #fef08a;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), 0 0 18px var(--seat-glow, rgba(250, 204, 21, 0.85));
+            transform: translateY(-13px) scale(1.22);
+            z-index: 35;
+            border-color: #ffffff;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.65), 0 0 22px var(--seat-glow, rgba(250, 204, 21, 0.95));
         }
         .seat-dice-box.disabled-dice {
             cursor: default;
-            opacity: 0.78;
+            opacity: 0.84;
         }
 
         .seat-mini-cube {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             background: linear-gradient(145deg, var(--dice-tint-top, #ffffff) 0%, var(--dice-tint-bot, #e2e8f0) 100%);
-            border: 1.5px solid var(--dice-border, #94a3b8);
+            border: 2px solid var(--dice-border, #94a3b8);
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            padding: 3px;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.45), inset 0 1.5px 2px rgba(255,255,255,0.85);
-            transition: transform 0.25s ease;
+            padding: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.48), inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -2px 3px rgba(15,23,42,0.22);
+            transition: transform 0.16s ease;
         }
         .seat-dice-box.rolling-pop .seat-mini-cube {
-            animation: seatDiceSpin3D 0.65s cubic-bezier(0.28, 0.08, 0.25, 1) infinite;
+            animation: seatDiceTumble3D 0.42s cubic-bezier(0.32, 0.08, 0.25, 1) infinite;
         }
-        @keyframes seatDiceSpin3D {
-            0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
-            33%  { transform: rotateX(180deg) rotateY(140deg) rotateZ(90deg) scale(1.12); }
-            66%  { transform: rotateX(290deg) rotateY(260deg) rotateZ(210deg) scale(1.15); }
-            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg) scale(1); }
+        @keyframes seatDiceTumble3D {
+            0%   { transform: translateY(0px) rotateX(0deg) rotateY(0deg) rotateZ(-14deg) scale(1); }
+            25%  { transform: translateY(-4px) rotateX(145deg) rotateY(95deg) rotateZ(18deg) scale(1.12); }
+            50%  { transform: translateY(-7px) rotateX(245deg) rotateY(210deg) rotateZ(-12deg) scale(1.18); }
+            75%  { transform: translateY(-3px) rotateX(325deg) rotateY(305deg) rotateZ(15deg) scale(1.1); }
+            100% { transform: translateY(0px) rotateX(360deg) rotateY(360deg) rotateZ(-14deg) scale(1); }
         }
         .seat-pip {
-            width: 5px;
-            height: 5px;
+            width: 7px;
+            height: 7px;
             border-radius: 9999px;
             background: #0f172a;
             align-self: center;
             justify-self: center;
+            box-shadow: inset 0 1px 1.5px rgba(255,255,255,0.25);
         }
         .seat-pip.red-pip {
             background: #dc2626;
-            width: 6px;
-            height: 6px;
+            width: 8.5px;
+            height: 8.5px;
         }
 
         .ludo-king-frame {
@@ -493,7 +496,7 @@
                 </div>
             </section>
 
-            <!-- Top Seats: RED (Left) & GREEN (Right) each with its own dice -->
+            <!-- Top Seats: RED (Left) & GREEN (Right) each with its own large dice -->
             <section class="grid grid-cols-2 gap-1.5">
                 <div id="ludo-hud-red" class="seat-pod pod-red"></div>
                 <div id="ludo-hud-green" class="seat-pod pod-green"></div>
@@ -505,7 +508,7 @@
                 </div>
             </main>
 
-            <!-- Bottom Seats: BLUE (Left) & YELLOW (Right) each with its own dice -->
+            <!-- Bottom Seats: BLUE (Left) & YELLOW (Right) each with its own large dice -->
             <section class="grid grid-cols-2 gap-1.5">
                 <div id="ludo-hud-blue" class="seat-pod pod-blue"></div>
                 <div id="ludo-hud-yellow" class="seat-pod pod-yellow"></div>
@@ -650,6 +653,7 @@
         function backToMainHub() {
             if (typeof ludoAiTimer !== 'undefined' && ludoAiTimer) clearTimeout(ludoAiTimer);
             if (typeof ludoHopTimer !== 'undefined' && ludoHopTimer) clearInterval(ludoHopTimer);
+            if (typeof ludoSpinFaceTimer !== 'undefined' && ludoSpinFaceTimer) clearInterval(ludoSpinFaceTimer);
             const params = new URLSearchParams({
                 userId: telegramUserId,
                 name: userFullName,
@@ -704,8 +708,10 @@
         let ludoIsAnimating = false;
         let ludoActiveHoppingToken = null;
         let ludoRollingPlayerId = null;
+        let ludoSpinFaceValue = 5;
         let ludoAiTimer = null;
         let ludoHopTimer = null;
+        let ludoSpinFaceTimer = null;
         let ludoBurstCellKey = null;
         let ludoStepPulseCellKey = null;
         let ludoModalCloseHandler = null;
@@ -717,6 +723,44 @@
 
         function makeFreshTokens() {
             return [0, 1, 2, 3].map(id => ({ id, progress: -1 }));
+        }
+
+        function stopDiceFaceCycling() {
+            if (ludoSpinFaceTimer) {
+                clearInterval(ludoSpinFaceTimer);
+                ludoSpinFaceTimer = null;
+            }
+        }
+
+        function startRealisticDiceRollCycle(playerObj, durationMs, onComplete) {
+            stopDiceFaceCycling();
+            ludoIsAnimating = true;
+            ludoRollingPlayerId = playerObj.id;
+            let lastShown = playerObj.lastDice || 5;
+
+            ludoSpinFaceTimer = setInterval(() => {
+                let nextFace = Math.floor(Math.random() * 6) + 1;
+                if (nextFace === lastShown) nextFace = (nextFace % 6) + 1;
+                lastShown = nextFace;
+                ludoSpinFaceValue = nextFace;
+                playLudoFx('dice');
+                renderLudoHudPods();
+            }, 95);
+
+            renderLudoAll();
+
+            setTimeout(() => {
+                stopDiceFaceCycling();
+                const finalRolled = Math.floor(Math.random() * 6) + 1;
+                playerObj.lastDice = finalRolled;
+                ludoSpinFaceValue = finalRolled;
+                ludoMatchState.lastDice = finalRolled;
+                ludoIsAnimating = false;
+                ludoRollingPlayerId = null;
+                renderLudoAll();
+                emitLudoLiveSync();
+                if (typeof onComplete === 'function') onComplete(finalRolled);
+            }, durationMs);
         }
 
         function buildLudoPlayersFromRoster(realPlayersList = [], preferredHumanColor = ludoSelectedColor) {
@@ -1022,6 +1066,7 @@
         function beginLudoBoardMatch(rosterList = [], preferredColor = ludoSelectedColor) {
             if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
             if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+            stopDiceFaceCycling();
             ludoIsAnimating = false;
             ludoActiveHoppingToken = null;
             ludoRollingPlayerId = null;
@@ -1154,6 +1199,7 @@
 
             if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
             if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+            stopDiceFaceCycling();
 
             ludoIsAnimating = true;
             ludoMatchState.awaitingMove = false;
@@ -1267,20 +1313,7 @@
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
             if (!activeP || activeP.color !== seatColor || String(activeP.userId) !== String(telegramUserId)) return;
 
-            ludoIsAnimating = true;
-            ludoRollingPlayerId = activeP.id;
-            playLudoFx('dice');
-            renderLudoAll();
-
-            setTimeout(() => {
-                const rolled = Math.floor(Math.random() * 6) + 1;
-                activeP.lastDice = rolled;
-                ludoMatchState.lastDice = rolled;
-                ludoIsAnimating = false;
-                ludoRollingPlayerId = null;
-                renderLudoAll();
-                emitLudoLiveSync();
-
+            startRealisticDiceRollCycle(activeP, 1350, (rolled) => {
                 if (rolled === 6) {
                     activeP.consecutiveSixes = (activeP.consecutiveSixes || 0) + 1;
                     playLudoFx('six');
@@ -1313,7 +1346,7 @@
                     renderLudoAll();
                     emitLudoLiveSync();
                 }, 400);
-            }, 1050);
+            });
         }
 
         function handleLudoTokenTap(playerId, tokenId) {
@@ -1370,20 +1403,7 @@
                 const bot = ludoMatchState.players[ludoMatchState.turnIndex];
                 if (!bot || bot.isReal) return;
 
-                ludoIsAnimating = true;
-                ludoRollingPlayerId = bot.id;
-                playLudoFx('dice');
-                renderLudoAll();
-
-                ludoAiTimer = setTimeout(() => {
-                    const rolled = Math.floor(Math.random() * 6) + 1;
-                    bot.lastDice = rolled;
-                    ludoMatchState.lastDice = rolled;
-                    ludoIsAnimating = false;
-                    ludoRollingPlayerId = null;
-                    renderLudoAll();
-                    emitLudoLiveSync();
-
+                startRealisticDiceRollCycle(bot, 1350, (rolled) => {
                     ludoAiTimer = setTimeout(() => {
                         if (ludoMatchState.status !== 'playing') return;
                         const valid = bot.tokens.filter(t => isLudoTokenMovable(t, rolled));
@@ -1394,7 +1414,7 @@
                         const chosen = chooseMediumBotToken(bot, valid, rolled);
                         animateLudoTokenStepByStep(bot, chosen.id, rolled);
                     }, 950);
-                }, 1050);
+                });
             }, 900);
         }
 
@@ -1492,7 +1512,7 @@
 
         function createSeatDiceHtml(player, isTurn, isRollingNow, canHumanClick) {
             const pal = LUDO_COLOR_PALETTE[player.color];
-            const val = player.lastDice || 5;
+            const val = isRollingNow ? ludoSpinFaceValue : (player.lastDice || 5);
             const pips = LUDO_DICE_FACE_PIPS[val] || LUDO_DICE_FACE_PIPS[5];
             let cellsHtml = '';
             for (let i = 0; i < 9; i++) {
@@ -1604,7 +1624,7 @@
                             <span class="absolute -bottom-1 -right-1 text-[8px] bg-slate-950 text-amber-300 border border-amber-400/70 rounded px-1 leading-tight font-black">${homeCount}/4</span>
                         </div>
                         <div class="min-w-0 leading-tight">
-                            <div class="text-[10px] font-black text-white truncate">${p.shortName}</div>
+                            <div class="text-[11px] font-black text-white truncate">${p.shortName}</div>
                             <div class="text-[8px] font-bold ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${activeCount} out</div>
                         </div>
                     </div>
