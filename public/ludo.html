@@ -18,6 +18,33 @@
         .custom-scroll::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.25); border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(250, 204, 21, 0.75); border-radius: 4px; }
 
+        @keyframes hubBlinkBtn {
+            0%, 100% {
+                transform: scale(1);
+                background: linear-gradient(135deg, #f59e0b, #ea580c);
+                color: #ffffff;
+                border-color: #fef08a;
+                box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+            }
+            50% {
+                transform: scale(1.07);
+                background: linear-gradient(135deg, #facc15, #ef4444);
+                color: #ffffff;
+                border-color: #ffffff;
+                box-shadow: 0 0 20px rgba(239, 68, 68, 0.95), 0 0 30px rgba(250, 204, 21, 0.95);
+            }
+        }
+        .hub-blink-btn {
+            font-size: 12px;
+            font-weight: 900;
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 2px solid #fef08a;
+            cursor: pointer;
+            white-space: nowrap;
+            animation: hubBlinkBtn 0.72s infinite ease-in-out;
+        }
+
         .ludo-shell {
             background:
                 linear-gradient(180deg, rgba(6, 18, 54, 0.88) 0%, rgba(10, 29, 82, 0.92) 55%, rgba(4, 11, 34, 0.96) 100%),
@@ -350,7 +377,7 @@
         <div id="view-ludo-lobby" class="flex-1 flex flex-col p-3 space-y-2.5 overflow-y-auto custom-scroll">
             <header class="royal-topbar rounded-xl px-3 py-2 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-2 min-w-0">
-                    <button type="button" onclick="backToMainHub()" class="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-lg font-bold text-amber-300 shrink-0 cursor-pointer">← Hub</button>
+                    <button type="button" onclick="backToMainHub()" class="hub-blink-btn shrink-0">← Hub</button>
                     <div class="leading-tight truncate">
                         <div class="brand-title-bevel font-black text-xs sm:text-sm tracking-wide truncate">AZ LUDO • ካርድ (ቀለም) መምረጫ</div>
                         <div id="ludoLobbyModeBadge" class="text-[9px] font-bold text-cyan-300">PENDING • አዲስ ዙር</div>
@@ -549,6 +576,9 @@
         const socket = io();
         const urlParams = new URLSearchParams(window.location.search);
 
+        // ለጊዜው ለአድሚን ብቻ እንዲከፍት የአድሚን Telegram User ID(ዎች) እዚህ ያስገቡ
+        const LUDO_ADMIN_IDS = ['371093083'];
+
         let telegramUserId = urlParams.get('userId') || ("user_" + Math.floor(Math.random() * 100000));
         let userFullName = urlParams.get('name') || "ተጫዋች";
         let userUsername = urlParams.get('username') || "@player";
@@ -562,6 +592,39 @@
                 if (!urlParams.get('name') && u.first_name) userFullName = u.first_name;
                 if (!urlParams.get('username') && u.username) userUsername = "@" + u.username;
             }
+        }
+
+        function isLudoAdminUser(uid) {
+            if (!uid) return false;
+            return LUDO_ADMIN_IDS.map(String).includes(String(uid).trim());
+        }
+
+        function enforceLudoAdminLock() {
+            if (isLudoAdminUser(telegramUserId)) return true;
+
+            const appShell = document.querySelector('.ludo-shell') || document.body;
+            appShell.innerHTML = `
+                <div class="min-h-screen w-full flex items-center justify-center p-4 bg-[#061236] text-white">
+                    <div class="max-w-sm w-full bg-[#0d1d4d] border-2 border-amber-400 rounded-2xl p-5 text-center space-y-3 shadow-2xl">
+                        <div class="text-4xl">🔒</div>
+                        <h2 class="text-base font-black text-amber-300">AZ LUDO • ለጊዜው ለአድሚን ብቻ ነው</h2>
+                        <p class="text-xs text-slate-200 leading-relaxed">
+                            የሉዶ ጨዋታ በአሁኑ ሰዓት በአድሚን ቁጥጥር ስር ስለሆነ ለተጠቃሚዎች ለጊዜው ተዘግቷል።
+                        </p>
+                        <div class="text-[11px] font-mono bg-black/40 border border-white/15 rounded-lg py-1.5 px-2 text-cyan-300">
+                            ID: ${telegramUserId}
+                        </div>
+                        <button
+                            type="button"
+                            onclick="backToMainHub()"
+                            class="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-xs cursor-pointer"
+                        >
+                            ← ወደ ሃብ (Hub) ተመለስ
+                        </button>
+                    </div>
+                </div>
+            `;
+            return false;
         }
 
         const walletStorageKey = `az_bingo_wallet_v17_${telegramUserId}`;
@@ -602,13 +665,13 @@
         }
 
         function backToMainHub() {
-            if (ludoAiTimer) clearTimeout(ludoAiTimer);
-            if (ludoHopTimer) clearInterval(ludoHopTimer);
+            if (typeof ludoAiTimer !== 'undefined' && ludoAiTimer) clearTimeout(ludoAiTimer);
+            if (typeof ludoHopTimer !== 'undefined' && ludoHopTimer) clearInterval(ludoHopTimer);
             const params = new URLSearchParams({
                 userId: telegramUserId,
                 name: userFullName,
                 username: userUsername,
-                balance: walletBalance.toFixed(2)
+                balance: Number(walletBalance || 0).toFixed(2)
             });
             window.location.href = `/index.html?${params.toString()}`;
         }
@@ -1247,8 +1310,8 @@
                         return;
                     }
 
-                    const uniqueProgresses = new Set(movableTokens.map(t => t.progress));
-                    if (uniqueProgresses.size === 1) {
+                    const outOnBoardCount = activeP.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
+                    if (movableTokens.length === 1 || outOnBoardCount === 0) {
                         animateLudoTokenStepByStep(activeP, movableTokens[0].id, rolled);
                         return;
                     }
@@ -1721,6 +1784,8 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            if (!enforceLudoAdminLock()) return;
+
             renderLudoLobbyMenu();
             renderLudoAll();
 
