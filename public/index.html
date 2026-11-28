@@ -62,6 +62,328 @@
             100% { transform: scale(1); opacity: 1; }
         }
         .countdown-anim { animation: countdownPop 0.8s ease-in-out; }
+
+        /* AZ LUDO KING EDITION STYLES */
+        .ludo-shell {
+            --red-main: #e11d48;
+            --red-dark: #881337;
+            --green-main: #16a34a;
+            --green-dark: #14532d;
+            --yellow-main: #eab308;
+            --yellow-dark: #854d0e;
+            --blue-main: #0284c7;
+            --blue-dark: #075985;
+            background:
+                radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.22), transparent 42%),
+                radial-gradient(circle at 84% 18%, rgba(250, 204, 21, 0.16), transparent 45%),
+                radial-gradient(circle at 50% 88%, rgba(99, 102, 241, 0.22), transparent 52%),
+                linear-gradient(180deg, #070d22 0%, #0f1c42 48%, #070c1e 100%);
+        }
+        .ludo-shell .royal-topbar {
+            background: linear-gradient(180deg, #1b2a63 0%, #0e173b 100%);
+            border: 1.5px solid rgba(250, 204, 21, 0.55);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+        .ludo-shell .brand-title-bevel {
+            background: linear-gradient(180deg, #ffffff 0%, #fde047 65%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.7));
+        }
+        .ludo-shell .wallet-chip {
+            background: linear-gradient(180deg, #0a1936 0%, #061024 100%);
+            border: 1.5px solid #22d3ee;
+            box-shadow: 0 0 12px rgba(34, 211, 238, 0.28), inset 0 1px 0 rgba(255,255,255,0.12);
+        }
+        .ludo-shell .match-ribbon {
+            background: linear-gradient(90deg, #111c44 0%, #1d2f6f 50%, #111c44 100%);
+            border: 1.5px solid #eab308;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(254, 240, 138, 0.25);
+        }
+        .ludo-shell .pot-pill {
+            background: linear-gradient(180deg, #facc15 0%, #eab308 55%, #ca8a04 100%);
+            border: 1.5px solid #fef9c3;
+            color: #1e1b08;
+            box-shadow: 0 2px 10px rgba(234, 179, 8, 0.4);
+        }
+        .ludo-shell .player-pod {
+            background: linear-gradient(180deg, #162454 0%, #0b1330 100%);
+            border: 2px solid rgba(148, 163, 184, 0.35);
+            border-radius: 14px;
+            padding: 5px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            position: relative;
+            transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+        }
+        .ludo-shell .player-pod.pod-red { border-color: rgba(225, 29, 72, 0.65); }
+        .ludo-shell .player-pod.pod-green { border-color: rgba(22, 163, 74, 0.65); }
+        .ludo-shell .player-pod.pod-blue { border-color: rgba(2, 132, 199, 0.65); }
+        .ludo-shell .player-pod.pod-yellow { border-color: rgba(234, 179, 8, 0.65); }
+        .ludo-shell .player-pod.active-turn {
+            border-color: #fde047 !important;
+            box-shadow: 0 0 18px rgba(250, 204, 21, 0.55), inset 0 0 10px rgba(250, 204, 21, 0.2);
+            transform: scale(1.015);
+        }
+        .ludo-shell .avatar-ring {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 13px;
+            color: #fff;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45);
+        }
+        .ludo-shell .dice-stage {
+            width: 32px;
+            height: 32px;
+            perspective: 220px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ludo-shell .dice-cube {
+            width: 28px;
+            height: 28px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .ludo-shell .dice-cube.rolling {
+            animation: cubeTumble 1.15s cubic-bezier(0.32, 0.08, 0.24, 1) infinite;
+        }
+        @keyframes cubeTumble {
+            0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg); }
+            33%  { transform: rotateX(190deg) rotateY(120deg) rotateZ(45deg); }
+            66%  { transform: rotateX(310deg) rotateY(260deg) rotateZ(140deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg); }
+        }
+        .ludo-shell .dice-face {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(145deg, #ffffff 0%, #e2e8f0 100%);
+            border: 1.5px solid #94a3b8;
+            border-radius: 6px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 3px;
+            box-shadow: inset 0 1px 2px #ffffff, inset 0 -1px 2px rgba(15,23,42,0.2);
+        }
+        .ludo-shell .pip {
+            width: 4.5px;
+            height: 4.5px;
+            border-radius: 9999px;
+            background: #0f172a;
+            align-self: center;
+            justify-self: center;
+        }
+        .ludo-shell .pip.red-pip {
+            background: #dc2626;
+            width: 5.5px;
+            height: 5.5px;
+        }
+        .ludo-shell .ludo-king-frame {
+            background: linear-gradient(145deg, #facc15 0%, #b45309 25%, #78350f 50%, #d97706 78%, #fef08a 100%);
+            padding: 6px;
+            border-radius: 18px;
+            box-shadow:
+                0 12px 30px rgba(0, 0, 0, 0.65),
+                0 0 22px rgba(250, 204, 21, 0.25),
+                inset 0 2px 3px rgba(255, 255, 255, 0.65);
+        }
+        .ludo-shell .ludo-king-inner-bezel {
+            background: #1e1b18;
+            padding: 3px;
+            border-radius: 12px;
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+        .ludo-shell .ludo-board-15 {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #ffffff;
+            border-radius: 9px;
+            overflow: hidden;
+            position: relative;
+        }
+        .ludo-shell .track-cell {
+            border: 0.5px solid rgba(30, 41, 59, 0.26);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: #ffffff;
+        }
+        .ludo-shell .track-cell.bg-ludo-red { background: linear-gradient(180deg, #f43f5e 0%, #e11d48 100%); }
+        .ludo-shell .track-cell.bg-ludo-green { background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%); }
+        .ludo-shell .track-cell.bg-ludo-yellow { background: linear-gradient(180deg, #facc15 0%, #eab308 100%); }
+        .ludo-shell .track-cell.bg-ludo-blue { background: linear-gradient(180deg, #0ea5e9 0%, #0284c7 100%); }
+        .ludo-shell .yard-quadrant {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 0.5px solid rgba(15, 23, 42, 0.28);
+        }
+        .ludo-shell .yard-quadrant.yard-red { background: radial-gradient(circle at 30% 30%, #fb7185, #e11d48 65%, #be123c 100%); }
+        .ludo-shell .yard-quadrant.yard-green { background: radial-gradient(circle at 30% 30%, #4ade80, #16a34a 65%, #15803d 100%); }
+        .ludo-shell .yard-quadrant.yard-blue { background: radial-gradient(circle at 30% 30%, #38bdf8, #0284c7 65%, #0369a1 100%); }
+        .ludo-shell .yard-quadrant.yard-yellow { background: radial-gradient(circle at 30% 30%, #fde047, #eab308 65%, #ca8a04 100%); }
+        .ludo-shell .yard-white-card {
+            width: 71%;
+            height: 71%;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            place-items: center;
+            padding: 7%;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25), inset 0 2px 4px rgba(15, 23, 42, 0.14);
+        }
+        .ludo-shell .yard-socket {
+            width: 74%;
+            height: 74%;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25);
+        }
+        .ludo-shell .socket-red { background: radial-gradient(circle, #fb7185 0%, #e11d48 100%); border: 2px solid #be123c; }
+        .ludo-shell .socket-green { background: radial-gradient(circle, #4ade80 0%, #16a34a 100%); border: 2px solid #15803d; }
+        .ludo-shell .socket-blue { background: radial-gradient(circle, #38bdf8 0%, #0284c7 100%); border: 2px solid #0369a1; }
+        .ludo-shell .socket-yellow { background: radial-gradient(circle, #fde047 0%, #eab308 100%); border: 2px solid #a16207; }
+        .ludo-shell .home-crown-hub {
+            position: relative;
+            background: #ffffff;
+            border: 0.5px solid rgba(15, 23, 42, 0.35);
+            overflow: hidden;
+        }
+        .ludo-shell .home-tri-red { position: absolute; inset: 0; background: linear-gradient(90deg, #be123c, #f43f5e); clip-path: polygon(0 0, 0 100%, 50% 50%); }
+        .ludo-shell .home-tri-green { position: absolute; inset: 0; background: linear-gradient(180deg, #15803d, #22c55e); clip-path: polygon(0 0, 100% 0, 50% 50%); }
+        .ludo-shell .home-tri-yellow { position: absolute; inset: 0; background: linear-gradient(270deg, #ca8a04, #facc15); clip-path: polygon(100% 0, 100% 100%, 50% 50%); }
+        .ludo-shell .home-tri-blue { position: absolute; inset: 0; background: linear-gradient(0deg, #0369a1, #38bdf8); clip-path: polygon(0 100%, 100% 100%, 50% 50%); }
+        .ludo-shell .home-center-medallion {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 34%;
+            height: 34%;
+            border-radius: 9999px;
+            background: radial-gradient(circle at 30% 30%, #fef08a, #eab308 70%, #92400e 100%);
+            border: 1.5px solid #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+            z-index: 6;
+        }
+        .ludo-shell .pawn-wrapper {
+            position: absolute;
+            width: 92%;
+            height: 112%;
+            bottom: 8%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 15;
+            pointer-events: none;
+            transition: transform 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .ludo-shell .pawn-wrapper.yard-pawn {
+            position: relative;
+            width: 105%;
+            height: 122%;
+            bottom: 12%;
+        }
+        .ludo-shell .pawn-wrapper.movable {
+            pointer-events: auto;
+            cursor: pointer;
+            z-index: 25;
+            animation: pawnReadyHop 1.05s ease-in-out infinite;
+        }
+        .ludo-shell .pawn-movable-halo {
+            position: absolute;
+            bottom: -2px;
+            width: 94%;
+            height: 44%;
+            border-radius: 9999px;
+            border: 2px dashed #10b981;
+            background: rgba(16, 185, 129, 0.28);
+            animation: haloSpin 2.2s linear infinite;
+        }
+        @keyframes haloSpin {
+            from { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.14); }
+            to { transform: rotate(360deg) scale(1); }
+        }
+        @keyframes pawnReadyHop {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-4px) scale(1.1); }
+        }
+        @keyframes pawnSingleStepArc {
+            0% { transform: translateY(0) scale(1); }
+            45% { transform: translateY(-9px) scale(1.14); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        .ludo-shell .pawn-wrapper.stepping-hop {
+            z-index: 35;
+            animation: pawnSingleStepArc 0.34s cubic-bezier(0.34, 1.4, 0.64, 1);
+        }
+        .ludo-shell .capture-burst {
+            position: absolute;
+            inset: -30%;
+            border-radius: 9999px;
+            border: 3px solid #facc15;
+            background: radial-gradient(circle, rgba(254, 240, 138, 0.85), transparent 70%);
+            animation: burstExpand 0.48s ease-out forwards;
+            pointer-events: none;
+            z-index: 40;
+        }
+        @keyframes burstExpand {
+            0% { transform: scale(0.3); opacity: 1; }
+            100% { transform: scale(1.9); opacity: 0; }
+        }
+        .ludo-shell .royal-roll-cta {
+            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 48%, #0369a1 100%);
+            border: 2px solid #bae6fd;
+            box-shadow:
+                0 4px 0 #082f49,
+                0 0 20px rgba(56, 189, 248, 0.48),
+                inset 0 1px 0 rgba(255, 255, 255, 0.65);
+            transition: transform 0.1s ease, filter 0.15s ease;
+        }
+        .ludo-shell .royal-roll-cta:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #082f49, 0 0 12px rgba(56, 189, 248, 0.35);
+        }
+        .ludo-shell .royal-roll-cta:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            box-shadow: 0 2px 0 #0f172a;
+        }
+        .ludo-shell .gold-mode-btn {
+            background: linear-gradient(180deg, #1b2b65 0%, #0f193d 100%);
+            border: 2px solid #facc15;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(254, 240, 138, 0.25);
+            transition: transform 0.12s ease, border-color 0.15s ease;
+        }
+        .ludo-shell .gold-mode-btn:hover { border-color: #fef08a; transform: translateY(-1px); }
+        .ludo-shell .gold-mode-btn:active { transform: translateY(1px); }
     </style>
 </head>
 <body class="min-h-screen flex justify-center items-center sm:p-2">
@@ -181,7 +503,7 @@
                         </div>
                     </div>
 
-                    <!-- AZ Ludo Card (Coming Soon for Users, Opens Test for Admin) -->
+                    <!-- AZ Ludo Card (Coming Soon for Users, Opens AZ LUDO LIVE for Admin) -->
                     <div onclick="handleLudoCardClick()" class="bg-gradient-to-b from-[#091838] via-[#060e22] to-[#030612] p-3 rounded-2xl border border-amber-500/35 shadow-inner flex flex-col justify-between text-center relative overflow-hidden cursor-pointer">
                         <div id="ludo-coming-soon-overlay" class="absolute inset-0 bg-black/45 backdrop-blur-[0.5px] z-10 flex flex-col items-center justify-center">
                             <span class="text-xl mb-1 drop-shadow">🔒</span>
@@ -190,7 +512,7 @@
 
                         <div class="text-center space-y-0.5 relative z-0 pt-1">
                             <div class="text-[12px] font-black text-amber-300 tracking-wider">AZ LUDO</div>
-                            <div class="text-[10px] font-bold text-gray-300 leading-tight">ኢዜድ ሉዶ (50 ብር)</div>
+                            <div class="text-[10px] font-bold text-gray-300 leading-tight">ኢዜድ ሉዶ</div>
                         </div>
 
                         <!-- AZ Ludo Board & Dice Logo -->
@@ -258,33 +580,114 @@
                 </div>
             </div>
 
-            <!-- ADMIN LUDO TEST VIEW (ONLY OPENS FOR ADMIN WHEN CLICKING AZ LUDO CARD) -->
-            <div id="view-ludo-admin-test" class="tab-content hidden flex-1 flex flex-col p-3 space-y-3 overflow-y-auto custom-scroll bg-[#080f24]">
-                <div class="flex justify-between items-center border-b border-amber-500/30 pb-2">
-                    <div class="text-xs font-black text-amber-400">🎲 AZ LUDO (50 ብር) - Admin Test Mode</div>
-                    <button onclick="returnToHub()" class="text-[10px] bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg font-bold">← Hub</button>
-                </div>
+            <!-- VIEW: AZ LUDO LIVE (50 ብር - LUDO KING EDITION) - OPENS FOR ADMIN WHEN CLICKING AZ LUDO CARD -->
+            <div id="view-ludo-live" class="tab-content hidden flex-1 flex flex-col p-2 space-y-1.5 overflow-y-auto custom-scroll ludo-shell">
+                <header class="royal-topbar rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <button type="button" onclick="returnToHub()" class="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-lg font-bold text-amber-300 shrink-0">← Hub</button>
+                        <div class="leading-none truncate">
+                            <div class="brand-title-bevel font-black text-xs sm:text-sm tracking-wide truncate">AZ LUDO LIVE</div>
+                            <div class="text-[9px] font-bold text-cyan-300 flex items-center gap-1 mt-0.5">
+                                <span id="ludoLiveDot" class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span id="ludoLiveBadgeText">LIVE • 4/4 (50 ብር)</span>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="bg-blue-950/60 border border-amber-500/30 rounded-xl p-2.5 flex justify-between items-center text-[10px]">
-                    <div>Entry: <b class="text-amber-300">50 ብር</b></div>
-                    <div>Pot (90%): <b class="text-emerald-400" id="ludo-test-pot">180 ብር</b></div>
-                    <div>Dice: <b class="text-amber-300 font-mono text-xs" id="ludo-test-dice">-</b></div>
-                </div>
+                    <div class="wallet-chip rounded-lg px-2 py-1 flex items-center gap-1.5 shrink-0">
+                        <div class="text-right leading-tight">
+                            <div class="text-[8px] uppercase tracking-wider text-cyan-200/80 font-bold">ሂሳብ</div>
+                            <div id="ludoBalanceDisplay" class="text-[11px] font-black text-white font-mono">0.00 ብር</div>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="toggleLudoSound()"
+                            id="ludoSoundToggleBtn"
+                            aria-label="Toggle Sound"
+                            class="w-6 h-6 rounded-md bg-slate-900/90 hover:bg-slate-800 border border-cyan-400/40 flex items-center justify-center text-[11px] cursor-pointer"
+                        >
+                            🔊
+                        </button>
+                    </div>
+                </header>
 
-                <!-- 15x15 Mini Ludo Board -->
-                <div id="ludo-admin-board" class="w-full aspect-square bg-white rounded-xl p-1 border-2 border-amber-400 shadow-2xl grid grid-cols-15 grid-rows-15 gap-[1px]" style="grid-template-columns: repeat(15, minmax(0, 1fr)); grid-template-rows: repeat(15, minmax(0, 1fr));"></div>
+                <section class="match-ribbon rounded-lg px-2.5 py-1 flex items-center justify-between gap-1.5 text-[11px]">
+                    <div class="flex items-center gap-1 font-extrabold text-amber-200">
+                        <span>🎫 50 ብር</span>
+                        <span class="text-slate-400">•</span>
+                        <span class="text-cyan-300">90% ፖት</span>
+                    </div>
 
-                <div class="flex gap-2">
-                    <button onclick="rollAdminTestDice()" id="ludo-test-roll-btn" class="flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black py-2.5 rounded-xl text-xs shadow-lg">
-                        🎲 Roll Dice (Admin Test)
+                    <div class="pot-pill rounded-full px-2.5 py-0.5 font-black text-[11px] tracking-tight">
+                        🏆 ፖት: <span id="ludoPotDisplay">180 ብር</span>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="openLudoRulesModal()"
+                        class="text-[10px] font-extrabold text-cyan-300 hover:text-white underline cursor-pointer"
+                    >
+                        ህግ • RULES
                     </button>
-                    <button onclick="resetAdminTestLudo()" class="bg-white/10 hover:bg-white/20 px-3 py-2.5 rounded-xl text-xs font-bold">
-                        Reset
+                </section>
+
+                <section class="grid grid-cols-2 gap-1.5">
+                    <div id="ludo-hud-red" class="player-pod pod-red"></div>
+                    <div id="ludo-hud-green" class="player-pod pod-green"></div>
+                </section>
+
+                <main class="ludo-king-frame">
+                    <div class="ludo-king-inner-bezel">
+                        <div id="ludoBoard15" class="ludo-board-15"></div>
+                    </div>
+                </main>
+
+                <section class="grid grid-cols-2 gap-1.5">
+                    <div id="ludo-hud-blue" class="player-pod pod-blue"></div>
+                    <div id="ludo-hud-yellow" class="player-pod pod-yellow"></div>
+                </section>
+
+                <section class="flex flex-col items-center gap-1">
+                    <button
+                        id="ludoMainRollBtn"
+                        type="button"
+                        onclick="handleLudoHumanRoll()"
+                        class="royal-roll-cta w-full rounded-full py-2 px-4 flex items-center justify-center gap-2.5 text-white font-black text-xs sm:text-sm tracking-wide cursor-pointer"
+                    >
+                        <span>ዳይስ አንከባልል (ROLL DICE)</span>
+                        <span id="ludoCtaDiceFace" class="w-6 h-6 rounded-md bg-white text-slate-950 flex items-center justify-center text-base font-black shadow">⚄</span>
                     </button>
-                </div>
-                <div id="ludo-test-status" class="text-[10px] text-center text-gray-300 bg-black/40 p-2 rounded-lg border border-white/10">
-                    አድሚን ሆነህ 50 ብር መሞከሪያ ጨዋታውን እየሞከርክ ነው።
-                </div>
+
+                    <div id="ludoTurnBannerText" class="text-[11px] font-extrabold text-amber-200 text-center min-h-[16px]">
+                        የእርስዎ ተራ ነው (YOUR TURN!) - Abel (RED)
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-2 gap-1.5">
+                    <button
+                        type="button"
+                        onclick="startNewLudoPaidRound()"
+                        class="gold-mode-btn rounded-xl py-1.5 px-2.5 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                        <span class="text-sm">🎲</span>
+                        <div class="text-left leading-tight">
+                            <div class="text-[10px] font-black text-amber-300">አዲስ ዙር (50 ብር)</div>
+                            <div class="text-[9px] font-bold text-white">NEW MATCH / RESET</div>
+                        </div>
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="topUpLudoWallet(100)"
+                        class="gold-mode-btn rounded-xl py-1.5 px-2.5 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                        <span class="text-sm">💰</span>
+                        <div class="text-left leading-tight">
+                            <div class="text-[10px] font-black text-emerald-300">ሂሳብ ጨምር (+100)</div>
+                            <div class="text-[9px] font-bold text-white">TOP-UP WALLET</div>
+                        </div>
+                    </button>
+                </section>
             </div>
 
             <!-- TAB 1: GAME -->
@@ -665,6 +1068,22 @@
             </div>
         </div>
 
+        <!-- LUDO MODAL -->
+        <div id="ludoModalOverlay" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm items-center justify-center p-4 z-50">
+            <div class="bg-gradient-to-b from-[#1b2a63] to-[#0e173b] rounded-3xl max-w-xs w-full p-5 text-center space-y-3 border-2 border-amber-400 shadow-2xl">
+                <div id="ludoModalIcon" class="text-4xl">🏆</div>
+                <h2 id="ludoModalTitle" class="text-lg font-black text-amber-300">AZ LUDO LIVE</h2>
+                <p id="ludoModalBody" class="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-line"></p>
+                <button
+                    type="button"
+                    onclick="closeLudoModal()"
+                    class="w-full py-2.5 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow cursor-pointer"
+                >
+                    ቀጥል • CONTINUE
+                </button>
+            </div>
+        </div>
+
         <!-- WINNING MODAL -->
         <div id="winner-modal" class="hidden absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-2">
             <div class="bg-[#0e1b38] border border-amber-500/50 rounded-2xl p-3 w-full max-w-[320px] space-y-2 shadow-2xl text-center relative">
@@ -846,7 +1265,7 @@
                 ludoOverlay.classList.add('bg-black/20');
             }
             if (ludoFooter) {
-                ludoFooter.innerText = "Test Ludo (Admin) 🛠️";
+                ludoFooter.innerText = "Play Ludo (Admin) 🎲";
                 ludoFooter.className = "mt-1 w-full bg-gradient-to-r from-amber-500 to-orange-500 text-black font-black text-[10px] py-2 rounded-xl shadow";
             }
         }
@@ -856,120 +1275,837 @@
                 alert("🔒 AZ LUDO በቅርብ ቀን ይጀምራል (Coming Soon)!");
                 return;
             }
-            activeScreenContext = 'ludo_admin_test';
+            activeScreenContext = 'ludo_live';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             enforceHubVisualIsolation();
-            document.getElementById('header-title').innerHTML = `<span>🎲</span> AZ LUDO (Admin Test)`;
-            document.getElementById('view-ludo-admin-test').classList.remove('hidden');
-            renderAdminTestLudoBoard();
+            document.getElementById('header-title').innerHTML = `<span>🎲</span> AZ LUDO LIVE`;
+            document.getElementById('view-ludo-live').classList.remove('hidden');
+            renderLudoAll();
+            scheduleLudoAiIfNeeded();
         }
 
-        let adminLudoPawnStep = 0;
-        let adminLudoRolling = false;
+        // ============================================================
+        // AZ LUDO LIVE • 50 ብር (LUDO KING EDITION) ENGINE
+        // ============================================================
+        const LUDO_ENTRY_FEE = 50;
+        const LUDO_WIN_POT_RATIO = 0.90;
+        const LUDO_OUTER_TRACK_LEN = 52;
+        const LUDO_GOAL_STEP = 56;
 
-        function getLudoTrackCoord(step) {
-            const path = [
-                [6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],
-                [1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],
-                [8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],
-                [13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]
-            ];
-            return path[Math.min(Math.max(0, step), path.length - 1)];
-        }
+        const LUDO_OUTER_LOOP_52 = [
+            [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
+            [5, 6], [4, 6], [3, 6], [2, 6], [1, 6], [0, 6],
+            [0, 7], [0, 8],
+            [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
+            [6, 9], [6, 10], [6, 11], [6, 12], [6, 13], [6, 14],
+            [7, 14], [8, 14],
+            [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
+            [9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
+            [14, 7], [14, 6],
+            [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
+            [8, 5], [8, 4], [8, 3], [8, 2], [8, 1], [8, 0],
+            [7, 0], [6, 0]
+        ];
 
-        function renderAdminTestLudoBoard() {
-            const boardEl = document.getElementById('ludo-admin-board');
-            if (!boardEl) return;
-            boardEl.innerHTML = '';
+        const LUDO_START_OFFSET_BY_COLOR = { red: 0, green: 13, yellow: 26, blue: 39 };
+        const LUDO_HOME_LANE_COORDS = {
+            red:    [[7, 1], [7, 2], [7, 3], [7, 4], [7, 5]],
+            green:  [[1, 7], [2, 7], [3, 7], [4, 7], [5, 7]],
+            yellow: [[7, 13], [7, 12], [7, 11], [7, 10], [7, 9]],
+            blue:   [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]]
+        };
+        const LUDO_HOME_CROWN_COORDS = { red: [7, 6], green: [6, 7], yellow: [7, 8], blue: [8, 7] };
+        const LUDO_SAFE_CELL_KEYS = new Set(['6,1', '2,6', '1,8', '6,12', '8,13', '12,8', '13,6', '8,2']);
+        const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
+        const LUDO_COLOR_PALETTE = {
+            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', badgeBg: 'bg-rose-600' },
+            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', badgeBg: 'bg-emerald-600' },
+            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', badgeBg: 'bg-amber-500' },
+            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', badgeBg: 'bg-sky-600' }
+        };
+        const LUDO_DICE_UNICODE = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
+        const LUDO_DICE_FACE_PIPS = {
+            1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
+        };
 
-            const pawnCoord = adminLudoPawnStep === 0 ? [2, 2] : getLudoTrackCoord(adminLudoPawnStep - 1);
+        let ludoSoundEnabled = true;
+        let ludoIsAnimating = false;
+        let ludoActiveHoppingToken = null;
+        let ludoAiTimer = null;
+        let ludoHopTimer = null;
+        let ludoBurstCellKey = null;
+        let ludoModalCloseHandler = null;
+        let ludoAudioCtx = null;
 
-            for (let r = 0; r < 15; r++) {
-                for (let c = 0; c < 15; c++) {
-                    const cell = document.createElement('div');
-                    let bg = 'bg-white';
-
-                    if (r < 6 && c < 6) bg = 'bg-red-600';
-                    else if (r < 6 && c > 8) bg = 'bg-green-600';
-                    else if (r > 8 && c < 6) bg = 'bg-blue-600';
-                    else if (r > 8 && c > 8) bg = 'bg-yellow-400';
-                    else if (r >= 6 && r <= 8 && c >= 6 && c <= 8) bg = 'bg-amber-400';
-                    else if (r === 7 && c >= 1 && c <= 5) bg = 'bg-red-500';
-                    else if (c === 7 && r >= 1 && r <= 5) bg = 'bg-green-500';
-                    else if (r === 7 && c >= 9 && c <= 13) bg = 'bg-yellow-400';
-                    else if (c === 7 && r >= 9 && r <= 13) bg = 'bg-blue-500';
-                    else if (r === 6 && c === 1) bg = 'bg-red-500';
-                    else if (r === 1 && c === 8) bg = 'bg-green-500';
-                    else if (r === 8 && c === 13) bg = 'bg-yellow-400';
-                    else if (r === 13 && c === 6) bg = 'bg-blue-500';
-
-                    cell.className = `${bg} border border-black/15 flex items-center justify-center relative`;
-
-                    if (pawnCoord[0] === r && pawnCoord[1] === c) {
-                        cell.innerHTML = `<span class="w-3.5 h-3.5 rounded-full bg-red-600 border-2 border-white shadow-md block"></span>`;
-                    }
-
-                    boardEl.appendChild(cell);
+        function buildDefaultLudoPlayers() {
+            return [
+                {
+                    id: 'red', name: 'Abel (እርስዎ)', shortName: 'Abel', color: 'red', isHuman: true, consecutiveSixes: 0,
+                    tokens: [{ id: 0, progress: -1 }, { id: 1, progress: -1 }, { id: 2, progress: -1 }, { id: 3, progress: -1 }]
+                },
+                {
+                    id: 'green', name: 'Aman', shortName: 'Aman', color: 'green', isHuman: false, consecutiveSixes: 0,
+                    tokens: [{ id: 0, progress: -1 }, { id: 1, progress: -1 }, { id: 2, progress: -1 }, { id: 3, progress: -1 }]
+                },
+                {
+                    id: 'yellow', name: 'Solomon', shortName: 'Solomon', color: 'yellow', isHuman: false, consecutiveSixes: 0,
+                    tokens: [{ id: 0, progress: 2 }, { id: 1, progress: -1 }, { id: 2, progress: -1 }, { id: 3, progress: -1 }]
+                },
+                {
+                    id: 'blue', name: 'Beth', shortName: 'Beth', color: 'blue', isHuman: false, consecutiveSixes: 0,
+                    tokens: [{ id: 0, progress: 2 }, { id: 1, progress: -1 }, { id: 2, progress: -1 }, { id: 3, progress: -1 }]
                 }
+            ];
+        }
+
+        let ludoMatchState = {
+            status: 'playing',
+            players: buildDefaultLudoPlayers(),
+            turnIndex: 0,
+            lastDice: 5,
+            awaitingMove: false,
+            winner: null
+        };
+
+        function playLudoFx(type) {
+            if (!ludoSoundEnabled) return;
+            try {
+                if (!ludoAudioCtx) ludoAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const now = ludoAudioCtx.currentTime;
+                const osc = ludoAudioCtx.createOscillator();
+                const gain = ludoAudioCtx.createGain();
+                if (type === 'dice') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(280, now);
+                    osc.frequency.exponentialRampToValueAtTime(640, now + 0.08);
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+                    osc.connect(gain); gain.connect(ludoAudioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.09);
+                } else if (type === 'step') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(560, now);
+                    osc.frequency.exponentialRampToValueAtTime(820, now + 0.07);
+                    gain.gain.setValueAtTime(0.07, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.connect(gain); gain.connect(ludoAudioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.08);
+                } else if (type === 'capture') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(420, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.24);
+                    gain.gain.setValueAtTime(0.12, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                    osc.connect(gain); gain.connect(ludoAudioCtx.destination);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'six' || type === 'win') {
+                    const notes = type === 'win' ? [523.25, 659.25, 783.99, 1046.5] : [523.25, 659.25, 783.99];
+                    notes.forEach((freq, i) => {
+                        const o = ludoAudioCtx.createOscillator();
+                        const g = ludoAudioCtx.createGain();
+                        o.type = 'triangle';
+                        o.frequency.setValueAtTime(freq, now + i * 0.08);
+                        g.gain.setValueAtTime(0.09, now + i * 0.08);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+                        o.connect(g); g.connect(ludoAudioCtx.destination);
+                        o.start(now + i * 0.08); o.stop(now + i * 0.08 + 0.2);
+                    });
+                }
+            } catch (_) {}
+        }
+
+        function toggleLudoSound() {
+            ludoSoundEnabled = !ludoSoundEnabled;
+            document.getElementById('ludoSoundToggleBtn').textContent = ludoSoundEnabled ? '🔊' : '🔇';
+        }
+
+        function openLudoModal(icon, title, body, onClose = null) {
+            document.getElementById('ludoModalIcon').textContent = icon;
+            document.getElementById('ludoModalTitle').textContent = title;
+            document.getElementById('ludoModalBody').textContent = body;
+            ludoModalCloseHandler = onClose;
+            const ov = document.getElementById('ludoModalOverlay');
+            ov.classList.remove('hidden');
+            ov.classList.add('flex');
+        }
+
+        function closeLudoModal() {
+            const ov = document.getElementById('ludoModalOverlay');
+            ov.classList.add('hidden');
+            ov.classList.remove('flex');
+            if (typeof ludoModalCloseHandler === 'function') {
+                const fn = ludoModalCloseHandler;
+                ludoModalCloseHandler = null;
+                fn();
             }
         }
 
-        function rollAdminTestDice() {
-            if (adminLudoRolling) return;
-            adminLudoRolling = true;
-            const btn = document.getElementById('ludo-test-roll-btn');
-            const diceEl = document.getElementById('ludo-test-dice');
-            const statusEl = document.getElementById('ludo-test-status');
-            if (btn) btn.disabled = true;
+        function openLudoRulesModal() {
+            openLudoModal(
+                '👑',
+                'የAZ LUDO LIVE ህግ (50 ብር)',
+                '• መግቢያ ክፍያ: 50 ብር (4 ተጫዋቾች = 180 ብር 90% ፖት)\n• 6 ሲወጣ ቶከን ከቤት ይወጣል እንዲሁም ተጨማሪ ዳይስ ይንከባለላል\n• ኮከብ (★) እና ቀለም ያላቸው መነሻ ሳጥኖች አስተማማኝ ናቸው\n• ሌላ ተጫዋች ላይ በማረፍ ወደ ቤቱ መመለስ እና ተጨማሪ ዳይስ ማግኘት ይቻላል!'
+            );
+        }
 
-            let ticks = 0;
-            const spinTimer = setInterval(() => {
-                ticks++;
-                if (diceEl) diceEl.innerText = String(Math.floor(Math.random() * 6) + 1);
-                if (ticks >= 10) {
-                    clearInterval(spinTimer);
-                    const val = Math.floor(Math.random() * 6) + 1;
-                    if (diceEl) diceEl.innerText = String(val);
+        function topUpLudoWallet(amount) {
+            walletBalance = Number((walletBalance + amount).toFixed(2));
+            updateWalletUI();
+            addTransactionHistory('Ludo ሂሳብ መሙላት', amount, 'income', 'completed');
+            playLudoFx('six');
+            renderLudoAll();
+            openLudoModal('💳', 'ሂሳብ ተጨምሯል', `+${amount.toFixed(2)} ብር ወደ እርስዎ ሂሳብ ተጨምሯል። አዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`);
+        }
 
-                    if (adminLudoPawnStep === 0) {
-                        if (val === 6) {
-                            adminLudoPawnStep = 1;
-                            if (statusEl) statusEl.innerText = "6 ወጣ! ቶከኑ ወደ መነሻ ካሬ ገባ።";
-                            renderAdminTestLudoBoard();
-                        } else {
-                            if (statusEl) statusEl.innerText = `${val} ወጣ። ለመውጣት 6 ያስፈልጋል።`;
+        function getLudoPrizePot() {
+            return Math.floor(ludoMatchState.players.length * LUDO_ENTRY_FEE * LUDO_WIN_POT_RATIO);
+        }
+
+        function isLudoTokenMovable(token, diceValue) {
+            if (!token || diceValue === null || diceValue === undefined) return false;
+            if (token.progress === -1) return diceValue === 6;
+            return token.progress >= 0 && token.progress + diceValue <= LUDO_GOAL_STEP;
+        }
+
+        function resolveLudoBoardCoords(color, progress) {
+            if (progress >= 0 && progress <= 50) {
+                const idx = (LUDO_START_OFFSET_BY_COLOR[color] + progress) % LUDO_OUTER_TRACK_LEN;
+                return LUDO_OUTER_LOOP_52[idx];
+            }
+            if (progress >= 51 && progress <= 55) {
+                return LUDO_HOME_LANE_COORDS[color][progress - 51];
+            }
+            return LUDO_HOME_CROWN_COORDS[color];
+        }
+
+        function startNewLudoPaidRound() {
+            if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
+            if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+            ludoIsAnimating = false;
+            ludoActiveHoppingToken = null;
+
+            if (walletBalance < LUDO_ENTRY_FEE) {
+                openLudoModal('⚠️', 'በቂ ሂሳብ የለም', `ጨዋታ ለመጀመር ቢያንስ ${LUDO_ENTRY_FEE} ብር ያስፈልጋል። "+100" ተጭነው ሂሳብ ይጨምሩ።`);
+                return;
+            }
+
+            walletBalance = Number((walletBalance - LUDO_ENTRY_FEE).toFixed(2));
+            updateWalletUI();
+            addTransactionHistory('AZ Ludo ዙር መግቢያ', LUDO_ENTRY_FEE, 'expense', 'completed');
+            playLudoFx('six');
+
+            ludoMatchState = {
+                status: 'playing',
+                players: buildDefaultLudoPlayers(),
+                turnIndex: 0,
+                lastDice: null,
+                awaitingMove: false,
+                winner: null
+            };
+
+            renderLudoAll();
+            openLudoModal('🎲', 'አዲስ 50 ብር ዙር ተጀምሯል!', `50 ብር ተቀንሷል። የሽልማት ፖት: ${getLudoPrizePot()} ብር። የእርስዎ ተራ (RED) ነው!`);
+        }
+
+        function nextLudoPlayerTurn() {
+            if (ludoMatchState.status !== 'playing') return;
+            const cur = ludoMatchState.players[ludoMatchState.turnIndex];
+            if (cur) cur.consecutiveSixes = 0;
+
+            ludoMatchState.turnIndex = (ludoMatchState.turnIndex + 1) % ludoMatchState.players.length;
+            ludoMatchState.lastDice = null;
+            ludoMatchState.awaitingMove = false;
+            renderLudoAll();
+            scheduleLudoAiIfNeeded();
+        }
+
+        function finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown) {
+            ludoAiTimer = setTimeout(() => {
+                if (ludoMatchState.status !== 'playing') return;
+                if (diceValue === 6 || didCapture || reachedCrown) {
+                    ludoMatchState.lastDice = null;
+                    ludoMatchState.awaitingMove = false;
+                    renderLudoAll();
+                    scheduleLudoAiIfNeeded();
+                } else {
+                    nextLudoPlayerTurn();
+                }
+            }, 700);
+        }
+
+        function checkAndApplyLudoCapture(moverPlayer, movedToken) {
+            if (movedToken.progress < 0 || movedToken.progress > 50) return false;
+            const [r, c] = resolveLudoBoardCoords(moverPlayer.color, movedToken.progress);
+            const cellKey = `${r},${c}`;
+            if (LUDO_SAFE_CELL_KEYS.has(cellKey)) return false;
+
+            let capturedAny = false;
+            ludoMatchState.players.forEach((otherP) => {
+                if (otherP.id === moverPlayer.id) return;
+                otherP.tokens.forEach((otherTok) => {
+                    if (otherTok.progress >= 0 && otherTok.progress <= 50) {
+                        const [or, oc] = resolveLudoBoardCoords(otherP.color, otherTok.progress);
+                        if (or === r && oc === c) {
+                            otherTok.progress = -1;
+                            capturedAny = true;
                         }
-                        adminLudoRolling = false;
-                        if (btn) btn.disabled = false;
+                    }
+                });
+            });
+
+            if (capturedAny) {
+                ludoBurstCellKey = cellKey;
+                playLudoFx('capture');
+                setTimeout(() => {
+                    ludoBurstCellKey = null;
+                    renderLudoBoardOnly();
+                }, 520);
+            }
+            return capturedAny;
+        }
+
+        function animateLudoTokenStepByStep(player, tokenId, diceValue) {
+            if (ludoIsAnimating) return;
+            const token = player.tokens.find(t => t.id === tokenId);
+            if (!token || !isLudoTokenMovable(token, diceValue)) return;
+
+            if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
+            if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+
+            ludoIsAnimating = true;
+            ludoMatchState.awaitingMove = false;
+            ludoActiveHoppingToken = { playerId: player.id, tokenId: token.id };
+            renderLudoAll();
+
+            ludoAiTimer = setTimeout(() => {
+                if (ludoMatchState.status !== 'playing') {
+                    ludoIsAnimating = false;
+                    ludoActiveHoppingToken = null;
+                    return;
+                }
+
+                if (token.progress === -1 && diceValue === 6) {
+                    token.progress = 0;
+                    playLudoFx('step');
+                    renderLudoBoardOnly();
+                    ludoAiTimer = setTimeout(() => {
+                        ludoIsAnimating = false;
+                        ludoActiveHoppingToken = null;
+                        finishLudoTurnOrBonus(player, diceValue, false, false);
+                    }, 340);
+                    return;
+                }
+
+                let remainingSteps = diceValue;
+                ludoHopTimer = setInterval(() => {
+                    if (ludoMatchState.status !== 'playing') {
+                        clearInterval(ludoHopTimer);
+                        ludoHopTimer = null;
+                        ludoIsAnimating = false;
+                        ludoActiveHoppingToken = null;
                         return;
                     }
 
-                    let stepsLeft = val;
-                    const hopTimer = setInterval(() => {
-                        if (stepsLeft <= 0 || adminLudoPawnStep >= 57) {
-                            clearInterval(hopTimer);
-                            if (statusEl) statusEl.innerText = `${val} ካሬ በረጋ ሁኔታ ተራመደ (Step ${adminLudoPawnStep}/57)።`;
-                            adminLudoRolling = false;
-                            if (btn) btn.disabled = false;
-                            return;
-                        }
-                        adminLudoPawnStep++;
-                        stepsLeft--;
-                        renderAdminTestLudoBoard();
-                    }, 340);
-                }
-            }, 115);
+                    token.progress += 1;
+                    remainingSteps -= 1;
+                    playLudoFx('step');
+                    renderLudoBoardOnly();
+
+                    if (remainingSteps <= 0) {
+                        clearInterval(ludoHopTimer);
+                        ludoHopTimer = null;
+
+                        setTimeout(() => {
+                            ludoIsAnimating = false;
+                            ludoActiveHoppingToken = null;
+
+                            const didCapture = checkAndApplyLudoCapture(player, token);
+                            const reachedCrown = token.progress === LUDO_GOAL_STEP;
+
+                            if (player.tokens.every(t => t.progress === LUDO_GOAL_STEP)) {
+                                const potWon = getLudoPrizePot();
+                                ludoMatchState.status = 'finished';
+                                ludoMatchState.winner = { ...player, prize: potWon };
+
+                                if (player.isHuman) {
+                                    walletBalance = Number((walletBalance + potWon).toFixed(2));
+                                    updateWalletUI();
+                                    addTransactionHistory('AZ Ludo ሽልማት 🏆', potWon, 'income', 'completed');
+                                }
+                                playLudoFx('win');
+                                renderLudoAll();
+
+                                openLudoModal(
+                                    '🏆',
+                                    player.isHuman ? 'እንኳን ደስ አለዎት! አሸንፈዋል!' : `${player.shortName} (${player.color.toUpperCase()}) አሸነፈ!`,
+                                    player.isHuman
+                                        ? `የ ${potWon} ብር የሽልማት ፖት ወደ ሂሳብዎ ገብቷል! አዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
+                                        : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። አዲስ ዙር ለመጀመር ይጫኑ።`,
+                                    () => {
+                                        ludoMatchState = {
+                                            status: 'playing',
+                                            players: buildDefaultLudoPlayers(),
+                                            turnIndex: 0,
+                                            lastDice: 5,
+                                            awaitingMove: false,
+                                            winner: null
+                                        };
+                                        renderLudoAll();
+                                    }
+                                );
+                                return;
+                            }
+
+                            finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown);
+                        }, 140);
+                    }
+                }, 340);
+            }, 400);
         }
 
-        function resetAdminTestLudo() {
-            adminLudoPawnStep = 0;
-            adminLudoRolling = false;
-            const diceEl = document.getElementById('ludo-test-dice');
-            const statusEl = document.getElementById('ludo-test-status');
-            if (diceEl) diceEl.innerText = "-";
-            if (statusEl) statusEl.innerText = "ዳግም ተጀምሯል። ለመውጣት 6 ይንከባለሉ።";
-            renderAdminTestLudoBoard();
+        function handleLudoHumanRoll() {
+            if (ludoMatchState.status !== 'playing' || ludoMatchState.awaitingMove || ludoIsAnimating) return;
+            const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
+            if (!activeP || !activeP.isHuman) return;
+
+            ludoIsAnimating = true;
+            playLudoFx('dice');
+            renderLudoAll();
+
+            setTimeout(() => {
+                const rolled = Math.floor(Math.random() * 6) + 1;
+                ludoMatchState.lastDice = rolled;
+                ludoIsAnimating = false;
+                renderLudoAll();
+
+                if (rolled === 6) {
+                    activeP.consecutiveSixes = (activeP.consecutiveSixes || 0) + 1;
+                    playLudoFx('six');
+                    if (activeP.consecutiveSixes >= 3) {
+                        activeP.consecutiveSixes = 0;
+                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 950);
+                        return;
+                    }
+                } else {
+                    activeP.consecutiveSixes = 0;
+                }
+
+                setTimeout(() => {
+                    if (ludoMatchState.status !== 'playing') return;
+                    const movableTokens = activeP.tokens.filter(t => isLudoTokenMovable(t, rolled));
+                    if (movableTokens.length === 0) {
+                        ludoMatchState.awaitingMove = false;
+                        renderLudoAll();
+                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 850);
+                        return;
+                    }
+
+                    const uniqueProgresses = new Set(movableTokens.map(t => t.progress));
+                    if (uniqueProgresses.size === 1) {
+                        animateLudoTokenStepByStep(activeP, movableTokens[0].id, rolled);
+                        return;
+                    }
+
+                    ludoMatchState.awaitingMove = true;
+                    renderLudoAll();
+                }, 450);
+            }, 1150);
         }
+
+        function handleLudoTokenTap(playerId, tokenId) {
+            if (ludoMatchState.status !== 'playing' || !ludoMatchState.awaitingMove || ludoIsAnimating) return;
+            const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
+            if (!activeP || !activeP.isHuman || activeP.id !== playerId) return;
+            animateLudoTokenStepByStep(activeP, tokenId, ludoMatchState.lastDice);
+        }
+
+        function chooseBestLudoAiToken(aiPlayer, validTokens, diceVal) {
+            let bestToken = validTokens[0];
+            let bestScore = -999;
+
+            validTokens.forEach((tok) => {
+                let score = 0;
+                const targetProg = tok.progress === -1 ? 0 : tok.progress + diceVal;
+                if (tok.progress === -1 && diceVal === 6) score += 65;
+                if (targetProg === LUDO_GOAL_STEP) score += 120;
+                if (targetProg >= 51) score += 45;
+
+                if (targetProg >= 0 && targetProg <= 50) {
+                    const [tr, tc] = resolveLudoBoardCoords(aiPlayer.color, targetProg);
+                    const key = `${tr},${tc}`;
+                    if (LUDO_SAFE_CELL_KEYS.has(key)) score += 35;
+
+                    ludoMatchState.players.forEach((opp) => {
+                        if (opp.id === aiPlayer.id) return;
+                        opp.tokens.forEach((ot) => {
+                            if (ot.progress >= 0 && ot.progress <= 50 && !LUDO_SAFE_CELL_KEYS.has(key)) {
+                                const [or, oc] = resolveLudoBoardCoords(opp.color, ot.progress);
+                                if (or === tr && oc === tc) score += 150;
+                            }
+                        });
+                    });
+                }
+                score += tok.progress * 0.4;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestToken = tok;
+                }
+            });
+
+            return bestToken;
+        }
+
+        function scheduleLudoAiIfNeeded() {
+            if (ludoAiTimer) clearTimeout(ludoAiTimer);
+            if (activeScreenContext !== 'ludo_live' || ludoMatchState.status !== 'playing') return;
+
+            const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
+            if (!activeP || activeP.isHuman) return;
+
+            ludoAiTimer = setTimeout(() => {
+                if (activeScreenContext !== 'ludo_live' || ludoMatchState.status !== 'playing') return;
+                const bot = ludoMatchState.players[ludoMatchState.turnIndex];
+                if (!bot || bot.isHuman) return;
+
+                ludoIsAnimating = true;
+                playLudoFx('dice');
+                renderLudoAll();
+
+                ludoAiTimer = setTimeout(() => {
+                    const rolled = Math.floor(Math.random() * 6) + 1;
+                    ludoMatchState.lastDice = rolled;
+                    ludoIsAnimating = false;
+                    renderLudoAll();
+
+                    ludoAiTimer = setTimeout(() => {
+                        if (activeScreenContext !== 'ludo_live' || ludoMatchState.status !== 'playing') return;
+                        const valid = bot.tokens.filter(t => isLudoTokenMovable(t, rolled));
+                        if (valid.length === 0) {
+                            nextLudoPlayerTurn();
+                            return;
+                        }
+                        const chosen = chooseBestLudoAiToken(bot, valid, rolled);
+                        animateLudoTokenStepByStep(bot, chosen.id, rolled);
+                    }, 1100);
+                }, 1150);
+            }, 1000);
+        }
+
+        function createLudoDiceHtml(diceVal, rolling) {
+            const val = diceVal || 5;
+            const pips = LUDO_DICE_FACE_PIPS[val] || LUDO_DICE_FACE_PIPS[5];
+            let cellsHtml = '';
+            for (let i = 0; i < 9; i++) {
+                if (pips.includes(i)) {
+                    const isRedCenter = (val === 1 || val === 4 || val === 5) && i === 4;
+                    cellsHtml += `<span class="pip ${isRedCenter ? 'red-pip' : ''}"></span>`;
+                } else {
+                    cellsHtml += `<span></span>`;
+                }
+            }
+            return `
+                <div class="dice-stage">
+                    <div class="dice-cube ${rolling ? 'rolling' : ''}">
+                        <div class="dice-face">${cellsHtml}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createLudoGlossyPawnSvg(colorKey, movable) {
+            const pal = LUDO_COLOR_PALETTE[colorKey];
+            const gradId = `ludoPawnGrad_${colorKey}_${Math.random().toString(36).slice(2, 7)}`;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = `pawn-wrapper ${movable ? 'movable' : ''}`;
+
+            if (movable) {
+                const halo = document.createElement('div');
+                halo.className = 'pawn-movable-halo';
+                wrapper.appendChild(halo);
+            }
+
+            wrapper.innerHTML += `
+                <svg viewBox="0 0 40 48" class="w-full h-full overflow-visible drop-shadow-[0_3px_3px_rgba(0,0,0,0.55)]">
+                    <defs>
+                        <radialGradient id="${gradId}" cx="35%" cy="28%" r="68%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                            <stop offset="28%" stop-color="${pal.glow}" />
+                            <stop offset="68%" stop-color="${pal.fill}" />
+                            <stop offset="100%" stop-color="${pal.rim}" />
+                        </radialGradient>
+                    </defs>
+                    <ellipse cx="20" cy="44" rx="10" ry="3.2" fill="rgba(15, 23, 42, 0.42)" />
+                    <ellipse cx="20" cy="41.5" rx="9" ry="3" fill="${pal.rim}" stroke="#ffffff" stroke-width="1" />
+                    <path
+                        d="M20 3 C11.5 3 5.5 9.4 5.5 17.5 C5.5 27.6 20 41 20 41 C20 41 34.5 27.6 34.5 17.5 C34.5 9.4 28.5 3 20 3 Z"
+                        fill="url(#${gradId})"
+                        stroke="#ffffff"
+                        stroke-width="2.2"
+                    />
+                    <circle cx="20" cy="17" r="6.2" fill="#ffffff" stroke="${pal.rim}" stroke-width="1.2" />
+                    <ellipse cx="14.5" cy="10.5" rx="2.6" ry="1.4" transform="rotate(-28 14.5 10.5)" fill="rgba(255,255,255,0.85)" />
+                </svg>
+            `;
+            return wrapper;
+        }
+
+        function renderLudoHudPods() {
+            const balEl = document.getElementById('ludoBalanceDisplay');
+            const potEl = document.getElementById('ludoPotDisplay');
+            if (balEl) balEl.textContent = `${Number(walletBalance || 0).toFixed(2)} ብር`;
+            if (potEl) potEl.textContent = `${getLudoPrizePot()} ብር`;
+
+            const activePlayer = ludoMatchState.players[ludoMatchState.turnIndex] || null;
+            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && activePlayer && activePlayer.isHuman);
+
+            ludoMatchState.players.forEach((p, idx) => {
+                const podEl = document.getElementById(`ludo-hud-${p.color}`);
+                if (!podEl) return;
+
+                const isTurn = ludoMatchState.status === 'playing' && ludoMatchState.turnIndex === idx;
+                podEl.classList.toggle('active-turn', isTurn);
+
+                const homeCount = p.tokens.filter(t => t.progress === LUDO_GOAL_STEP).length;
+                const pal = LUDO_COLOR_PALETTE[p.color];
+                const initial = p.shortName.charAt(0).toUpperCase();
+
+                const avatarBlock = `
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <div class="avatar-ring ${pal.badgeBg} border border-white/80">
+                            ${initial}
+                            <span class="absolute -bottom-1 -right-1 text-[8px] bg-slate-950 text-amber-300 border border-amber-400/60 rounded px-1 leading-tight font-black">
+                                ${homeCount}/4
+                            </span>
+                        </div>
+                        <div class="min-w-0 leading-tight">
+                            <div class="text-[10px] font-black text-white truncate">${p.shortName}</div>
+                            <div class="text-[8px] font-bold ${isTurn ? 'text-amber-300' : 'text-slate-400'}">
+                                ${isTurn ? (p.isHuman ? 'ተራዎ • YOUR TURN' : 'በመጫወት ላይ...') : p.color.toUpperCase()}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const diceBlock = isTurn
+                    ? createLudoDiceHtml(ludoMatchState.lastDice, ludoIsAnimating)
+                    : `<div class="w-6 h-6 rounded-md bg-slate-950/60 border border-white/10 flex items-center justify-center text-[11px] text-slate-500">🎲</div>`;
+
+                podEl.innerHTML = avatarBlock + diceBlock;
+            });
+
+            const rollBtn = document.getElementById('ludoMainRollBtn');
+            if (rollBtn) rollBtn.disabled = !isHumanTurn || ludoMatchState.awaitingMove || ludoIsAnimating;
+
+            const ctaFace = document.getElementById('ludoCtaDiceFace');
+            if (ctaFace) ctaFace.textContent = LUDO_DICE_UNICODE[ludoMatchState.lastDice || 5] || '⚄';
+
+            const banner = document.getElementById('ludoTurnBannerText');
+            if (!banner) return;
+            if (ludoMatchState.winner) {
+                banner.textContent = `🏆 አሸናፊ: ${ludoMatchState.winner.shortName} (${ludoMatchState.winner.prize} ብር)`;
+            } else if (ludoIsAnimating && ludoActiveHoppingToken) {
+                const hoppingPlayer = ludoMatchState.players.find(pl => pl.id === ludoActiveHoppingToken.playerId);
+                banner.textContent = `🐾 ${hoppingPlayer ? hoppingPlayer.shortName : ''} ቶከን ${ludoActiveHoppingToken.tokenId + 1} እየተንቀሳቀሰ ነው...`;
+            } else if (isHumanTurn && ludoMatchState.awaitingMove) {
+                banner.textContent = `🎲 ${ludoMatchState.lastDice} ወጥቷል — የሚንቀሳቀስ ቶከን ይጫኑ!`;
+            } else if (isHumanTurn) {
+                banner.textContent = `የእርስዎ ተራ ነው (YOUR TURN!) - ${activePlayer.shortName} (${activePlayer.color.toUpperCase()})`;
+            } else if (activePlayer) {
+                banner.textContent = `የ ${activePlayer.shortName} (${activePlayer.color.toUpperCase()}) ተራ ነው...`;
+            }
+        }
+
+        function renderLudoBoardOnly() {
+            const boardEl = document.getElementById('ludoBoard15');
+            if (!boardEl) return;
+            boardEl.innerHTML = '';
+
+            const cellGrid = Array.from({ length: 15 }, () => Array(15).fill(null));
+
+            for (let r = 0; r < 15; r++) {
+                for (let c = 0; c < 15; c++) {
+                    const inTopLeft = r < 6 && c < 6;
+                    const inTopRight = r < 6 && c > 8;
+                    const inBottomLeft = r > 8 && c < 6;
+                    const inBottomRight = r > 8 && c > 8;
+                    const inCenter = r >= 6 && r <= 8 && c >= 6 && c <= 8;
+                    if (inTopLeft || inTopRight || inBottomLeft || inBottomRight || inCenter) continue;
+
+                    const cell = document.createElement('div');
+                    cell.className = 'track-cell';
+                    cell.style.gridRow = `${r + 1}`;
+                    cell.style.gridColumn = `${c + 1}`;
+
+                    if ((r === 7 && c >= 1 && c <= 5) || (r === 6 && c === 1)) {
+                        cell.classList.add('bg-ludo-red');
+                    } else if ((c === 7 && r >= 1 && r <= 5) || (r === 1 && c === 8)) {
+                        cell.classList.add('bg-ludo-green');
+                    } else if ((r === 7 && c >= 9 && c <= 13) || (r === 8 && c === 13)) {
+                        cell.classList.add('bg-ludo-yellow');
+                    } else if ((c === 7 && r >= 9 && r <= 13) || (r === 13 && c === 6)) {
+                        cell.classList.add('bg-ludo-blue');
+                    }
+
+                    if (r === 7 && c === 0) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-rose-600"><path fill="currentColor" d="M4 11h12.17l-5.59-5.59L12 4l8 8-8 8-1.41-1.41L16.17 13H4v-2z"/></svg>`;
+                    } else if (r === 0 && c === 7) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-emerald-600"><path fill="currentColor" d="M11 4v12.17l-5.59-5.59L4 12l8 8 8-8-1.41-1.41L13 16.17V4h-2z"/></svg>`;
+                    } else if (r === 7 && c === 14) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-amber-500"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>`;
+                    } else if (r === 14 && c === 7) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-sky-600"><path fill="currentColor" d="M13 20V7.83l5.59 5.59L20 12l-8-8-8 8 1.41 1.41L11 7.83V20h2z"/></svg>`;
+                    } else if (LUDO_STAR_ONLY_KEYS.has(`${r},${c}`)) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-slate-500"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+                    } else if ((r === 6 && c === 1) || (r === 1 && c === 8) || (r === 8 && c === 13) || (r === 13 && c === 6)) {
+                        cell.innerHTML = `<svg viewBox="0 0 24 24" class="w-3 h-3 text-white/95"><path fill="none" stroke="currentColor" stroke-width="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
+                    }
+
+                    if (ludoBurstCellKey === `${r},${c}`) {
+                        const burst = document.createElement('div');
+                        burst.className = 'capture-burst';
+                        cell.appendChild(burst);
+                    }
+
+                    cellGrid[r][c] = cell;
+                    boardEl.appendChild(cell);
+                }
+            }
+
+            const yardConfigs = [
+                { color: 'red',    r: 1,  c: 1,  yardCls: 'yard-red',    sockCls: 'socket-red' },
+                { color: 'green',  r: 1,  c: 10, yardCls: 'yard-green',  sockCls: 'socket-green' },
+                { color: 'blue',   r: 10, c: 1,  yardCls: 'yard-blue',   sockCls: 'socket-blue' },
+                { color: 'yellow', r: 10, c: 10, yardCls: 'yard-yellow', sockCls: 'socket-yellow' }
+            ];
+
+            yardConfigs.forEach((yc) => {
+                const quad = document.createElement('div');
+                quad.className = `yard-quadrant ${yc.yardCls}`;
+                quad.style.gridRow = `${yc.r} / span 6`;
+                quad.style.gridColumn = `${yc.c} / span 6`;
+
+                const innerCard = document.createElement('div');
+                innerCard.className = 'yard-white-card';
+
+                for (let idx = 0; idx < 4; idx++) {
+                    const sock = document.createElement('div');
+                    sock.className = `yard-socket ${yc.sockCls}`;
+                    sock.dataset.socket = `${yc.color}_${idx}`;
+                    innerCard.appendChild(sock);
+                }
+
+                quad.appendChild(innerCard);
+                boardEl.appendChild(quad);
+            });
+
+            const crownHub = document.createElement('div');
+            crownHub.className = 'home-crown-hub';
+            crownHub.style.gridRow = '7 / span 3';
+            crownHub.style.gridColumn = '7 / span 3';
+            crownHub.innerHTML = `
+                <div class="home-tri-red"></div>
+                <div class="home-tri-green"></div>
+                <div class="home-tri-yellow"></div>
+                <div class="home-tri-blue"></div>
+                <div class="home-center-medallion">
+                    <svg viewBox="0 0 24 24" class="w-3.5 h-3.5 text-amber-950">
+                        <path fill="currentColor" d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+                    </svg>
+                </div>
+            `;
+            boardEl.appendChild(crownHub);
+
+            const activeP = ludoMatchState.players[ludoMatchState.turnIndex] || null;
+            const isHumanTurn = Boolean(ludoMatchState.status === 'playing' && activeP && activeP.isHuman);
+            const tokensByCell = new Map();
+
+            ludoMatchState.players.forEach((player) => {
+                player.tokens.forEach((token) => {
+                    const isHoppingNow = Boolean(
+                        ludoIsAnimating &&
+                        ludoActiveHoppingToken &&
+                        ludoActiveHoppingToken.playerId === player.id &&
+                        ludoActiveHoppingToken.tokenId === token.id
+                    );
+                    const movable = Boolean(
+                        !ludoIsAnimating &&
+                        isHumanTurn &&
+                        ludoMatchState.awaitingMove &&
+                        activeP.id === player.id &&
+                        isLudoTokenMovable(token, ludoMatchState.lastDice)
+                    );
+
+                    if (token.progress === -1) {
+                        const socketEl = boardEl.querySelector(`[data-socket="${player.color}_${token.id}"]`);
+                        if (socketEl) {
+                            const pawnEl = createLudoGlossyPawnSvg(player.color, movable);
+                            pawnEl.classList.add('yard-pawn');
+                            if (isHoppingNow) pawnEl.classList.add('stepping-hop');
+                            if (movable) {
+                                pawnEl.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    handleLudoTokenTap(player.id, token.id);
+                                });
+                            }
+                            socketEl.appendChild(pawnEl);
+                        }
+                    } else if (token.progress < LUDO_GOAL_STEP) {
+                        const [tr, tc] = resolveLudoBoardCoords(player.color, token.progress);
+                        const key = `${tr},${tc}`;
+                        if (!tokensByCell.has(key)) tokensByCell.set(key, []);
+                        tokensByCell.get(key).push({ player, token, movable, isHoppingNow });
+                    } else {
+                        const [cr, cc] = LUDO_HOME_CROWN_COORDS[player.color];
+                        const finishedBadge = document.createElement('div');
+                        finishedBadge.style.gridRow = `${cr + 1}`;
+                        finishedBadge.style.gridColumn = `${cc + 1}`;
+                        finishedBadge.className = 'relative flex items-center justify-center z-10 pointer-events-none';
+                        const miniPawn = createLudoGlossyPawnSvg(player.color, false);
+                        miniPawn.style.transform = 'scale(0.68)';
+                        finishedBadge.appendChild(miniPawn);
+                        boardEl.appendChild(finishedBadge);
+                    }
+                });
+            });
+
+            tokensByCell.forEach((entries, key) => {
+                const [r, c] = key.split(',').map(Number);
+                const hostCell = cellGrid[r] && cellGrid[r][c];
+                if (!hostCell) return;
+
+                const stackOffsets = [
+                    { x: -16, y: -12 },
+                    { x: 16,  y: -12 },
+                    { x: -16, y: 10 },
+                    { x: 16,  y: 10 }
+                ];
+
+                entries.forEach((item, idx) => {
+                    const pawnEl = createLudoGlossyPawnSvg(item.player.color, item.movable);
+                    if (item.isHoppingNow) {
+                        pawnEl.classList.add('stepping-hop');
+                    }
+                    if (entries.length > 1) {
+                        const off = stackOffsets[idx % stackOffsets.length];
+                        pawnEl.style.transform = `translate(${off.x}%, ${off.y}%) scale(0.76)`;
+                    }
+                    if (item.movable) {
+                        pawnEl.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            handleLudoTokenTap(item.player.id, item.token.id);
+                        });
+                    }
+                    hostCell.appendChild(pawnEl);
+                });
+            });
+        }
+
+        function renderLudoAll() {
+            renderLudoHudPods();
+            renderLudoBoardOnly();
+        }
+        // ============================================================
 
         function resetForNewRoundOnly() {
             userSelectedCards = [];
@@ -1014,7 +2150,7 @@
         }
 
         function enforceHubVisualIsolation() {
-            if (activeScreenContext === 'hub' || activeScreenContext === 'ludo_admin_test') {
+            if (activeScreenContext === 'hub' || activeScreenContext === 'ludo_live') {
                 const winnerModal = document.getElementById('winner-modal');
                 if (winnerModal) winnerModal.classList.add('hidden');
                 const statsBar = document.getElementById('stats-bar-section');
@@ -1620,6 +2756,11 @@
         }
 
         function returnToHub() {
+            if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
+            if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+            ludoIsAnimating = false;
+            ludoActiveHoppingToken = null;
+
             activeScreenContext = 'hub';
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById('view-hub').classList.remove('hidden');
@@ -2016,6 +3157,8 @@
         function updateWalletUI() {
             document.getElementById('wallet-balance').innerText = Number(walletBalance || 0).toFixed(2);
             document.getElementById('hub-wallet-balance').innerText = Number(walletBalance || 0).toFixed(2) + " ብር";
+            const ludoBalEl = document.getElementById('ludoBalanceDisplay');
+            if (ludoBalEl) ludoBalEl.textContent = `${Number(walletBalance || 0).toFixed(2)} ብር`;
             localStorage.setItem(userLocalStorageKey, String(Number(walletBalance || 0).toFixed(2)));
         }
 
