@@ -78,7 +78,6 @@
             box-shadow: 0 2px 10px rgba(234, 179, 8, 0.45);
         }
 
-        /* Individual Player Seat Pod with preserved dice size & placement */
         .seat-pod {
             background: linear-gradient(180deg, #162a66 0%, #091333 100%);
             border: 2px solid rgba(148, 163, 184, 0.42);
@@ -99,6 +98,10 @@
         .seat-pod.active-turn {
             border-color: #fde047 !important;
             box-shadow: 0 0 16px rgba(250, 204, 21, 0.65), inset 0 0 8px rgba(250, 204, 21, 0.2);
+        }
+        .seat-pod.countdown-urgent {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.85), inset 0 0 10px rgba(239, 68, 68, 0.25);
         }
 
         .avatar-ring {
@@ -127,7 +130,6 @@
             line-height: 1.15;
         }
 
-        /* Preserved Per-player dice box */
         .seat-dice-box {
             width: 52px;
             height: 52px;
@@ -139,47 +141,49 @@
             justify-content: center;
             position: relative;
             flex-shrink: 0;
-            perspective: 360px;
+            perspective: 420px;
             cursor: pointer;
-            transition: transform 0.25s cubic-bezier(0.22, 1.35, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .seat-dice-box.can-roll {
             border-color: #fde047;
             box-shadow: 0 0 14px rgba(250, 204, 21, 0.72);
         }
+        /* Enhanced spin effect while keeping dice position & movement in place */
         .seat-dice-box.rolling-pop {
-            transform: translateY(-13px) scale(1.22);
-            z-index: 35;
             border-color: #ffffff;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.65), 0 0 22px var(--seat-glow, rgba(250, 204, 21, 0.95));
+            box-shadow: 0 0 22px rgba(255, 255, 255, 0.95), 0 0 32px rgba(250, 204, 21, 0.85);
         }
         .seat-dice-box.disabled-dice {
             cursor: default;
-            opacity: 0.84;
+            opacity: 0.88;
         }
 
         .seat-mini-cube {
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            background: linear-gradient(145deg, var(--dice-tint-top, #ffffff) 0%, var(--dice-tint-bot, #e2e8f0) 100%);
-            border: 2px solid var(--dice-border, #94a3b8);
+            background: linear-gradient(145deg, #ffffff 0%, #f1f5f9 100%);
+            border: 2px solid #cbd5e1;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
             padding: 4px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.48), inset 0 2px 3px rgba(255,255,255,0.9), inset 0 -2px 3px rgba(15,23,42,0.22);
-            transition: transform 0.16s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.45), inset 0 2px 4px rgba(255,255,255,1), inset 0 -2px 3px rgba(15,23,42,0.16);
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
         }
         .seat-dice-box.rolling-pop .seat-mini-cube {
-            animation: seatDiceTumble3D 0.42s cubic-bezier(0.32, 0.08, 0.25, 1) infinite;
+            background: linear-gradient(145deg, #ffffff 0%, #ffffff 100%);
+            border-color: #ffffff;
+            box-shadow: 0 0 18px rgba(255, 255, 255, 1), inset 0 2px 5px rgba(255, 255, 255, 1);
+            animation: seatDiceCrispSpin 0.34s cubic-bezier(0.28, 0.05, 0.22, 1) infinite;
         }
-        @keyframes seatDiceTumble3D {
-            0%   { transform: translateY(0px) rotateX(0deg) rotateY(0deg) rotateZ(-14deg) scale(1); }
-            25%  { transform: translateY(-4px) rotateX(145deg) rotateY(95deg) rotateZ(18deg) scale(1.12); }
-            50%  { transform: translateY(-7px) rotateX(245deg) rotateY(210deg) rotateZ(-12deg) scale(1.18); }
-            75%  { transform: translateY(-3px) rotateX(325deg) rotateY(305deg) rotateZ(15deg) scale(1.1); }
-            100% { transform: translateY(0px) rotateX(360deg) rotateY(360deg) rotateZ(-14deg) scale(1); }
+        @keyframes seatDiceCrispSpin {
+            0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(-18deg) scale(1.04); }
+            25%  { transform: rotateX(180deg) rotateY(90deg) rotateZ(22deg) scale(1.16); }
+            50%  { transform: rotateX(270deg) rotateY(220deg) rotateZ(-16deg) scale(1.2); }
+            75%  { transform: rotateX(330deg) rotateY(310deg) rotateZ(20deg) scale(1.14); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(-18deg) scale(1.04); }
         }
         .seat-pip {
             width: 7px;
@@ -507,7 +511,7 @@
                 </div>
             </section>
 
-            <!-- Top Seats: RED (Left) & GREEN (Right) each with its own large dice -->
+            <!-- Top Seats: RED (Left) & GREEN (Right) -->
             <section class="grid grid-cols-2 gap-1.5">
                 <div id="ludo-hud-red" class="seat-pod pod-red"></div>
                 <div id="ludo-hud-green" class="seat-pod pod-green"></div>
@@ -519,7 +523,7 @@
                 </div>
             </main>
 
-            <!-- Bottom Seats: BLUE (Left) & YELLOW (Right) each with its own large dice -->
+            <!-- Bottom Seats: BLUE (Left) & YELLOW (Right) -->
             <section class="grid grid-cols-2 gap-1.5">
                 <div id="ludo-hud-blue" class="seat-pod pod-blue"></div>
                 <div id="ludo-hud-yellow" class="seat-pod pod-yellow"></div>
@@ -573,7 +577,6 @@
         const socket = io();
         const urlParams = new URLSearchParams(window.location.search);
 
-        // ለጊዜው ለአድሚን ብቻ እንዲከፍት የአድሚን Telegram User ID(ዎች) እዚህ ያስገቡ
         const LUDO_ADMIN_IDS = ['371093083'];
 
         let telegramUserId = urlParams.get('userId') || ("user_" + Math.floor(Math.random() * 100000));
@@ -591,7 +594,6 @@
             }
         }
 
-        // Format player label from synced username or Telegram first name, compacting long names with "..."
         function formatCompactPlayerName(rawName, fallback = 'Player') {
             const cleaned = String(rawName || '')
                 .replace(/\(እርስዎ\)/g, '')
@@ -682,10 +684,15 @@
             localStorage.setItem(historyStorageKey, JSON.stringify(list));
         }
 
+        function clearAllLudoTimers() {
+            if (typeof ludoAiTimer !== 'undefined' && ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
+            if (typeof ludoHopTimer !== 'undefined' && ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
+            if (typeof ludoSpinFaceTimer !== 'undefined' && ludoSpinFaceTimer) { clearInterval(ludoSpinFaceTimer); ludoSpinFaceTimer = null; }
+            if (typeof ludoTurnInterval !== 'undefined' && ludoTurnInterval) { clearInterval(ludoTurnInterval); ludoTurnInterval = null; }
+        }
+
         function backToMainHub() {
-            if (typeof ludoAiTimer !== 'undefined' && ludoAiTimer) clearTimeout(ludoAiTimer);
-            if (typeof ludoHopTimer !== 'undefined' && ludoHopTimer) clearInterval(ludoHopTimer);
-            if (typeof ludoSpinFaceTimer !== 'undefined' && ludoSpinFaceTimer) clearInterval(ludoSpinFaceTimer);
+            clearAllLudoTimers();
             const params = new URLSearchParams({
                 userId: telegramUserId,
                 name: userFullName,
@@ -700,6 +707,9 @@
         const LUDO_OUTER_TRACK_LEN = 52;
         const LUDO_GOAL_STEP = 56;
         const LUDO_SEAT_ORDER = ['red', 'green', 'yellow', 'blue'];
+
+        const LUDO_THINK_SECONDS = 15;
+        const LUDO_GRACE_COUNTDOWN_SECONDS = 5;
 
         const LUDO_OUTER_LOOP_52 = [
             [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
@@ -728,10 +738,10 @@
         const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
 
         const LUDO_COLOR_PALETTE = {
-            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', ring: '#fb7185', tintTop: '#fff1f2', tintBot: '#fecdd3', border: '#f43f5e', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (RED)' },
-            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', ring: '#22c55e', tintTop: '#f0fdf4', tintBot: '#bbf7d0', border: '#16a34a', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (GREEN)' },
-            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', ring: '#facc15', tintTop: '#fefce8', tintBot: '#fef08a', border: '#eab308', badgeBg: 'bg-amber-500', labelAm: 'ቢጫ (YELLOW)' },
-            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', ring: '#38bdf8', tintTop: '#f0f9ff', tintBot: '#bae6fd', border: '#0284c7', badgeBg: 'bg-sky-600', labelAm: 'ሰማያዊ (BLUE)' }
+            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', ring: '#fb7185', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (RED)' },
+            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', ring: '#22c55e', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (GREEN)' },
+            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', ring: '#facc15', badgeBg: 'bg-amber-500', labelAm: 'ቢጫ (YELLOW)' },
+            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', ring: '#38bdf8', badgeBg: 'bg-sky-600', labelAm: 'ሰማያዊ (BLUE)' }
         };
         const LUDO_DICE_FACE_PIPS = {
             1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
@@ -746,6 +756,9 @@
         let ludoAiTimer = null;
         let ludoHopTimer = null;
         let ludoSpinFaceTimer = null;
+        let ludoTurnInterval = null;
+        let ludoTurnSecondsRemaining = LUDO_THINK_SECONDS;
+        let ludoInGraceCountdown = false;
         let ludoBurstCellKey = null;
         let ludoStepPulseCellKey = null;
         let ludoModalCloseHandler = null;
@@ -766,8 +779,17 @@
             }
         }
 
+        function stopTurnTimer() {
+            if (ludoTurnInterval) {
+                clearInterval(ludoTurnInterval);
+                ludoTurnInterval = null;
+            }
+            ludoInGraceCountdown = false;
+        }
+
         function startRealisticDiceRollCycle(playerObj, durationMs, onComplete) {
             stopDiceFaceCycling();
+            stopTurnTimer();
             ludoIsAnimating = true;
             ludoRollingPlayerId = playerObj.id;
             let lastShown = playerObj.lastDice || 5;
@@ -779,7 +801,7 @@
                 ludoSpinFaceValue = nextFace;
                 playLudoFx('dice');
                 renderLudoHudPods();
-            }, 95);
+            }, 85);
 
             renderLudoAll();
 
@@ -804,7 +826,8 @@
                 name: userFullName || 'እርስዎ',
                 shortName: formatCompactPlayerName(selfRaw, 'እርስዎ'),
                 isReal: true,
-                isHuman: true
+                isHuman: true,
+                autoPilot: false
             };
 
             const othersReal = (Array.isArray(realPlayersList) ? realPlayersList : [])
@@ -817,7 +840,8 @@
                         name: rp.fullName || rp.username || `Player ${idx + 2}`,
                         shortName: formatCompactPlayerName(chosenLabel, `P${idx + 2}`),
                         isReal: true,
-                        isHuman: false
+                        isHuman: false,
+                        autoPilot: false
                     };
                 });
 
@@ -838,7 +862,8 @@
                         name: bName,
                         shortName: formatCompactPlayerName(bName, 'Bot'),
                         isReal: false,
-                        isHuman: false
+                        isHuman: false,
+                        autoPilot: false
                     });
                     botIdx++;
                 }
@@ -854,6 +879,7 @@
                     color,
                     isReal: entry.isReal,
                     isHuman: entry.isHuman,
+                    autoPilot: Boolean(entry.autoPilot),
                     consecutiveSixes: 0,
                     lastDice: 5,
                     tokens: makeFreshTokens()
@@ -922,6 +948,7 @@
         }
 
         function openLudoLobbyMenu() {
+            stopTurnTimer();
             document.getElementById('view-ludo-live').classList.add('hidden');
             document.getElementById('view-ludo-lobby').classList.remove('hidden');
             ludoSelectedColor = pickFirstFreeColor(ludoSelectedColor);
@@ -1078,7 +1105,7 @@
             document.getElementById('view-ludo-lobby').classList.add('hidden');
             document.getElementById('view-ludo-live').classList.remove('hidden');
             renderLudoAll();
-            scheduleLudoAiIfNeeded();
+            scheduleLudoTurnOrAi();
         }
 
         function getLudoPrizePot() {
@@ -1103,9 +1130,7 @@
         }
 
         function beginLudoBoardMatch(rosterList = [], preferredColor = ludoSelectedColor) {
-            if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
-            if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
-            stopDiceFaceCycling();
+            clearAllLudoTimers();
             ludoIsAnimating = false;
             ludoActiveHoppingToken = null;
             ludoRollingPlayerId = null;
@@ -1149,6 +1174,7 @@
                         color: desiredColor,
                         isReal: true,
                         isHuman: String(pq.userId) === String(telegramUserId),
+                        autoPilot: false,
                         consecutiveSixes: 0,
                         lastDice: 5,
                         tokens: makeFreshTokens()
@@ -1160,6 +1186,7 @@
                 p.tokens = makeFreshTokens();
                 p.consecutiveSixes = 0;
                 p.lastDice = 5;
+                p.autoPilot = false;
             });
             ludoMatchState.status = 'playing';
             ludoMatchState.winner = null;
@@ -1171,6 +1198,7 @@
 
         function nextLudoPlayerTurn() {
             if (ludoMatchState.status !== 'playing') return;
+            stopTurnTimer();
             const cur = ludoMatchState.players[ludoMatchState.turnIndex];
             if (cur) cur.consecutiveSixes = 0;
 
@@ -1181,7 +1209,7 @@
             ludoStepPulseCellKey = null;
             renderLudoAll();
             emitLudoLiveSync();
-            scheduleLudoAiIfNeeded();
+            scheduleLudoTurnOrAi();
         }
 
         function finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown) {
@@ -1194,11 +1222,11 @@
                     ludoStepPulseCellKey = null;
                     renderLudoAll();
                     emitLudoLiveSync();
-                    scheduleLudoAiIfNeeded();
+                    scheduleLudoTurnOrAi();
                 } else {
                     nextLudoPlayerTurn();
                 }
-            }, 550);
+            }, 520);
         }
 
         function checkAndApplyLudoCapture(moverPlayer, movedToken) {
@@ -1238,6 +1266,7 @@
             const token = player.tokens.find(t => t.id === tokenId);
             if (!token || !isLudoTokenMovable(token, diceValue)) return;
 
+            stopTurnTimer();
             if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
             if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
             stopDiceFaceCycling();
@@ -1271,8 +1300,8 @@
                         ludoActiveHoppingToken = null;
                         emitLudoLiveSync();
                         finishLudoTurnOrBonus(player, diceValue, false, false);
-                    }, 460);
-                }, 220);
+                    }, 440);
+                }, 200);
                 return;
             }
 
@@ -1306,11 +1335,16 @@
                             ludoMatchState.status = 'finished';
                             ludoMatchState.winner = { ...player, prize: potWon };
 
+                            // Credit prize even if the real player was on autoPilot when winning
                             const isMeWinner = String(player.userId) === String(telegramUserId);
                             if (isMeWinner) {
                                 walletBalance = Number((walletBalance + potWon).toFixed(2));
                                 updateWalletDisplay();
-                                appendTxHistory('AZ Ludo ሽልማት 🏆', potWon, 'income');
+                                appendTxHistory(
+                                    player.autoPilot ? 'AZ Ludo ሽልማት (Auto-Play) 🏆' : 'AZ Ludo ሽልማት 🏆',
+                                    potWon,
+                                    'income'
+                                );
                             }
 
                             promotePendingPlayersAndStartNextRound(player.id);
@@ -1321,7 +1355,7 @@
                                 '🏆',
                                 isMeWinner ? 'እንኳን ደስ አለዎት! አሸንፈዋል!' : `${player.shortName} (${player.color.toUpperCase()}) አሸነፈ!`,
                                 isMeWinner
-                                    ? `የ ${potWon} ብር ሽልማት ወደ Central Wallet ገብቷል!\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
+                                    ? `የ ${potWon} ብር ሽልማት ወደ አካውንትዎ ገብቷል!\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
                                     : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። Pending ተጫዋቾች በቦት ቦታ ተተክተዋል።`
                             );
                             return;
@@ -1329,7 +1363,7 @@
 
                         emitLudoLiveSync();
                         finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown);
-                    }, 180);
+                    }, 160);
                     return;
                 }
 
@@ -1349,7 +1383,35 @@
                     const safeNote = isSafe ? ' • ሴፍ ቦታ (Safe)' : '';
                     banner.textContent = `👣 ${player.shortName}: እርምጃ ${stepCount} / ${totalSteps}${safeNote}`;
                 }
-            }, 460);
+            }, 440);
+        }
+
+        function executeRollForPlayer(playerObj, onAfterRollDecision) {
+            startRealisticDiceRollCycle(playerObj, 1250, (rolled) => {
+                if (rolled === 6) {
+                    playerObj.consecutiveSixes = (playerObj.consecutiveSixes || 0) + 1;
+                    playLudoFx('six');
+                    if (playerObj.consecutiveSixes >= 3) {
+                        playerObj.consecutiveSixes = 0;
+                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 850);
+                        return;
+                    }
+                } else {
+                    playerObj.consecutiveSixes = 0;
+                }
+
+                setTimeout(() => {
+                    if (ludoMatchState.status !== 'playing') return;
+                    const movableTokens = playerObj.tokens.filter(t => isLudoTokenMovable(t, rolled));
+                    if (movableTokens.length === 0) {
+                        ludoMatchState.awaitingMove = false;
+                        renderLudoAll();
+                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 750);
+                        return;
+                    }
+                    onAfterRollDecision(rolled, movableTokens);
+                }, 320);
+            });
         }
 
         function handleSeatDiceClick(seatColor) {
@@ -1357,39 +1419,21 @@
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
             if (!activeP || activeP.color !== seatColor || String(activeP.userId) !== String(telegramUserId)) return;
 
-            startRealisticDiceRollCycle(activeP, 1350, (rolled) => {
-                if (rolled === 6) {
-                    activeP.consecutiveSixes = (activeP.consecutiveSixes || 0) + 1;
-                    playLudoFx('six');
-                    if (activeP.consecutiveSixes >= 3) {
-                        activeP.consecutiveSixes = 0;
-                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 900);
-                        return;
-                    }
-                } else {
-                    activeP.consecutiveSixes = 0;
+            // Reconnect / manual action immediately restores human control
+            if (activeP.autoPilot) {
+                activeP.autoPilot = false;
+            }
+
+            executeRollForPlayer(activeP, (rolled, movableTokens) => {
+                const outOnBoardCount = activeP.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
+                if (movableTokens.length === 1 || outOnBoardCount === 0) {
+                    animateLudoTokenStepByStep(activeP, movableTokens[0].id, rolled);
+                    return;
                 }
-
-                setTimeout(() => {
-                    if (ludoMatchState.status !== 'playing') return;
-                    const movableTokens = activeP.tokens.filter(t => isLudoTokenMovable(t, rolled));
-                    if (movableTokens.length === 0) {
-                        ludoMatchState.awaitingMove = false;
-                        renderLudoAll();
-                        ludoAiTimer = setTimeout(() => nextLudoPlayerTurn(), 800);
-                        return;
-                    }
-
-                    const outOnBoardCount = activeP.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
-                    if (movableTokens.length === 1 || outOnBoardCount === 0) {
-                        animateLudoTokenStepByStep(activeP, movableTokens[0].id, rolled);
-                        return;
-                    }
-
-                    ludoMatchState.awaitingMove = true;
-                    renderLudoAll();
-                    emitLudoLiveSync();
-                }, 350);
+                ludoMatchState.awaitingMove = true;
+                renderLudoAll();
+                scheduleLudoTurnOrAi();
+                emitLudoLiveSync();
             });
         }
 
@@ -1397,6 +1441,7 @@
             if (ludoMatchState.status !== 'playing' || !ludoMatchState.awaitingMove || ludoIsAnimating) return;
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
             if (!activeP || String(activeP.userId) !== String(telegramUserId) || activeP.id !== playerId) return;
+            if (activeP.autoPilot) activeP.autoPilot = false;
             animateLudoTokenStepByStep(activeP, tokenId, ludoMatchState.lastDice);
         }
 
@@ -1432,34 +1477,107 @@
             return bestToken;
         }
 
-        function scheduleLudoAiIfNeeded() {
-            if (ludoAiTimer) clearTimeout(ludoAiTimer);
-            if (ludoMatchState.status !== 'playing') return;
+        function runAutoSkipOrAutoMoveForPlayer(targetPlayer) {
+            stopTurnTimer();
+            if (ludoMatchState.status !== 'playing' || ludoIsAnimating) return;
+
+            // Put player on autoPilot under their own name so game never stalls & wins still credit
+            if (targetPlayer.isReal) {
+                targetPlayer.autoPilot = true;
+            }
+
+            if (ludoMatchState.awaitingMove && ludoMatchState.lastDice !== null) {
+                const valid = targetPlayer.tokens.filter(t => isLudoTokenMovable(t, ludoMatchState.lastDice));
+                if (valid.length > 0) {
+                    const chosen = chooseMediumBotToken(targetPlayer, valid, ludoMatchState.lastDice);
+                    animateLudoTokenStepByStep(targetPlayer, chosen.id, ludoMatchState.lastDice);
+                } else {
+                    nextLudoPlayerTurn();
+                }
+                return;
+            }
+
+            executeRollForPlayer(targetPlayer, (rolled, movableTokens) => {
+                const chosen = chooseMediumBotToken(targetPlayer, movableTokens, rolled);
+                animateLudoTokenStepByStep(targetPlayer, chosen.id, rolled);
+            });
+        }
+
+        function scheduleLudoTurnOrAi() {
+            if (ludoAiTimer) { clearTimeout(ludoAiTimer); ludoAiTimer = null; }
+            stopTurnTimer();
+            if (ludoMatchState.status !== 'playing' || ludoIsAnimating) return;
 
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
-            if (!activeP || activeP.isReal) return;
+            if (!activeP) return;
 
             const hostReal = ludoMatchState.players.find(p => p.isReal);
-            if (!hostReal || String(hostReal.userId) !== String(telegramUserId)) return;
+            const amIHost = hostReal && String(hostReal.userId) === String(telegramUserId);
 
-            ludoAiTimer = setTimeout(() => {
-                if (ludoMatchState.status !== 'playing') return;
-                const bot = ludoMatchState.players[ludoMatchState.turnIndex];
-                if (!bot || bot.isReal) return;
+            // Medium bot or disconnected/auto-piloted real player handled smoothly
+            if (!activeP.isReal || activeP.autoPilot) {
+                if (!amIHost && String(activeP.userId) !== String(telegramUserId)) return;
+                ludoAiTimer = setTimeout(() => {
+                    if (ludoMatchState.status !== 'playing' || ludoIsAnimating) return;
+                    const cur = ludoMatchState.players[ludoMatchState.turnIndex];
+                    if (!cur || cur.id !== activeP.id) return;
 
-                startRealisticDiceRollCycle(bot, 1350, (rolled) => {
-                    ludoAiTimer = setTimeout(() => {
-                        if (ludoMatchState.status !== 'playing') return;
-                        const valid = bot.tokens.filter(t => isLudoTokenMovable(t, rolled));
-                        if (valid.length === 0) {
-                            nextLudoPlayerTurn();
-                            return;
-                        }
-                        const chosen = chooseMediumBotToken(bot, valid, rolled);
-                        animateLudoTokenStepByStep(bot, chosen.id, rolled);
-                    }, 850);
-                });
-            }, 850);
+                    if (cur.awaitingMove || ludoMatchState.awaitingMove) {
+                        const valid = cur.tokens.filter(t => isLudoTokenMovable(t, ludoMatchState.lastDice));
+                        if (valid.length === 0) { nextLudoPlayerTurn(); return; }
+                        const chosen = chooseMediumBotToken(cur, valid, ludoMatchState.lastDice);
+                        animateLudoTokenStepByStep(cur, chosen.id, ludoMatchState.lastDice);
+                        return;
+                    }
+
+                    executeRollForPlayer(cur, (rolled, movableTokens) => {
+                        ludoAiTimer = setTimeout(() => {
+                            if (ludoMatchState.status !== 'playing') return;
+                            const chosen = chooseMediumBotToken(cur, movableTokens, rolled);
+                            animateLudoTokenStepByStep(cur, chosen.id, rolled);
+                        }, 650);
+                    });
+                }, 750);
+                return;
+            }
+
+            // Active real player: 15s thinking time + 5s countdown + auto-skip/auto-move
+            ludoTurnSecondsRemaining = LUDO_THINK_SECONDS;
+            ludoInGraceCountdown = false;
+            renderLudoHudPods();
+
+            ludoTurnInterval = setInterval(() => {
+                if (ludoMatchState.status !== 'playing' || ludoIsAnimating) {
+                    stopTurnTimer();
+                    return;
+                }
+                const cur = ludoMatchState.players[ludoMatchState.turnIndex];
+                if (!cur || cur.id !== activeP.id || cur.autoPilot) {
+                    stopTurnTimer();
+                    return;
+                }
+
+                ludoTurnSecondsRemaining -= 1;
+
+                if (ludoTurnSecondsRemaining <= 0 && !ludoInGraceCountdown) {
+                    ludoInGraceCountdown = true;
+                    ludoTurnSecondsRemaining = LUDO_GRACE_COUNTDOWN_SECONDS;
+                    playLudoFx('dice');
+                    renderLudoHudPods();
+                    return;
+                }
+
+                if (ludoInGraceCountdown && ludoTurnSecondsRemaining <= 0) {
+                    stopTurnTimer();
+                    runAutoSkipOrAutoMoveForPlayer(cur);
+                    return;
+                }
+
+                if (ludoInGraceCountdown) {
+                    playLudoFx('dice');
+                }
+                renderLudoHudPods();
+            }, 1000);
         }
 
         function playLudoFx(type) {
@@ -1548,9 +1666,9 @@
             openLudoModal(
                 '👑',
                 'LUDO KING RULES • የሉዶ ኪንግ ህጎች',
-                `• ትክክለኛ የእርምጃ ቆጠራ: ዳይሱ ላይ የወጣው ቁጥር ያህል ቤት ብቻ በቅደም ተከተል ይራመዳል። ኮከብ (★) ወይም የቀለም መውጫ (Start) ሲደርስ እርምጃ አይዘለልም ወይም አይጨመርም።
+                `• 15s ማሰቢያ + 5s Countdown: ተራዎ ሲደርስ 15 ሰከንድ የማሰቢያ ጊዜ አለዎት፤ ካለፈ 5 ሰከንድ ቆጠራ ሰጥቶ በራሱ (Auto-Skip / Auto-Move) በስምዎ ይቀጥላል። ሲመለሱ ወዲያው ይረከባሉ።
 • ሴፍ ቦታ (Safe Zone): ኮከብ (★) እና የቀለም መነሻ ቤቶች ሴፍ ቦታ ናቸው፤ ተቃራኒ ተጫዋቾች በአንድ ላይ ቢቆሙ እንኳን አይበላሉም።
-• የራስ ዳይስ በየተጫዋቹ አጠገብ: የተራዎ ሲሆን ከስምዎ አጠገብ ያለውን ዳይስ ሲነኩት ወደ ላይ ወጥቶ በ3D ይሽከረከራል።`
+• ትክክለኛ እርምጃ: ዳይሱ ላይ የወጣው ቁጥር ያህል ቤት ብቻ በቅደም ተከተል ይራመዳል።`
             );
         }
 
@@ -1578,7 +1696,7 @@
                     ${canHumanClick ? `onclick="handleSeatDiceClick('${player.color}')"` : 'disabled'}
                     title="${player.name || player.shortName}"
                     class="seat-dice-box ${stateCls}"
-                    style="--seat-glow:${pal.ring}; --dice-tint-top:${pal.tintTop}; --dice-tint-bot:${pal.tintBot}; --dice-border:${pal.border};"
+                    style="--seat-glow:${pal.ring};"
                 >
                     <div class="seat-mini-cube">${cellsHtml}</div>
                 </button>
@@ -1644,13 +1762,18 @@
                 if (!podEl) return;
                 const isTurn = ludoMatchState.status === 'playing' && ludoMatchState.turnIndex === idx;
                 podEl.classList.toggle('active-turn', isTurn);
+                podEl.classList.toggle('countdown-urgent', Boolean(isTurn && ludoInGraceCountdown));
 
                 const homeCount = p.tokens.filter(t => t.progress === LUDO_GOAL_STEP).length;
                 const activeCount = p.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
                 const pal = LUDO_COLOR_PALETTE[p.color];
                 const displayName = formatCompactPlayerName(p.shortName || p.name, 'Player');
                 const initial = displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'P';
-                const tagText = p.isReal ? 'REAL' : 'BOT';
+
+                let tagText = p.isReal ? (p.autoPilot ? 'AUTO' : 'REAL') : 'BOT';
+                if (isTurn && p.isReal && !p.autoPilot && !ludoIsAnimating) {
+                    tagText = ludoInGraceCountdown ? `SKIP ${ludoTurnSecondsRemaining}s` : `${ludoTurnSecondsRemaining}s`;
+                }
 
                 const isRollingNow = Boolean(ludoIsAnimating && !ludoActiveHoppingToken && ludoRollingPlayerId === p.id);
                 const canHumanClick = Boolean(
@@ -1660,7 +1783,6 @@
                     !ludoIsAnimating
                 );
 
-                // Keep dice size & side position unchanged
                 const diceOnLeftSide = (p.color === 'green' || p.color === 'yellow');
                 const infoHtml = `
                     <div class="flex items-center gap-1.5 min-w-0 flex-1">
@@ -1670,7 +1792,9 @@
                         </div>
                         <div class="min-w-0 flex-1 leading-tight">
                             <div class="seat-name-label" title="${p.name || displayName}">${displayName}</div>
-                            <div class="text-[7.5px] font-bold truncate ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${activeCount} out</div>
+                            <div class="text-[7.5px] font-bold truncate ${
+                                isTurn && ludoInGraceCountdown ? 'text-red-400 font-black' : (isTurn ? 'text-amber-300' : 'text-slate-300')
+                            }">${tagText} • ${activeCount} out</div>
                         </div>
                     </div>
                 `;
@@ -1688,12 +1812,16 @@
             } else if (ludoIsAnimating && ludoActiveHoppingToken) {
                 const hoppingPlayer = ludoMatchState.players.find(pl => pl.id === ludoActiveHoppingToken.playerId);
                 banner.textContent = `👣 ${hoppingPlayer ? hoppingPlayer.shortName : ''} በትክክል ${ludoMatchState.lastDice} ቤት እየተራመደ ነው...`;
+            } else if (isMyTurn && activePlayer && activePlayer.autoPilot) {
+                banner.textContent = `🤖 በስምዎ (${activePlayer.shortName}) አውቶማቲክ እየተጫወተ ነው — ዳይሱን ነክተው ይረከቡ`;
+            } else if (isMyTurn && ludoInGraceCountdown) {
+                banner.textContent = `⏱️ ጊዜ አልቋል! በ ${ludoTurnSecondsRemaining}s ውስጥ Auto-Skip / Auto-Move ይሆናል...`;
             } else if (isMyTurn && ludoMatchState.awaitingMove) {
-                banner.textContent = `🎲 ${ludoMatchState.lastDice} ወጥቷል — የሚንቀሳቀስ ቶከን ይጫኑ!`;
+                banner.textContent = `🎲 ${ludoMatchState.lastDice} ወጥቷል (${ludoTurnSecondsRemaining}s) — ቶከን ይጫኑ!`;
             } else if (isMyTurn && activePlayer) {
-                banner.textContent = `የእርስዎ ተራ ነው — ከ ${activePlayer.color.toUpperCase()} ስም አጠገብ ያለውን ዳይስ ይንኩ!`;
+                banner.textContent = `የእርስዎ ተራ (${ludoTurnSecondsRemaining}s) — ከ ${activePlayer.color.toUpperCase()} ስም አጠገብ ያለውን ዳይስ ይንኩ!`;
             } else if (activePlayer) {
-                banner.textContent = `የ ${activePlayer.shortName} (${activePlayer.color.toUpperCase()}) ዳይስ ተራ ነው...`;
+                banner.textContent = `የ ${activePlayer.shortName} (${activePlayer.color.toUpperCase()}) ተራ ነው...`;
             }
         }
 
@@ -1771,7 +1899,7 @@
             boardEl.appendChild(crownHub);
 
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex] || null;
-            const isMyTurn = Boolean(ludoMatchState.status === 'playing' && activeP && String(activeP.userId) === String(telegramUserId));
+            const isMyTurn = Boolean(ludoMatchState.status === 'playing' && activeP && String(activeP.userId) === String(telegramUserId) && !activeP.autoPilot);
             const tokensByCell = new Map();
 
             ludoMatchState.players.forEach((player) => {
@@ -1849,6 +1977,20 @@
                     fullName: userFullName,
                     balance: walletBalance
                 });
+
+                // On reconnect, clear self autoPilot so user reclaims control of their seat
+                let reclaimed = false;
+                ludoMatchState.players.forEach(pl => {
+                    if (String(pl.userId) === String(telegramUserId) && pl.autoPilot) {
+                        pl.autoPilot = false;
+                        reclaimed = true;
+                    }
+                });
+                if (reclaimed && !document.getElementById('view-ludo-live').classList.contains('hidden')) {
+                    renderLudoAll();
+                    scheduleLudoTurnOrAi();
+                    emitLudoLiveSync();
+                }
             });
 
             socket.on('ludoSyncState', (synced) => {
@@ -1863,11 +2005,13 @@
                         const rawSyncedLabel = (pl.username && pl.username !== '@player')
                             ? pl.username
                             : (pl.shortName || pl.name || 'Player');
+                        const isMe = String(pl.userId) === String(telegramUserId);
                         return {
                             ...pl,
                             shortName: formatCompactPlayerName(rawSyncedLabel, 'Player'),
                             lastDice: pl.lastDice || 5,
-                            isHuman: String(pl.userId) === String(telegramUserId)
+                            autoPilot: isMe && socket.connected ? false : Boolean(pl.autoPilot),
+                            isHuman: isMe
                         };
                     });
                     ludoMatchState.turnIndex = typeof synced.turnIndex === 'number' ? synced.turnIndex : ludoMatchState.turnIndex;
@@ -1878,7 +2022,7 @@
 
                 if (!document.getElementById('view-ludo-live').classList.contains('hidden')) {
                     renderLudoAll();
-                    scheduleLudoAiIfNeeded();
+                    scheduleLudoTurnOrAi();
                 } else {
                     renderLudoLobbyMenu();
                 }
