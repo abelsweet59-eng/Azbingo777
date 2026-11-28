@@ -293,7 +293,7 @@ const MAX_STANDARD_BOT_CALLS = 24;
 const EMPTY_CARD_GRACE_MS = 3500;
 const BOT_TICK_INTERVAL_MS = 2000;
 const TEN_PERCENT_FLICKER_RATIO = 0.10;
-const MULTI_BOT_WIN_CHANCE = 0.20; // 20% እድል አልፎ አልፎ 2 ወይም 3 ቦቶች እንዲያሸንፉ
+const MULTI_BOT_WIN_CHANCE = 0.20;
 
 function getRandomBotNames(count) {
     let shuffled = [...ETHIOPIAN_BOT_NAMES].sort(() => 0.5 - Math.random());
@@ -328,6 +328,30 @@ let gameInterval = null;
 let numberCallInterval = null;
 let winGraceTimeout = null;
 let connectedRealPlayers = [];
+
+function getAdminSettingsSnapshot() {
+    const activePlayersCount = globalRoom.gameActive && globalRoom.lockedRoundPlayersCount !== null
+        ? globalRoom.lockedRoundPlayersCount
+        : globalRoom.playersCount;
+    const activePrize = globalRoom.gameActive && globalRoom.lockedRoundPrize !== null
+        ? globalRoom.lockedRoundPrize
+        : Math.floor((activePlayersCount * 10) * 0.90);
+
+    return {
+        roundId: globalRoom.roundId,
+        gameActive: globalRoom.gameActive,
+        playersCount: activePlayersCount,
+        prize: activePrize,
+        calledCount: globalRoom.calledNumbers.length,
+        botConfig: { ...botConfig },
+        telebirrConfig: { ...telebirrConfig },
+        isDepositLocked,
+        isWithdrawLocked,
+        enableOnlyRealUsersMode,
+        forcedNextWinner,
+        onlineRealUsersCount: onlineRealUsers.length
+    };
+}
 
 function getCartelaNumbers(cardNum) {
     let cardNumbersByCol = { B: [], I: [], N: [], G: [], O: [] };
@@ -929,7 +953,6 @@ function startMainGameLoop() {
                     winnersCount = 1;
                 }
             } else if (!explicitRealForced && Math.random() < MULTI_BOT_WIN_CHANCE) {
-                // በ Standard Bot Mode (ሪል ዩዘር ሳይታዘዝ) በ 20% እድል 2 ወይም 3 ቦቶች ያሸንፋሉ
                 winnersCount = Math.random() < 0.5 ? 2 : 3;
             }
 
@@ -1559,6 +1582,49 @@ app.post('/api/financial-request', async (req, bodyRes) => {
     }
 });
 
+// Shared Wallet API for Ludo (shares user balance without touching Bingo logic)
+app.get('/api/ludo/balance', async (req, res) => {
+    try {
+        const cleanUserId = String(req.query.userId || '').trim();
+        if (!cleanUserId) {
+            return res.status(400).json({ success: false, message: "Missing userId" });
+        }
+        await loadWalletsFromDb();
+        const bal = Number((userWallets[cleanUserId] || 0).toFixed(2));
+        return res.json({ success: true, userId: cleanUserId, balance: bal });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+app.post('/api/ludo/balance/sync', async (req, res) => {
+    try {
+        const cleanUserId = String(req.body.userId || '').trim();
+        if (!cleanUserId) {
+            return res.status(400).json({ success: false, message: "Missing userId" });
+        }
+        await loadWalletsFromDb();
+
+        if (req.body.delta !== undefined && !Number.isNaN(Number(req.body.delta))) {
+            const currentBal = Number(userWallets[cleanUserId] || 0);
+            const updatedBal = await setWalletBalance(cleanUserId, currentBal + Number(req.body.delta));
+            io.emit('ludoBalanceUpdated', { userId: cleanUserId, balance: updatedBal });
+            return res.json({ success: true, userId: cleanUserId, balance: updatedBal });
+        }
+
+        if (req.body.balance !== undefined && !Number.isNaN(Number(req.body.balance))) {
+            const updatedBal = await setWalletBalance(cleanUserId, Number(req.body.balance));
+            io.emit('ludoBalanceUpdated', { userId: cleanUserId, balance: updatedBal });
+            return res.json({ success: true, userId: cleanUserId, balance: updatedBal });
+        }
+
+        const currentBal = Number((userWallets[cleanUserId] || 0).toFixed(2));
+        return res.json({ success: true, userId: cleanUserId, balance: currentBal });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 io.on('connection', (socket) => {
     connectedRealPlayers.push(socket.id);
     if (!globalRoom.gameActive) {
@@ -1571,6 +1637,7 @@ io.on('connection', (socket) => {
     socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
     socket.emit('telebirrConfigUpdated', telebirrConfig);
     socket.emit('botConfigUpdated', botConfig);
+    socket.emit('adminSettingsSync', getAdminSettingsSnapshot());
 
     socket.on('registerRealUser', async (userData) => {
         if (userData && userData.userId) {
@@ -1584,6 +1651,8 @@ io.on('connection', (socket) => {
             if (isNaN(clientBalance) || clientBalance < 0) clientBalance = 0;
 
             if (userWallets[userId] === undefined) {
+                await setWalletBalance(userId, clientBalance);
+            } else if (clientBalance > 0 && (userWallets[userId] || 0) === 0 && !claimedWelcomeBonusUsers.has(userId)) {
                 await setWalletBalance(userId, clientBalance);
             }
 
@@ -1625,6 +1694,7 @@ io.on('connection', (socket) => {
 
             socket.emit('updateBalance', { balance: userWallets[userId] });
             socket.emit('referralData', { referralLink: myReferralLink, totalEarnings: myTotalEarnings });
+            socket.emit('adminSettingsSync', getAdminSettingsSnapshot());
 
             refreshTakenCardsList(false);
             if (!globalRoom.gameActive) {
@@ -1632,6 +1702,22 @@ io.on('connection', (socket) => {
             }
             socket.emit('syncGameState', globalRoom);
         }
+    });
+
+    socket.on('ludoSyncBalance', async (data) => {
+        if (!data || !data.userId) return;
+        const cleanUserId = String(data.userId).trim();
+        await loadWalletsFromDb();
+
+        let nextBal = userWallets[cleanUserId] || 0;
+        if (data.delta !== undefined && !Number.isNaN(Number(data.delta))) {
+            nextBal = await setWalletBalance(cleanUserId, nextBal + Number(data.delta));
+        } else if (data.balance !== undefined && !Number.isNaN(Number(data.balance))) {
+            nextBal = await setWalletBalance(cleanUserId, Number(data.balance));
+        }
+
+        socket.emit('updateBalance', { balance: nextBal });
+        io.emit('ludoBalanceUpdated', { userId: cleanUserId, balance: nextBal });
     });
 
     socket.on('playerClaimBingo', (data) => {
@@ -1675,6 +1761,11 @@ io.on('connection', (socket) => {
 
     socket.on('getAdminRealUsers', () => {
         socket.emit('adminRealUsersListUpdate', onlineRealUsers);
+        socket.emit('adminSettingsSync', getAdminSettingsSnapshot());
+        socket.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+        socket.emit('telebirrConfigUpdated', telebirrConfig);
+        socket.emit('botConfigUpdated', botConfig);
+        socket.emit('syncGameState', globalRoom);
     });
 
     socket.on('adminCheckUserBalance', async (data) => {
@@ -1707,6 +1798,7 @@ io.on('connection', (socket) => {
             isWithdrawLocked = data.locked;
         }
         io.emit('financialLockStatus', { isDepositLocked, isWithdrawLocked });
+        io.emit('adminSettingsSync', getAdminSettingsSnapshot());
         socket.emit('adminLockResponse', { success: true, message: `✅ የተሳካ ሁኔታ ተቀይሯል!` });
     });
 
@@ -1717,6 +1809,7 @@ io.on('connection', (socket) => {
 
             saveTelebirrConfigToDisk();
             io.emit('telebirrConfigUpdated', telebirrConfig);
+            io.emit('adminSettingsSync', getAdminSettingsSnapshot());
             socket.emit('adminTelebirrResponse', { success: true, message: `✅ የቴሌብር ቁጥር ተቀይሯል!` });
         }
     });
@@ -1735,6 +1828,7 @@ io.on('connection', (socket) => {
 
                 saveBotConfigToDisk();
                 io.emit('botConfigUpdated', botConfig);
+                io.emit('adminSettingsSync', getAdminSettingsSnapshot());
                 if (!globalRoom.gameActive) {
                     updateRoomPlayersAndPot(true);
                 }
@@ -1833,6 +1927,7 @@ io.on('connection', (socket) => {
         if (data && data.cards && Array.isArray(data.cards)) {
             let userId = String(data.userId || 'unknown');
             await addUserToDbAndSet(userId);
+            await loadWalletsFromDb();
             let cleanCards = data.cards.map(Number).filter(n => n >= 1 && n <= 500);
 
             if (cleanCards.length === 0 || cleanCards.length > 2) {
@@ -1845,9 +1940,14 @@ io.on('connection', (socket) => {
                 return;
             }
 
+            let clientPassedBal = (data.balance !== undefined && !isNaN(parseFloat(data.balance)))
+                ? Math.max(0, parseFloat(data.balance))
+                : 0;
+
             if (userWallets[userId] === undefined) {
-                let initBal = (data.balance !== undefined && !isNaN(data.balance)) ? parseFloat(data.balance) : 0;
-                await setWalletBalance(userId, Math.max(0, initBal));
+                await setWalletBalance(userId, clientPassedBal);
+            } else if ((userWallets[userId] || 0) === 0 && clientPassedBal > 0) {
+                await setWalletBalance(userId, clientPassedBal);
             }
 
             let prevCards = (globalRoom.playerRoundCards[socket.id] && Array.isArray(globalRoom.playerRoundCards[socket.id].cards))
@@ -1892,14 +1992,17 @@ io.on('connection', (socket) => {
             enableOnlyRealUsersMode = true;
             forcedNextWinner = 'random_real';
             if (!globalRoom.gameActive) updateRoomPlayersAndPot(true);
+            io.emit('adminSettingsSync', getAdminSettingsSnapshot());
             socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [ሪል ዩዘሮች ብቻ - True Random] ተቀይሯል!` });
         } else if (winnerType === 'standard_bot_mode') {
             enableOnlyRealUsersMode = false;
             forcedNextWinner = null;
             if (!globalRoom.gameActive) updateRoomPlayersAndPot(true);
+            io.emit('adminSettingsSync', getAdminSettingsSnapshot());
             socket.emit('adminWinnerResponse', { success: true, message: `✅ ሁነታው ወደ [መደበኛ (ቦቶች + ሪል)] ተመለሰ!` });
         } else {
             forcedNextWinner = winnerType;
+            io.emit('adminSettingsSync', getAdminSettingsSnapshot());
             socket.emit('adminWinnerResponse', { success: true, message: `✅ ቀጣዩ አሸናፊ ተስተካክሏል` });
         }
     });
