@@ -181,29 +181,28 @@
                         </div>
                     </div>
 
-                    <!-- AZ LUDO Card (Connected to /ludo.html) -->
+                    <!-- AZ LUDO Card -->
                     <div id="hub-ludo-card" onclick="openSeparateLudoPage()" class="bg-gradient-to-b from-[#0a1d52] via-[#071336] to-[#04091c] p-3 rounded-2xl border-2 border-amber-400/90 shadow-[0_0_20px_rgba(245,158,11,0.25)] flex flex-col justify-between cursor-pointer transform hover:scale-[1.03] transition-all relative overflow-hidden group">
                         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/25 via-transparent to-transparent"></div>
-                        <span id="hub-ludo-status-badge" class="self-end text-[8px] font-black px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 relative z-10">
-                            LIVE • ludo.html
-                        </span>
 
-                        <div class="text-center space-y-0.5 relative z-10">
-                            <div class="text-[12px] font-black text-amber-300 tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">AZ LUDO</div>
-                            <div class="text-[10px] font-bold text-cyan-200/90 leading-tight">ኢዜድ ሉዶ • 50 ብር</div>
+                        <div class="text-center space-y-0.5 relative z-10 pt-1">
+                            <div class="text-[12px] font-black text-cyan-200 tracking-wider drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">AZ LUDO</div>
+                            <div class="text-[10px] font-bold text-amber-300/90 leading-tight">ኢዜድ ሉዶ</div>
                         </div>
 
                         <div class="relative py-2 flex flex-col items-center justify-center z-10">
-                            <div class="w-20 h-20 rounded-xl bg-[#0f2356]/90 border-2 border-amber-400/70 p-1.5 grid grid-cols-2 grid-rows-2 gap-1 shadow-xl">
-                                <div class="rounded bg-rose-600 flex items-center justify-center text-xs font-black">🎲</div>
-                                <div class="rounded bg-emerald-600 flex items-center justify-center text-xs font-black">👑</div>
-                                <div class="rounded bg-sky-600 flex items-center justify-center text-xs font-black">⚡</div>
-                                <div class="rounded bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-black">50</div>
+                            <div class="w-full max-w-[130px] bg-[#0f2356]/90 border border-amber-500/50 rounded-lg p-1.5 shadow-xl">
+                                <div class="grid grid-cols-2 grid-rows-2 gap-1 h-[96px]">
+                                    <div class="rounded bg-rose-600 border border-white/30 flex items-center justify-center text-base font-black shadow">🎲</div>
+                                    <div class="rounded bg-emerald-600 border border-white/30 flex items-center justify-center text-base font-black shadow">👑</div>
+                                    <div class="rounded bg-sky-600 border border-white/30 flex items-center justify-center text-base font-black shadow">🎯</div>
+                                    <div class="rounded bg-amber-500 border border-white/30 text-slate-950 flex items-center justify-center text-sm font-black shadow">★</div>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="mt-1 w-full bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 hover:opacity-90 text-slate-950 font-black text-[10px] py-2 rounded-xl shadow-lg border border-amber-200/60 text-center uppercase tracking-wider relative z-10">
-                            Open Ludo 🎲
+                        <div class="mt-1 w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:opacity-90 text-black font-black text-[10px] py-2 rounded-xl shadow-lg border border-amber-200/60 text-center uppercase tracking-wider relative z-10">
+                            Play Now 🎮
                         </div>
                     </div>
                 </div>
@@ -751,6 +750,10 @@
         }
 
         function openSeparateLudoPage() {
+            if (!isAdmin) {
+                alert("Coming Soon");
+                return;
+            }
             const params = new URLSearchParams({
                 userId: telegramUserId,
                 name: userFullName,
