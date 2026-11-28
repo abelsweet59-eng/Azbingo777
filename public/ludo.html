@@ -293,7 +293,7 @@
             justify-content: center;
             z-index: 15;
             pointer-events: none;
-            transition: transform 0.25s ease;
+            transition: transform 0.2s ease;
         }
         .pawn-wrapper.yard-pawn {
             position: relative;
@@ -333,7 +333,7 @@
         }
         .pawn-wrapper.stepping-hop {
             z-index: 35;
-            animation: pawnSingleStepArc 0.45s cubic-bezier(0.25, 1.35, 0.5, 1);
+            animation: pawnSingleStepArc 0.42s cubic-bezier(0.25, 1.35, 0.5, 1);
         }
         .step-land-ring {
             position: absolute;
@@ -341,7 +341,7 @@
             border-radius: 9999px;
             border: 2.5px solid #fde047;
             background: rgba(254, 240, 138, 0.38);
-            animation: landPulse 0.48s ease-out forwards;
+            animation: landPulse 0.45s ease-out forwards;
             pointer-events: none;
             z-index: 22;
         }
@@ -691,8 +691,11 @@
             blue:   [[13, 7], [12, 7], [11, 7], [10, 7], [9, 7]]
         };
         const LUDO_HOME_CROWN_COORDS = { red: [7, 6], green: [6, 7], yellow: [7, 8], blue: [8, 7] };
+
+        // Safe Zones: 4 color start cells + 4 star cells (tokens here never get captured and never skip steps)
         const LUDO_SAFE_CELL_KEYS = new Set(['6,1', '2,6', '1,8', '6,12', '8,13', '12,8', '13,6', '8,2']);
         const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
+
         const LUDO_COLOR_PALETTE = {
             red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', ring: '#fb7185', tintTop: '#fff1f2', tintBot: '#fecdd3', border: '#f43f5e', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (RED)' },
             green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', ring: '#22c55e', tintTop: '#f0fdf4', tintBot: '#bbf7d0', border: '#16a34a', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (GREEN)' },
@@ -1158,13 +1161,15 @@
                 } else {
                     nextLudoPlayerTurn();
                 }
-            }, 650);
+            }, 550);
         }
 
         function checkAndApplyLudoCapture(moverPlayer, movedToken) {
             if (movedToken.progress < 0 || movedToken.progress > 50) return false;
             const [r, c] = resolveLudoBoardCoords(moverPlayer.color, movedToken.progress);
             const cellKey = `${r},${c}`;
+
+            // Safe Zone (stars & colored start squares): tokens safely coexist without capture
             if (LUDO_SAFE_CELL_KEYS.has(cellKey)) return false;
 
             let capturedAny = false;
@@ -1207,105 +1212,110 @@
             ludoActiveHoppingToken = { playerId: player.id, tokenId: token.id };
             renderLudoAll();
 
-            ludoAiTimer = setTimeout(() => {
-                if (ludoMatchState.status !== 'playing') {
-                    ludoIsAnimating = false;
-                    ludoActiveHoppingToken = null;
-                    ludoStepPulseCellKey = null;
-                    return;
-                }
-
-                if (token.progress === -1 && diceValue === 6) {
+            // Exiting yard on a 6 places token onto its own colored start square (progress 0)
+            if (token.progress === -1 && diceValue === 6) {
+                ludoAiTimer = setTimeout(() => {
+                    if (ludoMatchState.status !== 'playing') {
+                        ludoIsAnimating = false;
+                        ludoActiveHoppingToken = null;
+                        ludoStepPulseCellKey = null;
+                        return;
+                    }
                     token.progress = 0;
                     const [sr, sc] = resolveLudoBoardCoords(player.color, 0);
                     ludoStepPulseCellKey = `${sr},${sc}`;
                     playLudoFx('step');
                     renderLudoAll();
+                    const banner = document.getElementById('ludoTurnBannerText');
+                    if (banner) {
+                        banner.textContent = `🚀 ${player.shortName}: ከቤት ወጣ (Start • Safe)`;
+                    }
                     ludoAiTimer = setTimeout(() => {
                         ludoStepPulseCellKey = null;
                         ludoIsAnimating = false;
                         ludoActiveHoppingToken = null;
                         emitLudoLiveSync();
                         finishLudoTurnOrBonus(player, diceValue, false, false);
-                    }, 480);
+                    }, 460);
+                }, 220);
+                return;
+            }
+
+            // Strictly advance 1 square per step for exact `diceValue` steps without skipping any cell
+            const totalSteps = diceValue;
+            let stepCount = 0;
+
+            ludoHopTimer = setInterval(() => {
+                if (ludoMatchState.status !== 'playing') {
+                    clearInterval(ludoHopTimer);
+                    ludoHopTimer = null;
+                    ludoIsAnimating = false;
+                    ludoActiveHoppingToken = null;
+                    ludoStepPulseCellKey = null;
                     return;
                 }
 
-                const totalSteps = diceValue;
-                let stepCount = 0;
-                let remainingSteps = diceValue;
+                if (stepCount >= totalSteps) {
+                    clearInterval(ludoHopTimer);
+                    ludoHopTimer = null;
 
-                ludoHopTimer = setInterval(() => {
-                    if (ludoMatchState.status !== 'playing') {
-                        clearInterval(ludoHopTimer);
-                        ludoHopTimer = null;
+                    setTimeout(() => {
+                        ludoStepPulseCellKey = null;
                         ludoIsAnimating = false;
                         ludoActiveHoppingToken = null;
-                        ludoStepPulseCellKey = null;
-                        return;
-                    }
 
-                    token.progress += 1;
-                    stepCount += 1;
-                    remainingSteps -= 1;
+                        const didCapture = checkAndApplyLudoCapture(player, token);
+                        const reachedCrown = token.progress === LUDO_GOAL_STEP;
 
-                    if (token.progress >= 0 && token.progress <= 55) {
-                        const [sr, sc] = resolveLudoBoardCoords(player.color, token.progress);
-                        ludoStepPulseCellKey = `${sr},${sc}`;
-                    }
+                        if (player.tokens.every(t => t.progress === LUDO_GOAL_STEP)) {
+                            const potWon = getLudoPrizePot();
+                            ludoMatchState.status = 'finished';
+                            ludoMatchState.winner = { ...player, prize: potWon };
 
-                    playLudoFx('step');
-                    renderLudoAll();
-
-                    const banner = document.getElementById('ludoTurnBannerText');
-                    if (banner) {
-                        banner.textContent = `👣 ${player.shortName}: ቤት ${stepCount} / ${totalSteps} ረገጠ`;
-                    }
-
-                    if (remainingSteps <= 0) {
-                        clearInterval(ludoHopTimer);
-                        ludoHopTimer = null;
-
-                        setTimeout(() => {
-                            ludoStepPulseCellKey = null;
-                            ludoIsAnimating = false;
-                            ludoActiveHoppingToken = null;
-
-                            const didCapture = checkAndApplyLudoCapture(player, token);
-                            const reachedCrown = token.progress === LUDO_GOAL_STEP;
-
-                            if (player.tokens.every(t => t.progress === LUDO_GOAL_STEP)) {
-                                const potWon = getLudoPrizePot();
-                                ludoMatchState.status = 'finished';
-                                ludoMatchState.winner = { ...player, prize: potWon };
-
-                                const isMeWinner = String(player.userId) === String(telegramUserId);
-                                if (isMeWinner) {
-                                    walletBalance = Number((walletBalance + potWon).toFixed(2));
-                                    updateWalletDisplay();
-                                    appendTxHistory('AZ Ludo ሽልማት 🏆', potWon, 'income');
-                                }
-
-                                promotePendingPlayersAndStartNextRound(player.id);
-                                playLudoFx('win');
-                                renderLudoAll();
-
-                                openLudoModal(
-                                    '🏆',
-                                    isMeWinner ? 'እንኳን ደስ አለዎት! አሸንፈዋል!' : `${player.shortName} (${player.color.toUpperCase()}) አሸነፈ!`,
-                                    isMeWinner
-                                        ? `የ ${potWon} ብር ሽልማት ወደ Central Wallet ገብቷል!\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
-                                        : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። Pending ተጫዋቾች በቦት ቦታ ተተክተዋል።`
-                                );
-                                return;
+                            const isMeWinner = String(player.userId) === String(telegramUserId);
+                            if (isMeWinner) {
+                                walletBalance = Number((walletBalance + potWon).toFixed(2));
+                                updateWalletDisplay();
+                                appendTxHistory('AZ Ludo ሽልማት 🏆', potWon, 'income');
                             }
 
-                            emitLudoLiveSync();
-                            finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown);
-                        }, 220);
-                    }
-                }, 500);
-            }, 350);
+                            promotePendingPlayersAndStartNextRound(player.id);
+                            playLudoFx('win');
+                            renderLudoAll();
+
+                            openLudoModal(
+                                '🏆',
+                                isMeWinner ? 'እንኳን ደስ አለዎት! አሸንፈዋል!' : `${player.shortName} (${player.color.toUpperCase()}) አሸነፈ!`,
+                                isMeWinner
+                                    ? `የ ${potWon} ብር ሽልማት ወደ Central Wallet ገብቷል!\nአዲስ ሂሳብ: ${walletBalance.toFixed(2)} ብር`
+                                    : `${player.shortName} የ ${potWon} ብር ፖት አሸንፏል። Pending ተጫዋቾች በቦት ቦታ ተተክተዋል።`
+                            );
+                            return;
+                        }
+
+                        emitLudoLiveSync();
+                        finishLudoTurnOrBonus(player, diceValue, didCapture, reachedCrown);
+                    }, 180);
+                    return;
+                }
+
+                token.progress += 1;
+                stepCount += 1;
+
+                const [sr, sc] = resolveLudoBoardCoords(player.color, token.progress);
+                const cellKey = `${sr},${sc}`;
+                ludoStepPulseCellKey = cellKey;
+                const isSafe = LUDO_SAFE_CELL_KEYS.has(cellKey);
+
+                playLudoFx('step');
+                renderLudoAll();
+
+                const banner = document.getElementById('ludoTurnBannerText');
+                if (banner) {
+                    const safeNote = isSafe ? ' • ሴፍ ቦታ (Safe)' : '';
+                    banner.textContent = `👣 ${player.shortName}: እርምጃ ${stepCount} / ${totalSteps}${safeNote}`;
+                }
+            }, 460);
         }
 
         function handleSeatDiceClick(seatColor) {
@@ -1345,7 +1355,7 @@
                     ludoMatchState.awaitingMove = true;
                     renderLudoAll();
                     emitLudoLiveSync();
-                }, 400);
+                }, 350);
             });
         }
 
@@ -1413,9 +1423,9 @@
                         }
                         const chosen = chooseMediumBotToken(bot, valid, rolled);
                         animateLudoTokenStepByStep(bot, chosen.id, rolled);
-                    }, 950);
+                    }, 850);
                 });
-            }, 900);
+            }, 850);
         }
 
         function playLudoFx(type) {
@@ -1504,9 +1514,9 @@
             openLudoModal(
                 '👑',
                 'LUDO KING RULES • የሉዶ ኪንግ ህጎች',
-                `• የራስ ዳይስ በየተጫዋቹ አጠገብ: እያንዳንዱ ተጫዋች ከስሙ ጎን የራሱ ዳይስ አለው፤ የተራዎ ሲሆን ዳይስዎን ሲነኩት ወደ ላይ ወጥቶ ይሽከረከራል።
-• ካርድ (ቀለም) መምረጫ ሜኑ: ጨዋታው ከመጀመሩ በፊት ወይም ሲካሄድ መጀመሪያ የቀለም/ካርድ መምረጫ ሜኑ ይመጣል።
-• Pending & Swap: ጨዋታው እየተካሄደ ሲገቡ ኦንላይን ሆነው ማየት እና Pending ካርድ መያዝ ይችላሉ፤ ሲያልቅ ቅድሚያ ቦቶቹ እየቀነሱ በሪል ተጫዋች ይተካሉ።`
+                `• ትክክለኛ የእርምጃ ቆጠራ: ዳይሱ ላይ የወጣው ቁጥር ያህል ቤት ብቻ በቅደም ተከተል ይራመዳል። ኮከብ (★) ወይም የቀለም መውጫ (Start) ሲደርስ እርምጃ አይዘለልም ወይም አይጨመርም።
+• ሴፍ ቦታ (Safe Zone): ኮከብ (★) እና የቀለም መነሻ ቤቶች ሴፍ ቦታ ናቸው፤ ተቃራኒ ተጫዋቾች በአንድ ላይ ቢቆሙ እንኳን አይበላሉም።
+• የራስ ዳይስ በየተጫዋቹ አጠገብ: የተራዎ ሲሆን ከስምዎ አጠገብ ያለውን ዳይስ ሲነኩት ወደ ላይ ወጥቶ በ3D ይሽከረከራል።`
             );
         }
 
@@ -1642,7 +1652,7 @@
                 banner.textContent = `⏳ በ Pending ላይ (${ludoSelectedColor.toUpperCase()}) — ጨዋታው ሲያልቅ ቦት ተቀንሶ ይገባሉ`;
             } else if (ludoIsAnimating && ludoActiveHoppingToken) {
                 const hoppingPlayer = ludoMatchState.players.find(pl => pl.id === ludoActiveHoppingToken.playerId);
-                banner.textContent = `👣 ${hoppingPlayer ? hoppingPlayer.shortName : ''} ቀስ ብሎ በየቤቱ እየተራመደ ነው (${ludoMatchState.lastDice} ቤት)...`;
+                banner.textContent = `👣 ${hoppingPlayer ? hoppingPlayer.shortName : ''} በትክክል ${ludoMatchState.lastDice} ቤት እየተራመደ ነው...`;
             } else if (isMyTurn && ludoMatchState.awaitingMove) {
                 banner.textContent = `🎲 ${ludoMatchState.lastDice} ወጥቷል — የሚንቀሳቀስ ቶከን ይጫኑ!`;
             } else if (isMyTurn && activePlayer) {
