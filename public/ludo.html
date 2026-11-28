@@ -78,16 +78,16 @@
             box-shadow: 0 2px 10px rgba(234, 179, 8, 0.45);
         }
 
-        /* Individual Player Seat Pod with larger side dice */
+        /* Individual Player Seat Pod with preserved dice size & placement */
         .seat-pod {
             background: linear-gradient(180deg, #162a66 0%, #091333 100%);
             border: 2px solid rgba(148, 163, 184, 0.42);
             border-radius: 14px;
-            padding: 6px 8px;
+            padding: 6px 7px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 7px;
+            gap: 6px;
             position: relative;
             overflow: visible;
             transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
@@ -102,21 +102,32 @@
         }
 
         .avatar-ring {
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 12px;
+            font-size: 11px;
             color: #fff;
             position: relative;
             flex-shrink: 0;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45);
         }
 
-        /* Larger Per-player dice box */
+        .seat-name-label {
+            font-size: 9.5px;
+            font-weight: 900;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+            line-height: 1.15;
+        }
+
+        /* Preserved Per-player dice box */
         .seat-dice-box {
             width: 52px;
             height: 52px;
@@ -580,6 +591,27 @@
             }
         }
 
+        // Format player label from synced username or Telegram first name, compacting long names with "..."
+        function formatCompactPlayerName(rawName, fallback = 'Player') {
+            const cleaned = String(rawName || '')
+                .replace(/\(እርስዎ\)/g, '')
+                .replace(/\[Medium\]/gi, '')
+                .trim();
+
+            if (!cleaned) return fallback;
+
+            if (cleaned.startsWith('@')) {
+                const handle = cleaned.slice(0, 10);
+                return cleaned.length > 10 ? `${handle}...` : cleaned;
+            }
+
+            const firstWord = cleaned.split(/\s+/)[0] || fallback;
+            if (firstWord.length > 8) {
+                return `${firstWord.slice(0, 7)}...`;
+            }
+            return firstWord;
+        }
+
         function isLudoAdminUser(uid) {
             if (!uid) return false;
             return LUDO_ADMIN_IDS.map(String).includes(String(uid).trim());
@@ -692,7 +724,6 @@
         };
         const LUDO_HOME_CROWN_COORDS = { red: [7, 6], green: [6, 7], yellow: [7, 8], blue: [8, 7] };
 
-        // Safe Zones: 4 color start cells + 4 star cells (tokens here never get captured and never skip steps)
         const LUDO_SAFE_CELL_KEYS = new Set(['6,1', '2,6', '1,8', '6,12', '8,13', '12,8', '13,6', '8,2']);
         const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
 
@@ -705,7 +736,7 @@
         const LUDO_DICE_FACE_PIPS = {
             1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
         };
-        const LUDO_MEDIUM_BOT_NAMES = ['MedBot • Dawit', 'MedBot • Hana', 'MedBot • Selam', 'MedBot • Bereket'];
+        const LUDO_MEDIUM_BOT_NAMES = ['Dawit', 'Hana', 'Selam', 'Bereket'];
 
         let ludoSoundEnabled = true;
         let ludoIsAnimating = false;
@@ -767,10 +798,11 @@
         }
 
         function buildLudoPlayersFromRoster(realPlayersList = [], preferredHumanColor = ludoSelectedColor) {
+            const selfRaw = (userUsername && userUsername !== '@player') ? userUsername : userFullName;
             const selfEntry = {
                 userId: telegramUserId,
-                name: `${userFullName} (እርስዎ)`,
-                shortName: userFullName || 'እርስዎ',
+                name: userFullName || 'እርስዎ',
+                shortName: formatCompactPlayerName(selfRaw, 'እርስዎ'),
                 isReal: true,
                 isHuman: true
             };
@@ -778,13 +810,16 @@
             const othersReal = (Array.isArray(realPlayersList) ? realPlayersList : [])
                 .filter(rp => rp && String(rp.userId) !== String(telegramUserId))
                 .slice(0, 3)
-                .map((rp, idx) => ({
-                    userId: String(rp.userId),
-                    name: rp.username || rp.fullName || `Player ${idx + 2}`,
-                    shortName: (rp.username || rp.fullName || `P${idx + 2}`).replace(/^@/, '').slice(0, 12),
-                    isReal: true,
-                    isHuman: false
-                }));
+                .map((rp, idx) => {
+                    const chosenLabel = (rp.username && rp.username !== '@player') ? rp.username : (rp.fullName || `Player${idx + 2}`);
+                    return {
+                        userId: String(rp.userId),
+                        name: rp.fullName || rp.username || `Player ${idx + 2}`,
+                        shortName: formatCompactPlayerName(chosenLabel, `P${idx + 2}`),
+                        isReal: true,
+                        isHuman: false
+                    };
+                });
 
             const otherSeats = LUDO_SEAT_ORDER.filter(c => c !== preferredHumanColor);
             const seatMap = new Map();
@@ -800,8 +835,8 @@
                     const bName = LUDO_MEDIUM_BOT_NAMES[botIdx % LUDO_MEDIUM_BOT_NAMES.length];
                     seatMap.set(seatColor, {
                         userId: `medbot_${botIdx + 1}`,
-                        name: `${bName} [Medium]`,
-                        shortName: bName,
+                        name: bName,
+                        shortName: formatCompactPlayerName(bName, 'Bot'),
                         isReal: false,
                         isHuman: false
                     });
@@ -1026,10 +1061,11 @@
             }
             if (!isUserInPendingQueue()) {
                 if (!charge50Birr(`AZ Ludo Pending ካርድ (${ludoSelectedColor.toUpperCase()}) • 50 ብር`)) return;
+                const label = (userUsername && userUsername !== '@player') ? userUsername : userFullName;
                 ludoPendingQueue.push({
                     userId: String(telegramUserId),
-                    name: `${userFullName} (እርስዎ)`,
-                    shortName: userFullName || 'እርስዎ',
+                    name: userFullName || 'ተጫዋች',
+                    shortName: formatCompactPlayerName(label, 'እርስዎ'),
                     color: ludoSelectedColor,
                     paid50: true
                 });
@@ -1104,11 +1140,12 @@
                         ? pq.color
                         : ludoMatchState.players[replaceIdx].color;
 
+                    const compactLabel = formatCompactPlayerName(pq.shortName || pq.name, 'Player');
                     ludoMatchState.players[replaceIdx] = {
                         id: desiredColor,
                         userId: String(pq.userId),
-                        name: pq.shortName,
-                        shortName: pq.shortName,
+                        name: pq.name || compactLabel,
+                        shortName: compactLabel,
                         color: desiredColor,
                         isReal: true,
                         isHuman: String(pq.userId) === String(telegramUserId),
@@ -1169,7 +1206,6 @@
             const [r, c] = resolveLudoBoardCoords(moverPlayer.color, movedToken.progress);
             const cellKey = `${r},${c}`;
 
-            // Safe Zone (stars & colored start squares): tokens safely coexist without capture
             if (LUDO_SAFE_CELL_KEYS.has(cellKey)) return false;
 
             let capturedAny = false;
@@ -1212,7 +1248,6 @@
             ludoActiveHoppingToken = { playerId: player.id, tokenId: token.id };
             renderLudoAll();
 
-            // Exiting yard on a 6 places token onto its own colored start square (progress 0)
             if (token.progress === -1 && diceValue === 6) {
                 ludoAiTimer = setTimeout(() => {
                     if (ludoMatchState.status !== 'playing') {
@@ -1241,7 +1276,6 @@
                 return;
             }
 
-            // Strictly advance 1 square per step for exact `diceValue` steps without skipping any cell
             const totalSteps = diceValue;
             let stepCount = 0;
 
@@ -1542,7 +1576,7 @@
                 <button
                     type="button"
                     ${canHumanClick ? `onclick="handleSeatDiceClick('${player.color}')"` : 'disabled'}
-                    title="${player.shortName} Dice"
+                    title="${player.name || player.shortName}"
                     class="seat-dice-box ${stateCls}"
                     style="--seat-glow:${pal.ring}; --dice-tint-top:${pal.tintTop}; --dice-tint-bot:${pal.tintBot}; --dice-border:${pal.border};"
                 >
@@ -1614,8 +1648,9 @@
                 const homeCount = p.tokens.filter(t => t.progress === LUDO_GOAL_STEP).length;
                 const activeCount = p.tokens.filter(t => t.progress >= 0 && t.progress < LUDO_GOAL_STEP).length;
                 const pal = LUDO_COLOR_PALETTE[p.color];
-                const initial = p.shortName.charAt(0).toUpperCase();
-                const tagText = p.isReal ? 'REAL' : 'MED-BOT';
+                const displayName = formatCompactPlayerName(p.shortName || p.name, 'Player');
+                const initial = displayName.replace(/^@/, '').charAt(0).toUpperCase() || 'P';
+                const tagText = p.isReal ? 'REAL' : 'BOT';
 
                 const isRollingNow = Boolean(ludoIsAnimating && !ludoActiveHoppingToken && ludoRollingPlayerId === p.id);
                 const canHumanClick = Boolean(
@@ -1625,17 +1660,17 @@
                     !ludoIsAnimating
                 );
 
-                // Place dice on inner side toward board center: Red right, Green left, Blue right, Yellow left
+                // Keep dice size & side position unchanged
                 const diceOnLeftSide = (p.color === 'green' || p.color === 'yellow');
                 const infoHtml = `
                     <div class="flex items-center gap-1.5 min-w-0 flex-1">
                         <div class="avatar-ring ${pal.badgeBg} border border-white/85">
                             ${initial}
-                            <span class="absolute -bottom-1 -right-1 text-[8px] bg-slate-950 text-amber-300 border border-amber-400/70 rounded px-1 leading-tight font-black">${homeCount}/4</span>
+                            <span class="absolute -bottom-1 -right-1 text-[7.5px] bg-slate-950 text-amber-300 border border-amber-400/70 rounded px-0.5 leading-tight font-black">${homeCount}/4</span>
                         </div>
-                        <div class="min-w-0 leading-tight">
-                            <div class="text-[11px] font-black text-white truncate">${p.shortName}</div>
-                            <div class="text-[8px] font-bold ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${activeCount} out</div>
+                        <div class="min-w-0 flex-1 leading-tight">
+                            <div class="seat-name-label" title="${p.name || displayName}">${displayName}</div>
+                            <div class="text-[7.5px] font-bold truncate ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${activeCount} out</div>
                         </div>
                     </div>
                 `;
@@ -1824,11 +1859,17 @@
                 if (Array.isArray(synced.players) && synced.players.length > 0) {
                     ludoMatchState.matchId = synced.matchId || ludoMatchState.matchId;
                     ludoMatchState.status = synced.status || ludoMatchState.status;
-                    ludoMatchState.players = synced.players.map(pl => ({
-                        ...pl,
-                        lastDice: pl.lastDice || 5,
-                        isHuman: String(pl.userId) === String(telegramUserId)
-                    }));
+                    ludoMatchState.players = synced.players.map(pl => {
+                        const rawSyncedLabel = (pl.username && pl.username !== '@player')
+                            ? pl.username
+                            : (pl.shortName || pl.name || 'Player');
+                        return {
+                            ...pl,
+                            shortName: formatCompactPlayerName(rawSyncedLabel, 'Player'),
+                            lastDice: pl.lastDice || 5,
+                            isHuman: String(pl.userId) === String(telegramUserId)
+                        };
+                    });
                     ludoMatchState.turnIndex = typeof synced.turnIndex === 'number' ? synced.turnIndex : ludoMatchState.turnIndex;
                     ludoMatchState.lastDice = synced.lastDice !== undefined ? synced.lastDice : ludoMatchState.lastDice;
                     ludoMatchState.awaitingMove = Boolean(synced.awaitingMove);
