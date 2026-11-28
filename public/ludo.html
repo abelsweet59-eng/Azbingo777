@@ -77,100 +77,111 @@
             color: #1e1b08;
             box-shadow: 0 2px 10px rgba(234, 179, 8, 0.45);
         }
-        .player-pod {
+
+        /* Individual Player Seat Pod with its own side dice slot */
+        .seat-pod {
             background: linear-gradient(180deg, #162a66 0%, #091333 100%);
             border: 2px solid rgba(148, 163, 184, 0.42);
             border-radius: 13px;
-            padding: 5px 8px;
+            padding: 5px 7px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 6px;
             position: relative;
+            overflow: visible;
             transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
-        .player-pod.pod-red { border-color: rgba(244, 63, 94, 0.85); }
-        .player-pod.pod-green { border-color: rgba(34, 197, 94, 0.85); }
-        .player-pod.pod-blue { border-color: rgba(14, 165, 233, 0.85); }
-        .player-pod.pod-yellow { border-color: rgba(250, 204, 21, 0.85); }
-        .player-pod.active-turn {
+        .seat-pod.pod-red { border-color: rgba(244, 63, 94, 0.85); }
+        .seat-pod.pod-green { border-color: rgba(34, 197, 94, 0.85); }
+        .seat-pod.pod-blue { border-color: rgba(14, 165, 233, 0.85); }
+        .seat-pod.pod-yellow { border-color: rgba(250, 204, 21, 0.85); }
+        .seat-pod.active-turn {
             border-color: #fde047 !important;
-            box-shadow: 0 0 18px rgba(250, 204, 21, 0.72), inset 0 0 10px rgba(250, 204, 21, 0.24);
-            transform: scale(1.02);
+            box-shadow: 0 0 16px rgba(250, 204, 21, 0.65), inset 0 0 8px rgba(250, 204, 21, 0.2);
         }
+
         .avatar-ring {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 9px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 900;
-            font-size: 12px;
+            font-size: 11px;
             color: #fff;
             position: relative;
             flex-shrink: 0;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.45);
         }
-        .front-spinner-deck {
-            background: linear-gradient(180deg, #112561 0%, #071130 100%);
-            border: 2px solid rgba(250, 204, 21, 0.88);
-            border-radius: 16px;
-            padding: 8px 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-        }
-        .hero-dice-stage {
-            width: 66px;
-            height: 66px;
-            perspective: 440px;
-            flex-shrink: 0;
+
+        /* Per-player dice box next to player info */
+        .seat-dice-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(5, 13, 38, 0.92);
+            border: 1.5px solid rgba(255, 255, 255, 0.22);
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-        .hero-dice-cube {
-            width: 56px;
-            height: 56px;
             position: relative;
-            transform-style: preserve-3d;
-            transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.24s cubic-bezier(0.22, 1.35, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        .hero-dice-cube.rolling {
-            animation: heroDiceSpin3D 0.9s cubic-bezier(0.28, 0.08, 0.25, 1) infinite;
+        .seat-dice-box.can-roll {
+            border-color: #fde047;
+            box-shadow: 0 0 12px rgba(250, 204, 21, 0.65);
         }
-        @keyframes heroDiceSpin3D {
-            0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
-            25%  { transform: rotateX(180deg) rotateY(90deg) rotateZ(45deg) scale(1.12); }
-            50%  { transform: rotateX(270deg) rotateY(220deg) rotateZ(120deg) scale(1.16); }
-            75%  { transform: rotateX(340deg) rotateY(310deg) rotateZ(240deg) scale(1.1); }
-            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg) scale(1); }
+        .seat-dice-box.rolling-pop {
+            transform: translateY(-10px) scale(1.18);
+            z-index: 30;
+            border-color: #fef08a;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), 0 0 18px var(--seat-glow, rgba(250, 204, 21, 0.85));
         }
-        .hero-dice-face {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(145deg, #ffffff 0%, #e2e8f0 100%);
-            border: 2px solid #94a3b8;
-            border-radius: 12px;
+        .seat-dice-box.disabled-dice {
+            cursor: default;
+            opacity: 0.78;
+        }
+
+        .seat-mini-cube {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background: linear-gradient(145deg, var(--dice-tint-top, #ffffff) 0%, var(--dice-tint-bot, #e2e8f0) 100%);
+            border: 1.5px solid var(--dice-border, #94a3b8);
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            padding: 6px;
-            box-shadow: 0 5px 14px rgba(0,0,0,0.45), inset 0 2px 3px #ffffff, inset 0 -2px 4px rgba(15,23,42,0.25);
+            padding: 3px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.45), inset 0 1.5px 2px rgba(255,255,255,0.85);
+            transition: transform 0.25s ease;
         }
-        .hero-pip {
-            width: 9px;
-            height: 9px;
+        .seat-dice-box.rolling-pop .seat-mini-cube {
+            animation: seatDiceSpin3D 0.65s cubic-bezier(0.28, 0.08, 0.25, 1) infinite;
+        }
+        @keyframes seatDiceSpin3D {
+            0%   { transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1); }
+            33%  { transform: rotateX(180deg) rotateY(140deg) rotateZ(90deg) scale(1.12); }
+            66%  { transform: rotateX(290deg) rotateY(260deg) rotateZ(210deg) scale(1.15); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg) scale(1); }
+        }
+        .seat-pip {
+            width: 5px;
+            height: 5px;
             border-radius: 9999px;
             background: #0f172a;
             align-self: center;
             justify-self: center;
-            box-shadow: inset 0 1px 2px rgba(255,255,255,0.25);
         }
-        .hero-pip.red-pip {
+        .seat-pip.red-pip {
             background: #dc2626;
-            width: 11px;
-            height: 11px;
+            width: 6px;
+            height: 6px;
         }
+
         .ludo-king-frame {
             background: linear-gradient(145deg, #fde047 0%, #b45309 25%, #78350f 50%, #d97706 78%, #fef08a 100%);
             padding: 5px;
@@ -349,19 +360,6 @@
             0% { transform: scale(0.3); opacity: 1; }
             100% { transform: scale(1.9); opacity: 0; }
         }
-        .royal-roll-cta {
-            background: linear-gradient(180deg, #38bdf8 0%, #0284c7 48%, #0369a1 100%);
-            border: 2px solid #bae6fd;
-            box-shadow: 0 4px 0 #082f49, 0 0 18px rgba(56, 189, 248, 0.45);
-            transition: transform 0.1s ease;
-        }
-        .royal-roll-cta:active:not(:disabled) {
-            transform: translateY(3px);
-        }
-        .royal-roll-cta:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
         .gold-mode-btn {
             background: linear-gradient(180deg, #1b2b65 0%, #0f193d 100%);
             border: 2px solid #facc15;
@@ -437,7 +435,7 @@
             </div>
         </div>
 
-        <!-- VIEW 2: LIVE BOARD -->
+        <!-- VIEW 2: LIVE BOARD WITH PER-PLAYER DICES -->
         <div id="view-ludo-live" class="hidden flex-1 flex flex-col p-2 space-y-1.5 overflow-y-auto custom-scroll">
             <header class="royal-topbar rounded-xl px-2.5 py-1.5 flex items-center justify-between gap-2">
                 <div class="flex items-center gap-1.5 min-w-0">
@@ -495,9 +493,10 @@
                 </div>
             </section>
 
+            <!-- Top Seats: RED (Left) & GREEN (Right) each with its own dice -->
             <section class="grid grid-cols-2 gap-1.5">
-                <div id="ludo-hud-red" class="player-pod pod-red"></div>
-                <div id="ludo-hud-green" class="player-pod pod-green"></div>
+                <div id="ludo-hud-red" class="seat-pod pod-red"></div>
+                <div id="ludo-hud-green" class="seat-pod pod-green"></div>
             </section>
 
             <main class="ludo-king-frame">
@@ -506,31 +505,15 @@
                 </div>
             </main>
 
+            <!-- Bottom Seats: BLUE (Left) & YELLOW (Right) each with its own dice -->
             <section class="grid grid-cols-2 gap-1.5">
-                <div id="ludo-hud-blue" class="player-pod pod-blue"></div>
-                <div id="ludo-hud-yellow" class="player-pod pod-yellow"></div>
+                <div id="ludo-hud-blue" class="seat-pod pod-blue"></div>
+                <div id="ludo-hud-yellow" class="seat-pod pod-yellow"></div>
             </section>
 
-            <section class="front-spinner-deck flex items-center justify-between gap-3">
-                <div id="ludoActiveRollerInfo" class="flex items-center gap-2.5 min-w-0 flex-1"></div>
-                <div id="ludoHeroDiceSlot" class="flex items-center justify-center shrink-0"></div>
-            </section>
-
-            <section class="flex flex-col items-center gap-1">
-                <button
-                    id="ludoMainRollBtn"
-                    type="button"
-                    onclick="handleLudoHumanRoll()"
-                    class="royal-roll-cta w-full rounded-full py-2 px-4 flex items-center justify-center gap-2.5 text-white font-black text-xs sm:text-sm tracking-wide cursor-pointer"
-                >
-                    <span>ዳይስ አንከባልል (ROLL DICE)</span>
-                    <span id="ludoCtaDiceFace" class="w-6 h-6 rounded-md bg-white text-slate-950 flex items-center justify-center text-base font-black shadow">⚄</span>
-                </button>
-
-                <div id="ludoTurnBannerText" class="text-[11px] font-extrabold text-amber-200 text-center min-h-[16px]">
-                    ቀለም ይምረጡ እና 50 ብር በመክፈል ይጀምሩ
-                </div>
-            </section>
+            <div id="ludoTurnBannerText" class="text-[11px] font-extrabold text-amber-200 text-center min-h-[16px] py-0.5">
+                ቀለም ይምረጡ እና 50 ብር በመክፈል ይጀምሩ
+            </div>
 
             <section class="grid grid-cols-2 gap-1.5">
                 <button
@@ -707,12 +690,11 @@
         const LUDO_SAFE_CELL_KEYS = new Set(['6,1', '2,6', '1,8', '6,12', '8,13', '12,8', '13,6', '8,2']);
         const LUDO_STAR_ONLY_KEYS = new Set(['2,6', '6,12', '12,8', '8,2']);
         const LUDO_COLOR_PALETTE = {
-            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (RED)' },
-            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (GREEN)' },
-            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', badgeBg: 'bg-amber-500', labelAm: 'ቢጫ (YELLOW)' },
-            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', badgeBg: 'bg-sky-600', labelAm: 'ሰማያዊ (BLUE)' }
+            red:    { fill: '#e11d48', rim: '#881337', glow: '#fda4af', ring: '#fb7185', tintTop: '#fff1f2', tintBot: '#fecdd3', border: '#f43f5e', badgeBg: 'bg-rose-600', labelAm: 'ቀይ (RED)' },
+            green:  { fill: '#16a34a', rim: '#14532d', glow: '#86efac', ring: '#22c55e', tintTop: '#f0fdf4', tintBot: '#bbf7d0', border: '#16a34a', badgeBg: 'bg-emerald-600', labelAm: 'አረንጓዴ (GREEN)' },
+            yellow: { fill: '#eab308', rim: '#713f12', glow: '#fef08a', ring: '#facc15', tintTop: '#fefce8', tintBot: '#fef08a', border: '#eab308', badgeBg: 'bg-amber-500', labelAm: 'ቢጫ (YELLOW)' },
+            blue:   { fill: '#0284c7', rim: '#0c4a6e', glow: '#7dd3fc', ring: '#38bdf8', tintTop: '#f0f9ff', tintBot: '#bae6fd', border: '#0284c7', badgeBg: 'bg-sky-600', labelAm: 'ሰማያዊ (BLUE)' }
         };
-        const LUDO_DICE_UNICODE = { 1: '⚀', 2: '⚁', 3: '⚂', 4: '⚃', 5: '⚄', 6: '⚅' };
         const LUDO_DICE_FACE_PIPS = {
             1: [4], 2: [2, 6], 3: [2, 4, 6], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8]
         };
@@ -721,6 +703,7 @@
         let ludoSoundEnabled = true;
         let ludoIsAnimating = false;
         let ludoActiveHoppingToken = null;
+        let ludoRollingPlayerId = null;
         let ludoAiTimer = null;
         let ludoHopTimer = null;
         let ludoBurstCellKey = null;
@@ -790,6 +773,7 @@
                     isReal: entry.isReal,
                     isHuman: entry.isHuman,
                     consecutiveSixes: 0,
+                    lastDice: 5,
                     tokens: makeFreshTokens()
                 };
             });
@@ -1040,6 +1024,7 @@
             if (ludoHopTimer) { clearInterval(ludoHopTimer); ludoHopTimer = null; }
             ludoIsAnimating = false;
             ludoActiveHoppingToken = null;
+            ludoRollingPlayerId = null;
             ludoStepPulseCellKey = null;
 
             const players = buildLudoPlayersFromRoster(rosterList, preferredColor);
@@ -1080,6 +1065,7 @@
                         isReal: true,
                         isHuman: String(pq.userId) === String(telegramUserId),
                         consecutiveSixes: 0,
+                        lastDice: 5,
                         tokens: makeFreshTokens()
                     };
                 }
@@ -1088,6 +1074,7 @@
             ludoMatchState.players.forEach(p => {
                 p.tokens = makeFreshTokens();
                 p.consecutiveSixes = 0;
+                p.lastDice = 5;
             });
             ludoMatchState.status = 'playing';
             ludoMatchState.winner = null;
@@ -1105,6 +1092,7 @@
             ludoMatchState.turnIndex = (ludoMatchState.turnIndex + 1) % ludoMatchState.players.length;
             ludoMatchState.lastDice = null;
             ludoMatchState.awaitingMove = false;
+            ludoRollingPlayerId = null;
             ludoStepPulseCellKey = null;
             renderLudoAll();
             emitLudoLiveSync();
@@ -1117,6 +1105,7 @@
                 if (diceValue === 6 || didCapture || reachedCrown) {
                     ludoMatchState.lastDice = null;
                     ludoMatchState.awaitingMove = false;
+                    ludoRollingPlayerId = null;
                     ludoStepPulseCellKey = null;
                     renderLudoAll();
                     emitLudoLiveSync();
@@ -1168,6 +1157,7 @@
 
             ludoIsAnimating = true;
             ludoMatchState.awaitingMove = false;
+            ludoRollingPlayerId = null;
             ludoActiveHoppingToken = { playerId: player.id, tokenId: token.id };
             renderLudoAll();
 
@@ -1272,19 +1262,22 @@
             }, 350);
         }
 
-        function handleLudoHumanRoll() {
+        function handleSeatDiceClick(seatColor) {
             if (ludoMatchState.status !== 'playing' || ludoMatchState.awaitingMove || ludoIsAnimating) return;
             const activeP = ludoMatchState.players[ludoMatchState.turnIndex];
-            if (!activeP || String(activeP.userId) !== String(telegramUserId)) return;
+            if (!activeP || activeP.color !== seatColor || String(activeP.userId) !== String(telegramUserId)) return;
 
             ludoIsAnimating = true;
+            ludoRollingPlayerId = activeP.id;
             playLudoFx('dice');
             renderLudoAll();
 
             setTimeout(() => {
                 const rolled = Math.floor(Math.random() * 6) + 1;
+                activeP.lastDice = rolled;
                 ludoMatchState.lastDice = rolled;
                 ludoIsAnimating = false;
+                ludoRollingPlayerId = null;
                 renderLudoAll();
                 emitLudoLiveSync();
 
@@ -1378,13 +1371,16 @@
                 if (!bot || bot.isReal) return;
 
                 ludoIsAnimating = true;
+                ludoRollingPlayerId = bot.id;
                 playLudoFx('dice');
                 renderLudoAll();
 
                 ludoAiTimer = setTimeout(() => {
                     const rolled = Math.floor(Math.random() * 6) + 1;
+                    bot.lastDice = rolled;
                     ludoMatchState.lastDice = rolled;
                     ludoIsAnimating = false;
+                    ludoRollingPlayerId = null;
                     renderLudoAll();
                     emitLudoLiveSync();
 
@@ -1488,35 +1484,40 @@
             openLudoModal(
                 '👑',
                 'LUDO KING RULES • የሉዶ ኪንግ ህጎች',
-                `• ካርድ (ቀለም) መምረጫ ሜኑ: ጨዋታው ከመጀመሩ በፊት ወይም ሲካሄድ መጀመሪያ የቀለም/ካርድ መምረጫ ሜኑ ይመጣል።
-• Pending & Swap: ጨዋታው እየተካሄደ ሲገቡ ኦንላይን ሆነው ማየት እና Pending ካርድ መያዝ ይችላሉ፤ ሲያልቅ ቅድሚያ ቦቶቹ እየቀነሱ በሪል ተጫዋች ይተካሉ።
-• ሙሉ የሉዶ ህጎች: 6 አውጥቶ መውጣት፣ ተጨማሪ ዳይስ በ6/በመብላት/Home መግባት፣ 3 ተከታታይ 6 ተራ ማለፍ፣ Safe Zones።`
+                `• የራስ ዳይስ በየተጫዋቹ አጠገብ: እያንዳንዱ ተጫዋች ከስሙ ጎን የራሱ ዳይስ አለው፤ የተራዎ ሲሆን ዳይስዎን ሲነኩት ወደ ላይ ወጥቶ ይሽከረከራል።
+• ካርድ (ቀለም) መምረጫ ሜኑ: ጨዋታው ከመጀመሩ በፊት ወይም ሲካሄድ መጀመሪያ የቀለም/ካርድ መምረጫ ሜኑ ይመጣል።
+• Pending & Swap: ጨዋታው እየተካሄደ ሲገቡ ኦንላይን ሆነው ማየት እና Pending ካርድ መያዝ ይችላሉ፤ ሲያልቅ ቅድሚያ ቦቶቹ እየቀነሱ በሪል ተጫዋች ይተካሉ።`
             );
         }
 
-        function createHeroSpinnerDiceHtml(diceVal, rolling) {
-            const val = diceVal || 5;
+        function createSeatDiceHtml(player, isTurn, isRollingNow, canHumanClick) {
+            const pal = LUDO_COLOR_PALETTE[player.color];
+            const val = player.lastDice || 5;
             const pips = LUDO_DICE_FACE_PIPS[val] || LUDO_DICE_FACE_PIPS[5];
             let cellsHtml = '';
             for (let i = 0; i < 9; i++) {
                 if (pips.includes(i)) {
                     const isRedCenter = (val === 1 || val === 4 || val === 5) && i === 4;
-                    cellsHtml += `<span class="hero-pip ${isRedCenter ? 'red-pip' : ''}"></span>`;
+                    cellsHtml += `<span class="seat-pip ${isRedCenter ? 'red-pip' : ''}"></span>`;
                 } else {
                     cellsHtml += `<span></span>`;
                 }
             }
+
+            const stateCls = isRollingNow
+                ? 'rolling-pop'
+                : (canHumanClick ? 'can-roll' : 'disabled-dice');
+
             return `
-                <div class="flex flex-col items-center">
-                    <div class="hero-dice-stage">
-                        <div class="hero-dice-cube ${rolling ? 'rolling' : ''}">
-                            <div class="hero-dice-face">${cellsHtml}</div>
-                        </div>
-                    </div>
-                    <span class="text-[9px] font-black text-amber-300 uppercase tracking-wider mt-0.5">
-                        ${rolling ? 'SPINNING 1–6...' : `DICE: ${val}`}
-                    </span>
-                </div>
+                <button
+                    type="button"
+                    ${canHumanClick ? `onclick="handleSeatDiceClick('${player.color}')"` : 'disabled'}
+                    title="${player.shortName} Dice"
+                    class="seat-dice-box ${stateCls}"
+                    style="--seat-glow:${pal.ring}; --dice-tint-top:${pal.tintTop}; --dice-tint-bot:${pal.tintBot}; --dice-border:${pal.border};"
+                >
+                    <div class="seat-mini-cube">${cellsHtml}</div>
+                </button>
             `;
         }
 
@@ -1586,47 +1587,32 @@
                 const initial = p.shortName.charAt(0).toUpperCase();
                 const tagText = p.isReal ? 'REAL' : 'MED-BOT';
 
-                podEl.innerHTML = `
-                    <div class="flex items-center gap-1.5 min-w-0">
+                const isRollingNow = Boolean(ludoIsAnimating && !ludoActiveHoppingToken && ludoRollingPlayerId === p.id);
+                const canHumanClick = Boolean(
+                    isTurn &&
+                    String(p.userId) === String(telegramUserId) &&
+                    !ludoMatchState.awaitingMove &&
+                    !ludoIsAnimating
+                );
+
+                // Place dice on inner side toward board center: Red right, Green left, Blue right, Yellow left
+                const diceOnLeftSide = (p.color === 'green' || p.color === 'yellow');
+                const infoHtml = `
+                    <div class="flex items-center gap-1.5 min-w-0 flex-1">
                         <div class="avatar-ring ${pal.badgeBg} border border-white/85">
                             ${initial}
                             <span class="absolute -bottom-1 -right-1 text-[8px] bg-slate-950 text-amber-300 border border-amber-400/70 rounded px-1 leading-tight font-black">${homeCount}/4</span>
                         </div>
                         <div class="min-w-0 leading-tight">
                             <div class="text-[10px] font-black text-white truncate">${p.shortName}</div>
-                            <div class="text-[8px] font-bold ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${p.color.toUpperCase()} • ${activeCount} out</div>
+                            <div class="text-[8px] font-bold ${isTurn ? 'text-amber-300' : 'text-slate-300'}">${tagText} • ${activeCount} out</div>
                         </div>
                     </div>
-                    <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${isTurn ? 'bg-amber-400 text-slate-950' : 'bg-white/10 text-slate-300'}">${isTurn ? 'TURN' : `${homeCount}🏠`}</span>
                 `;
+                const diceHtml = createSeatDiceHtml(p, isTurn, isRollingNow, canHumanClick);
+
+                podEl.innerHTML = diceOnLeftSide ? `${diceHtml}${infoHtml}` : `${infoHtml}${diceHtml}`;
             });
-
-            const rollerInfoEl = document.getElementById('ludoActiveRollerInfo');
-            const heroDiceSlot = document.getElementById('ludoHeroDiceSlot');
-            if (rollerInfoEl && activePlayer) {
-                const pal = LUDO_COLOR_PALETTE[activePlayer.color];
-                const isMeActive = String(activePlayer.userId) === String(telegramUserId);
-                const roleLabel = isMeActive ? 'YOU' : (activePlayer.isReal ? 'REAL PLAYER' : 'MEDIUM BOT');
-                rollerInfoEl.innerHTML = `
-                    <div class="w-11 h-11 rounded-xl ${pal.badgeBg} border-2 border-amber-300 flex items-center justify-center text-lg font-black text-white shadow-lg shrink-0">${activePlayer.shortName.charAt(0).toUpperCase()}</div>
-                    <div class="min-w-0 leading-snug">
-                        <div class="text-[9px] font-black uppercase tracking-wider text-cyan-300">${roleLabel} • ${activePlayer.color.toUpperCase()}</div>
-                        <div class="text-xs sm:text-sm font-black text-white truncate">${activePlayer.shortName}</div>
-                        <div class="text-[10px] font-bold text-amber-200 truncate">
-                            ${ludoIsAnimating && !ludoActiveHoppingToken ? 'ዳይስ በመሽከርከር ላይ...' : (ludoMatchState.lastDice ? `የወጣው ቁጥር: ${ludoMatchState.lastDice}` : 'ዳይስ ለማንከባለል ዝግጁ')}
-                        </div>
-                    </div>
-                `;
-            }
-            if (heroDiceSlot) {
-                heroDiceSlot.innerHTML = createHeroSpinnerDiceHtml(ludoMatchState.lastDice, Boolean(ludoIsAnimating && !ludoActiveHoppingToken));
-            }
-
-            const rollBtn = document.getElementById('ludoMainRollBtn');
-            if (rollBtn) rollBtn.disabled = !isMyTurn || ludoMatchState.awaitingMove || ludoIsAnimating;
-
-            const ctaFace = document.getElementById('ludoCtaDiceFace');
-            if (ctaFace) ctaFace.textContent = LUDO_DICE_UNICODE[ludoMatchState.lastDice || 5] || '⚄';
 
             const banner = document.getElementById('ludoTurnBannerText');
             if (!banner) return;
@@ -1639,10 +1625,10 @@
                 banner.textContent = `👣 ${hoppingPlayer ? hoppingPlayer.shortName : ''} ቀስ ብሎ በየቤቱ እየተራመደ ነው (${ludoMatchState.lastDice} ቤት)...`;
             } else if (isMyTurn && ludoMatchState.awaitingMove) {
                 banner.textContent = `🎲 ${ludoMatchState.lastDice} ወጥቷል — የሚንቀሳቀስ ቶከን ይጫኑ!`;
-            } else if (isMyTurn) {
-                banner.textContent = `የእርስዎ ተራ ነው (YOUR TURN!) - ከታች ያለውን ዳይስ ይጫኑ`;
+            } else if (isMyTurn && activePlayer) {
+                banner.textContent = `የእርስዎ ተራ ነው — ከ ${activePlayer.color.toUpperCase()} ስም አጠገብ ያለውን ዳይስ ይንኩ!`;
             } else if (activePlayer) {
-                banner.textContent = `የ ${activePlayer.shortName} (${activePlayer.color.toUpperCase()}) ተራ ነው...`;
+                banner.textContent = `የ ${activePlayer.shortName} (${activePlayer.color.toUpperCase()}) ዳይስ ተራ ነው...`;
             }
         }
 
@@ -1810,6 +1796,7 @@
                     ludoMatchState.status = synced.status || ludoMatchState.status;
                     ludoMatchState.players = synced.players.map(pl => ({
                         ...pl,
+                        lastDice: pl.lastDice || 5,
                         isHuman: String(pl.userId) === String(telegramUserId)
                     }));
                     ludoMatchState.turnIndex = typeof synced.turnIndex === 'number' ? synced.turnIndex : ludoMatchState.turnIndex;
